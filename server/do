@@ -1,0 +1,50 @@
+<?php
+
+use YonisSavary\Cube\Console\Args;
+use YonisSavary\Cube\Console\Command;
+use YonisSavary\Cube\Console\Commands\Help;
+use YonisSavary\Cube\Core\Autoloader;
+use YonisSavary\Cube\Data\Bunch;
+use YonisSavary\Cube\Utils\Console;
+use YonisSavary\Cube\Utils\Shell;
+
+require_once "./vendor/autoload.php";
+
+Autoloader::resolveProjectPath();
+
+$identifier = $argv[1] ?? "";
+$commands = Shell::findCommand($identifier);
+
+if (!count($commands))
+{
+    Console::log(Console::withYellowColor("No command found with identifier [$identifier]"));
+    Help::call();
+    exit(1);
+}
+else if (count($commands) > 1)
+{
+    Console::log(
+        "Multiple commands found with identifier [$identifier]",
+        "please call the desired command with its full identifier",
+        ""
+    );
+    Console::table(
+        Bunch::of($commands)
+        ->map(fn($class) => new $class)
+        ->map(fn(Command $command) => [$command->getFullIdentifier(), $command->getHelp()])
+        ->get(),
+        ["Full Identifier", "Description"]
+    );
+    Console::log("");
+
+    exit(1);
+}
+
+/** @var Command $command */
+$command = $commands[0];
+
+$args = Args::fromArgv($argv);
+$status = $command->execute($args);
+
+Console::log("");
+exit($status);

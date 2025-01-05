@@ -1,0 +1,32 @@
+{
+    "name": "yonis-savary/cube",
+    "description": "Simple Web Framework for PHP8+",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "YonisSavary\\Cube\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "YonisSavary\\Cube\\Tests\\Units\\": "tests/units",
+            "YonisSavary\\Cube\\Tests\\Integration\\": "tests/integration",
+            "YonisSavary\\Cube\\Tests\\App\\": "tests/app"
+        }
+    },
+    "authors": [
+        {
+            "name": "yonis-savary",
+            "email": "yonissavary@outlook.fr"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require-dev": {
+        "phpunit/phpunit": "^12.0@dev"
+    },
+    "require": {
+        "psr/log": "^3.0.2",
+        "symfony/process": "7.2.0"
+    }
+}
