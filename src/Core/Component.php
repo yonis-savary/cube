@@ -25,6 +25,14 @@ trait Component
         return self::$instance;
     }
 
+    /**
+     * @var static $instance
+     */
+    public static function setInstance(self $instance): void
+    {
+        self::$instance = $instance;
+    }
+
     public static function hasInstance(): bool
     {
         return !is_null(self::$instance);
@@ -33,5 +41,20 @@ trait Component
     public static function removeInstance(): void
     {
         self::$instance = null;
+    }
+
+
+    /**
+     * @var static $scopedInstance
+     * @var callable $callback Callback
+     */
+    public static function withInstance(self $scopedInstance, callable $callback): void
+    {
+        $oldInstance = self::getInstance();
+
+        self::setInstance($scopedInstance);
+        $callback();
+
+        self::setInstance($oldInstance);
     }
 }
