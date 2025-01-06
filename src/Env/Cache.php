@@ -74,6 +74,11 @@ class Cache
             $element->save($this->storage);
     }
 
+    public function getSubCache(string $name): self
+    {
+        return new Cache($this->storage->getSubStorage($name));
+    }
+
     public function __destruct()
     {
         $this->save();
