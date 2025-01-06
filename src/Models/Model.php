@@ -61,7 +61,7 @@ abstract class Model
         /** @var self $self */
         $self = get_called_class();
 
-        return $self::findWhere($conditions, $database) !== null;
+        return $self::findWhere($conditions, false, $database) !== null;
     }
 
     public static function exists(mixed $primaryKeyValue, Database $database=null): bool
@@ -76,13 +76,13 @@ abstract class Model
     /**
      * @return ?static
      */
-    public static function findWhere(array $conditions, Database $database=null): ?self
+    public static function findWhere(array $conditions, bool $explore=true, Database $database=null): ?self
     {
         $database ??= Database::getInstance();
         /** @var self $self */
         $self = get_called_class();
 
-        $query = $self::select();
+        $query = $self::select($explore);
         foreach ($conditions as $column => $value)
             $query->where($column, $value, "=", $self::table());
 
@@ -93,19 +93,19 @@ abstract class Model
     /**
      * @return ?static
      */
-    public static function find(mixed $primaryKeyValue, Database $database=null): ?self
+    public static function find(mixed $primaryKeyValue, bool $explore=true, Database $database=null): ?self
     {
         $database ??= Database::getInstance();
         /** @var self $self */
         $self = get_called_class();
 
-        return $self::findWhere([$self::primaryKey() => $primaryKeyValue], $database);
+        return $self::findWhere([$self::primaryKey() => $primaryKeyValue], $explore, $database);
     }
 
-    public static function findOrCreate(array $data, Database $database=null): mixed
+    public static function findOrCreate(array $data, bool $explore=true, Database $database=null): mixed
     {
         $database ??= Database::getInstance();
-        return self::findWhere($data, $database) ?? self::insertArray($data, $database);
+        return self::findWhere($data, $explore, $database) ?? self::insertArray($data, $database);
     }
 
     public static function delete(): Query
