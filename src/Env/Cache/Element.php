@@ -19,6 +19,15 @@ class Element
         $creationDate = (int) $creationDate;
         $timeToLive = (int) $timeToLive;
 
+        $now = time();
+        $expireDate = $creationDate + $timeToLive;
+
+        if ($now < $expireDate)
+        {
+            unlink($file);
+            return null;
+        }
+
         $value = unserialize(file_get_contents($file));
 
         return new self($key, $value, $timeToLive, $creationDate, $file);
