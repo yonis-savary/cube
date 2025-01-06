@@ -151,36 +151,45 @@ class Autoloader
         return self::$cachedClassesList;
     }
 
+    public static function extends($class, $parentClass): bool
+    {
+        if ($parents = class_parents($class))
+            return in_array($parentClass, $parents);
+        return false;
+    }
+
+    public static function implements($class, $interface): bool
+    {
+        if ($implements = class_implements($class))
+            return in_array($interface, $implements);
+        return false;
+    }
+
+    public static function uses($class, $trait): bool
+    {
+        if ($traits = class_uses($class))
+            return in_array($trait, $traits);
+        return false;
+    }
+
     public static function classesThatExtends(string $parentClass): array
     {
         return Bunch::of(self::classesList())
-        ->filter(function($class) use ($parentClass) {
-            if ($parents = class_parents($class))
-                return in_array($parentClass, $parents);
-            return false;
-        })
+        ->filter(fn($class) => self::extends($class, $parentClass))
         ->get();
     }
 
     public static function classesThatImplements(string $interface): array
     {
         return Bunch::of(self::classesList())
-        ->filter(function($class) use ($interface) {
-            if ($implements = class_implements($class))
-                return in_array($interface, $implements);
-            return false;
-        })
+        ->filter(fn($class) => self::implements($class, $interface))
         ->get();
     }
 
     public static function classesThatUses(string $trait): array
     {
         return Bunch::of(self::classesList())
-        ->filter(function($class) use ($trait) {
-            if ($traits = class_uses($class))
-                return in_array($trait, $traits);
-            return false;
-        })
+        ->filter(fn($class) => self::uses($class, $trait))
         ->get();
     }
 }
