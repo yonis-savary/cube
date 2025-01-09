@@ -3,9 +3,13 @@
 namespace YonisSavary\Cube\Configuration;
 
 use Exception;
+use InvalidArgumentException;
 use PHPUnit\Runner\FileDoesNotExistException;
 use RuntimeException;
 use YonisSavary\Cube\Core\Component;
+use YonisSavary\Cube\Env\Cache;
+use YonisSavary\Cube\Env\Storage;
+use YonisSavary\Cube\Logger\Logger;
 use YonisSavary\Cube\Utils\Path;
 
 class Configuration
@@ -18,15 +22,31 @@ class Configuration
     /** @var array<string,ConfigurationElement> */
     protected array $classElements = [];
 
+    protected ?string $identifier = null;
+
     public static function getDefaultInstance(): static
     {
-        $instance = new self();
+        $instance = (new self())->identify("cube-default");
 
-        $file = Path::relative("cube.php");
-        if (is_file($file))
-            $instance->loadFile($file);
+        if ($instance->loadFromCache())
+        {
+            $file = Path::relative("cube.php");
+            if (is_file($file))
+                $instance->loadFile($file);
+        }
 
         return $instance;
+    }
+
+    public static function getDefaultConfigurationCache(): Cache
+    {
+        return Cache::getInstance()->child("Configurations");
+    }
+
+    public function identify(string $newIdentifier): self
+    {
+        $this->identifier = $newIdentifier;
+        return $this;
     }
 
     public function __construct(ConfigurationElement ...$elements)
@@ -75,5 +95,31 @@ class Configuration
             return $existing->getValue();
 
         return $default;
+    }
+
+    public function loadFromCache(?Cache $cache=null): bool
+    {
+        if (!$this->identifier)
+            throw new InvalidArgumentException("Please use Configuration->identify() before loading it from cache");
+
+        $cache ??= self::getDefaultConfigurationCache();
+
+        if (!$cache->has($this->identifier))
+            return false;
+
+        list($this->generics, $this->classElements) = $cache->get($this->identifier, []);
+        Logger::getInstance()->debug("Successfuly got config from cache !");
+        return true;
+    }
+
+    public function putToCache(?Cache $cache=null): Storage
+    {
+        if (!$this->identifier)
+            throw new InvalidArgumentException("Please use Configuration->identify() before putting it to cache");
+
+        $cache ??= self::getDefaultConfigurationCache();
+
+        $cache->set($this->identifier, serialize([$this->generics, $this->classElements]), Cache::PERMANENT);
+        return $cache->getStorage();
     }
 }
