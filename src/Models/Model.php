@@ -13,6 +13,9 @@ abstract class Model
 
     abstract public static function table(): string;
 
+    /** @return array<ModelField> */
+    abstract public static function fields(): array;
+
     public static function primaryKey(): ?string
     {
         return null;
@@ -42,7 +45,7 @@ abstract class Model
         return Query::insert($self::table());
     }
 
-    public static function insertArray(array $data, Database $database=null): mixed
+    public static function insertArray(array $data, ?Database $database=null): mixed
     {
         $database ??= Database::getInstance();
         $keys = array_keys($data);
@@ -55,7 +58,7 @@ abstract class Model
         return $database->lastInsertId();
     }
 
-    public static function existsWhere(array $conditions, Database $database=null): bool
+    public static function existsWhere(array $conditions, ?Database $database=null): bool
     {
         $database ??= Database::getInstance();
         /** @var self $self */
@@ -64,7 +67,7 @@ abstract class Model
         return $self::findWhere($conditions, false, $database) !== null;
     }
 
-    public static function exists(mixed $primaryKeyValue, Database $database=null): bool
+    public static function exists(mixed $primaryKeyValue, ?Database $database=null): bool
     {
         $database ??= Database::getInstance();
         /** @var self $self */
@@ -76,7 +79,7 @@ abstract class Model
     /**
      * @return ?static
      */
-    public static function findWhere(array $conditions, bool $explore=true, Database $database=null): ?self
+    public static function findWhere(array $conditions, bool $explore=true, ?Database $database=null): ?self
     {
         $database ??= Database::getInstance();
         /** @var self $self */
@@ -93,7 +96,7 @@ abstract class Model
     /**
      * @return ?static
      */
-    public static function find(mixed $primaryKeyValue, bool $explore=true, Database $database=null): ?self
+    public static function find(mixed $primaryKeyValue, bool $explore=true, ?Database $database=null): ?self
     {
         $database ??= Database::getInstance();
         /** @var self $self */
@@ -102,7 +105,7 @@ abstract class Model
         return $self::findWhere([$self::primaryKey() => $primaryKeyValue], $explore, $database);
     }
 
-    public static function findOrCreate(array $data, bool $explore=true, Database $database=null): mixed
+    public static function findOrCreate(array $data, bool $explore=true, ?Database $database=null): mixed
     {
         $database ??= Database::getInstance();
         return self::findWhere($data, $explore, $database) ?? self::insertArray($data, $database);

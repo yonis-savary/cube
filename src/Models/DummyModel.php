@@ -8,4 +8,9 @@ class DummyModel extends Model
     {
         return "sharp-dummy-model";
     }
+
+    public static function fields(): array
+    {
+        return [];
+    }
 }
