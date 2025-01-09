@@ -6,6 +6,9 @@ use YonisSavary\Cube\Core\Autoloader;
 use YonisSavary\Cube\Core\Component;
 use YonisSavary\Cube\Data\Bunch;
 use YonisSavary\Cube\Env\Cache;
+use YonisSavary\Cube\Http\Request;
+use YonisSavary\Cube\Http\Response;
+use YonisSavary\Cube\Http\StatusCode;
 use YonisSavary\Cube\Utils\Path;
 use YonisSavary\Cube\Web\Router\RouterConfiguration;
 use YonisSavary\Cube\Web\Router\Service;
@@ -18,6 +21,9 @@ class Router
     protected array $groupMiddlewares = [];
     protected array $groupExtras = [];
 
+    /**
+     * @var array<Route>
+     */
     protected array $routes = [];
 
     protected ?Cache $cache = null;
@@ -32,7 +38,13 @@ class Router
         $config ??= RouterConfiguration::resolve();
 
         if ($config->cached)
-            $this->cache = Cache::getInstance()->getSubCache("Cache")->getSubCache(md5(get_called_class()));
+        $this->cache = Cache::getInstance()->child("Routers")->child(md5(get_called_class()));
+
+        if ($middlewares = $config->commonMiddlewares)
+            $this->groupMiddlewares = $middlewares;
+
+        if ($prefix = $config->commonPrefix)
+            $this->groupUrlPrefix = $prefix;
 
         if ($config->loadControllers)
             $this->loadControllers();
@@ -48,14 +60,14 @@ class Router
     {
         Bunch::of(Autoloader::classesThatExtends(Controller::class))
         ->map(fn($class) => new $class)
-        ->map(fn(Controller $class) => $this->addRoutes(...$class->routes()));
+        ->forEach(fn(Controller $class) => $class->routes($this));
     }
 
     public function loadRoutesFiles(): void
     {
         Bunch::of(Autoloader::getRoutesFiles())
         ->forEach(function($file) {
-            /** @var Router $router Can be used in routes file */
+            /** @var Router `$router` variable can be used in routes file */
             $router = $this;
             include $file;
         });
@@ -63,8 +75,9 @@ class Router
 
     public function loadService(Service $service): void
     {
-        $this->addRoutes(...$service->routes());
+        $service->routes($this);
     }
+
 
 
     public function addRoutes(Route ...$routes): void
@@ -88,7 +101,7 @@ class Router
         string $prefix="/",
         array $middlewares=[],
         array $extras=[],
-        callable $callback
+        ?callable $callback=null
     ): void
     {
         $oldUrlPrefix = $this->groupUrlPrefix;
@@ -104,5 +117,23 @@ class Router
         $this->groupUrlPrefix = $oldUrlPrefix;
         $this->groupMiddlewares = $oldMiddlewares;
         $this->groupExtras = $oldExtras;
+    }
+
+    public function findMatchingRoute(Request $request): Route|false
+    {
+        return Bunch::of($this->routes)
+            ->first(fn(Route $route) => $route->match($request)) ?? false;
+    }
+
+    public function route(Request $request): Response
+    {
+        if (!$route = $this->findMatchingRoute($request))
+            return new Response(StatusCode::NOT_FOUND);
+
+        $response = $route($request);
+        if ($response === null)
+            return new Response();
+
+        return $response;
     }
 }
