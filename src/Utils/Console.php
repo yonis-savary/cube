@@ -2,6 +2,8 @@
 
 namespace YonisSavary\Cube\Utils;
 
+use Stringable;
+use YonisSavary\Cube\Data\Bunch;
 use YonisSavary\Cube\Logger\Logger;
 
 class Console
@@ -15,6 +17,16 @@ class Console
     const CYAN      = 6;
     const WHITE     = 7;
     const DEFAULT   = 9;
+
+    protected static ?Logger $logger = null;
+
+    public static function getLogger(): Logger
+    {
+        if (!self::$logger)
+            self::$logger = new Logger("console.csv");
+
+        return self::$logger;
+    }
 
     public static function saveCursor(): void
     {
@@ -31,19 +43,26 @@ class Console
         echo "[0m";
     }
 
-    public static function log(mixed ...$elements): void
+    public static function print(string|Stringable ...$elements): void
     {
-        if (str_contains(php_sapi_name(), "cli"))
-        {
-            foreach ($elements as $element)
-                echo $element . "\n";
-        }
-        else
-        {
-            foreach ($elements as $element)
-                Logger::getInstance()->info($element);
-        }
+        if (!str_contains(php_sapi_name(), "cli"))
+            return;
 
+        foreach ($elements as $element)
+            echo $element . "\n";
+    }
+
+    public static function log(string|Stringable ...$elements): void
+    {
+        self::print(...$elements);
+
+        $logger = self::getLogger();
+
+        Bunch::of($elements)
+        ->filter(fn($x) => $x !== "" && $x !== null)
+        //->map(fn($x) => preg_replace("/[^ ]+/", "", (string) $x))
+        ->map(fn($x) => preg_replace("/(?:[@-Z\\\\-_]|\\\\[[0-?]*[ -/]*[@-~])/", "", $x))
+        ->forEach(fn($x) => $logger->info($x));
     }
 
     public static function withColor(string $string, int $colorCode, bool $bright=false)
@@ -91,11 +110,12 @@ class Console
         for ($i=1; $i<=$elementsCount; $i++)
         {
             ob_start();
-            $callback($callback);
+            $element = $elements[$i-1];
+            $callback($element);
 
             if ($output = ob_get_clean())
             {
-                echo $output . "\n";
+                Console::log(...explode("\n", $output));
                 self::saveCursor();
             }
 
@@ -103,24 +123,29 @@ class Console
 
             $progress = floor(($barSize * $i) / $elementsCount);
             $remain = $barSize - $progress;
-            echo "[" . str_repeat("=", $progress) . str_repeat(" ", $remain) . "] $i / $elementsCount";
+            echo "[" . str_repeat("=", $progress-1) . ">" . str_repeat(" ", $remain) . "] $i / $elementsCount";
         }
 
         echo "\n";
     }
 
 
-    public static function table(array $data, array $columns=[]): void
+    public static function table(array $data, array $columns=[], bool $logToo=true): void
     {
+        $print = $logToo ?
+            fn($x) => Console::log($x):
+            fn($x) => print($x . "\n");
+
         if (!count($data))
         {
             if ($columns)
             {
                 $columnLine = join("  ", $columns);
-                Console::log($columnLine, str_repeat("-", strlen($columnLine)));
+                $print($columnLine);
+                $print(str_repeat("-", strlen($columnLine)));
                 return;
             }
-            Console::log("No item to display");
+            $print("No item to display");
             return;
         }
 
@@ -135,7 +160,7 @@ class Console
                 $columnsSizes[$i] = max($columnsSizes[$i], strlen($data[$i]));
         };
 
-        $printValueLine = function(array $data) use (&$columnsSizes) {
+        $printValueLine = function(array $data) use (&$columnsSizes, $print) {
             $line = "";
             for ($i=0; $i<count($data); $i++)
             {
@@ -143,7 +168,7 @@ class Console
                 $bitLength = strlen($bit);
                 $line .= $bit . str_repeat(" ", ($columnsSizes[$i] - $bitLength) + 2);
             }
-            Console::log($line);
+            $print($line);
             return strlen($line);
         };
 
@@ -155,7 +180,7 @@ class Console
 
 
         $length = $printValueLine($columns);
-        Console::log(str_repeat("-", $length));
+        $print(str_repeat("-", $length));
 
         foreach ($data as $row)
             $printValueLine($row);

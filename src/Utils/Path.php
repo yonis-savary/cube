@@ -3,6 +3,7 @@
 namespace YonisSavary\Cube\Utils;
 
 use YonisSavary\Cube\Core\Autoloader;
+use YonisSavary\Cube\Data\Bunch;
 
 class Path
 {
@@ -70,12 +71,28 @@ class Path
         $reference ??= Autoloader::getProjectPath();
         $reference = self::normalize($reference);
 
-        if (str_starts_with($path, $reference))
-            $path = substr($path, strlen($reference));
-
-        if (str_starts_with($path, '/'))
-            $path = substr($path, 1);
+        $path = Text::dontStartsWith($path, $reference);
+        $path = Text::dontStartsWith($path, "/");
 
         return self::normalize($path);
+    }
+
+    public static function pathToNamespace(string $directory): string
+    {
+        $loader = Autoloader::getClassLoader();
+
+        $relDirectory = self::toRelative($directory);
+        $prefixes = Bunch::of($loader->getPrefixesPsr4());
+        foreach ($prefixes as $namespace => $path)
+        {
+            if ($relDirectory === $path)
+                return $namespace;
+        }
+
+        $fallback = $relDirectory;
+        $fallback = preg_replace_callback('/[a-z]-[a-z]/', fn($m) => $m[1] . strtoupper($m[2]), $fallback);
+        $fallback = preg_replace_callback('/[a-z]\\/[a-z]/', fn($m) => $m[1] . strtoupper($m[2]), $fallback);
+        $fallback = str_replace("/", "\\", $fallback);
+        return $fallback;
     }
 }
