@@ -39,6 +39,19 @@ class Bunch
         return Bunch::of(array_keys($assoc));
     }
 
+    public static function unzip(array $assoc): self
+    {
+        $data = [];
+        $keys = array_keys($assoc);
+        $values = array_values($assoc);
+        $count = count($keys);
+
+        for ($i=0; $i<$count; $i++)
+            $data[] = [$keys[$i], $values[$i]];
+
+        return self::of($data);
+    }
+
     public function __construct(array $initialData=[])
     {
         $this->data = $initialData;
@@ -195,6 +208,12 @@ class Bunch
     public function count(): int
     {
         return count($this->data);
+    }
+
+    public function shuffle(): self
+    {
+        shuffle($this->data);
+        return $this;
     }
 
     public function reduce(callable $callback, mixed $start=0): mixed
