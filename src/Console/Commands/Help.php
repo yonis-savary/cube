@@ -15,15 +15,22 @@ class Help extends Command
         return "Print the list of available commands";
     }
 
+    public function getScope(): string
+    {
+        return "cube";
+    }
+
     public function execute(Args $args): int
     {
-        Console::log("Here is the list of the command you can launch", "");
+        Console::print("Here is the list of the command you can launch", "");
         Console::table(
             Bunch::of(Autoloader::classesThatExtends(Command::class))
             ->map(fn($class) => new $class)
-            ->map(fn(Command $command) => [$command->getName(), $command->getHelp()])
+            ->map(fn(Command $command) => [Console::withBlueColor($command->getFullIdentifier(), true), $command->getHelp()])
+            ->sort(fn($x) => $x[0])
             ->get(),
-            ["Name", "Description"]
+            [Console::withBlueColor("Name"), "Description"],
+            false
         );
 
         return 0;

@@ -4,7 +4,7 @@ namespace YonisSavary\Cube\Console;
 
 abstract class Command
 {
-    public static function call(Args $args=null)
+    public static function call(?Args $args=null)
     {
         $args ??= new Args;
         $command = new (get_called_class());

@@ -13,6 +13,11 @@ class HelloWorld extends Command
         return "Simply prints \"Hello World !\" in the console";
     }
 
+    public function getScope(): string
+    {
+        return "cube";
+    }
+
     public function execute(Args $args): int
     {
         Console::log("Hello World !");

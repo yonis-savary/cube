@@ -2,7 +2,7 @@
 
 namespace YonisSavary\Cube\Console;
 
-use YonisSavary\Cube\Data\Bunch;
+use YonisSavary\Cube\Utils\Text;
 
 class Args
 {
@@ -16,9 +16,24 @@ class Args
         foreach ($argv as $arg)
         {
             if (str_starts_with($arg, "-"))
-                $currentArg = $arg;
+            {
+                if (str_contains($arg, "="))
+                {
+                    list($param, $value) = explode("=", $arg);
+
+                    $args->addValue($param, $value);
+                    $currentArg = null;
+                }
+                else
+                {
+                    $currentArg = $arg;
+                    $args->addParameter($arg);
+                }
+            }
             else
+            {
                 $args->addValue($currentArg, $arg);
+            }
         }
 
         return $args;
@@ -40,6 +55,11 @@ class Args
         return $string;
     }
 
+    public function addParameter(?string $parameter): void
+    {
+        $this->values[$parameter] ??= [];
+    }
+
     public function addValue(?string $parameter, string $value): self
     {
         $this->values[$parameter] ??= [];
@@ -48,33 +68,33 @@ class Args
         return $this;
     }
 
-    protected function makeStartWith(string &$param, string $mustStartWith): void
+    public function has(?string $short=null, ?string $long=null): bool
     {
-        if (!str_starts_with($param, $mustStartWith))
-            $param = $mustStartWith . $param;
-    }
-
-    public function has(string $short, string $long): bool
-    {
-        $this->makeStartWith($short, "-");
-        $this->makeStartWith($long, "--");
+        $short = Text::startsWith($short ?? "", "-");
+        $long = Text::startsWith($long ?? "", "--");
 
         return array_key_exists($short, $this->values) ||
             array_key_exists($long, $this->values);
     }
 
-    public function getValues(string $short=null, string $long=null): array
+    public function getValues(?string $short=null, ?string $long=null): array
     {
-        $this->makeStartWith($short, "-");
-        $this->makeStartWith($long, "--");
+        if ($short === null && $long === null)
+            return $this->values[null];
+
+        $short ??= "";
+        $long ??= "";
+
+        $short = Text::startsWith($short, "-");
+        $long = Text::startsWith($long, "--");
 
         return array_merge(
             $this->values[$short] ?? [],
             $this->values[$long] ?? [],
         );
     }
-    public function getValue(string $short=null, string $long=null, mixed $default=null): mixed
+    public function getValue(?string $short=null, ?string $long=null, mixed $default=null): mixed
     {
-        return $this->getValues($short, $long) ?? $default;
+        return ($this->getValues($short, $long)[0]) ?? $default;
     }
 }
