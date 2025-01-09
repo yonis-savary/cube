@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units;
+namespace YonisSavary\Cube\Tests\Units\Utils;
 
 use PHPUnit\Framework\TestCase;
 use YonisSavary\Cube\Data\Bunch;
@@ -38,6 +38,15 @@ class BunchTest extends TestCase
     {
         $this->assertEquals(["A", "B", "C"], Bunch::fromKeys(["A" => 0, "B" => 1, "C" => 2])->get());
         $this->assertEquals([0, 1, 2], Bunch::fromKeys([455, 1024, 3002])->get());
+    }
+
+    public function test_unzip()
+    {
+        $this->assertEquals([
+            ["A", 0],
+            ["B", 1],
+            ["C", 2]
+        ], Bunch::unzip(["A" => 0, "B" => 1, "C" => 2])->get());
     }
 
     public function test_clone()

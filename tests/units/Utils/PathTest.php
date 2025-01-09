@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units;
+namespace YonisSavary\Cube\Tests\Units\Utils;
 
 use PHPUnit\Framework\TestCase;
 use YonisSavary\Cube\Utils\Path;
