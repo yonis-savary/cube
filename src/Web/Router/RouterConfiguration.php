@@ -13,11 +13,19 @@ class RouterConfiguration extends ConfigurationElement
      */
     public readonly array $services;
 
+    /**
+     * @param bool $cached Do the router should cache routes
+     * @param bool $loadControllers Load routes from Controller classes ?
+     * @param bool $loadRoutesFiles Load PHP Files inside your app(s) Routes directory ?
+     * @param array<String|Service> Additionnal services to load (Either classes name or instances)
+     */
     public function __construct(
         public readonly bool $cached=false,
         public readonly bool $loadControllers=true,
         public readonly bool $loadRoutesFiles=true,
-        array $services=[]
+        array $services=[],
+        public readonly array $commonMiddlewares=[],
+        public readonly ?string $commonPrefix=null,
     )
     {
         foreach ($services as &$service)

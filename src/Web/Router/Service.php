@@ -2,12 +2,11 @@
 
 namespace YonisSavary\Cube\Web\Router;
 
-use YonisSavary\Cube\Web\Route;
+use YonisSavary\Cube\Web\Router;
 
 abstract class Service
 {
     public function __construct(){}
 
-    /** @var array<Route> */
-    abstract public function routes(): array;
+    abstract public function routes(Router $router): void;
 }
