@@ -8,6 +8,7 @@ use YonisSavary\Cube\Env\Storage;
 
 class Cache
 {
+    const PERMANENT = 0;
     const SECOND = 1;
     const MINUTE = self::SECOND * 60;
     const HOUR   = self::MINUTE * 60;
@@ -19,11 +20,11 @@ class Cache
 
     protected Storage $storage;
     /** @var array<string,Element> */
-    protected array $index;
+    protected array $index = [];
 
     public static function getDefaultInstance(): static
     {
-        return new self(Storage::getInstance()->getSubStorage("Cache"));
+        return new self(Storage::getInstance()->child("Cache"));
     }
 
     public function __construct(Storage $storage)
@@ -74,13 +75,41 @@ class Cache
             $element->save($this->storage);
     }
 
-    public function getSubCache(string $name): self
+    /**
+     * Get another Cache instance made from a subdirectory inside the current instance directory
+     */
+    public function child(string $name): self
     {
-        return new Cache($this->storage->getSubStorage($name));
+        return new Cache($this->storage->child($name));
     }
 
     public function __destruct()
     {
         $this->save();
+    }
+
+
+    /**
+     * Destroy every element of the cache
+     */
+    public function clear()
+    {
+        foreach ($this->index as $object)
+            $object->destroy();
+
+        $this->index = [];
+    }
+
+    /**
+     * Alias of `Cache::clear()`
+     */
+    public function flush()
+    {
+        $this->clear();
+    }
+
+    public function getStorage(): Storage
+    {
+        return $this->storage;
     }
 }

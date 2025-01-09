@@ -123,4 +123,8 @@ abstract class DiskDriver
     }
 
 
+    public function getParentPath(string $path): string
+    {
+        return Path::join($path, "..");
+    }
 }

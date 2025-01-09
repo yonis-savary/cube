@@ -5,6 +5,7 @@ namespace YonisSavary\Cube\Env\Storage;
 use Throwable;
 use YonisSavary\Cube\Data\Bunch;
 use YonisSavary\Cube\Logger\Logger;
+use YonisSavary\Cube\Utils\Path;
 
 class LocalDisk extends DiskDriver
 {
@@ -80,5 +81,10 @@ class LocalDisk extends DiskDriver
         return Bunch::of(scandir($path))
             ->filter(fn($e) => !in_array($e, [".", ".."]))
             ->get();
+    }
+
+    public function getParentPath(string $path): string
+    {
+        return realpath(Path::join($path, ".."));
     }
 }

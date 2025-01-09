@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Env;
+namespace YonisSavary\Cube\Env\Session;
 
 use YonisSavary\Cube\Configuration\ConfigurationElement;
 use YonisSavary\Cube\Core\Autoloader;

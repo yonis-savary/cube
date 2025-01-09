@@ -2,9 +2,9 @@
 
 namespace YonisSavary\Cube\Env;
 
-use InvalidArgumentException;
 use RuntimeException;
 use YonisSavary\Cube\Core\Component;
+use YonisSavary\Cube\Env\Session\SessionConfiguration;
 
 class Session
 {

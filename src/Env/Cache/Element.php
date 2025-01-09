@@ -2,11 +2,14 @@
 
 namespace YonisSavary\Cube\Env\Cache;
 
+use YonisSavary\Cube\Env\Cache;
 use YonisSavary\Cube\Env\Storage;
 use YonisSavary\Cube\Logger\Logger;
 
 class Element
 {
+    protected ?string $contentHash = null;
+
     public static function fromFile(string $file): ?Element
     {
         $filename = pathinfo($file, PATHINFO_FILENAME);
@@ -22,7 +25,7 @@ class Element
         $now = time();
         $expireDate = $creationDate + $timeToLive;
 
-        if ($now < $expireDate)
+        if (($timeToLive != Cache::PERMANENT) && ($now < $expireDate))
         {
             unlink($file);
             return null;
@@ -40,7 +43,10 @@ class Element
         protected ?int $creationDate=null,
         protected ?string $file=null
     )
-    {}
+    {
+        if ($file)
+            $this->contentHash = md5_file($file);
+    }
 
     public function setValue(mixed $value)
     {
@@ -70,11 +76,22 @@ class Element
 
     public function save(Storage $directory)
     {
+        $newSerialized = serialize($this->value);
+        $newMD5 = md5($newSerialized);
+        $oldMD5 = $this->contentHash;
+        $hashIsDifferent = (!$oldMD5) || ($oldMD5 != $newMD5);
+
+        $oldName = $this->file;
+        $newName = $this->creationDate . "_" . $this->timeToLive . "_" . $this->key;
+        $filenameIsDifferent = (!$oldName) || ($oldName != $newName);
+
+        $needRewrite = $hashIsDifferent || $filenameIsDifferent;
+        if (!$needRewrite)
+            return;
+
         $this->destroy();
 
-        $newName = $this->creationDate . "_" . $this->timeToLive . "_" . $this->key;
-
-        if ($directory->write($newName, serialize($this->value)))
+        if ($directory->write($newName, $newSerialized))
             $this->file = $directory->path($newName);
         else
             Logger::getInstance()->error("Could not write file [$newName] in directory [". $directory->getRoot() ."]");

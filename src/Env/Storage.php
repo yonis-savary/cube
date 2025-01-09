@@ -20,8 +20,7 @@ class Storage extends DiskDriver
 
     public static function getDefaultInstance(): static
     {
-        $config = StorageConfiguration::resolve();
-        return new self($config->rootPath, $config->driver);
+        return new self(Path::relative("Storage"), new LocalDisk);
     }
 
 
@@ -118,9 +117,15 @@ class Storage extends DiskDriver
         return $this->driver->exploreDirectories($this->path($path));
     }
 
-    public function getSubStorage(string $path): self
+    public function child(string $path): self
     {
         return new self($this->path($path), $this->driver);
+    }
+
+    public function parent(): self
+    {
+        $parentPath = $this->driver->getParentPath($this->getRoot());
+        return new self($parentPath, $this->driver);
     }
 
 }
