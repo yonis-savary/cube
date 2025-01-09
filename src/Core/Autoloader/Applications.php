@@ -12,10 +12,12 @@ class Applications extends ConfigurationElement
     public function __construct(
         string ...$paths
     ){
-        foreach ($paths as $path)
+        foreach ($paths as &$path)
         {
             if (!is_dir($path))
                 $path = Path::relative($path);
         }
+
+        $this->paths = $paths;
     }
 }
