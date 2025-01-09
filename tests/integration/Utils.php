@@ -15,7 +15,7 @@ class Utils
     public static function getDummyApplicationStorage(): Storage
     {
         $integrationApp = self::getIntegrationAppStorage();
-        $storage = $integrationApp->getSubStorage(uniqid("App"));
+        $storage = $integrationApp->child(uniqid("App"));
 
         return $storage;
     }

@@ -48,6 +48,6 @@ class InstallationTest extends TestCase
         $this->assertStringStartsWith("Hello World !", $proc->getOutput());
 
 
-        Utils::removeApplicationStorage($storage);
+        //Utils::removeApplicationStorage($storage);
     }
 }

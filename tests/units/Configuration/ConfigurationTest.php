@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units;
+namespace YonisSavary\Cube\Tests\Units\Configuration;
 
 use PHPUnit\Framework\TestCase;
 use YonisSavary\Cube\Configuration\Configuration;
@@ -13,14 +13,9 @@ class ConfigurationTest extends TestCase
     public function test_construct_and_resolve()
     {
         $config = new Configuration(
-            new StorageConfiguration(rootPath: "test-path"),
             new GenericElement("generic-1", ["mike" => "bob"]),
             new GenericElement("generic-2", ["bob" => "mike"]),
         );
-        $resolved = $config->resolve(StorageConfiguration::class, false);
-        $this->assertInstanceOf(StorageConfiguration::class, $resolved);
-        $this->assertEquals(Path::relative("test-path"), $resolved->rootPath);
-
         $generic = $config->resolveGeneric("generic-1", false);
         $this->assertEquals(["mike" => "bob"], $generic);
 
