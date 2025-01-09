@@ -90,7 +90,7 @@ class Query
         return $existingField->table;
     }
 
-    public function where(string $field, mixed $value, string $operator="=", string $table=null): self
+    public function where(string $field, mixed $value, string $operator="=", ?string $table=null): self
     {
         $table ??= $this->getFieldTable($field);
 
@@ -119,7 +119,7 @@ class Query
         return $this;
     }
 
-    public function selectExpression(string $expression, string $alias=null): self
+    public function selectExpression(string $expression, ?string $alias=null): self
     {
         $this->selectFields[] = new Field(null, null, $expression, $alias);
         return $this;
@@ -131,19 +131,19 @@ class Query
         return $this;
     }
 
-    public function limit(int $limit=null, int $offset=null): self
+    public function limit(?int $limit=null, ?int $offset=null): self
     {
         $this->limit = new Limit($limit, $offset);
         return $this;
     }
 
-    public function order(string $fieldOrAlias=null, string $type="DESC", string $table=null): self
+    public function order(?string $fieldOrAlias=null, string $type="DESC", ?string $table=null): self
     {
         $this->orders[] = new Order($fieldOrAlias, $type, $table);
         return $this;
     }
 
-    public function set(string $field, mixed $newValue, string $table=null): self
+    public function set(string $field, mixed $newValue, ?string $table=null): self
     {
         $table ??= $this->getFieldTable($field);
         $this->updateFields[] = new UpdateField($table, $field, $newValue);
@@ -214,7 +214,7 @@ class Query
         return $results;
     }
 
-    public function toBunch(Database $database=null): Bunch
+    public function toBunch(?Database $database=null): Bunch
     {
         $database ??= Database::getInstance();
         return Bunch::of($this->fetch());
