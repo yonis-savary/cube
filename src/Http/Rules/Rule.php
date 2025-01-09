@@ -110,7 +110,7 @@ class Rule extends AbstractRule
     /**
      * Fetch a model from its primary key value
      */
-    public static function model(string $modelClass, bool $explore=true, Database $database=null): self
+    public static function model(string $modelClass, bool $explore=true, ?Database $database=null): self
     {
         if (!Autoloader::extends($modelClass, Model::class))
             throw new InvalidArgumentException("\$modelClass must extends Model");
@@ -145,7 +145,7 @@ class Rule extends AbstractRule
     /**
      * Check if the value exists in a table as primary key
      */
-    public function isInTable(string $modelClass, Database $database=null)
+    public function isInTable(string $modelClass, ?Database $database=null)
     {
         if (!Autoloader::extends($modelClass, Model::class))
             throw new InvalidArgumentException("\$modelClass must extends Model");

@@ -13,11 +13,11 @@ class Upload
     const GB = 1024 * self::MB;
 
     const PHP_ERROR_EXPLAINATION = [
-        UPLOAD_ERR_PARTIAL => 'UPLOAD_ERR_PARTIAL: File only partially uploaded',
-        UPLOAD_ERR_NO_FILE => 'UPLOAD_ERR_NO_FILE: No file was uploaded',
-        UPLOAD_ERR_EXTENSION => 'UPLOAD_ERR_EXTENSION: File upload stopped by a PHP extension',
-        UPLOAD_ERR_FORM_SIZE => 'UPLOAD_ERR_FORM_SIZE: File exceeds MAX_FILE_SIZE in the HTML form',
-        UPLOAD_ERR_INI_SIZE => 'UPLOAD_ERR_INI_SIZE: File exceeds upload_max_filesize in php.ini',
+        UPLOAD_ERR_PARTIAL    => 'UPLOAD_ERR_PARTIAL: File only partially uploaded',
+        UPLOAD_ERR_NO_FILE    => 'UPLOAD_ERR_NO_FILE: No file was uploaded',
+        UPLOAD_ERR_EXTENSION  => 'UPLOAD_ERR_EXTENSION: File upload stopped by a PHP extension',
+        UPLOAD_ERR_FORM_SIZE  => 'UPLOAD_ERR_FORM_SIZE: File exceeds MAX_FILE_SIZE in the HTML form',
+        UPLOAD_ERR_INI_SIZE   => 'UPLOAD_ERR_INI_SIZE: File exceeds upload_max_filesize in php.ini',
         UPLOAD_ERR_NO_TMP_DIR => 'UPLOAD_ERR_NO_TMP_DIR: Temporary folder not found',
         UPLOAD_ERR_CANT_WRITE => 'UPLOAD_ERR_CANT_WRITE: Unknown upload error',
     ];
@@ -70,7 +70,7 @@ class Upload
      * @param string $newName New name of the file, a name is generated if null is given
      * @return string|false The new file path on success, `false` on fail, see `getFailReason()` to get the reason behind a failure
      */
-    public function move(string|Storage|null $destination=null, string $newName=null): string|false
+    public function move(string|Storage|null $destination=null, ?string $newName=null): string|false
     {
         if ($movedFile = $this->newPath)
             return $movedFile;
@@ -79,7 +79,7 @@ class Upload
 
         $destination ??= "Uploads";
         if (is_string($destination))
-            $destination = Storage::getInstance()->getSubStorage($destination);
+            $destination = Storage::getInstance()->child($destination);
 
         $newPath = $destination->path($newName);
 

@@ -4,6 +4,7 @@ namespace YonisSavary\Cube\Http;
 
 use Stringable;
 use YonisSavary\Cube\Data\Bunch;
+use YonisSavary\Cube\Utils\Text;
 use YonisSavary\Cube\Web\Route;
 
 class Request extends HttpMessage
@@ -116,9 +117,13 @@ class Request extends HttpMessage
 
         $uploads = self::getUploadsArray($_FILES);
 
+        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+        if ($uri != "/")
+            $uri = Text::dontEndsWith($uri, "/");
+
         $request = new self (
             $_SERVER['REQUEST_METHOD'] ?? php_sapi_name(),
-            $_SERVER['REQUEST_URI'] ?? '',
+            $uri,
             $get,
             $post,
             $headers,
@@ -153,8 +158,7 @@ class Request extends HttpMessage
     public function upload(string $inputName): ?Upload
     {
         return Bunch::of($this->uploads)
-            ->first(fn(Upload $upload) => $upload->inputName === $inputName)
-            ->get();
+            ->first(fn(Upload $upload) => $upload->inputName === $inputName);
     }
 
     /**
