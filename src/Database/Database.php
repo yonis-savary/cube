@@ -46,6 +46,7 @@ class Database
                 "sqlite::memory:";
 
             $this->connection = new PDO($dsn);
+            $this->exec("PRAGMA foreign_keys = ON");
         }
         else
         {
@@ -205,9 +206,8 @@ class Database
      * Cannot be used with queries that return a result like SELECT
      * @param string $query SQL Query to execute
      * @param array $context Data for the query (values replaces placeholders `{}`)
-     * @param int $fetchMode PDO Fetch mode constant
      */
-    public function exec(string $query, array $context=[], int $fetchMode=PDO::FETCH_ASSOC): int
+    public function exec(string $query, array $context=[]): int
     {
         $queryWithContext = $this->build($query, $context);
         return $this->connection->exec($queryWithContext);
@@ -227,6 +227,11 @@ class Database
         {
             return false;
         }
+    }
+
+    public function missingTable(string $table): bool
+    {
+        return !$this->hasTable($table);
     }
 
     /**

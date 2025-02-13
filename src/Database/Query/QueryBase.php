@@ -20,7 +20,7 @@ class QueryBase
 
     public readonly string $table;
     public readonly string $type;
-    public readonly string $model;
+    public string $model;
 
     public function __construct(string $type, string $table, string $model)
     {

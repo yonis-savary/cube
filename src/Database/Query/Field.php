@@ -4,6 +4,7 @@ namespace YonisSavary\Cube\Database\Query;
 
 use InvalidArgumentException;
 use YonisSavary\Cube\Models\DummyModel;
+use YonisSavary\Cube\Models\ModelField;
 
 class Field
 {
@@ -12,7 +13,8 @@ class Field
         public readonly ?string $field=null,
         public readonly ?string $expression=null,
         public readonly ?string $alias=null,
-        public readonly ?string $model=DummyModel::class
+        public readonly ?string $model=DummyModel::class,
+        public readonly ?ModelField $modelField=null
     )
     {
         if ($expression === null && $table === null)

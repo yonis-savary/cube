@@ -7,7 +7,7 @@ use YonisSavary\Cube\Database\Query;
 
 interface BuilderInterface
 {
-    /** @return string|array<string> */
+    /** @return string|string[] */
     public function getSupportedPDODriver(): string|array;
 
     public function build(Query $query, Database $database): string;

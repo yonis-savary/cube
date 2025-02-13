@@ -21,31 +21,35 @@ use YonisSavary\Cube\Database\Query\SelectField;
 use YonisSavary\Cube\Database\Query\UpdateField;
 use YonisSavary\Cube\Models\DummyModel;
 use YonisSavary\Cube\Models\Model;
+use YonisSavary\Cube\Models\ModelField;
 
+/**
+ * @template TModel
+ */
 class Query
 {
     public QueryBase $base;
 
-    /** @var array<InsertValues> */
+    /** @var InsertValues[] */
     public array $insertValues = [];
 
     public InsertField $insertFields;
 
-    /** @var array<UpdateField> */
+    /** @var UpdateField[] */
     public array $updateFields = [];
 
-    /** @var array<Field> */
+    /** @var Field[] */
     public array $selectFields = [];
-    /** @var array<Field> */
+    /** @var Field[] */
     public array $knownFields = [];
 
-    /** @var array<Join> */
+    /** @var Join[] */
     public array $joins = [];
 
     /** @var array<FieldComparaison|FieldCondition|RawCondition> */
     public array $conditions = [];
 
-    /** @var array<Order> */
+    /** @var Order[] */
     public array $orders = [];
 
     public ?Limit $limit = null;
@@ -75,10 +79,19 @@ class Query
         $this->base = new QueryBase($type, $table, $model);
     }
 
+    public function withBaseModel(string $model): self
+    {
+        if (!Autoloader::extends($model, Model::class))
+            throw new InvalidArgumentException("Given \$model must extends Model");
+
+        $this->base->model = $model;
+        return $this;
+    }
+
     protected function getFieldTable(string $field): ?string
     {
         if (!count($this->joins))
-            return null;
+            return $this->base->table;
 
         $existingField = Bunch::of($this->selectFields)
             ->push(...$this->knownFields)
@@ -93,6 +106,14 @@ class Query
     public function where(string $field, mixed $value, string $operator="=", ?string $table=null): self
     {
         $table ??= $this->getFieldTable($field);
+
+        if (is_array($value))
+        {
+            if ($operator === "=")
+                $operator = "IN";
+            if ($operator === "<>")
+                $operator = "NOT IN";
+        }
 
         $this->conditions[] = new FieldCondition($table, $field, $operator, $value);
         return $this;
@@ -111,11 +132,11 @@ class Query
         return $this;
     }
 
-    public function selectField(string $field, ?string $table=null, ?string $alias=null): self
+    public function selectField(string $field, ?string $table=null, ?string $alias=null, string $model=DummyModel::class, ?ModelField $modelField=null): self
     {
         $table ??= $this->getFieldTable($field);
 
-        $this->selectFields[] = new Field($table, $field, null, $alias);
+        $this->selectFields[] = new Field($table, $field, null, $alias, $model, $modelField);
         return $this;
     }
 
@@ -170,12 +191,15 @@ class Query
         return $builder->build($this, $database);
     }
 
+    /**
+     * @return array<TModel>
+     */
     public function fetch(?Database $database=null): array
     {
         $database ??= Database::getInstance();
         $query = $this->build($database);
 
-        $data = $database->query($query, [], PDO::FETCH_ASSOC);
+        $data = $database->query($query, [], PDO::FETCH_NUM);
 
         $baseModel = $this->base->model;
 
@@ -185,27 +209,28 @@ class Query
             /** @var Model $compiledRow */
             $compiledRow = new $baseModel;
 
+            $fieldCount = 0;
             foreach ($this->selectFields as $field)
             {
                 /** @var Model $ref */
                 $ref = &$compiledRow;
 
-                $fieldName = $field->field;
-                $alias = $field->alias;
+                $alias = $field->alias ?? ($field->table . "." . $field->field);
                 $model = $field->model;
 
-                if (preg_match("/^(\w+&)+\w+\.\w+$/", $alias))
-                {
-                    list($scope, $column) = explode(".", $alias);
-                    foreach (explode("&", $scope) as $subscope)
-                        $ref = &$ref->getReference($subscope, $model);
+                list($scope, $column) = explode(".", $alias);
+                $scope = explode("&", $scope);
+                array_shift($scope);
+                foreach ($scope as $subscope)
+                    $ref = &$ref->getReference($subscope, $model);
 
-                    $ref->data[$column] = $row[$alias];
-                }
-                else
-                {
-                    $ref->data[$fieldName] = $row[$fieldName];
-                }
+
+                $value = $row[$fieldCount];
+                if ($modelField = $field->modelField)
+                    $value = $modelField->parse($value);
+
+                $ref->$column = $value;
+                $fieldCount++;
             }
 
             $results[] = $compiledRow;
@@ -214,6 +239,17 @@ class Query
         return $results;
     }
 
+    /**
+     * @return TModel
+     */
+    public function first(): ?Model
+    {
+        return $this->limit(1)->fetch()[0] ?? null;
+    }
+
+    /**
+     * @return Bunch<int,TModel>
+     */
     public function toBunch(?Database $database=null): Bunch
     {
         $database ??= Database::getInstance();

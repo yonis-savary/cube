@@ -8,6 +8,7 @@ use YonisSavary\Cube\Database\Query;
 use YonisSavary\Cube\Database\Query\Field;
 use YonisSavary\Cube\Database\Query\FieldComparaison;
 use YonisSavary\Cube\Database\Query\FieldCondition;
+use YonisSavary\Cube\Database\Query\InsertField;
 use YonisSavary\Cube\Database\Query\InsertValues;
 use YonisSavary\Cube\Database\Query\Join;
 use YonisSavary\Cube\Database\Query\Order;
@@ -15,14 +16,14 @@ use YonisSavary\Cube\Database\Query\QueryBase;
 use YonisSavary\Cube\Database\Query\RawCondition;
 use YonisSavary\Cube\Database\Query\UpdateField;
 
-class MySQL implements BuilderInterface
+class SQLite extends MySQL
 {
     protected Database $database;
     protected Query $query;
 
     public function getSupportedPDODriver(): string|array
     {
-        return ["mysql"];
+        return ["sqlite"];
     }
 
     public function getTable(string $table): string
@@ -91,8 +92,7 @@ class MySQL implements BuilderInterface
         return
             Bunch::of($this->query->updateFields)
             ->map(function(UpdateField $field) {
-                return sprintf("`%s`.%s = %s",
-                    $field->table,
+                return sprintf("%s = %s",
                     $field->field,
                     $this->getSQLValue($field->newValue)
                 );
