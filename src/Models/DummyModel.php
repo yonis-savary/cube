@@ -13,4 +13,9 @@ class DummyModel extends Model
     {
         return [];
     }
+
+    public static function relations(): array
+    {
+        return [];
+    }
 }

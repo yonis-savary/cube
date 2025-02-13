@@ -2,17 +2,19 @@
 
 namespace YonisSavary\Cube\Models;
 
+use DateTime;
 use InvalidArgumentException;
+use YonisSavary\Cube\Http\Rules\Rule;
 
 class ModelField
 {
-    const STRING = "STRING";
-    const INTEGER = "INTEGER";
-    const FLOAT = "FLOAT";
-    const BOOLEAN = "BOOLEAN";
-    const DECIMAL = "DECIMAL";
-    const DATE = "DATE";
-    const DATETIME = "DATETIME";
+    const STRING    = "STRING";
+    const INTEGER   = "INTEGER";
+    const FLOAT     = "FLOAT";
+    const BOOLEAN   = "BOOLEAN";
+    const DECIMAL   = "DECIMAL";
+    const DATE      = "DATE";
+    const DATETIME  = "DATETIME";
     const TIMESTAMP = "TIMESTAMP";
 
     const ALLOWED_TYPES = [
@@ -28,12 +30,12 @@ class ModelField
 
     public string $type = self::STRING;
     public bool $nullable = true;
-    public mixed $default = null;
+    public bool $hasDefault = true;
 
-    public ?string $referenceTable = null ;
+    public string|Model|null $referenceModel = null ;
     public ?string $referenceField = null ;
 
-    public bool $autoincrement = false;
+    public bool $autoIncrement = false;
 
     public function __construct(
         public readonly string $name
@@ -50,7 +52,7 @@ class ModelField
 
     public function autoIncrement(): self
     {
-        $this->autoincrement = true;
+        $this->autoIncrement = true;
         return $this;
     }
 
@@ -60,16 +62,74 @@ class ModelField
         return $this;
     }
 
-    public function default(mixed $default): self
+    public function hasDefault(bool $hasDefault=true): self
     {
-        $this->default = $default;
+        $this->hasDefault = $hasDefault;
         return $this;
     }
 
     public function references(string $model, string $field): self
     {
-        $this->referenceTable = $model;
+        $this->referenceModel = $model;
         $this->referenceField = $field;
         return $this;
+    }
+
+    public function isInsertable(): bool
+    {
+        return true;
+    }
+
+    public function toPHPExpression(): string
+    {
+        return
+            "(new ModelField('". $this->name ."'))" .
+            "->type('". $this->type ."')" .
+            ($this->autoIncrement ? "->autoIncrement()" : '') .
+            "->nullable(" . (($this->nullable && (!$this->autoIncrement)) ? "true": "false") . ")" .
+            "->hasDefault(" . ($this->hasDefault ? 'true': 'false') . ")" .
+            ($this->referenceModel ? "->references(" . $this->referenceModel . "::class,'" . $this->referenceField . "')" : '');
+    }
+
+
+    public function parse(mixed $value): mixed
+    {
+        if ($value === null)
+            return null;
+
+        switch ($this->type)
+        {
+            case self::INTEGER:
+                return (int) $value;
+            case self::FLOAT:
+                return (float) $value;
+            case self::BOOLEAN:
+                return in_array(strtolower($value), ['true', '1']);
+            case self::DATE:
+            case self::DATETIME:
+                return new DateTime($value);
+            case self::TIMESTAMP:
+                return $value;
+            default:
+                return $value;
+        }
+    }
+
+    public function toRule(): Rule
+    {
+        $nullable = $this->nullable;
+        $baseRule = match($this->type) {
+            self::STRING => Rule::string(false, $nullable),
+            self::INTEGER => Rule::integer($nullable),
+            self::FLOAT => Rule::float($nullable),
+            self::BOOLEAN => Rule::boolean(),
+            self::DECIMAL => Rule::string(true, $nullable),
+            self::DATE => Rule::date(),
+            self::DATETIME => Rule::datetime(),
+            self::TIMESTAMP => Rule::datetime(),
+            default => Rule::string(true, $nullable),
+        };
+
+        return $baseRule;
     }
 }

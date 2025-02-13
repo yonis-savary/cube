@@ -17,7 +17,7 @@ class ModelGenerator
 
     protected Database $database;
 
-    public function processDatabase(Database $database, Storage $destination)
+    public function processDatabase(Database $database, Storage $destination, ?string $forceNamespace=null): array
     {
         $driver = $database->getDriver();
 
@@ -31,10 +31,14 @@ class ModelGenerator
         /** @var AbstractDatabaseAdapter $adapter */
         $adapter->process();
 
-        $namespace = Path::pathToNamespace($destination->getRoot());
+        $namespace = $forceNamespace ?? Path::pathToNamespace($destination->getRoot());
 
-        $constraints = $adapter->getConstraints();
+        $files = [];
+
+        $relations = $adapter->getRelations();
         foreach($adapter->getTables() as $table)
-            $table->generateInto($destination, $namespace, $constraints);
+            $files[] = $table->generateInto($destination, $namespace, $relations);
+
+        return $files;
     }
 }
