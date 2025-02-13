@@ -3,3 +3,4 @@
 /.phpunit.result.cache
 /tests/integration-apps
 /Storage
+/tests/Storage

@@ -2,22 +2,93 @@
 
 namespace YonisSavary\Cube\Tests\Integration;
 
+use YonisSavary\Cube\Data\Bunch;
+use YonisSavary\Cube\Database\Database;
+use YonisSavary\Cube\Database\Migration\Migration;
 use YonisSavary\Cube\Env\Storage;
+use YonisSavary\Cube\Logger\Logger;
 use YonisSavary\Cube\Utils\Path;
+use YonisSavary\Cube\Utils\Shell;
 
 class Utils
 {
+    protected static ?Storage $storage = null;
+
     public static function getIntegrationAppStorage(): Storage
     {
         return new Storage(Path::normalize(__DIR__ . "/../integration-apps"));
     }
 
+    public static function getIntegrationDatabase(): Database
+    {
+        $cubeRoot = Path::normalize(__DIR__ . "/../..");
+
+        $datbase = new Database();
+
+        $migrationsFiles = (new Storage($cubeRoot))->child("tests/root/App/Migrations")->files();
+        Bunch::of($migrationsFiles)
+        ->map(fn(string $file) => include $file)
+        ->forEach(fn(Migration $migration) => $datbase->exec($migration->install));
+
+        return $datbase;
+    }
+
     public static function getDummyApplicationStorage(): Storage
     {
-        $integrationApp = self::getIntegrationAppStorage();
-        $storage = $integrationApp->child(uniqid("App"));
+        if (self::$storage)
+            return self::$storage;
 
-        return $storage;
+        $logger = Logger::getInstance();
+
+        $integrationApp = self::getIntegrationAppStorage();
+
+        $storage = $integrationApp->child(uniqid("App"));
+        $storage->makeDirectory("Storage");
+
+        $cubeRoot = Path::normalize(__DIR__ . "/../..");
+
+        $integrationBaseFiles = (new Storage($cubeRoot))->child("tests/root")->getRoot();
+
+        $logger->info('Made integration app at {path}', ['path' => Path::toRelative($integrationBaseFiles)]);
+
+        $storage->write("composer.json", json_encode([
+            "autoload" => [
+                "psr-4" => [
+                    "App\\" => "App"
+                ]
+            ],
+            "require" => [
+                "yonis-savary/cube" => "dev-main"
+            ],
+            "repositories" => [
+                [
+                    "type" => "path",
+                    "url" => $cubeRoot,
+                    "options" => [
+                        "symlink" => false
+                    ]
+                ]
+                ],
+
+                "scripts" => [
+                    "post-update-cmd" => [
+                        "cp -r $integrationBaseFiles/* .",
+                        "cp -r $integrationBaseFiles/.env .",
+                        "cp -r vendor/yonis-savary/cube/server/* ."
+                    ]
+                ]
+        ], JSON_PRETTY_PRINT));
+
+        $installProcess = Shell::executeInDirectory("composer install", $storage->getRoot());
+        $migrateProcess = Shell::executeInDirectory("php do migrate", $storage->getRoot());
+
+        if (!$storage->isFile("do"))
+            trigger_error("Could not install integration app at " . $storage->getRoot(). " => " . $installProcess->getOutput());
+
+        if (!$storage->isFile("App/Models/User.php"))
+            trigger_error("Could not generate models in integration app at " . $storage->getRoot() . " => " . $migrateProcess->getOutput());
+
+        return self::$storage = $storage;
     }
 
     public static function removeApplicationStorage(Storage $app): void

@@ -11,8 +11,7 @@
     "autoload-dev": {
         "psr-4": {
             "YonisSavary\\Cube\\Tests\\Units\\": "tests/units",
-            "YonisSavary\\Cube\\Tests\\Integration\\": "tests/integration",
-            "YonisSavary\\Cube\\Tests\\App\\": "tests/app"
+            "YonisSavary\\Cube\\Tests\\Integration\\": "tests/integration"
         }
     },
     "authors": [
@@ -22,11 +21,8 @@
         }
     ],
     "minimum-stability": "dev",
-    "require-dev": {
-        "phpunit/phpunit": "^12.0@dev",
-        "composer/composer": "^2.8@dev"
-    },
     "require": {
+        "phpunit/phpunit": "11.5.3",
         "psr/log": "^3.0.2",
         "symfony/process": "7.2.0"
     }

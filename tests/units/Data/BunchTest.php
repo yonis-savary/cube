@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Utils;
+namespace YonisSavary\Cube\Tests\Units\Data;
 
 use PHPUnit\Framework\TestCase;
 use YonisSavary\Cube\Data\Bunch;
