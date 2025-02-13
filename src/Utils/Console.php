@@ -3,9 +3,13 @@
 namespace YonisSavary\Cube\Utils;
 
 use Stringable;
+use YonisSavary\Cube\Core\Autoloader\Applications;
 use YonisSavary\Cube\Data\Bunch;
 use YonisSavary\Cube\Logger\Logger;
 
+/**
+ * @todo Implement no-ansi mode
+ */
 class Console
 {
     const BLACK     = 0;
@@ -61,7 +65,7 @@ class Console
         Bunch::of($elements)
         ->filter(fn($x) => $x !== "" && $x !== null)
         //->map(fn($x) => preg_replace("/[^ ]+/", "", (string) $x))
-        ->map(fn($x) => preg_replace("/(?:[@-Z\\\\-_]|\\\\[[0-?]*[ -/]*[@-~])/", "", $x))
+        ->map(fn($x) => preg_replace("/(?:[@-Z\\-_]|\\[[0-?]*[ -\\/]*[@-~])/", "", $x))
         ->forEach(fn($x) => $logger->info($x));
     }
 
@@ -123,7 +127,7 @@ class Console
 
             $progress = floor(($barSize * $i) / $elementsCount);
             $remain = $barSize - $progress;
-            echo "[" . str_repeat("=", $progress-1) . ">" . str_repeat(" ", $remain) . "] $i / $elementsCount";
+            echo "[" . str_repeat("=", max(0, $progress-1)) . ">" . str_repeat(" ", $remain) . "] $i / $elementsCount";
         }
 
         echo "\n";
@@ -184,5 +188,62 @@ class Console
 
         foreach ($data as $row)
             $printValueLine($row);
+    }
+
+
+    public static function promptList(string $prompt, array $choices, ?int $defaultChoiceIndex=null): array
+    {
+        $hasDefault = $defaultChoiceIndex !== null;
+        $defaultChoiceString = $hasDefault ? (string) $choices[$defaultChoiceIndex] : "";
+
+        $choicesCount = count($choices);
+        do
+        {
+            for ($i=1; $i<=$choicesCount; $i++)
+            {
+                $choice = $choices[$i];
+                echo $prompt . "\n";
+                echo "$i - " . ((string) $choice) . "\n";
+                echo "\n";
+
+                $promptLine = $hasDefault ? "[$defaultChoiceIndex ($defaultChoiceString)] > ": ' > ';
+                $userChoice = readline($promptLine);
+
+                if (($userChoice === "") && $hasDefault)
+                    return [$defaultChoiceIndex, $choices[$defaultChoiceIndex]];
+
+                $userChoice = (int) $userChoice;
+
+            }
+        } while (!(0 < $userChoice && $userChoice < ($choicesCount-1)));
+
+        return [$userChoice, $choices[$userChoice]];
+    }
+
+    public static function chooseApplication(): string
+    {
+        $appsToLoad = Applications::resolve();
+        $paths = $appsToLoad->paths;
+
+        if (count($paths) === 1)
+        {
+            return $paths[0];
+        }
+        else if (count($paths))
+        {
+            list($index, $_) = self::promptList(
+                "Please choose an application to proceed",
+                Bunch::of($appsToLoad->paths)->map(fn($x) => Path::toRelative($x))->get()
+            );
+        }
+
+        do
+        {
+            echo "No application to load found in your configuration\n";
+            $path = readline("Please enter a path to proceed : ");
+        }
+        while (!is_dir($path));
+
+        return $path;
     }
 }

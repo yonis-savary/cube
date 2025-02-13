@@ -7,6 +7,12 @@ namespace YonisSavary\Cube\Utils;
  */
 class Utils
 {
+    public static function toArray(mixed $value): array
+    {
+        $needsTransform = !(is_array($value) && self::isList($value));
+        return $needsTransform ? [$value]: $value;
+    }
+
     public static function isAssoc(array $array, bool $treatEmptyAsList=false): bool
     {
         return !self::isList($array, $treatEmptyAsList);
@@ -18,5 +24,15 @@ class Utils
             return $treatEmptyAsList;
 
         return array_is_list($array);
+    }
+
+    public static function toPHPExpression(mixed $value): string
+    {
+        return "'" . $value . "'";
+    }
+
+    public static function valueHasFlag(int $value, int $flag): bool
+    {
+        return ($value & $flag) === $flag;
     }
 }

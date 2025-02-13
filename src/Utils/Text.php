@@ -2,8 +2,15 @@
 
 namespace YonisSavary\Cube\Utils;
 
+use Stringable;
+
 class Text
 {
+    public static function toFile(string $text, int $indentLevel=2): string
+    {
+        return trim(preg_replace("/^(    |\t){".$indentLevel."}/m", '', $text), "\n");
+    }
+
     public static function endsWith(string $string, string $suffix): string
     {
         if (!str_ends_with($string, $suffix))
@@ -36,6 +43,34 @@ class Text
             $string = substr($string, $prefixLength);
 
         return $string;
+    }
+
+    public static function anyToString(mixed $value): string
+    {
+        if (is_numeric($value))
+            return "$value";
+
+        if (is_string($value))
+            return $value;
+
+        return match ($value) {
+            true => 'true',
+            false => 'false',
+            null => 'null',
+            default => str_replace("\n", "", print_r($value, true)),
+        };
+    }
+
+
+    public static function interpolate(null|string|Stringable $message, array $context=[]): string
+    {
+        $message ??= "";
+        $message = (string) $message;
+
+        foreach ($context as $key => $value)
+            $message = str_replace("{".$key."}", self::anyToString($value), $message);
+
+        return $message;
     }
 
 }

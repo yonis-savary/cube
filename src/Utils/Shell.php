@@ -6,6 +6,8 @@ use Symfony\Component\Process\Process;
 use YonisSavary\Cube\Console\Command;
 use YonisSavary\Cube\Core\Autoloader;
 use YonisSavary\Cube\Data\Bunch;
+use YonisSavary\Cube\Http\Request;
+use YonisSavary\Cube\Http\Response;
 
 class Shell
 {
@@ -34,5 +36,41 @@ class Shell
         $proc = Process::fromShellCommandline($command, $directory);
         $proc->run();
         return $proc;
+    }
+
+    public static function logRequestAndResponseToStdOut(Request $request, Response $response): void
+    {
+        $status = $response->getStatusCode();
+
+        $lineToLog = join(" ", [
+            date("[D M j G:i:s Y]"),
+            ($request->getIp() ?? "?.?.?.?"). ':' . $_SERVER['REMOTE_PORT'],
+            "[$status]:",
+            $request->getMethod(),
+            $request->getPath(),
+        ]);
+
+        switch (((int) ($status/100))*100)
+        {
+            case 100:
+                $lineToLog = Console::withBlueColor($lineToLog);
+                break;
+            case 200:
+                $lineToLog = Console::withGreenColor($lineToLog);
+                break;
+            case 300:
+                $lineToLog = Console::withCyanColor($lineToLog);
+                break;
+            case 400:
+                $lineToLog = Console::withYellowColor($lineToLog);
+                break;
+            case 500:
+                $lineToLog = Console::withRedColor($lineToLog);
+                break;
+            default:
+                break;
+        }
+
+        file_put_contents('php://stdout', $lineToLog . "\n");
     }
 }
