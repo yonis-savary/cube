@@ -17,7 +17,7 @@ class Element
         if (!preg_match("/^\d+_\d+_.+$/", $filename))
             return null;
 
-        list($creationDate, $timeToLive, $key) = explode("_", $file, 3);
+        list($creationDate, $timeToLive, $key) = explode("_", $filename, 3);
 
         $creationDate = (int) $creationDate;
         $timeToLive = (int) $timeToLive;
@@ -25,7 +25,7 @@ class Element
         $now = time();
         $expireDate = $creationDate + $timeToLive;
 
-        if (($timeToLive != Cache::PERMANENT) && ($now < $expireDate))
+        if (($timeToLive != Cache::PERMANENT) && ($expireDate < $now))
         {
             unlink($file);
             return null;
@@ -51,6 +51,16 @@ class Element
     public function setValue(mixed $value)
     {
         $this->value = $value;
+    }
+
+    public function getValue(): mixed
+    {
+        return $this->value;
+    }
+
+    public function &asReference(): mixed
+    {
+        return $this->value;
     }
 
     public function setTimeToLive(int $timeToLive)

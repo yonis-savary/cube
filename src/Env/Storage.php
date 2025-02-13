@@ -23,13 +23,12 @@ class Storage extends DiskDriver
         return new self(Path::relative("Storage"), new LocalDisk);
     }
 
-
     public function __construct(string $rootPath='/', DiskDriver $driver=new LocalDisk)
     {
         $this->driver = $driver;
         $this->rootPath = $rootPath;
 
-        $this->makeDirectory('/');
+        $this->makeDirectory('/', true);
     }
 
     public function getRoot(): string
@@ -47,9 +46,9 @@ class Storage extends DiskDriver
         return $this->driver->write($this->path($path), $content, $flags);
     }
 
-    public function makeDirectory(string $path): bool
+    public function makeDirectory(string $path, bool $recursive=true): bool
     {
-        return $this->driver->makeDirectory($this->path($path));
+        return $this->driver->makeDirectory($this->path($path), $recursive);
     }
 
     public function read(string $path): string
@@ -92,21 +91,25 @@ class Storage extends DiskDriver
         return $this->driver->scanDirectory($this->path($path));
     }
 
-    public function listFiles(string $path="/"): array
+    /** @return array<int,string> */
+    public function files(string $path="/"): array
     {
-        return $this->driver->listFiles($this->path($path));
+        return $this->driver->files($this->path($path));
     }
 
-    public function listDirectory(string $path="/"): array
+    /** @return array<int,string> */
+    public function directories(string $path="/"): array
     {
-        return $this->driver->listDirectory($this->path($path));
+        return $this->driver->directories($this->path($path));
     }
 
+    /** @return array<int,string> */
     public function explore(string $path="/"): array
     {
         return $this->driver->explore($this->path($path));
     }
 
+    /** @return array<int,string> */
     public function exploreFiles(string $path="/"): array
     {
         return $this->driver->exploreFiles($this->path($path));

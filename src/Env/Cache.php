@@ -31,7 +31,7 @@ class Cache
     {
         $this->storage = $storage;
 
-        foreach ($storage->listFiles() as $file)
+        foreach ($storage->files() as $file)
         {
             if (! $element = Element::fromFile($file))
                 continue;
@@ -42,7 +42,18 @@ class Cache
 
     public function get(string $key, mixed $default=null): mixed
     {
-        return $this->index[$key] ?? $default;
+        if ($this->has($key))
+            return $this->index[$key]->getValue();
+
+        return $default;
+    }
+
+    public function &getReference(string $key, mixed $default=null, int $timeToLive=self::MONTH, ?int $creationDate=null): mixed
+    {
+        if (!array_key_exists($key, $this->index))
+            $this->set($key, $default, $timeToLive, $creationDate);
+
+        return $this->index[$key]->asReference();
     }
 
     public function set(string $key, mixed $value, int $timeToLive=self::MONTH, ?int $creationDate=null)

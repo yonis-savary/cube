@@ -23,7 +23,7 @@ abstract class DiskDriver
      * Make a new directory
      * @return bool `true` if the directory now exists, `false` otherwise
      */
-    abstract public function makeDirectory(string $path): bool;
+    abstract public function makeDirectory(string $path, bool $recursive=true): bool;
 
     /**
      * @return bool `true` weither `$path` is a directory or file, `false` otherwise
@@ -52,9 +52,10 @@ abstract class DiskDriver
     /**
      * @return array Array of absolute file paths inside `$path`
      */
-    public function listFiles(string $path): array
+    public function files(string $path): array
     {
         return Bunch::of($this->scanDirectory($path))
+            ->map(fn($el) => Path::join($path, $el))
             ->filter(fn($el) => $this->isFile($el))
             ->get();
     }
@@ -62,9 +63,10 @@ abstract class DiskDriver
     /**
      * @return array Array of absolute directories paths inside `$path`
      */
-    public function listDirectory(string $path): array
+    public function directories(string $path): array
     {
         return Bunch::of($this->scanDirectory($path))
+            ->map(fn($el) => Path::join($path, $el))
             ->filter(fn($el) => $this->isDirectory($el))
             ->get();
     }

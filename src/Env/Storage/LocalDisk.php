@@ -31,10 +31,10 @@ class LocalDisk extends DiskDriver
         return file_get_contents($path);
     }
 
-    public function makeDirectory(string $path): bool
+    public function makeDirectory(string $path, bool $recursive=true): bool
     {
         if (!is_dir($path))
-            mkdir($path);
+            mkdir($path, recursive: $recursive);
         return $this->isDirectory($path);
     }
 
