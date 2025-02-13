@@ -1,5 +1,7 @@
 <?php
 
+namespace Cube;
+
 use YonisSavary\Cube\Env\Environment;
 
 if (!function_exists("env"))
