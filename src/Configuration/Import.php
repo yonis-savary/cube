@@ -1,0 +1,29 @@
+<?php
+
+namespace YonisSavary\Cube\Configuration;
+
+use YonisSavary\Cube\Logger\Logger;
+use YonisSavary\Cube\Utils\Path;
+
+class Import
+{
+    public function __construct(
+        public readonly string $fileToImport
+    ){}
+
+    public function getElements(): array
+    {
+        $fileToImport = $this->fileToImport;
+        $path = is_file($fileToImport) ?
+            $fileToImport :
+            Path::relative($fileToImport);
+
+        if (!is_file($path))
+        {
+            Logger::getInstance()->warning("Cannot import configuration, {path} is not a file", ["path" => Path::toRelative($path)]);
+            return [];
+        }
+
+        return include $path;
+    }
+}

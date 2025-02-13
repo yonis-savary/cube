@@ -4,12 +4,10 @@ namespace YonisSavary\Cube\Configuration;
 
 use Exception;
 use InvalidArgumentException;
-use PHPUnit\Runner\FileDoesNotExistException;
 use RuntimeException;
 use YonisSavary\Cube\Core\Component;
 use YonisSavary\Cube\Env\Cache;
 use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
 use YonisSavary\Cube\Utils\Path;
 
 class Configuration
@@ -28,7 +26,7 @@ class Configuration
     {
         $instance = (new self())->identify("cube-default");
 
-        if ($instance->loadFromCache())
+        if (!$instance->loadFromCache())
         {
             $file = Path::relative("cube.php");
             if (is_file($file))
@@ -55,10 +53,20 @@ class Configuration
             $this->add($element);
     }
 
+    public function addFromImport(Import $element): self
+    {
+        foreach ($element->getElements() as $sub)
+            $this->add($sub);
+
+        return $this;
+    }
+
     public function add(ConfigurationElement $element): self
     {
         if ($element instanceof GenericElement)
             $this->generics[$element->getName()] = $element;
+        else if ($element instanceof Import)
+            $this->addFromImport($element);
         else
             $this->classElements[$element->getName()] = $element;
 
@@ -68,7 +76,7 @@ class Configuration
     public function loadFile(string $fileToLoad)
     {
         if (!is_file($fileToLoad))
-            throw new FileDoesNotExistException($fileToLoad);
+            throw new RuntimeException($fileToLoad);
 
         $return = include $fileToLoad;
 
@@ -84,6 +92,11 @@ class Configuration
         }
     }
 
+    /**
+     * @template TClass of ConfigurationElement
+     * @param class-string<TClass> $class
+     * @return TClass
+     */
     public function resolve(string $class, mixed $default=null): mixed
     {
         return $this->classElements[$class] ?? $default;
@@ -108,7 +121,6 @@ class Configuration
             return false;
 
         list($this->generics, $this->classElements) = $cache->get($this->identifier, []);
-        Logger::getInstance()->debug("Successfuly got config from cache !");
         return true;
     }
 
@@ -119,7 +131,7 @@ class Configuration
 
         $cache ??= self::getDefaultConfigurationCache();
 
-        $cache->set($this->identifier, serialize([$this->generics, $this->classElements]), Cache::PERMANENT);
+        $cache->set($this->identifier, [$this->generics, $this->classElements], Cache::PERMANENT);
         return $cache->getStorage();
     }
 }
