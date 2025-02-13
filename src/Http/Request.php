@@ -2,8 +2,11 @@
 
 namespace YonisSavary\Cube\Http;
 
+use Psr\Log\LoggerInterface;
 use Stringable;
 use YonisSavary\Cube\Data\Bunch;
+use YonisSavary\Cube\Http\Rules\Validator;
+use YonisSavary\Cube\Logger\Logger;
 use YonisSavary\Cube\Utils\Text;
 use YonisSavary\Cube\Web\Route;
 
@@ -27,7 +30,7 @@ class Request extends HttpMessage
      * @var array $get
      * @var array $post
      * @var array $headers
-     * @var array<Upload> $uploads
+     * @var Upload[] $uploads
      * @var string $body
      * @var ?string $ip
      * @var array $cookies
@@ -46,7 +49,7 @@ class Request extends HttpMessage
     )
     {
         $this->method = $method;
-        $this->path = $path;
+        $this->path = preg_replace('/\\?.+/', '', $path);
         $this->get = $get;
         $this->post = $post;
         $this->setHeaders($headers);
@@ -54,6 +57,43 @@ class Request extends HttpMessage
         $this->setBody($body);
         $this->ip = $ip;
         $this->cookies = $cookies;
+
+        if ($this->isJSON() && $body && !count($post))
+        {
+            $decodedBody = json_decode($body, JSON_THROW_ON_ERROR);
+            if (is_array($decodedBody))
+                $this->post = $decodedBody;
+        }
+    }
+
+    public static function fromRequest(Request $source): self
+    {
+        /** @var self $class */
+        $class = get_called_class();
+        $newReq = new $class();
+
+        $newReq->method     = $source->method;
+        $newReq->path       = $source->path;
+        $newReq->get        = $source->get;
+        $newReq->post       = $source->post;
+        $newReq->uploads    = $source->uploads;
+        $newReq->ip         = $source->ip;
+        $newReq->cookies    = $source->cookies;
+        $newReq->route      = $source->route;
+        $newReq->slugValues = $source->slugValues;
+        $newReq->headers    = $source->headers;
+
+        return $newReq;
+    }
+
+
+    public function logSelf(?LoggerInterface $logger=null)
+    {
+        $logger ??= Logger::getInstance();
+        $logger->log('info', "{method} {path}", [
+            "method" => $this->getMethod(),
+            "path" => $this->getPath()
+        ]);
     }
 
     protected static function parseDictionaryValues(array $data): array
@@ -150,6 +190,11 @@ class Request extends HttpMessage
         return $data;
     }
 
+    public function collect(string $key): Bunch
+    {
+        return Bunch::of($this->param($key));
+    }
+
     public function list(array $keys, array $default=[]): array
     {
         return array_values($this->params($keys, $default));
@@ -162,13 +207,19 @@ class Request extends HttpMessage
     }
 
     /**
-     * @return array<Upload>
+     * @return Upload[]
      */
     public function uploads(string $inputName): array
     {
         return Bunch::of($this->uploads)
             ->filter(fn(Upload $upload) => $upload->inputName === $inputName)
             ->get();
+    }
+
+    /** @return Upload[] */
+    public function getUploads(): array
+    {
+        return $this->uploads;
     }
 
     public function getMethod(): string
@@ -181,6 +232,11 @@ class Request extends HttpMessage
         return $this->path;
     }
 
+    public function getIp(): ?string
+    {
+        return $this->ip;
+    }
+
     public function get(): array
     {
         return $this->get;
@@ -189,6 +245,13 @@ class Request extends HttpMessage
     public function post(): array
     {
         return $this->post;
+    }
+
+    public function all(bool $getParamsGotPriority=true): array
+    {
+        return $getParamsGotPriority ?
+            array_merge($this->post, $this->get):
+            array_merge($this->get, $this->post);
     }
 
     public function setRoute(Route $route)
@@ -211,4 +274,56 @@ class Request extends HttpMessage
     {
         return $this->slugValues;
     }
+
+    public function getRules(): array
+    {
+        return [];
+    }
+
+    final public function getValidator(): Validator
+    {
+        $rules = $this->getRules();
+        if ($rules instanceof Validator)
+            return $rules;
+
+        return Validator::from($rules);
+    }
+
+    public function isValid(): true|array
+    {
+        $validator = $this->getValidator();
+        return $validator->validateRequest($this);
+    }
+
+    public function validated(?Validator $validator=null): array
+    {
+        $validator ??= $this->getValidator();
+
+        $validator->validateRequest($this);
+
+        return $validator->getLastValues();
+    }
+
+
+    public function fetch(
+        ?Logger $logger=null,
+        ?int $timeout=null,
+        ?string $userAgent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        bool $supportRedirection=true,
+        int $logFlags = HttpClient::DEBUG_ESSENTIALS
+    ): Response
+    {
+        $client = new HttpClient($this);
+
+        return $client->fetch(
+            $logger,
+            $timeout,
+            $userAgent,
+            $supportRedirection,
+            $logFlags
+        );
+    }
+
+
+
 }

@@ -9,7 +9,7 @@ abstract class HttpMessage
 
     public function isJSON(): bool
     {
-        return str_contains($this->getHeader("content-type"), "application/json");
+        return str_contains($this->getHeader("content-type", ""), "application/json");
     }
 
     public function headerName(string $name): string
@@ -17,9 +17,10 @@ abstract class HttpMessage
         return strtolower(trim($name));
     }
 
-    public function setHeader(string $name, string $value)
+    public function setHeader(string $name, string $value): self
     {
         $this->headers[$this->headerName($name)] = $value;
+        return $this;
     }
 
     public function setHeaders(array $data): void

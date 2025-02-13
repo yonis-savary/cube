@@ -13,6 +13,7 @@ class Upload
     const GB = 1024 * self::MB;
 
     const PHP_ERROR_EXPLAINATION = [
+        UPLOAD_ERR_OK         => 'UPLOAD_ERR_OK: No error with the upload',
         UPLOAD_ERR_PARTIAL    => 'UPLOAD_ERR_PARTIAL: File only partially uploaded',
         UPLOAD_ERR_NO_FILE    => 'UPLOAD_ERR_NO_FILE: No file was uploaded',
         UPLOAD_ERR_EXTENSION  => 'UPLOAD_ERR_EXTENSION: File upload stopped by a PHP extension',
@@ -63,6 +64,11 @@ class Upload
         return false;
     }
 
+    public function getPHPUploadErrorMessage(): string
+    {
+        return self::PHP_ERROR_EXPLAINATION[$this->error];
+    }
+
     /**
      * Try to move the file to a new directory, return `true` on success or `false` on failure
      *
@@ -84,7 +90,7 @@ class Upload
         $newPath = $destination->path($newName);
 
         if ($this->error !== UPLOAD_ERR_OK)
-            return $this->fail(self::PHP_ERROR_EXPLAINATION[$this->error], $destination);
+            return $this->fail($this->getPHPUploadErrorMessage(), $destination);
 
         if (!is_writable($destination->getRoot()))
             return $this->fail("Target directory [".Path::toRelative($destination->getRoot())."] is not writable", $destination);
