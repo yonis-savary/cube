@@ -53,7 +53,7 @@ trait Component
         $oldInstance = self::getInstance();
 
         self::setInstance($scopedInstance);
-        $callback();
+        $callback($scopedInstance, $oldInstance);
 
         self::setInstance($oldInstance);
     }

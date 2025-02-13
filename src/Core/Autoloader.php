@@ -7,12 +7,16 @@ use Throwable;
 use Composer\Autoload\ClassLoader;
 use ErrorException;
 use YonisSavary\Cube\Core\Autoloader\Applications;
+use YonisSavary\Cube\Core\Autoloader\AutoloaderConfiguration;
 use YonisSavary\Cube\Data\Bunch;
+use YonisSavary\Cube\Env\Cache;
 use YonisSavary\Cube\Env\Environment;
 use YonisSavary\Cube\Env\Storage;
+use YonisSavary\Cube\Http\Request;
 use YonisSavary\Cube\Http\Response;
 use YonisSavary\Cube\Logger\Logger;
 use YonisSavary\Cube\Utils\Path;
+use YonisSavary\Cube\Utils\Shell;
 
 class Autoloader
 {
@@ -23,22 +27,38 @@ class Autoloader
     protected static ?array $cachedClassesList = null;
     protected static ?string $projectPath = null;
 
-    protected static ?ClassLoader $loader = null;
+    protected static ClassLoader $loader;
+    protected static mixed $classIndex;
+    protected static Cache $autoloadCache;
 
 
     public static function initialize(string $forceProjectPath=null, ?ClassLoader $loader=null)
     {
         self::registerErrorHandlers();
+        self::resolveProjectPath($forceProjectPath);
 
         self::$loader = $loader ?? (include Path::relative("vendor/autoload.php"));
 
-        self::resolveProjectPath($forceProjectPath);
-        self::loadApplications();
-
-        $cubeSrc = (new Storage(__DIR__))->parent()->parent();
+        $cubeSrc = (new Storage(__DIR__))->parent();
         $cubeHelpers = $cubeSrc->child("Helpers");
-        foreach ($cubeHelpers->listFiles() as $helperFile)
+        foreach ($cubeHelpers->files() as $helperFile)
             include_once $helperFile;
+
+        $conf = AutoloaderConfiguration::resolve();
+
+        if ($conf->cached)
+        {
+            $lockFile = Path::relative("composer.lock");
+            $cacheIdentifier = is_file($lockFile) ? md5_file($lockFile) : "default";
+            self::$autoloadCache = Cache::getInstance()->child("AutoLoad");
+            self::$classIndex = &self::$autoloadCache->getReference($cacheIdentifier, []);
+        }
+        else
+        {
+            self::$classIndex = [];
+        }
+
+        self::loadApplications();
 
         foreach (self::$requireFiles as $file)
             include_once $file;
@@ -67,7 +87,8 @@ class Autoloader
 
             try
             {
-                Logger::getInstance()->logThrowable($exception);
+                $logger = new Logger("fatal.csv");
+                $logger->logThrowable($exception);
 
                 if (php_sapi_name() === 'cli')
                     die(
@@ -85,16 +106,17 @@ class Autoloader
                     $errorMessage .= "\n" . $exception->getTraceAsString();
                 }
 
-                (new Response($errorMessage, 500, ['Content-Type' => 'text/plain']))->display();
-                die;
+                $response = (new Response(500, $errorMessage, ['Content-Type' => 'text/html']));
+                Shell::logRequestAndResponseToStdOut(Request::fromGlobals(), $response);
+                $response->exit();
             }
             catch (Throwable $err)
             {
                 // In case everything went wrong even logging/events !
 
                 http_response_code(500);
-                echo 'Internal Server Error';
-                echo $err->getMessage();
+                echo "Internal Server Error\n";
+                echo $err->getMessage() . "\n";
                 die;
             }
         });
@@ -135,20 +157,31 @@ class Autoloader
 
         foreach ($apps->paths as $app)
         {
+            if (!is_dir($app))
+            {
+                Logger::getInstance()->warning("Cannot load {app} directory, target is not a directory", ["app" => $app]);
+                continue;
+            }
+
             $app = new Storage($app);
-            foreach ($app->listDirectory() as $directory)
+            foreach ($app->directories() as $directory)
             {
                 $dirName = basename($directory);
                 switch ($dirName)
                 {
                     case 'Routes':
                     case 'Router':
-                        self::$routesFiles[] = (new Storage($directory))->exploreFiles();
+                        array_push(self::$routesFiles, ...(new Storage($directory))->exploreFiles());
+                        break;
                     case 'Assets':
-                        self::$assetsFiles[] = (new Storage($directory))->exploreFiles();
+                        array_push(self::$assetsFiles, ...(new Storage($directory))->exploreFiles());
+                        break;
                     case 'Requires':
                     case 'Includes':
-                        self::$requireFiles[] = (new Storage($directory))->exploreFiles();
+                    case 'Schedules':
+                    case 'Cron':
+                        array_push(self::$requireFiles, ...(new Storage($directory))->exploreFiles());
+                        break;
                 }
             }
         }
@@ -174,10 +207,13 @@ class Autoloader
         return self::$loader;
     }
 
+    /**
+     * @return array<class-string>
+     */
     public static function classesList(): array
     {
-        if (self::$cachedClassesList)
-            return self::$cachedClassesList;
+        if (self::$classIndex["list"] ?? false)
+            return self::$classIndex["list"];
 
         /** @var ClassLoader $loader */
         $loader = self::getClassLoader();
@@ -198,7 +234,7 @@ class Autoloader
 
 
                 $files = Bunch::of($storage->exploreFiles())
-                    ->filter(function($file) use (&$ignoreFile) {
+                    ->filter(function($file) {
                         $expectedClassName = pathinfo($file, PATHINFO_FILENAME);
                         $content = file_get_contents($file);
 
@@ -213,23 +249,33 @@ class Autoloader
                     ->get()
                 ;
 
-                restore_error_handler();
-
                 $classes->push(...$files);
             }
         }
 
-        self::$cachedClassesList = $classes
-            ->uniques()
-            ->get();
+        self::$classIndex["list"] = $list = $classes->uniques()->get();
 
-        return self::$cachedClassesList;
+        return $list;
     }
 
-    public static function extends($class, $parentClass): bool
+    /**
+     * @return array<class-string>
+     */
+    protected static function filterClassesWithCache(array &$holder, string $identifier, callable $filter)
     {
-        if (!class_exists($class))
+        if ($preprocessed = $holder[$identifier] ?? false)
+            return $preprocessed;
+
+        return $holder[$identifier] = Bunch::of(self::classesList())->filter($filter)->get();
+    }
+
+    public static function extends($class, $parentClass, bool $considerSelfAsExtending=true): bool
+    {
+        if (is_string($class) && (!class_exists($class)))
             return false;
+
+        if ($considerSelfAsExtending && ($parentClass === $class))
+            return true;
 
         if ($parents = class_parents($class))
             return in_array($parentClass, $parents);
@@ -256,24 +302,48 @@ class Autoloader
         return false;
     }
 
+    /**
+     * @template TClass
+     * @param class-string<TClass> $parentClass
+     * @return array<class-string<TClass>>
+     */
     public static function classesThatExtends(string $parentClass): array
     {
-        return Bunch::of(self::classesList())
-        ->filter(fn($class) => self::extends($class, $parentClass))
-        ->get();
+        self::$classIndex["extends"] ??= [];
+        return self::filterClassesWithCache(
+            self::$classIndex["extends"],
+            (string) $parentClass,
+            fn($class) => self::extends($class, $parentClass, false)
+        );
     }
 
+    /**
+     * @template TInterface
+     * @param class-string<TInterface> $interface
+     * @return array<TInterface>
+     */
     public static function classesThatImplements(string $interface): array
     {
-        return Bunch::of(self::classesList())
-        ->filter(fn($class) => self::implements($class, $interface))
-        ->get();
+        self::$classIndex["implements"] ??= [];
+        return self::filterClassesWithCache(
+            self::$classIndex["implements"],
+            (string) $interface,
+            fn($class) => self::implements($class, $interface)
+        );
     }
 
+    /**
+     * @template TTrait
+     * @param class-string<TTrait> $trait
+     * @return array<TTrait>
+     */
     public static function classesThatUses(string $trait): array
     {
-        return Bunch::of(self::classesList())
-        ->filter(fn($class) => self::uses($class, $trait))
-        ->get();
+        self::$classIndex["uses"] ??= [];
+        return self::filterClassesWithCache(
+            self::$classIndex["uses"],
+            (string) $trait,
+            fn($class) => self::uses($class, $trait)
+        );
     }
 }
