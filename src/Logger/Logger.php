@@ -2,15 +2,18 @@
 
 namespace YonisSavary\Cube\Logger;
 
-use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Stringable;
 use Throwable;
 use YonisSavary\Cube\Core\Component;
 use YonisSavary\Cube\Data\Bunch;
 use YonisSavary\Cube\Env\Storage;
+use YonisSavary\Cube\Event\EventDispatcher;
+use YonisSavary\Cube\Logger\Events\LoggedMessage;
+use YonisSavary\Cube\Utils\Text;
 
-class Logger extends AbstractLogger
+class Logger extends EventDispatcher implements LoggerInterface
 {
     use Component;
 
@@ -49,23 +52,32 @@ class Logger extends AbstractLogger
             fclose($this->stream);
     }
 
-    protected function interpolate(string|Stringable $message, array $context=[]): string
+    public function log($level, null|string|Stringable $message, array $context=[]): void
     {
-        $message = (string) $message;
-        foreach ($context as $key => $value)
-            $message = str_replace("{".$key."}", $value, $message);
+        if (!is_resource($this->stream))
+            return;
 
-        return $message;
+        $message = Text::interpolate($message, $context);
+
+        Bunch::fromExplode("\n", $message)
+        ->forEach(function($line) use ($level) {
+            fwrite($this->stream, join("\t", [
+                date("Y-m-d H:i:s.B"),
+                strtoupper($level),
+                $line
+            ]) . "\n");
+        });
+
+        $this->dispatch(new LoggedMessage($level, $message, $context));
     }
 
-    public function log($level, string|Stringable $message, array $context=[]): void
+    public function attach(LoggerInterface $logger): self
     {
-        $message = $this->interpolate($message, $context);
-        fputcsv($this->stream, [
-            date("Y-m-d H:i:s"),
-            $level,
-            $message
-        ], separator: "\t", enclosure:"'", escape:"\\");
+        $this->on(LoggedMessage::class, function(LoggedMessage $event) use ($logger) {
+            $logger->log($event->level, $event->message, $event->context);
+        });
+
+        return $this;
     }
 
     public function logThrowable(Throwable $thrown): void
@@ -77,4 +89,35 @@ class Logger extends AbstractLogger
             $this->error($line);
     }
 
+    public function emergency(string|\Stringable $message, array $context = []): void {
+        $this->log("emergency", $message, $context);
+    }
+
+    public function alert(string|\Stringable $message, array $context = []): void {
+        $this->log("alert", $message, $context);
+    }
+
+    public function critical(string|\Stringable $message, array $context = []): void {
+        $this->log("critical", $message, $context);
+    }
+
+    public function error(string|\Stringable $message, array $context = []): void {
+        $this->log("error", $message, $context);
+    }
+
+    public function warning(string|\Stringable $message, array $context = []): void {
+        $this->log("warning", $message, $context);
+    }
+
+    public function notice(string|\Stringable $message, array $context = []): void {
+        $this->log("notice", $message, $context);
+    }
+
+    public function info(string|\Stringable $message, array $context = []): void {
+        $this->log("info", $message, $context);
+    }
+
+    public function debug(string|\Stringable $message, array $context = []): void {
+        $this->log("debug", $message, $context);
+    }
 }
