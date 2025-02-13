@@ -2,6 +2,12 @@
 
 namespace YonisSavary\Cube\Web;
 
+use InvalidArgumentException;
+use ReflectionClass;
+use ReflectionFunction;
+use YonisSavary\Cube\Core\Autoloader;
+use YonisSavary\Cube\Http\Exceptions\InvalidRequestException;
+use YonisSavary\Cube\Http\Exceptions\InvalidRequestMethodException;
 use YonisSavary\Cube\Http\Request;
 use YonisSavary\Cube\Http\Response;
 
@@ -27,6 +33,26 @@ class Route
     /** @var array<Middleware> $middlewares */
     protected array $middlewares = [];
 
+    public static function any(string $path, callable $callback, array $middlewares=[], array $extras=[])
+    { return new self($path, $callback, [], $middlewares, $extras); }
+
+    public static function get(string $path, callable $callback, array $middlewares=[], array $extras=[])
+    { return new self($path, $callback, ["GET"], $middlewares, $extras); }
+
+    public static function post(string $path, callable $callback, array $middlewares=[], array $extras=[])
+    { return new self($path, $callback, ["POST"], $middlewares, $extras); }
+
+    public static function put(string $path, callable $callback, array $middlewares=[], array $extras=[])
+    { return new self($path, $callback, ["PUT"], $middlewares, $extras); }
+
+    public static function patch(string $path, callable $callback, array $middlewares=[], array $extras=[])
+    { return new self($path, $callback, ["PATCH"], $middlewares, $extras); }
+
+    public static function delete(string $path, callable $callback, array $middlewares=[], array $extras=[])
+    { return new self($path, $callback, ["DELETE"], $middlewares, $extras); }
+
+    public static function option(string $path, callable $callback, array $middlewares=[], array $extras=[])
+    { return new self($path, $callback, ["OPTION"], $middlewares, $extras); }
 
     public function __construct(
         string $path,
@@ -111,20 +137,60 @@ class Route
 
     public function match(Request $request): bool
     {
-        $methods = $this->getMethods();
-        $needMethod = count($methods) > 0;
-        if ($needMethod && (!in_array($request->getMethod(), $methods)))
-            return false;
-
         $routePath = $this->getPath();
         $requestPath = $request->getPath();
 
+        $pathMatches = false;
         // Little optimization: if the route has no slug
         // we can just compare strings, no need to process anything
-        if (!str_contains($routePath, '{'))
-            return $routePath === $requestPath;
+        $pathMatches = str_contains($routePath, '{') ?
+            $this->matchPathRegex($request):
+            $routePath === $requestPath;
 
-        return $this->matchPathRegex($request);
+        if (!$pathMatches)
+            return false;
+
+        $methods = $this->getMethods();
+        $needMethod = count($methods) > 0;
+        if ($needMethod && (!in_array($request->getMethod(), $methods)))
+            throw new InvalidRequestMethodException($request->getMethod(), $methods);
+
+        return true;
+    }
+
+
+    public function getAppropriateRequestObject(Request $defaultRequest): Request
+    {
+        $callback = $this->callback;
+
+        if (is_array($callback))
+        {
+            $controller = new ReflectionClass($callback[0]);
+            $reflection = $controller->getMethod($callback[1]);
+        }
+        else
+        {
+            $reflection = new ReflectionFunction($callback);
+        }
+        $parameters = $reflection->getParameters();
+
+        if (!count($parameters))
+            return $defaultRequest;
+
+        $type = $parameters[0]->getType();
+        $requestType = $type ? $type->getName() : Request::class;
+
+        if (!Autoloader::extends($requestType, Request::class))
+            throw new InvalidArgumentException("A controller function first paramerter must be a Request object, got $requestType");
+
+        /** @var Request $requestType */
+        $request = $requestType::fromRequest($defaultRequest);
+
+        $result = $request->isValid();
+        if ($result !== true)
+            throw new InvalidRequestException($result, $request);
+
+        return $request;
     }
 
 

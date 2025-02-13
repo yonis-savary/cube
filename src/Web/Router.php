@@ -6,27 +6,33 @@ use YonisSavary\Cube\Core\Autoloader;
 use YonisSavary\Cube\Core\Component;
 use YonisSavary\Cube\Data\Bunch;
 use YonisSavary\Cube\Env\Cache;
+use YonisSavary\Cube\Http\Exceptions\InvalidRequestException;
+use YonisSavary\Cube\Http\Exceptions\InvalidRequestMethodException;
 use YonisSavary\Cube\Http\Request;
 use YonisSavary\Cube\Http\Response;
 use YonisSavary\Cube\Http\StatusCode;
-use YonisSavary\Cube\Utils\Path;
+use YonisSavary\Cube\Models\Model;
 use YonisSavary\Cube\Web\Router\RouterConfiguration;
 use YonisSavary\Cube\Web\Router\Service;
+
+use function Cube\debug;
 
 class Router
 {
     use Component;
 
-    protected ?string $groupUrlPrefix = null;
-    protected array $groupMiddlewares = [];
-    protected array $groupExtras = [];
+    protected RouterConfiguration $configuration;
+
+    protected RouteGroup $group;
 
     /**
-     * @var array<Route>
+     * @var array<RouteGroup>
      */
-    protected array $routes = [];
+    protected array $groups = [];
 
     protected ?Cache $cache = null;
+
+    protected bool $routesAreLoaded = false;
 
     public static function getDefaultInstance(): static
     {
@@ -38,13 +44,24 @@ class Router
         $config ??= RouterConfiguration::resolve();
 
         if ($config->cached)
-        $this->cache = Cache::getInstance()->child("Routers")->child(md5(get_called_class()));
+            $this->cache = Cache::getInstance()->child("Routers")->child(md5(get_called_class()));
 
-        if ($middlewares = $config->commonMiddlewares)
-            $this->groupMiddlewares = $middlewares;
+        $this->group = new RouteGroup(
+            $config->commonPrefix,
+            $config->commonMiddlewares,
+            []
+        );
+        $this->groups[] = &$this->group;
+        $this->configuration = $config;
+    }
 
-        if ($prefix = $config->commonPrefix)
-            $this->groupUrlPrefix = $prefix;
+    public function loadRoutes()
+    {
+        if ($this->routesAreLoaded)
+            return;
+
+        $this->routesAreLoaded = true;
+        $config = $this->configuration;
 
         if ($config->loadControllers)
             $this->loadControllers();
@@ -53,7 +70,7 @@ class Router
             $this->loadRoutesFiles();
 
         foreach($config->services as $service)
-            $this->loadService($service);
+            $this->addService($service);
     }
 
     public function loadControllers(): void
@@ -73,27 +90,22 @@ class Router
         });
     }
 
-    public function loadService(Service $service): void
+    public function addService(Service $service): void
     {
         $service->routes($this);
     }
 
-
-
-    public function addRoutes(Route ...$routes): void
+    /**
+     * @param Route|\Closure(Route) ...$routes
+     */
+    public function addRoutes(Route|callable ...$routes): void
     {
         foreach ($routes as $route)
         {
-            if ($prefix = $this->groupUrlPrefix)
-                $route->setPath(Path::join($route->getPath(), $prefix));
-
-            if ($middlewares = $this->groupMiddlewares)
-                $route->setMiddlewares(array_merge($route->getMiddlewares(), $middlewares));
-
-            if ($extras = $this->groupExtras)
-                $route->setExtras(array_merge($route->getExtras(), $extras));
-
-            $this->routes[] = $route;
+            if ($route instanceof Route)
+                $this->group->addRoute($route);
+            else
+                ($route)($this);
         }
     }
 
@@ -104,35 +116,137 @@ class Router
         ?callable $callback=null
     ): void
     {
-        $oldUrlPrefix = $this->groupUrlPrefix;
-        $oldMiddlewares = $this->groupMiddlewares;
-        $oldExtras = $this->groupExtras;
+        $subGroup = new RouteGroup($prefix,$middlewares,$extras);
 
-        $this->groupUrlPrefix = Path::join($this->groupUrlPrefix, $prefix);
-        $this->groupMiddlewares = array_merge($this->groupMiddlewares, $middlewares);
-        $this->groupExtras = array_merge($this->groupExtras, $extras);
+        $oldGroup = &$this->group;
+        $newGroup = $this->group->mergeWith($subGroup);
+        $this->group = &$newGroup;
 
-        $callback($this);
+        ($callback)($this);
 
-        $this->groupUrlPrefix = $oldUrlPrefix;
-        $this->groupMiddlewares = $oldMiddlewares;
-        $this->groupExtras = $oldExtras;
+        $this->groups[] = $this->group;
+        $this->group = $oldGroup;
+    }
+
+    public function getCachedRouteForRequest(Request $request): Route|false
+    {
+        if (!$this->cache)
+            return false;
+
+        return $this->cache->get($request->getPath(), false);
     }
 
     public function findMatchingRoute(Request $request): Route|false
     {
-        return Bunch::of($this->routes)
-            ->first(fn(Route $route) => $route->match($request)) ?? false;
+        $gotInvalidMethod = false;
+        $allowedMethods = [];
+
+
+        $firstRoute = Bunch::of($this->groups)
+            ->filter(fn(RouteGroup $group) => $group->matches($request))
+            ->map(fn(RouteGroup $group) => $group->getRoutes())
+            ->flat()
+            ->first(function(Route $route) use ($request, &$gotInvalidMethod, &$allowedMethods) {
+                try
+                {
+                    return $route->match($request);
+                }
+                catch (InvalidRequestMethodException $invalid)
+                {
+                    $gotInvalidMethod = true;
+                    $allowedMethods = [...$allowedMethods, ...$invalid->allowedMethods];
+                    return false;
+                }
+            });
+
+        if ($firstRoute)
+            return $firstRoute;
+
+        if ($gotInvalidMethod)
+            throw new InvalidRequestMethodException($request->getMethod(), $allowedMethods);
+
+        return false;
+    }
+
+    protected function adaptSingleValue(mixed &$value): mixed
+    {
+        debug("ADAPT VALUE", print_r($value, true));
+
+        if ($value instanceof Bunch)
+            $value = $value->toArray();
+
+        if ($value instanceof Model)
+            $value = $value->toArray();
+
+        if (is_array($value))
+            $this->adaptArray($value);
+
+        return $value;
+    }
+
+    protected function adaptArray(mixed &$value): array
+    {
+        debug("ADAPT ARRAY", print_r($value, true));
+
+        foreach ($value as &$row)
+            $row = $this->adaptSingleValue($row);
+
+        return $value;
+    }
+
+    protected function adaptControllerReturnToResponse(mixed $response): Response
+    {
+        $response = $this->adaptSingleValue($response);
+        return Response::json($response);
     }
 
     public function route(Request $request): Response
     {
-        if (!$route = $this->findMatchingRoute($request))
-            return new Response(StatusCode::NOT_FOUND);
+        $route = null;
 
-        $response = $route($request);
-        if ($response === null)
-            return new Response();
+        if (! $route = $this->getCachedRouteForRequest($request))
+        {
+            $this->loadRoutes();
+
+            foreach($this->configuration->services as $service)
+            {
+                $serviceResponse = $service->handle($request);
+                if ($serviceResponse instanceof Response)
+                    return $serviceResponse;
+
+                if ($serviceResponse instanceof Route)
+                {
+                    $route = $serviceResponse;
+                    break;
+                }
+            }
+
+            try
+            {
+                if ((!$route) && (!$route = $this->findMatchingRoute($request)))
+                    return new Response(StatusCode::NOT_FOUND);
+            }
+            catch(InvalidRequestMethodException $invalid)
+            {
+                return new Response(StatusCode::METHOD_NOT_ALLOWED, $invalid->getMessage());
+            }
+        }
+
+        try
+        {
+            $request = $route->getAppropriateRequestObject($request);
+            $response = $route($request);
+
+            if (! $response instanceof Response)
+                $response = $this->adaptControllerReturnToResponse($response);
+
+            if ($response === null)
+                return new Response();
+        }
+        catch(InvalidRequestException $invalid)
+        {
+            $response = new Response(StatusCode::UNPROCESSABLE_CONTENT, json_encode($invalid->errors, JSON_THROW_ON_ERROR));
+        }
 
         return $response;
     }

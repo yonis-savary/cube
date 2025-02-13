@@ -25,7 +25,7 @@ class RouterConfiguration extends ConfigurationElement
         public readonly bool $loadRoutesFiles=true,
         array $services=[],
         public readonly array $commonMiddlewares=[],
-        public readonly ?string $commonPrefix=null,
+        public readonly string $commonPrefix="/",
     )
     {
         foreach ($services as &$service)
