@@ -16,6 +16,11 @@ class Cache extends Command
         return "configuration";
     }
 
+    public function getHelp(): string
+    {
+        return "Cache your configuration file for better performances";
+    }
+
     public function execute(Args $args): int
     {
         try

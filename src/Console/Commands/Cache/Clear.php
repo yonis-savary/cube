@@ -10,6 +10,11 @@ use YonisSavary\Cube\Utils\Path;
 
 class Clear extends Command
 {
+    public function getHelp(): string
+    {
+        return "Clear every files in Storage/Cache";
+    }
+
     public function getScope(): string
     {
         return "cache";
