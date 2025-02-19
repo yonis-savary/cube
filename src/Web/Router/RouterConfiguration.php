@@ -1,42 +1,43 @@
 <?php
 
-namespace YonisSavary\Cube\Web\Router;
+namespace Cube\Web\Router;
 
 use InvalidArgumentException;
-use YonisSavary\Cube\Configuration\ConfigurationElement;
-use YonisSavary\Cube\Core\Autoloader;
+use Cube\Configuration\ConfigurationElement;
+use Cube\Core\Autoloader;
+use Cube\Web\WebAPI;
 
 class RouterConfiguration extends ConfigurationElement
 {
     /**
-     * @var array<Service>
+     * @var array<WebAPI>
      */
-    public readonly array $services;
+    public readonly array $apis;
 
     /**
      * @param bool $cached Do the router should cache routes
      * @param bool $loadControllers Load routes from Controller classes ?
      * @param bool $loadRoutesFiles Load PHP Files inside your app(s) Routes directory ?
-     * @param array<String|Service> Additionnal services to load (Either classes name or instances)
+     * @param class-string<WebAPI>|WebAPI $apis Additionnal services to load (Either classes name or instances)
      */
     public function __construct(
         public readonly bool $cached=false,
         public readonly bool $loadControllers=true,
         public readonly bool $loadRoutesFiles=true,
-        array $services=[],
+        array $apis=[],
         public readonly array $commonMiddlewares=[],
         public readonly string $commonPrefix="/",
     )
     {
-        foreach ($services as &$service)
+        foreach ($apis as &$api)
         {
-            if (!Autoloader::extends($service, Service::class))
-                throw new InvalidArgumentException("Given service must extend Service class");
+            if (!Autoloader::extends($api, WebAPI::class))
+                throw new InvalidArgumentException("Given api must extend WebAPI class");
 
-            if (is_string($service))
-                $service = new $service();
+            if (is_string($api))
+                $api = new $api();
         }
 
-        $this->services = $services;
+        $this->apis = $apis;
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Utils;
+namespace Cube\Tests\Units\Utils;
 
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Utils\Utils;
+use Cube\Utils\Utils;
 
 class UtilsTest extends TestCase
 {

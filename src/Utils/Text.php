@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Utils;
+namespace Cube\Utils;
 
 use Stringable;
 
@@ -72,5 +72,4 @@ class Text
 
         return $message;
     }
-
 }

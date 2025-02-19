@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Configuration;
+namespace Cube\Configuration;
 
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Logger\Logger;
+use Cube\Utils\Path;
 
 class Import
 {

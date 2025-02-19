@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web;
 
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
+use Cube\Http\Request;
+use Cube\Http\Response;
 
 interface Middleware
 {

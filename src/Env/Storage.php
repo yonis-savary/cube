@@ -1,12 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Env;
+namespace Cube\Env;
 
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Env\Storage\DiskDriver;
-use YonisSavary\Cube\Env\Storage\LocalDisk;
-use YonisSavary\Cube\Env\Storage\StorageConfiguration;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Core\Component;
+use Cube\Env\Storage\DiskDriver;
+use Cube\Env\Storage\LocalDisk;
+use Cube\Env\Storage\StorageConfiguration;
+use Cube\Utils\Path;
 
 /**
  * Extending DiskDriver ensure we implement every method
@@ -123,6 +123,11 @@ class Storage extends DiskDriver
     public function child(string $path): self
     {
         return new self($this->path($path), $this->driver);
+    }
+
+    public function toCache(): Cache
+    {
+        return new Cache($this);
     }
 
     public function parent(): self

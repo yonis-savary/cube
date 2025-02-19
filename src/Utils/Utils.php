@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Utils;
+namespace Cube\Utils;
 
 /**
  * This class is used to hold method for type with reserved keyword such as "Array"

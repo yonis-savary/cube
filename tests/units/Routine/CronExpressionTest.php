@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Routine;
+namespace Cube\Tests\Units\Routine;
 
 use DateInterval;
 use DateTime;
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Routine\CronExpression;
+use Cube\Routine\CronExpression;
 
 class CronExpressionTest extends TestCase
 {

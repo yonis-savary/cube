@@ -1,14 +1,14 @@
 <?php
 
-namespace YonisSavary\Cube\Configuration;
+namespace Cube\Configuration;
 
 use Exception;
 use InvalidArgumentException;
 use RuntimeException;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Env\Cache;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Core\Component;
+use Cube\Env\Cache;
+use Cube\Env\Storage;
+use Cube\Utils\Path;
 
 class Configuration
 {

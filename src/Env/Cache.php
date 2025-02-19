@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Env;
+namespace Cube\Env;
 
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Env\Cache\Element;
-use YonisSavary\Cube\Env\Storage;
+use Cube\Core\Component;
+use Cube\Env\Cache\Element;
+use Cube\Env\Storage;
 
 class Cache
 {
@@ -46,6 +46,11 @@ class Cache
             return $this->index[$key]->getValue();
 
         return $default;
+    }
+
+    public function try(string $key): mixed
+    {
+        return $this->get($key, false);
     }
 
     public function &getReference(string $key, mixed $default=null, int $timeToLive=self::MONTH, ?int $creationDate=null): mixed

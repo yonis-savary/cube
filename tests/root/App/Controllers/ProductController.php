@@ -3,14 +3,12 @@
 namespace App\Controllers;
 
 use App\Controllers\Requests\StoreProductRequest;
-use YonisSavary\Cube\Http\Response;
+use Cube\Http\Response;
 use App\Models\Product;
-use App\Models\ProductManager;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Web\Controller;
-use YonisSavary\Cube\Web\Route;
-use YonisSavary\Cube\Web\Router;
+use Cube\Http\Request;
+use Cube\Web\Controller;
+use Cube\Web\Route;
+use Cube\Web\Router;
 
 class ProductController extends Controller
 {

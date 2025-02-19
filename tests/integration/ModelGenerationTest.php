@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Integration;
+namespace Cube\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Utils\Shell;
+use Cube\Utils\Shell;
 
 class ModelGenerationTest extends TestCase
 {

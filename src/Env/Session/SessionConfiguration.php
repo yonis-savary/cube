@@ -1,12 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Env\Session;
+namespace Cube\Env\Session;
 
-use YonisSavary\Cube\Configuration\ConfigurationElement;
+use Cube\Configuration\ConfigurationElement;
 
 class SessionConfiguration extends ConfigurationElement
 {
     public function __construct(
-        public readonly ?string $namespace=null
+        public readonly string $namespace="cube"
     ){}
 }

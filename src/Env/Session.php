@@ -1,11 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Env;
+namespace Cube\Env;
 
 use RuntimeException;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Env\Session\SessionConfiguration;
+use Cube\Core\Autoloader;
+use Cube\Core\Component;
+use Cube\Env\Session\SessionConfiguration;
+use InvalidArgumentException;
 
 class Session
 {
@@ -21,6 +22,9 @@ class Session
 
     public function __construct(?string $namespace=null)
     {
+        if (!$namespace)
+            throw new InvalidArgumentException("Invalid session namespace [$namespace], namespace cannot be empty");
+
         $this->namespace = $namespace;
 
         $status = session_start();

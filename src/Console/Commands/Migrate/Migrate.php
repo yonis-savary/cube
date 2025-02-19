@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Migrate;
+namespace Cube\Console\Commands\Migrate;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Console\Commands\Model\Generate;
-use YonisSavary\Cube\Database\MigrationManager;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Console\Commands\Model\Generate;
+use Cube\Database\MigrationManager;
 
 class Migrate extends Command
 {

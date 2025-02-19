@@ -1,15 +1,15 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Routine;
+namespace Cube\Console\Commands\Routine;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Routine\AbstractQueue;
-use YonisSavary\Cube\Routine\Scheduler;
-use YonisSavary\Cube\Utils\Console;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
+use Cube\Logger\Logger;
+use Cube\Routine\Queue;
+use Cube\Routine\Scheduler;
+use Cube\Utils\Console;
 
 class Launch extends Command
 {
@@ -29,12 +29,12 @@ class Launch extends Command
 
             Console::print("Processing queues handlers...");
 
-            $toLaunch = Bunch::of(Autoloader::classesThatExtends(AbstractQueue::class))
+            $toLaunch = Bunch::of(Autoloader::classesThatExtends(Queue::class))
             ->map(fn($x) => new $x)
-            ->filter(fn(AbstractQueue $queue) => $queue::shouldLaunch())
+            ->filter(fn(Queue $queue) => $queue::shouldLaunch())
             ->get();
 
-            Console::withProgressBar($toLaunch, function(AbstractQueue $queue) {
+            Console::withProgressBar($toLaunch, function(Queue $queue) {
                 $count = $queue::batchSize();
                 $trueCount = max($queue::countToProcess(), $count);
 

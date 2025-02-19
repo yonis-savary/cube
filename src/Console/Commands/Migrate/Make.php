@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Migrate;
+namespace Cube\Console\Commands\Migrate;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Database\MigrationManager;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Utils\Console;
-use YonisSavary\Cube\Utils\Shell;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Database\MigrationManager;
+use Cube\Env\Storage;
+use Cube\Utils\Console;
+use Cube\Utils\Shell;
 
 class Make extends Command
 {

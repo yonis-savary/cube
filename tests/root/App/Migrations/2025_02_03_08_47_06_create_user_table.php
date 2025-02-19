@@ -1,6 +1,6 @@
 <?php
 
-use YonisSavary\Cube\Database\Migration\Migration;
+use Cube\Database\Migration\Migration;
 
 return new Migration(
     "CREATE TABLE user_type (

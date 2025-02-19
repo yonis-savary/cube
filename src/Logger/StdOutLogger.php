@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Logger;
+namespace Cube\Logger;
 
 use Stringable;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Logger\Events\LoggedMessage;
+use Cube\Data\Bunch;
+use Cube\Logger\Events\LoggedMessage;
 
 class StdOutLogger extends Logger
 {

@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Models\Events;
+namespace Cube\Models\Events;
 
-use YonisSavary\Cube\Event\AbstractEvent;
-use YonisSavary\Cube\Models\Model;
+use Cube\Event\Event;
+use Cube\Models\Model;
 
-class SavedModel extends AbstractEvent
+class SavedModel extends Event
 {
     public function __construct(
         public Model $created

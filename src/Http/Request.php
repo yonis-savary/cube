@@ -1,14 +1,14 @@
 <?php
 
-namespace YonisSavary\Cube\Http;
+namespace Cube\Http;
 
 use Psr\Log\LoggerInterface;
 use Stringable;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Http\Rules\Validator;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Utils\Text;
-use YonisSavary\Cube\Web\Route;
+use Cube\Data\Bunch;
+use Cube\Http\Rules\Validator;
+use Cube\Logger\Logger;
+use Cube\Utils\Text;
+use Cube\Web\Router\Route;
 
 class Request extends HttpMessage
 {
@@ -252,6 +252,11 @@ class Request extends HttpMessage
         return $getParamsGotPriority ?
             array_merge($this->post, $this->get):
             array_merge($this->get, $this->post);
+    }
+
+    public function getCookies(): array
+    {
+        return $this->cookies;
     }
 
     public function setRoute(Route $route)

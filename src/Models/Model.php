@@ -1,23 +1,23 @@
 <?php
 
-namespace YonisSavary\Cube\Models;
+namespace Cube\Models;
 
 use InvalidArgumentException;
 use RuntimeException;
 use stdClass;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Database\Query;
-use YonisSavary\Cube\Database\Query\FieldComparaison;
-use YonisSavary\Cube\Event\EventDispatcher;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Rules\Rule;
-use YonisSavary\Cube\Http\Rules\Validator;
-use YonisSavary\Cube\Models\Events\SavedModel;
-use YonisSavary\Cube\Models\Relations\HasMany;
-use YonisSavary\Cube\Models\Relations\HasOne;
-use YonisSavary\Cube\Models\Relations\Relation;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
+use Cube\Database\Database;
+use Cube\Database\Query;
+use Cube\Database\Query\FieldComparaison;
+use Cube\Event\EventDispatcher;
+use Cube\Http\Request;
+use Cube\Http\Rules\Rule;
+use Cube\Http\Rules\Validator;
+use Cube\Models\Events\SavedModel;
+use Cube\Models\Relations\HasMany;
+use Cube\Models\Relations\HasOne;
+use Cube\Models\Relations\Relation;
 
 use function Cube\debug;
 
@@ -37,6 +37,16 @@ abstract class Model extends EventDispatcher
     public static function primaryKey(): ?string
     {
         return null;
+    }
+
+    public function id(): mixed
+    {
+        /** @var class-string<static> $self */
+        $self = get_called_class();
+
+        $primary = $self::primaryKey();
+
+        return $this->$primary ?? false;
     }
 
     public static function hasField(string $field): bool

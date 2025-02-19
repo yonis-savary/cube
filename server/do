@@ -1,12 +1,12 @@
 <?php
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Console\Commands\Help;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Utils\Console;
-use YonisSavary\Cube\Utils\Shell;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Console\Commands\Help;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
+use Cube\Utils\Console;
+use Cube\Utils\Shell;
 
 set_time_limit(0);
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Console;
+namespace Cube\Console;
 
 abstract class Command
 {

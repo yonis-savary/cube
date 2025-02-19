@@ -1,12 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Cache;
+namespace Cube\Console\Commands\Cache;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Env\Cache;
-use YonisSavary\Cube\Utils\Console;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Env\Cache;
+use Cube\Utils\Console;
+use Cube\Utils\Path;
 
 class Clear extends Command
 {

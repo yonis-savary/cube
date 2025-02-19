@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Routine\Cron;
+namespace Cube\Routine\Cron;
 
 class SpecificValue implements CronValue
 {

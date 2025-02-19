@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Http;
+namespace Cube\Http;
 
 use CurlHandle;
 use RuntimeException;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Logger\NullLogger;
-use YonisSavary\Cube\Utils\Utils;
+use Cube\Data\Bunch;
+use Cube\Logger\Logger;
+use Cube\Logger\NullLogger;
+use Cube\Utils\Utils;
 
 class HttpClient
 {
@@ -41,7 +41,7 @@ class HttpClient
 
     protected Request $request;
 
-    protected int $lastFetchDurationMicro;
+    protected float $lastFetchDurationMicro;
 
     public function __construct(Request $request)
     {

@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Routine\Cron;
+namespace Cube\Routine\Cron;
 
 use InvalidArgumentException;
-use YonisSavary\Cube\Data\Bunch;
+use Cube\Data\Bunch;
 
 class StepValue implements CronValue
 {

@@ -1,7 +1,5 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web;
 
-use YonisSavary\Cube\Web\Router\Service;
-
-abstract class Controller extends Service {}
+abstract class Controller extends WebAPI {}

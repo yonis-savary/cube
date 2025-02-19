@@ -1,9 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web\Router;
 
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Http\Request;
+use Cube\Utils\Path;
+
+use function Cube\debug;
 
 class RouteGroup
 {
@@ -41,6 +43,8 @@ class RouteGroup
     {
         $route = new Route("/{any:any}", fn() => null);
         $this->applyToRoute($route);
+
+        debug($request->getPath() ." === ".$this->prefix);
 
         return ($request->getPath() === $this->prefix) || $route->match($request);
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Http;
+namespace Cube\Http;
 
 class StatusCode
 {

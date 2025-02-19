@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Core\Autoloader;
+namespace Cube\Core\Autoloader;
 
-use YonisSavary\Cube\Configuration\ConfigurationElement;
+use Cube\Configuration\ConfigurationElement;
 
 class AutoloaderConfiguration extends ConfigurationElement
 {

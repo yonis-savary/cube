@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Routine;
+namespace Cube\Routine;
 
 use DateTime;
 use InvalidArgumentException;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Routine\Cron\CronValue;
+use Cube\Core\Autoloader;
+use Cube\Routine\Cron\CronValue;
 
 class CronExpression
 {

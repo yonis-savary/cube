@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Database\Query;
+namespace Cube\Database\Query;
 
 use InvalidArgumentException;
-use YonisSavary\Cube\Models\DummyModel;
-use YonisSavary\Cube\Models\ModelField;
+use Cube\Models\DummyModel;
+use Cube\Models\ModelField;
 
 class Field
 {

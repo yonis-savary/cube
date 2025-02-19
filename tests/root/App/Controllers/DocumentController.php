@@ -3,13 +3,13 @@
 namespace App\Controllers;
 
 use App\Controllers\Requests\StoreDocumentRequest;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Http\Response;
-use YonisSavary\Cube\Http\StatusCode;
-use YonisSavary\Cube\Http\Upload;
-use YonisSavary\Cube\Web\Controller;
-use YonisSavary\Cube\Web\Route;
-use YonisSavary\Cube\Web\Router;
+use Cube\Env\Storage;
+use Cube\Http\Response;
+use Cube\Http\StatusCode;
+use Cube\Http\Upload;
+use Cube\Web\Controller;
+use Cube\Web\Route;
+use Cube\Web\Router;
 
 class DocumentController extends Controller
 {

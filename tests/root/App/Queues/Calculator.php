@@ -2,11 +2,11 @@
 
 namespace App\Queues;
 
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Routine\AbstractQueue;
+use Cube\Logger\Logger;
+use Cube\Routine\Queue;
 use App\Queues\Calculator\Addition;
 
-class Calculator extends AbstractQueue
+class Calculator extends Queue
 {
     public static function batchSize(): int
     {

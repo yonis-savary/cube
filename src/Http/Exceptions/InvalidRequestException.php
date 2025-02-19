@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Http\Exceptions;
+namespace Cube\Http\Exceptions;
 
 use RuntimeException;
-use YonisSavary\Cube\Http\Request;
+use Cube\Http\Request;
 
 class InvalidRequestException extends RuntimeException
 {

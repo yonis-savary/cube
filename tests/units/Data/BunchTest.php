@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Data;
+namespace Cube\Tests\Units\Data;
 
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Data\Bunch;
+use Cube\Data\Bunch;
 
 class BunchTest extends TestCase
 {

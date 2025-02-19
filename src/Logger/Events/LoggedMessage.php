@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Logger\Events;
+namespace Cube\Logger\Events;
 
 use Stringable;
-use YonisSavary\Cube\Event\AbstractEvent;
+use Cube\Event\Event;
 
-class LoggedMessage extends AbstractEvent
+class LoggedMessage extends Event
 {
     public function __construct(
         readonly public string $level,

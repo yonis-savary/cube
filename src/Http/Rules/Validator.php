@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Http\Rules;
+namespace Cube\Http\Rules;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Http\Request;
+use Cube\Data\Bunch;
+use Cube\Http\Request;
 
 class Validator
 {
-    /** @var array<string,AbstractRule>|array<AbstractRule> */
+    /** @var array<string,Rule>|array<Rule> */
     public array $rules = [];
 
     public function __construct(array $rules)
@@ -27,7 +27,7 @@ class Validator
     }
 
     /**
-     * @param \Closure(string,AbstractRule) $valueGetter
+     * @param \Closure(string,Rule) $valueGetter
      */
     protected function genericValidate(callable $valueGetter): true|array
     {
@@ -36,7 +36,7 @@ class Validator
         $errors = [];
 
         $valid = true;
-        /** @var AbstractRule $rule */
+        /** @var Rule $rule */
         foreach ($validator as $name => $rule)
         {
             $currentValue = $valueGetter($name, $rule);
@@ -58,7 +58,7 @@ class Validator
 
     public function validateArray(array $array): true|array
     {
-        /** @var AbstractRule $rule */
+        /** @var Rule $rule */
         return $this->genericValidate(
             fn($name) => $array[$name] ?? null
         );
@@ -77,7 +77,7 @@ class Validator
 
     public function getLastValues(): array
     {
-        /** @var array<string,AbstractRule> $rules */
+        /** @var array<string,Rule> $rules */
         $rules = $this->rules;
 
         return Bunch::unzip($rules)

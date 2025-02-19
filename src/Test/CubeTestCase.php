@@ -1,18 +1,16 @@
 <?php
 
-namespace YonisSavary\Cube\Test;
+namespace Cube\Test;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Upload;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Tests\Integration\Utils;
-use YonisSavary\Cube\Utils\Shell;
-use YonisSavary\Cube\Web\CubeServer;
+use Cube\Core\Autoloader;
+use Cube\Database\Database;
+use Cube\Http\Request;
+use Cube\Http\Upload;
+use Cube\Logger\Logger;
+use Cube\Models\Model;
+use Cube\Web\CubeServer;
 
 abstract class CubeTestCase extends TestCase
 {

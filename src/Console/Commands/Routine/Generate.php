@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Routine;
+namespace Cube\Console\Commands\Routine;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Utils\Console;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Core\Autoloader;
+use Cube\Utils\Console;
 
 class Generate extends Command
 {

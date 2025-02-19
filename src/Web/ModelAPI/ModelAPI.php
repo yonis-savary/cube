@@ -1,42 +1,76 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web\ModelAPI;
 
 use Exception;
 use InvalidArgumentException;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Database\Query;
-use YonisSavary\Cube\Database\Query\RawCondition;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
-use YonisSavary\Cube\Http\StatusCode;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Models\ModelField;
-use YonisSavary\Cube\Utils\Utils;
-use YonisSavary\Cube\Web\ModelAPI\ModelAPIConfiguration;
-use YonisSavary\Cube\Web\Route;
-use YonisSavary\Cube\Web\Router;
-use YonisSavary\Cube\Web\Router\Service;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
+use Cube\Database\Database;
+use Cube\Database\Query;
+use Cube\Database\Query\RawCondition;
+use Cube\Http\Request;
+use Cube\Http\Response;
+use Cube\Http\StatusCode;
+use Cube\Models\Model;
+use Cube\Models\ModelField;
+use Cube\Utils\Utils;
+use Cube\Web\Controller;
+use Cube\Web\ModelAPI\ModelAPIModes;
+use Cube\Web\Router\Route;
+use Cube\Web\Router\RouteGroup;
+use Cube\Web\Router\Router;
 
-class ModelAPI extends Service
+abstract class ModelAPI extends Controller
 {
     const ROUTE_EXTRAS_MODEL_KEY = 'model-api-class';
 
-    protected Model $model;
-    protected ModelAPIConfiguration $configuration;
+    const CREATE = ModelAPIModes::CREATE;
+    const READ   = ModelAPIModes::READ;
+    const UPDATE = ModelAPIModes::UPDATE;
+    const DELETE = ModelAPIModes::DELETE;
 
-    public function __construct(
-        string $modelClass,
-        ?ModelAPIConfiguration $configuration=null
-    )
+    protected Model $model;
+    protected RouteGroup $group;
+
+    /**
+     * @var array<ModelAPIModes>
+     */
+    protected array $modes;
+
+    /**
+     * @return class-string<Model>
+     */
+    abstract public function getModelClass(): string;
+
+    public function getRouteGroup(): RouteGroup
     {
+        return new RouteGroup();
+    }
+
+    /**
+     * @return array<ModelAPIModes>
+     */
+    public function getModes(): array
+    {
+        return [
+            self::CREATE,
+            self::READ,
+            self::UPDATE,
+            self::DELETE
+        ];
+    }
+
+    public function __construct()
+    {
+        $modelClass = $this->getModelClass();
         if (!Autoloader::extends($modelClass, Model::class))
             throw new InvalidArgumentException('$modelClass must extends Model class');
 
         $this->model = new $modelClass;
-        $this->configuration = $configuration ??= ModelAPIConfiguration::resolve();
+
+        $this->group = $this->getRouteGroup();
+        $this->modes = $this->getModes();
     }
 
     public function routes(Router $router): void
@@ -45,22 +79,26 @@ class ModelAPI extends Service
 
         /** @var self $self */
         $self = get_called_class();
+        $modes = $this->modes;
 
-        $extras = $this->configuration->routeExtras;
-        $extras[self::ROUTE_EXTRAS_MODEL_KEY] = $this->model::class;
+        $modelGroup = $this->group->mergeWith(new RouteGroup(
+            $table,
+            extras: [self::ROUTE_EXTRAS_MODEL_KEY => $this->model::class]
+        ));
 
         $router->group(
-            $table,
-            $this->configuration->middlewares,
-            $extras,
-        function(Router $router) use ($self) {
-            $router->addRoutes(
-                Route::post("/", [$self, "createItems"]),
-                Route::get("/", [$self, "readItems"]),
-                new Route("/", [$self, "updateItem"], ['PUT', 'PATCH']),
-                Route::delete("/", [$self, "deleteItem"]),
-            );
-        });
+            $modelGroup->prefix,
+            $modelGroup->middlewares,
+            $modelGroup->extras,
+            function(Router $router) use ($self, $modes) {
+                $router->addRoutes(
+                    in_array(self::CREATE, $modes) ? Route::post("/", [$self, "createItems"]) : null,
+                    in_array(self::READ, $modes) ? Route::get("/", [$self, "readItems"]) : null,
+                    in_array(self::UPDATE, $modes) ? new Route("/", [$self, "updateItem"], ['PUT', 'PATCH']) : null,
+                    in_array(self::DELETE, $modes) ? Route::delete("/", [$self, "deleteItem"]) : null,
+                );
+            }
+        );
     }
 
     protected static function getModel(Request $request): Model

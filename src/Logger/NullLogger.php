@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Logger;
+namespace Cube\Logger;
 
 use Stringable;
 

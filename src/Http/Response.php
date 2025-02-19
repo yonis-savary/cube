@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Http;
+namespace Cube\Http;
 
 use Psr\Log\LoggerInterface;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Models\Model;
+use Cube\Logger\Logger;
+use Cube\Models\Model;
 
 class Response extends HttpMessage
 {

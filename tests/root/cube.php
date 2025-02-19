@@ -1,10 +1,10 @@
 <?php
 
-use YonisSavary\Cube\Core\Autoloader\Applications;
-use YonisSavary\Cube\Database\DatabaseConfiguration;
-use YonisSavary\Cube\Web\AssetServer;
-use YonisSavary\Cube\Web\Router\RouterConfiguration;
-use YonisSavary\Cube\Web\StaticServer;
+use Cube\Core\Autoloader\Applications;
+use Cube\Database\DatabaseConfiguration;
+use Cube\Web\AssetServer;
+use Cube\Web\Router\RouterConfiguration;
+use Cube\Web\StaticServer;
 
 use function Cube\env;
 
@@ -16,7 +16,7 @@ return [
     ),
 
     new RouterConfiguration(
-        services: [
+        apis: [
             AssetServer::class,
             new StaticServer("App/Static")
         ]

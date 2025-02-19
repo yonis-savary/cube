@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Http\Exceptions;
+namespace Cube\Http\Exceptions;
 
 use RuntimeException;
 

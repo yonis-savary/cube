@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Models\ModelGenerator\Adapters;
+namespace Cube\Models\ModelGenerator\Adapters;
 
-class MySQL extends AbstractDatabaseAdapter
+class MySQL extends DatabaseAdapter
 {
     public function getSupportedDriver(): string|array
     {

@@ -1,9 +1,9 @@
 <?php
 
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Web\CubeServer;
+use Cube\Core\Autoloader;
+use Cube\Http\Request;
+use Cube\Logger\Logger;
+use Cube\Web\CubeServer;
 
 set_time_limit(0);
 

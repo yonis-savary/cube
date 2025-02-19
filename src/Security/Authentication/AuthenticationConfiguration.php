@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Security\Authentication;
+namespace Cube\Security\Authentication;
 
-use YonisSavary\Cube\Configuration\ConfigurationElement;
+use Cube\Configuration\ConfigurationElement;
 
 class AuthenticationConfiguration extends ConfigurationElement
 {

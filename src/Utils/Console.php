@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Utils;
+namespace Cube\Utils;
 
 use Stringable;
-use YonisSavary\Cube\Core\Autoloader\Applications;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Logger\Logger;
+use Cube\Core\Autoloader\Applications;
+use Cube\Data\Bunch;
+use Cube\Logger\Logger;
 
 /**
  * @todo Implement no-ansi mode

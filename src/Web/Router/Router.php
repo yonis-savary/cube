@@ -1,19 +1,20 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web\Router;
 
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Env\Cache;
-use YonisSavary\Cube\Http\Exceptions\InvalidRequestException;
-use YonisSavary\Cube\Http\Exceptions\InvalidRequestMethodException;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
-use YonisSavary\Cube\Http\StatusCode;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Web\Router\RouterConfiguration;
-use YonisSavary\Cube\Web\Router\Service;
+use Cube\Core\Autoloader;
+use Cube\Core\Component;
+use Cube\Data\Bunch;
+use Cube\Env\Cache;
+use Cube\Http\Exceptions\InvalidRequestException;
+use Cube\Http\Exceptions\InvalidRequestMethodException;
+use Cube\Http\Request;
+use Cube\Http\Response;
+use Cube\Http\StatusCode;
+use Cube\Models\Model;
+use Cube\Web\Controller;
+use Cube\Web\Router\RouterConfiguration;
+use Cube\Web\WebAPI;
 
 use function Cube\debug;
 
@@ -69,8 +70,8 @@ class Router
         if ($config->loadRoutesFiles)
             $this->loadRoutesFiles();
 
-        foreach($config->services as $service)
-            $this->addService($service);
+        foreach($config->apis as $api)
+            $this->addService($api);
     }
 
     public function loadControllers(): void
@@ -90,18 +91,21 @@ class Router
         });
     }
 
-    public function addService(Service $service): void
+    public function addService(WebAPI $api): void
     {
-        $service->routes($this);
+        $api->routes($this);
     }
 
     /**
-     * @param Route|\Closure(Route) ...$routes
+     * @param Route|\Closure(Router)|null ...$routes
      */
-    public function addRoutes(Route|callable ...$routes): void
+    public function addRoutes(Route|callable |null ...$routes): void
     {
         foreach ($routes as $route)
         {
+            if ($route === null)
+                return;
+
             if ($route instanceof Route)
                 $this->group->addRoute($route);
             else
@@ -208,9 +212,9 @@ class Router
         {
             $this->loadRoutes();
 
-            foreach($this->configuration->services as $service)
+            foreach($this->configuration->apis as $api)
             {
-                $serviceResponse = $service->handle($request);
+                $serviceResponse = $api->handle($request);
                 if ($serviceResponse instanceof Response)
                     return $serviceResponse;
 

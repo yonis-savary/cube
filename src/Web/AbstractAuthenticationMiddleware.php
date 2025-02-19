@@ -1,12 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web;
 
-use YonisSavary\Cube\Env\Session\HasScopedSession;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
+use Cube\Env\Session\HasScopedSession;
+use Cube\Http\Request;
+use Cube\Http\Response;
+use Cube\Web\Router\Router;
 
-abstract class AbstractAuthenticationMiddleware implements Middleware
+abstract class AuthenticationMiddleware implements Middleware
 {
     use HasScopedSession;
 

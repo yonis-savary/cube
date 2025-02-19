@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Http;
+namespace Cube\Http;
 
 abstract class HttpMessage
 {

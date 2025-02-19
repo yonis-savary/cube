@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web;
 
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
-use YonisSavary\Cube\Web\Router\Service;
+use Cube\Env\Storage;
+use Cube\Http\Request;
+use Cube\Http\Response;
+use Cube\Web\Router\WebAPI;
 
-class StaticServer extends Service
+class StaticServer extends WebAPI
 {
     protected Storage $directory;
     protected bool $secure;

@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Configuration;
+namespace Cube\Configuration;
 
 abstract class ConfigurationElement
 {

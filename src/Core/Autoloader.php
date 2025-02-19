@@ -1,22 +1,23 @@
 <?php
 
-namespace YonisSavary\Cube\Core;
+namespace Cube\Core;
 
 use Exception;
 use Throwable;
 use Composer\Autoload\ClassLoader;
 use ErrorException;
-use YonisSavary\Cube\Core\Autoloader\Applications;
-use YonisSavary\Cube\Core\Autoloader\AutoloaderConfiguration;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Env\Cache;
-use YonisSavary\Cube\Env\Environment;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Utils\Path;
-use YonisSavary\Cube\Utils\Shell;
+use ReflectionClass;
+use Cube\Core\Autoloader\Applications;
+use Cube\Core\Autoloader\AutoloaderConfiguration;
+use Cube\Data\Bunch;
+use Cube\Env\Cache;
+use Cube\Env\Environment;
+use Cube\Env\Storage;
+use Cube\Http\Request;
+use Cube\Http\Response;
+use Cube\Logger\Logger;
+use Cube\Utils\Path;
+use Cube\Utils\Shell;
 
 class Autoloader
 {
@@ -261,12 +262,20 @@ class Autoloader
     /**
      * @return array<class-string>
      */
-    protected static function filterClassesWithCache(array &$holder, string $identifier, callable $filter)
+    protected static function filterClassesWithCache(array &$holder, string $identifier, callable $filter, bool $rejectAbstracts=true)
     {
         if ($preprocessed = $holder[$identifier] ?? false)
             return $preprocessed;
 
-        return $holder[$identifier] = Bunch::of(self::classesList())->filter($filter)->get();
+        $classes = Bunch::of(self::classesList())->filter($filter);
+
+        if ($rejectAbstracts)
+            $classes = $classes->filter(function($class) {
+                $reflection = new ReflectionClass($class);
+                return !$reflection->isAbstract();
+            });
+
+        return $holder[$identifier] = $classes->get();
     }
 
     public static function extends($class, $parentClass, bool $considerSelfAsExtending=true): bool
@@ -307,13 +316,14 @@ class Autoloader
      * @param class-string<TClass> $parentClass
      * @return array<class-string<TClass>>
      */
-    public static function classesThatExtends(string $parentClass): array
+    public static function classesThatExtends(string $parentClass, bool $rejectAbstracts=true): array
     {
         self::$classIndex["extends"] ??= [];
         return self::filterClassesWithCache(
             self::$classIndex["extends"],
-            (string) $parentClass,
-            fn($class) => self::extends($class, $parentClass, false)
+            ((string) $parentClass) . ($rejectAbstracts ? "": "-r"),
+            fn($class) => self::extends($class, $parentClass, false),
+            $rejectAbstracts
         );
     }
 
@@ -322,13 +332,14 @@ class Autoloader
      * @param class-string<TInterface> $interface
      * @return array<TInterface>
      */
-    public static function classesThatImplements(string $interface): array
+    public static function classesThatImplements(string $interface, bool $rejectAbstracts=true): array
     {
         self::$classIndex["implements"] ??= [];
         return self::filterClassesWithCache(
             self::$classIndex["implements"],
-            (string) $interface,
-            fn($class) => self::implements($class, $interface)
+            ((string) $interface) . ($rejectAbstracts ? "": "-r"),
+            fn($class) => self::implements($class, $interface),
+            $rejectAbstracts
         );
     }
 
@@ -337,13 +348,14 @@ class Autoloader
      * @param class-string<TTrait> $trait
      * @return array<TTrait>
      */
-    public static function classesThatUses(string $trait): array
+    public static function classesThatUses(string $trait, bool $rejectAbstracts=true): array
     {
         self::$classIndex["uses"] ??= [];
         return self::filterClassesWithCache(
             self::$classIndex["uses"],
-            (string) $trait,
-            fn($class) => self::uses($class, $trait)
+            ((string) $trait) . ($rejectAbstracts ? "": "-r"),
+            fn($class) => self::uses($class, $trait),
+            $rejectAbstracts
         );
     }
 }

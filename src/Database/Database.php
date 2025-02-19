@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Database;
+namespace Cube\Database;
 
 use PDO;
 use PDOException;
 use PDOStatement;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Core\Component;
+use Cube\Env\Storage;
+use Cube\Utils\Path;
 
 class Database
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Models;
+namespace Cube\Models;
 
 class DummyModel extends Model
 {

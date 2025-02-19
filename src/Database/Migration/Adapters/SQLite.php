@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Database\Migration\Adapters;
+namespace Cube\Database\Migration\Adapters;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\MigrationManager;
+use Cube\Data\Bunch;
+use Cube\Database\MigrationManager;
 
 class SQLite extends MigrationManager
 {

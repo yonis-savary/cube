@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Env\Cache;
+namespace Cube\Env\Cache;
 
-use YonisSavary\Cube\Env\Cache;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
+use Cube\Env\Cache;
+use Cube\Env\Storage;
+use Cube\Logger\Logger;
 
 class Element
 {

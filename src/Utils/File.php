@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Utils;
+namespace Cube\Utils;
 
 class File
 {

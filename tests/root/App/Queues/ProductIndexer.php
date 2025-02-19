@@ -3,10 +3,10 @@
 namespace App\Queues;
 
 use App\Models\Product;
-use YonisSavary\Cube\Routine\AbstractQueue;
-use YonisSavary\Cube\Utils\Console;
+use Cube\Routine\Queue;
+use Cube\Utils\Console;
 
-class ProductIndexer extends AbstractQueue
+class ProductIndexer extends Queue
 {
     public static function batchSize(): int
     {

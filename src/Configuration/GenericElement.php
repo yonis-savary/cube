@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Configuration;
+namespace Cube\Configuration;
 
 class GenericElement extends ConfigurationElement
 {

@@ -1,20 +1,20 @@
 <?php
 
-namespace YonisSavary\Cube\Database\Builders;
+namespace Cube\Database\Builders;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Database\Query;
-use YonisSavary\Cube\Database\Query\Field;
-use YonisSavary\Cube\Database\Query\FieldComparaison;
-use YonisSavary\Cube\Database\Query\FieldCondition;
-use YonisSavary\Cube\Database\Query\InsertField;
-use YonisSavary\Cube\Database\Query\InsertValues;
-use YonisSavary\Cube\Database\Query\Join;
-use YonisSavary\Cube\Database\Query\Order;
-use YonisSavary\Cube\Database\Query\QueryBase;
-use YonisSavary\Cube\Database\Query\RawCondition;
-use YonisSavary\Cube\Database\Query\UpdateField;
+use Cube\Data\Bunch;
+use Cube\Database\Database;
+use Cube\Database\Query;
+use Cube\Database\Query\Field;
+use Cube\Database\Query\FieldComparaison;
+use Cube\Database\Query\FieldCondition;
+use Cube\Database\Query\InsertField;
+use Cube\Database\Query\InsertValues;
+use Cube\Database\Query\Join;
+use Cube\Database\Query\Order;
+use Cube\Database\Query\QueryBase;
+use Cube\Database\Query\RawCondition;
+use Cube\Database\Query\UpdateField;
 
 class SQLite extends MySQL
 {

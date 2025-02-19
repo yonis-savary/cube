@@ -1,9 +1,9 @@
 <?php
 
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Utils\Shell;
-use YonisSavary\Cube\Web\Router;
+use Cube\Core\Autoloader;
+use Cube\Http\Request;
+use Cube\Utils\Shell;
+use Cube\Web\Router;
 
 $loader = include_once "../vendor/autoload.php";
 

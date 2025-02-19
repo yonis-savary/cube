@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Routine;
+namespace Cube\Routine;
 
 use DateTime;
 
-abstract class AbstractRoutine
+abstract class Routine
 {
     abstract public static function when(): CronExpression;
 

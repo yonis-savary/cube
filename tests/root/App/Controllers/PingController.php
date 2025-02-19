@@ -2,10 +2,10 @@
 
 namespace App\Controllers;
 
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Web\Controller;
-use YonisSavary\Cube\Web\Route;
-use YonisSavary\Cube\Web\Router;
+use Cube\Http\Request;
+use Cube\Web\Controller;
+use Cube\Web\Route;
+use Cube\Web\Router;
 
 class PingController extends Controller
 {

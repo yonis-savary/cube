@@ -1,12 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web;
 
 use Symfony\Component\Process\Process;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Logger\NullLogger;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Env\Storage;
+use Cube\Logger\Logger;
+use Cube\Logger\NullLogger;
+use Cube\Utils\Path;
 
 class CubeServer
 {

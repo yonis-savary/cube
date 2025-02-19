@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Web\ModelAPI;
+namespace Cube\Web\ModelAPI;
 
-use YonisSavary\Cube\Configuration\ConfigurationElement;
+use Cube\Configuration\ConfigurationElement;
 
 class ModelAPIConfiguration extends ConfigurationElement
 {

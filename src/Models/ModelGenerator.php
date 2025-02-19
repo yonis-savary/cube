@@ -1,15 +1,15 @@
 <?php
 
-namespace YonisSavary\Cube\Models;
+namespace Cube\Models;
 
 use Exception;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Models\ModelGenerator\Adapters\AbstractDatabaseAdapter;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Core\Autoloader;
+use Cube\Core\Component;
+use Cube\Data\Bunch;
+use Cube\Database\Database;
+use Cube\Env\Storage;
+use Cube\Models\ModelGenerator\Adapters\DatabaseAdapter;
+use Cube\Utils\Path;
 
 class ModelGenerator
 {
@@ -21,14 +21,14 @@ class ModelGenerator
     {
         $driver = $database->getDriver();
 
-        $adapter = Bunch::of(Autoloader::classesThatExtends(AbstractDatabaseAdapter::class))
+        $adapter = Bunch::of(Autoloader::classesThatExtends(DatabaseAdapter::class))
         ->map(fn($x) => new $x($database))
-        ->first(fn(AbstractDatabaseAdapter $x) => Bunch::of($x->getSupportedDriver())->has($driver));
+        ->first(fn(DatabaseAdapter $x) => Bunch::of($x->getSupportedDriver())->has($driver));
 
         if (!$adapter)
             throw new Exception("Could not find adapter for [$driver] database");
 
-        /** @var AbstractDatabaseAdapter $adapter */
+        /** @var DatabaseAdapter $adapter */
         $adapter->process();
 
         $namespace = $forceNamespace ?? Path::pathToNamespace($destination->getRoot());

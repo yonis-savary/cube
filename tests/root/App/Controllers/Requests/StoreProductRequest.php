@@ -2,8 +2,8 @@
 
 namespace App\Controllers\Requests;
 
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Rules\Rule;
+use Cube\Http\Request;
+use Cube\Http\Rules\Rule;
 
 class StoreProductRequest extends Request
 {

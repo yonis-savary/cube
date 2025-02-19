@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Env\Session;
+namespace Cube\Env\Session;
 
-use YonisSavary\Cube\Env\Session;
+use Cube\Env\Session;
 
 trait HasScopedSession
 {

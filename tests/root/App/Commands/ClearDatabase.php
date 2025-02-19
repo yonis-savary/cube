@@ -2,13 +2,13 @@
 
 namespace App\Commands;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Models\DummyModel;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Utils\Shell;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Core\Autoloader;
+use Cube\Env\Storage;
+use Cube\Models\DummyModel;
+use Cube\Models\Model;
+use Cube\Utils\Shell;
 
 class ClearDatabase extends Command
 {

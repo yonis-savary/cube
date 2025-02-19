@@ -1,17 +1,17 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Model;
+namespace Cube\Console\Commands\Model;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Models\ModelField;
-use YonisSavary\Cube\Models\Relations\HasMany;
-use YonisSavary\Cube\Models\Relations\HasOne;
-use YonisSavary\Cube\Utils\Text;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
+use Cube\Env\Storage;
+use Cube\Models\Model;
+use Cube\Models\ModelField;
+use Cube\Models\Relations\HasMany;
+use Cube\Models\Relations\HasOne;
+use Cube\Utils\Text;
 
 class ToTypes extends Command
 {

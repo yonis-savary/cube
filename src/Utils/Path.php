@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Utils;
+namespace Cube\Utils;
 
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
 
 class Path
 {

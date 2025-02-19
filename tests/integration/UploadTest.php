@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Integration;
+namespace Cube\Tests\Integration;
 
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Test\CubeTestCase;
-use YonisSavary\Cube\Utils\File;
-use YonisSavary\Cube\Utils\Shell;
-use YonisSavary\Cube\Web\CubeServer;
+use Cube\Database\Database;
+use Cube\Logger\Logger;
+use Cube\Test\CubeTestCase;
+use Cube\Utils\File;
+use Cube\Utils\Shell;
+use Cube\Web\CubeServer;
 
 class UploadTest extends CubeTestCase
 {

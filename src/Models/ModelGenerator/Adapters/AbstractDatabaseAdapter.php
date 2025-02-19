@@ -1,12 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Models\ModelGenerator\Adapters;
+namespace Cube\Models\ModelGenerator\Adapters;
 
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Models\Relations\Relation;
-use YonisSavary\Cube\Models\ModelGenerator\Table;
+use Cube\Database\Database;
+use Cube\Models\Relations\Relation;
+use Cube\Models\ModelGenerator\Table;
 
-abstract class AbstractDatabaseAdapter
+abstract class DatabaseAdapter
 {
     protected Database $database;
 

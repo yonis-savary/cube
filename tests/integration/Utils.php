@@ -1,14 +1,14 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Integration;
+namespace Cube\Tests\Integration;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Database\Migration\Migration;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Utils\Path;
-use YonisSavary\Cube\Utils\Shell;
+use Cube\Data\Bunch;
+use Cube\Database\Database;
+use Cube\Database\Migration\Migration;
+use Cube\Env\Storage;
+use Cube\Logger\Logger;
+use Cube\Utils\Path;
+use Cube\Utils\Shell;
 
 class Utils
 {

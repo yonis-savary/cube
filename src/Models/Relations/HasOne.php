@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Models\Relations;
+namespace Cube\Models\Relations;
 
-use YonisSavary\Cube\Models\Model;
+use Cube\Models\Model;
 
 /**
  * @template TModel of Model

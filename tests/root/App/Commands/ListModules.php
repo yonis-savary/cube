@@ -2,12 +2,12 @@
 
 namespace App\Commands;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Database;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Data\Bunch;
+use Cube\Database\Database;
 use App\Models\Module;
-use YonisSavary\Cube\Utils\Console;
+use Cube\Utils\Console;
 
 class ListModules extends Command
 {

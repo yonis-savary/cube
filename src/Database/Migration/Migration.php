@@ -1,8 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Database\Migration;
-
-use YonisSavary\Cube\Database\Database;
+namespace Cube\Database\Migration;
 
 class Migration
 {

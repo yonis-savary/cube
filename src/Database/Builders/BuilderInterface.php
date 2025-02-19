@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Database\Builders;
+namespace Cube\Database\Builders;
 
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Database\Query;
+use Cube\Database\Database;
+use Cube\Database\Query;
 
 interface BuilderInterface
 {

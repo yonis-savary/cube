@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Models;
+namespace Cube\Models;
 
 use DateTime;
 use InvalidArgumentException;
-use YonisSavary\Cube\Http\Rules\Rule;
+use Cube\Http\Rules\Rule;
 
 class ModelField
 {

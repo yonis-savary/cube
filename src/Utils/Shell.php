@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Utils;
+namespace Cube\Utils;
 
 use Symfony\Component\Process\Process;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
+use Cube\Console\Command;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
+use Cube\Http\Request;
+use Cube\Http\Response;
 
 class Shell
 {

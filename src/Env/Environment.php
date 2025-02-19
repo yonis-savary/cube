@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Env;
+namespace Cube\Env;
 
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Core\Component;
+use Cube\Logger\Logger;
+use Cube\Utils\Path;
 
 class Environment
 {

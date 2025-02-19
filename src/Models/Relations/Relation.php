@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Models\Relations;
+namespace Cube\Models\Relations;
 
 interface Relation
 {

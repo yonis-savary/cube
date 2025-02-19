@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Event;
+namespace Cube\Event;
 
-class CustomEvent extends AbstractEvent
+class CustomEvent extends Event
 {
     public function getName(): string
     {

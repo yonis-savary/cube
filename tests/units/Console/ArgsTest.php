@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Console;
+namespace Cube\Tests\Units\Console;
 
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Console\Args;
+use Cube\Console\Args;
 
 class ArgsTest extends TestCase
 {

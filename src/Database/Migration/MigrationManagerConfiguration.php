@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Database\Migration;
+namespace Cube\Database\Migration;
 
-use YonisSavary\Cube\Configuration\ConfigurationElement;
+use Cube\Configuration\ConfigurationElement;
 
 class MigrationManagerConfiguration extends ConfigurationElement
 {

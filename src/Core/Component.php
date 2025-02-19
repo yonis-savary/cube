@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Core;
+namespace Cube\Core;
 
 trait Component
 {

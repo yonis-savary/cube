@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Database;
+namespace Cube\Database;
 
-use YonisSavary\Cube\Configuration\ConfigurationElement;
+use Cube\Configuration\ConfigurationElement;
 
 class DatabaseConfiguration extends ConfigurationElement
 {

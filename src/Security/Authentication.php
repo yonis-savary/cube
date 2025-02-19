@@ -1,17 +1,19 @@
 <?php
 
-namespace YonisSavary\Cube\Security;
+namespace Cube\Security;
 
 use InvalidArgumentException;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Env\Session;
-use YonisSavary\Cube\Env\Session\HasScopedSession;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Security\Authentication\AuthenticationConfiguration;
-use YonisSavary\Cube\Utils\Path;
-use YonisSavary\Cube\Utils\Utils;
+use Cube\Core\Autoloader;
+use Cube\Core\Component;
+use Cube\Database\Database;
+use Cube\Env\Session\HasScopedSession;
+use Cube\Models\Model;
+use Cube\Security\Authentication\AuthenticationConfiguration;
+use Cube\Security\Authentication\Events\AuthenticatedUser;
+use Cube\Security\Authentication\Events\FailedAuthentication;
+use Cube\Utils\Path;
+use Cube\Utils\Utils;
+use RuntimeException;
 
 class Authentication
 {
@@ -81,19 +83,27 @@ class Authentication
         $this->saltString($userPassword, $user);
 
         if (!password_verify($userPassword, $hash))
+        {
+            (new FailedAuthentication())->dispatch();
             return false;
+        }
 
         $userPrimaryKey = $model::primaryKey();
         $this->login(
             $user->$userPrimaryKey,
             $user->toArray()
         );
+
+        (new AuthenticatedUser($user, $user->$userPrimaryKey))->dispatch();
+
         return true;
     }
 
-    public function login(mixed $userId, array $userData): void
+    public function login(mixed $userId, ?array $userData=null): void
     {
         $session = $this->getSession();
+
+        $userData ??= $this->model::find($userId);
 
         $session->set($this->getSessionKey(self::SESSION_USER_DATA), $userData);
         $session->set($this->getSessionKey(self::SESSION_USER_ID), $userId);
@@ -105,5 +115,40 @@ class Authentication
 
         $session->unset($this->getSessionKey(self::SESSION_USER_DATA));
         $session->unset($this->getSessionKey(self::SESSION_USER_ID));
+    }
+
+    public function isLogged(): bool
+    {
+        $session = $this->getSession();
+        $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA), false);
+
+        return $userArrayData != false;
+    }
+
+    public function user(): Model
+    {
+        $session = $this->getSession();
+        $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA));
+
+        if (!$this->isLogged())
+            throw new RuntimeException("Cannot retrieve data of unauthenticated user");
+
+        return new Model($userArrayData);
+    }
+
+    public function userId(): mixed
+    {
+        $session = $this->getSession();
+        $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA), false);
+
+        if (!$this->isLogged())
+            throw new RuntimeException("Cannot retrieve data of unauthenticated user");
+
+        $primaryKey = $this->model::primaryKey();
+
+        if (!array_key_exists($primaryKey, $userArrayData))
+            throw new RuntimeException("Could not retrieve $primaryKey key on logged user");
+
+        return $userArrayData[$primaryKey];
     }
 }

@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Http\Rules;
+namespace Cube\Http\Rules;
 
-use YonisSavary\Cube\Http\Upload;
-use YonisSavary\Cube\Utils\File;
+use Cube\Http\Upload;
+use Cube\Utils\File;
 
-class UploadRule extends AbstractRule
+class UploadRule extends Rule
 {
     protected bool $nullable;
 

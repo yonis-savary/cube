@@ -1,17 +1,14 @@
 <?php
 
-namespace YonisSavary\Cube\Models\ModelGenerator\Adapters;
+namespace Cube\Models\ModelGenerator\Adapters;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Models\DummyModel;
-use YonisSavary\Cube\Models\ModelField;
-use YonisSavary\Cube\Models\Relations\HasOne;
-use YonisSavary\Cube\Models\ModelGenerator\Table;
+use Cube\Data\Bunch;
+use Cube\Models\DummyModel;
+use Cube\Models\ModelField;
+use Cube\Models\Relations\HasOne;
+use Cube\Models\ModelGenerator\Table;
 
-use function Cube\debug;
-
-class SQLite extends AbstractDatabaseAdapter
+class SQLite extends DatabaseAdapter
 {
     const SQLITE_TYPES = [
         'INT' => ModelField::INTEGER,

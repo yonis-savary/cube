@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Core\Autoloader;
+namespace Cube\Core\Autoloader;
 
-use YonisSavary\Cube\Configuration\ConfigurationElement;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Configuration\ConfigurationElement;
+use Cube\Utils\Path;
 
 class Applications extends ConfigurationElement
 {

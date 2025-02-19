@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Http;
+namespace Cube\Http;
 
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Env\Storage;
+use Cube\Logger\Logger;
+use Cube\Utils\Path;
 
 class Upload
 {

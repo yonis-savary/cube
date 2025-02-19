@@ -1,20 +1,20 @@
 <?php
 
-namespace YonisSavary\Cube\Database;
+namespace Cube\Database;
 
 use RuntimeException;
 use Throwable;
-use YonisSavary\Cube\Core\Autoloader\Applications;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Database\Migration\Adapters\MySQL;
-use YonisSavary\Cube\Database\Migration\Adapters\SQLite;
-use YonisSavary\Cube\Database\Migration\Migration;
-use YonisSavary\Cube\Database\Migration\MigrationManagerConfiguration;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Utils\Text;
+use Cube\Core\Autoloader\Applications;
+use Cube\Core\Component;
+use Cube\Data\Bunch;
+use Cube\Database\Database;
+use Cube\Database\Migration\Adapters\MySQL;
+use Cube\Database\Migration\Adapters\SQLite;
+use Cube\Database\Migration\Migration;
+use Cube\Database\Migration\MigrationManagerConfiguration;
+use Cube\Env\Storage;
+use Cube\Logger\Logger;
+use Cube\Utils\Text;
 
 abstract class MigrationManager
 {

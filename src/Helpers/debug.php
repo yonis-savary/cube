@@ -2,7 +2,7 @@
 
 namespace Cube;
 
-use YonisSavary\Cube\Logger\Logger;
+use Cube\Logger\Logger;
 
 function debug(mixed ...$values): void
 {

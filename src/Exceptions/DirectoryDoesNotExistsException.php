@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Exceptions;
+namespace Cube\Exceptions;
 
 use InvalidArgumentException;
 

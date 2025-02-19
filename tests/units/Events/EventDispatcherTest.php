@@ -1,10 +1,10 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Events;
+namespace Cube\Tests\Units\Events;
 
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Event\CustomEvent;
-use YonisSavary\Cube\Event\EventDispatcher;
+use Cube\Event\CustomEvent;
+use Cube\Event\EventDispatcher;
 
 class EventDispatcherTest extends TestCase
 {

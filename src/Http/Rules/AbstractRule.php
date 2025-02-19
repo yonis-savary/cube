@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Http\Rules;
+namespace Cube\Http\Rules;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Utils\Text;
+use Cube\Data\Bunch;
+use Cube\Utils\Text;
 
-abstract class AbstractRule
+abstract class Rule
 {
     private const TYPE_CHECKER = "check";
     private const TYPE_TRANSFORMER = "transform";

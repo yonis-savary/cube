@@ -1,12 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Configuration;
+namespace Cube\Tests\Units\Configuration;
 
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Configuration\Configuration;
-use YonisSavary\Cube\Configuration\GenericElement;
-use YonisSavary\Cube\Env\Storage\StorageConfiguration;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Configuration\Configuration;
+use Cube\Configuration\GenericElement;
+use Cube\Env\Storage\StorageConfiguration;
+use Cube\Utils\Path;
 
 class ConfigurationTest extends TestCase
 {

@@ -1,17 +1,17 @@
 <?php
 
-namespace YonisSavary\Cube\Models\ModelGenerator;
+namespace Cube\Models\ModelGenerator;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Models\DummyModel;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Models\ModelField;
-use YonisSavary\Cube\Models\Relations\HasMany;
-use YonisSavary\Cube\Models\Relations\HasOne;
-use YonisSavary\Cube\Models\Relations\Relation;
-use YonisSavary\Cube\Utils\Text;
+use Cube\Data\Bunch;
+use Cube\Env\Storage;
+use Cube\Logger\Logger;
+use Cube\Models\DummyModel;
+use Cube\Models\Model;
+use Cube\Models\ModelField;
+use Cube\Models\Relations\HasMany;
+use Cube\Models\Relations\HasOne;
+use Cube\Models\Relations\Relation;
+use Cube\Utils\Text;
 
 class Table
 {

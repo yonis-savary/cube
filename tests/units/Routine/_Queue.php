@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Tests\Units\Routine;
+namespace Cube\Tests\Units\Routine;
 
 use PHPUnit\Framework\TestCase;
-use YonisSavary\Cube\Tests\App\Queues\Calculator;
+use Cube\Tests\App\Queues\Calculator;
 
 class QueueTest extends TestCase
 {

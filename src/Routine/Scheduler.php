@@ -1,11 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Routine;
+namespace Cube\Routine;
 
 use DateTime;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Logger\Logger;
-use YonisSavary\Cube\Logger\NullLogger;
+use Cube\Core\Component;
 
 class Scheduler
 {

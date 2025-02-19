@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Routine\Cron;
+namespace Cube\Routine\Cron;
 
-use YonisSavary\Cube\Data\Bunch;
+use Cube\Data\Bunch;
 
 class SetOfValues implements CronValue
 {

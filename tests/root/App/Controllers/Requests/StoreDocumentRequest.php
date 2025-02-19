@@ -2,9 +2,9 @@
 
 namespace App\Controllers\Requests;
 
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Rules\UploadRule;
-use YonisSavary\Cube\Utils\File;
+use Cube\Http\Request;
+use Cube\Http\Rules\UploadRule;
+use Cube\Utils\File;
 
 class StoreDocumentRequest extends Request
 {

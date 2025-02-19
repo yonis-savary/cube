@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Database\Query;
+namespace Cube\Database\Query;
 
 class FieldCondition
 {

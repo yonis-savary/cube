@@ -3,9 +3,9 @@
 namespace App\Commands;
 
 use App\Queues\ProductIndexer;
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Utils\Console;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Utils\Console;
 
 class IndexRandomProducts extends Command
 {

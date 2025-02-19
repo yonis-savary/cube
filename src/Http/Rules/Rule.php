@@ -1,16 +1,16 @@
 <?php
 
-namespace YonisSavary\Cube\Http\Rules;
+namespace Cube\Http\Rules;
 
 use InvalidArgumentException;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Utils\Text;
-use YonisSavary\Cube\Utils\Utils;
+use Cube\Core\Autoloader;
+use Cube\Database\Database;
+use Cube\Http\Request;
+use Cube\Models\Model;
+use Cube\Utils\Text;
+use Cube\Utils\Utils;
 
-class Rule extends AbstractRule
+class Rule extends Rule
 {
     protected mixed $value;
 

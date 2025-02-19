@@ -2,7 +2,7 @@
 
 namespace Cube;
 
-use YonisSavary\Cube\Env\Environment;
+use Cube\Env\Environment;
 
 if (!function_exists("env"))
 {

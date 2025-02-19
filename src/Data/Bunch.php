@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Data;
+namespace Cube\Data;
 
-use YonisSavary\Cube\Utils\Utils;
+use Cube\Utils\Utils;
 
 /**
  * @template TKey

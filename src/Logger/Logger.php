@@ -1,17 +1,17 @@
 <?php
 
-namespace YonisSavary\Cube\Logger;
+namespace Cube\Logger;
 
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Stringable;
 use Throwable;
-use YonisSavary\Cube\Core\Component;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Event\EventDispatcher;
-use YonisSavary\Cube\Logger\Events\LoggedMessage;
-use YonisSavary\Cube\Utils\Text;
+use Cube\Core\Component;
+use Cube\Data\Bunch;
+use Cube\Env\Storage;
+use Cube\Event\EventDispatcher;
+use Cube\Logger\Events\LoggedMessage;
+use Cube\Utils\Text;
 
 class Logger extends EventDispatcher implements LoggerInterface
 {

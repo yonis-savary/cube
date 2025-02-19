@@ -1,27 +1,27 @@
 <?php
 
-namespace YonisSavary\Cube\Database;
+namespace Cube\Database;
 
 use Exception;
 use InvalidArgumentException;
 use PDO;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Database\Builders\BuilderInterface;
-use YonisSavary\Cube\Database\Query\Field;
-use YonisSavary\Cube\Database\Query\FieldComparaison;
-use YonisSavary\Cube\Database\Query\FieldCondition;
-use YonisSavary\Cube\Database\Query\InsertField;
-use YonisSavary\Cube\Database\Query\InsertValues;
-use YonisSavary\Cube\Database\Query\Join;
-use YonisSavary\Cube\Database\Query\Limit;
-use YonisSavary\Cube\Database\Query\Order;
-use YonisSavary\Cube\Database\Query\QueryBase;
-use YonisSavary\Cube\Database\Query\SelectField;
-use YonisSavary\Cube\Database\Query\UpdateField;
-use YonisSavary\Cube\Models\DummyModel;
-use YonisSavary\Cube\Models\Model;
-use YonisSavary\Cube\Models\ModelField;
+use Cube\Core\Autoloader;
+use Cube\Data\Bunch;
+use Cube\Database\Builders\BuilderInterface;
+use Cube\Database\Query\Field;
+use Cube\Database\Query\FieldComparaison;
+use Cube\Database\Query\FieldCondition;
+use Cube\Database\Query\InsertField;
+use Cube\Database\Query\InsertValues;
+use Cube\Database\Query\Join;
+use Cube\Database\Query\Limit;
+use Cube\Database\Query\Order;
+use Cube\Database\Query\QueryBase;
+use Cube\Database\Query\SelectField;
+use Cube\Database\Query\UpdateField;
+use Cube\Models\DummyModel;
+use Cube\Models\Model;
+use Cube\Models\ModelField;
 
 /**
  * @template TModel

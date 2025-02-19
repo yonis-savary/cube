@@ -1,8 +1,8 @@
 <?php
 
-namespace YonisSavary\Cube\Console;
+namespace Cube\Console;
 
-use YonisSavary\Cube\Utils\Text;
+use Cube\Utils\Text;
 
 class Args
 {

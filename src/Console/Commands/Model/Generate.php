@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Model;
+namespace Cube\Console\Commands\Model;
 
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Database\Database;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Models\ModelGenerator;
-use YonisSavary\Cube\Utils\Console;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Database\Database;
+use Cube\Env\Storage;
+use Cube\Models\ModelGenerator;
+use Cube\Utils\Console;
 
 class Generate extends Command
 {

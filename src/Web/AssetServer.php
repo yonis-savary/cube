@@ -1,14 +1,15 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web;
 
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
-use YonisSavary\Cube\Http\StatusCode;
-use YonisSavary\Cube\Web\Router\Service;
+use Cube\Core\Autoloader;
+use Cube\Http\Request;
+use Cube\Http\Response;
+use Cube\Http\StatusCode;
+use Cube\Web\Router\Route;
+use Cube\Web\Router\Router;
 
-class AssetServer extends Service
+class AssetServer extends WebAPI
 {
     public function routes(Router $router): void
     {

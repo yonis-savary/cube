@@ -1,13 +1,13 @@
 <?php
 
-namespace YonisSavary\Cube\Routine;
+namespace Cube\Routine;
 
 use Throwable;
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Env\Storage;
-use YonisSavary\Cube\Logger\Logger;
+use Cube\Data\Bunch;
+use Cube\Env\Storage;
+use Cube\Logger\Logger;
 
-abstract class AbstractQueue extends AbstractRoutine
+abstract class Queue extends Routine
 {
     abstract public static function batchSize(): int;
 

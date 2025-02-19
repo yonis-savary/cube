@@ -1,9 +1,9 @@
 <?php
 
-namespace YonisSavary\Cube\Env\Storage;
+namespace Cube\Env\Storage;
 
-use YonisSavary\Cube\Data\Bunch;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Data\Bunch;
+use Cube\Utils\Path;
 
 abstract class DiskDriver
 {

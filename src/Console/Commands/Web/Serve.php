@@ -1,12 +1,12 @@
 <?php
 
-namespace YonisSavary\Cube\Console\Commands\Web;
+namespace Cube\Console\Commands\Web;
 
 use Symfony\Component\Process\Process;
-use YonisSavary\Cube\Console\Args;
-use YonisSavary\Cube\Console\Command;
-use YonisSavary\Cube\Utils\Console;
-use YonisSavary\Cube\Utils\Path;
+use Cube\Console\Args;
+use Cube\Console\Command;
+use Cube\Utils\Console;
+use Cube\Utils\Path;
 
 class Serve extends Command
 {

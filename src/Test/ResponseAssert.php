@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Test;
+namespace Cube\Test;
 
 use PHPUnit\Framework\Assert;
-use YonisSavary\Cube\Http\Response;
-use YonisSavary\Cube\Http\StatusCode;
-use YonisSavary\Cube\Logger\Logger;
+use Cube\Http\Response;
+use Cube\Http\StatusCode;
+use Cube\Logger\Logger;
 
 class ResponseAssert extends Assert
 {

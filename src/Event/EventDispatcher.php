@@ -1,6 +1,6 @@
 <?php
 
-namespace YonisSavary\Cube\Event;
+namespace Cube\Event;
 
 abstract class EventDispatcher
 {
@@ -21,7 +21,7 @@ abstract class EventDispatcher
         return $this;
     }
 
-    public function dispatch(string|AbstractEvent $event): void
+    public function dispatch(string|Event $event): void
     {
         if (is_string($event))
             $event = new CustomEvent($event);

@@ -1,11 +1,11 @@
 <?php
 
-namespace YonisSavary\Cube\Web\Router;
+namespace Cube\Web;
 
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Web\Router;
+use Cube\Http\Request;
+use Cube\Web\Router\Router;
 
-abstract class Service
+abstract class WebAPI
 {
     public function __construct(){}
 

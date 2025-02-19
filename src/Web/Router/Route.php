@@ -1,15 +1,17 @@
 <?php
 
-namespace YonisSavary\Cube\Web;
+namespace Cube\Web\Router;
 
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionFunction;
-use YonisSavary\Cube\Core\Autoloader;
-use YonisSavary\Cube\Http\Exceptions\InvalidRequestException;
-use YonisSavary\Cube\Http\Exceptions\InvalidRequestMethodException;
-use YonisSavary\Cube\Http\Request;
-use YonisSavary\Cube\Http\Response;
+use Cube\Core\Autoloader;
+use Cube\Http\Exceptions\InvalidRequestException;
+use Cube\Http\Exceptions\InvalidRequestMethodException;
+use Cube\Http\Request;
+use Cube\Http\Response;
+
+use function Cube\debug;
 
 class Route
 {
@@ -139,6 +141,9 @@ class Route
     {
         $routePath = $this->getPath();
         $requestPath = $request->getPath();
+
+
+        debug($routePath ." === ".$requestPath);
 
         $pathMatches = false;
         // Little optimization: if the route has no slug

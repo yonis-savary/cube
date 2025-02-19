@@ -5,13 +5,13 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "YonisSavary\\Cube\\": "src/"
+            "Cube\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "YonisSavary\\Cube\\Tests\\Units\\": "tests/units",
-            "YonisSavary\\Cube\\Tests\\Integration\\": "tests/integration"
+            "Cube\\Tests\\Units\\": "tests/units",
+            "Cube\\Tests\\Integration\\": "tests/integration"
         }
     },
     "authors": [
