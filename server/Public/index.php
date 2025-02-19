@@ -3,7 +3,7 @@
 use Cube\Core\Autoloader;
 use Cube\Http\Request;
 use Cube\Utils\Shell;
-use Cube\Web\Router;
+use Cube\Web\Router\Router;
 
 $loader = include_once "../vendor/autoload.php";
 

@@ -20,7 +20,7 @@ trait UserComponent
         return Authentication::getInstance();
     }
 
-    final public static function getDefaultInstance()
+    final public static function getDefaultInstance(): static
     {
         $authentication = self::getAuthentication();
 

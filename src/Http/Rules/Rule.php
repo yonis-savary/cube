@@ -2,206 +2,127 @@
 
 namespace Cube\Http\Rules;
 
-use InvalidArgumentException;
-use Cube\Core\Autoloader;
-use Cube\Database\Database;
-use Cube\Http\Request;
-use Cube\Models\Model;
+use Cube\Data\Bunch;
 use Cube\Utils\Text;
-use Cube\Utils\Utils;
 
-class Rule extends Rule
+abstract class Rule
 {
-    protected mixed $value;
+    private const TYPE_CHECKER = "check";
+    private const TYPE_TRANSFORMER = "transform";
 
-    /**
-     * Convert a number/string into an integer
-     */
-    public static function integer(bool $nullable=true): self
+    protected mixed $value = null;
+    protected array $errors = [];
+    protected array $steps = [];
+
+    public function setValue(mixed $value): void
     {
-        return (new self($nullable))
-            ->withValueCondition(fn($value) => is_numeric($value), "{key} must be an integer, got {value}")
-            ->withValueTransformer(fn($value) => (int) $value);
+        $this->value = $value;
     }
 
-    /**
-     * Convert a number/string into a float
-     */
-    public static function float(bool $nullable=true): self
+    public function getValue(): mixed
     {
-        return (new self($nullable))
-            ->withValueCondition(fn($value) => is_numeric($value), "{key} must be a float, got {value}")
-            ->withValueTransformer(fn($value) => (float) $value);
+        return $this->value;
     }
 
-    public static function string(bool $trim=true, bool $nullable=true): self
+    public function addError(string|array $error): self
     {
-        $object = new self($nullable);
-
-        if ($trim)
-            $object->withValueTransformer(fn($x) => trim($x));
-
-        return $object;
-    }
-
-    public static function array(Rule|Validator $childValidator, bool $nullable=true): self
-    {
-        $childValidator = Validator::from($childValidator);
-
-        $object = new self($nullable);
-
-        $object->withSubValidator($childValidator);
-
-        return $object;
-    }
-
-
-    public static function object(bool $nullable=true): self
-    {
-        $rule = new self($nullable);
-
-        return $rule->withValueCondition(fn($array) => Utils::isAssoc($array), "{key} must be an object, got {value}");
-    }
-
-    /**
-     * Accept any email through filter_var()
-     */
-    public static function email(bool $nullable=true): self
-    {
-        return (new self($nullable))
-            ->withValueCondition(fn($value) => false !== filter_var($value, FILTER_VALIDATE_EMAIL), "{key} must be an email, got {value}");
-    }
-
-    /**
-     * Accept any boolean (`"on"`, `"true"`, `"yes"`, `"1"`, `true` are considered `true`, any other value is `false`)
-     */
-    public static function boolean(bool $nullable=true): self
-    {
-        return (new self($nullable))
-            ->withTransformer(fn(string $value) => is_bool($value) ? $value : in_array((string) $value, ["on", "true", "yes", "1"]));
-    }
-
-    /**
-     * Accept any url through filter_var()
-     */
-    public static function url(bool $nullable=true): self
-    {
-        return (new self($nullable))
-            ->withValueCondition(fn($value) => false !== filter_var($value, FILTER_VALIDATE_URL), "{key} must be an URL, got {value}");
-    }
-
-    /**
-     * Accept any date with YYYY-MM-DD format
-     */
-    public static function date(bool $nullable=true): self
-    {
-        return (new self($nullable))
-            ->withValueCondition(fn(?string $value) => $value === null || preg_match("/^\d{4}-\d{2}-\d{2}$/", $value ?? ''), "{key} must be a Date (yyyy-mm-dd), got {value}");
-    }
-
-    /**
-     * Accept any date with YYYY-MM-DD HH:mm:ss format
-     */
-    public static function datetime(bool $nullable=true): self
-    {
-        return (new self($nullable))
-            ->withValueCondition(fn(string $value) => preg_match("/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/", $value ?? ''), "{key} must be a datetime value (yyyy-mm-dd HH:MM:SS), got {value}");
-    }
-
-    /**
-     * Accept any uuid value as xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8,4,4,4,12) with x any hexadecimal value
-     */
-    public static function uuid(bool $nullable=true): self
-    {
-        return (new self($nullable))
-            ->withValueCondition(fn(string $value) => preg_match("/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/", $value ?? ''), "{key} must be an UUID, got {value}");
-    }
-
-    /**
-     * Fetch a model from its primary key value
-     */
-    public static function model(string $modelClass, bool $explore=true, ?Database $database=null): self
-    {
-        if (!Autoloader::extends($modelClass, Model::class))
-            throw new InvalidArgumentException('$modelClass must extends Model');
-
-        /** @var Model $modelClass */
-        return (new self)
-            ->withValueTransformer(fn($primaryKey) => $modelClass::find($primaryKey, $explore, $database))
-            ->withCondition(
-                fn(?Model $value) => $value !== null,
-                Text::interpolate("{key} must be a valid id (or primary key value) in table {table}, got {value}", ['table' => $modelClass::table()])
-            )
-        ;
-    }
-
-    public function __construct(bool $nullable=true)
-    {
-        if (!$nullable)
-            $this->withCondition(fn(mixed $value) => $value !== null, "{key} cannot be null");
-    }
-
-    /**
-     * Check if a value is included in a specified array
-     */
-    public function inArray(array $array): self
-    {
-        return $this->withCondition(
-            fn($value) => in_array($value, $array),
-            Text::interpolate("{key} must be in values {array}, got {value}", ["array" => join(",", $array)])
+        array_push(
+            $this->errors,
+            ...Bunch::of($error)->toArray()
         );
+        return $this;
     }
 
+    final public function failWithError(string $error): false
+    {
+        $this->addError($error);
+        return false;
+    }
+
+    public function getErrors(string $keyName, mixed $value)
+    {
+        return Bunch::of($this->errors)
+            ->map(fn($x) => is_string($x) ? Text::interpolate($x, ['key' => $keyName, 'value' => print_r($value, true)]) : $x)
+            ->toArray();
+    }
 
     /**
-     * Check if the value is between limits
+     * Add a condition to the Validator, if the callback return `true`, it is considered as valid,
+     * otherwise the errorMessage will be displayed to the user
      */
-    public function isBetween($min, $max, bool $canBeEqual=true): self
+    public function withCondition(callable $callback, string|callable $errorMessage): self
     {
-        return $canBeEqual ?
-            $this->withValueCondition(fn($value) => $min <= $value && $value <= $max, "{key} must be between $min and $max (can be equal), got {value}"):
-            $this->withValueCondition(fn($value) => $min <  $value && $value <  $max, "{key} must be between $min and $max (cannot be equal), got {value}");
+        $this->steps[] = [self::TYPE_CHECKER, $callback, $errorMessage];
+        return $this;
     }
 
+    public function withValueCondition(callable $callback, string|callable $errorMessage): self
+    {
+        $wrappedCallback = function($value) use ($callback) {
+            if ($value === null)
+                return true;
+
+            return $callback($value);
+        };
+
+        return $this->withCondition($wrappedCallback, $errorMessage);
+    }
 
     /**
-     * Check if the value exists in a table as primary key
+     * Add a transform step that can be used to edit the value between conditions and/or other transformers
      */
-    public function isInTable(string $modelClass, ?Database $database=null)
+    public function withTransformer(callable $callback): self
     {
-        if (!Autoloader::extends($modelClass, Model::class))
-            throw new InvalidArgumentException('$modelClass must extends Model');
-
-        /** @var Model $modelClass */
-        return $this->withValueCondition(
-            fn($value) => $modelClass::exists($value, $database),
-            Text::interpolate("{key} must be a valid id in table {table}, got {value}", ['table' => $modelClass::table()])
-        );
+        $this->steps[] = [self::TYPE_TRANSFORMER, $callback];
+        return $this;
     }
 
-    public function validateRequest(Request $request, string $name): bool
+    public function withValueTransformer(callable $callback): self
     {
-        $currentValue = $request->param($name);
-        return $this->validateWithSteps($currentValue);
+        $wrappedCallback = function($value) use ($callback) {
+            if ($value === null)
+                return null;
+
+            return $callback($value);
+        };
+
+        return $this->withTransformer($wrappedCallback);
     }
 
-    public function withSubValidator(Validator $validator): self
+    public function validateWithSteps(mixed $currentValue): bool
     {
-        /** @var true|array $rule */
-        $validatorResponse = null;
+        $isValid = true;
 
-        return $this->withValueCondition(
-        function(mixed $value) use (&$validator, &$validatorResponse) {
-            if (Utils::isList($value))
-                $validatorResponse = $validator->validateArray($value);
-            else
-                $validatorResponse = $validator->validateValue($value);
+        foreach ($this->steps as $step)
+        {
+            list($type, $callback) = $step;
+            $errorMessageOrGetter = $step[2] ?? null;
 
-            return $validatorResponse === true;
-        },
-        function() use (&$validatorResponse) {
-            return $validatorResponse;
-        });
+            if ($type === self::TYPE_CHECKER)
+            {
+                $stepResult = $callback($currentValue);
+                $isValid &= ($stepResult === true);
 
+                if ($stepResult !== true)
+                {
+                    if (is_callable($errorMessageOrGetter))
+                        $errorMessageOrGetter = $errorMessageOrGetter($currentValue);
+
+                    $this->addError($errorMessageOrGetter);
+                }
+
+            }
+            else if ($type === self::TYPE_TRANSFORMER)
+            {
+                $currentValue = ($callback)($currentValue);
+            }
+
+            if (!$isValid)
+                break;
+        }
+
+        $this->setValue($currentValue);
+
+        return $isValid;
     }
 }

@@ -4,8 +4,8 @@ namespace App\Controllers;
 
 use Cube\Http\Request;
 use Cube\Web\Controller;
-use Cube\Web\Route;
-use Cube\Web\Router;
+use Cube\Web\Router\Route;
+use Cube\Web\Router\Router;
 
 class PingController extends Controller
 {

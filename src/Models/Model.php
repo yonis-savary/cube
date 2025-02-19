@@ -12,6 +12,7 @@ use Cube\Database\Query;
 use Cube\Database\Query\FieldComparaison;
 use Cube\Event\EventDispatcher;
 use Cube\Http\Request;
+use Cube\Http\Rules\Param;
 use Cube\Http\Rules\Rule;
 use Cube\Http\Rules\Validator;
 use Cube\Models\Events\SavedModel;
@@ -202,7 +203,7 @@ abstract class Model extends EventDispatcher
             if ($relation instanceof HasMany)
             {
                 $toModel = $relation->toModel;
-                $rules[$relationName] = Rule::array($toModel::toValidator());
+                $rules[$relationName] = Param::array($toModel::toValidator());
             }
         }
 

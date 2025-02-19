@@ -5,7 +5,8 @@ namespace Cube\Web;
 use Cube\Env\Storage;
 use Cube\Http\Request;
 use Cube\Http\Response;
-use Cube\Web\Router\WebAPI;
+use Cube\Web\Router\Route;
+use Cube\Web\Router\Router;
 
 class StaticServer extends WebAPI
 {

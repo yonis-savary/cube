@@ -2,6 +2,7 @@
 
 namespace Cube\Models;
 
+use Cube\Http\Rules\Param;
 use DateTime;
 use InvalidArgumentException;
 use Cube\Http\Rules\Rule;
@@ -119,15 +120,15 @@ class ModelField
     {
         $nullable = $this->nullable;
         $baseRule = match($this->type) {
-            self::STRING => Rule::string(false, $nullable),
-            self::INTEGER => Rule::integer($nullable),
-            self::FLOAT => Rule::float($nullable),
-            self::BOOLEAN => Rule::boolean(),
-            self::DECIMAL => Rule::string(true, $nullable),
-            self::DATE => Rule::date(),
-            self::DATETIME => Rule::datetime(),
-            self::TIMESTAMP => Rule::datetime(),
-            default => Rule::string(true, $nullable),
+            self::STRING => Param::string(false, $nullable),
+            self::INTEGER => Param::integer($nullable),
+            self::FLOAT => Param::float($nullable),
+            self::BOOLEAN => Param::boolean(),
+            self::DECIMAL => Param::string(true, $nullable),
+            self::DATE => Param::date(),
+            self::DATETIME => Param::datetime(),
+            self::TIMESTAMP => Param::datetime(),
+            default => Param::string(true, $nullable),
         };
 
         return $baseRule;

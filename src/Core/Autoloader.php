@@ -19,6 +19,8 @@ use Cube\Logger\Logger;
 use Cube\Utils\Path;
 use Cube\Utils\Shell;
 
+use function Cube\debug;
+
 class Autoloader
 {
     protected static array $assetsFiles = [];
@@ -297,7 +299,11 @@ class Autoloader
             return false;
 
         if ($implements = class_implements($class))
+        {
+            debug("IMPLEMENTS");
+            debug($implements);
             return in_array($interface, $implements);
+        }
         return false;
     }
 

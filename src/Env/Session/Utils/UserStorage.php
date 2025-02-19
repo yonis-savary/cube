@@ -9,7 +9,7 @@ abstract class UserStorage extends Storage
 {
     use UserComponent;
 
-    final private static function getBaseStorage(): Storage
+    private static function getBaseStorage(): Storage
     {
         $class = get_called_class();
         $path = strtolower(str_replace("\\", "/", $class));

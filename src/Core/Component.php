@@ -28,7 +28,7 @@ trait Component
     /**
      * @var static $instance
      */
-    public static function setInstance(self $instance): void
+    public static function setInstance($instance): void
     {
         self::$instance = $instance;
     }
@@ -48,7 +48,7 @@ trait Component
      * @var static $scopedInstance
      * @var callable $callback Callback
      */
-    public static function withInstance(self $scopedInstance, callable $callback): void
+    public static function withInstance($scopedInstance, callable $callback): void
     {
         $oldInstance = self::getInstance();
 
