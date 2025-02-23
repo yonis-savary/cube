@@ -7,7 +7,7 @@ use InvalidArgumentException;
 use PDO;
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
-use Cube\Database\Builders\BuilderInterface;
+use Cube\Database\Builders\QueryBuilder;
 use Cube\Database\Query\Field;
 use Cube\Database\Query\FieldComparaison;
 use Cube\Database\Query\FieldCondition;
@@ -22,6 +22,8 @@ use Cube\Database\Query\UpdateField;
 use Cube\Models\DummyModel;
 use Cube\Models\Model;
 use Cube\Models\ModelField;
+
+use function Cube\debug;
 
 /**
  * @template TModel
@@ -172,23 +174,37 @@ class Query
     }
 
 
-    public function build(?Database $database=null): string
+    protected function getQueryBuilder(Database $database): QueryBuilder
     {
-        $database ??= Database::getInstance();
         $driver = $database->getDriver();
 
-        $builder = Bunch::of(Autoloader::classesThatImplements(BuilderInterface::class))
+        $builder = Bunch::of(Autoloader::classesThatExtends(QueryBuilder::class))
             ->map(fn($class) => new $class)
-            ->first(fn(BuilderInterface $builder) =>
-                Bunch::of($builder->getSupportedPDODriver())
-                ->has($driver)
-            );
+            ->first(fn(QueryBuilder $builder) => $builder->supports($driver));
 
         if (!$builder)
             throw new InvalidArgumentException("Could not find a query builder that supports [$driver] database");
 
-        /** @var BuilderInterface $builder */
+        return $builder;
+    }
+
+    public function build(?Database $database=null): string
+    {
+        $database ??= Database::getInstance();
+        $builder = $this->getQueryBuilder($database);
+
+        debug("Builder class " . $builder::class . " for driver " . $database->getDriver());
+
         return $builder->build($this, $database);
+    }
+
+
+    public function count(): int
+    {
+        $database ??= Database::getInstance();
+        $builder = $this->getQueryBuilder($database);
+
+        return $builder->count($this, $database);
     }
 
     /**
@@ -242,9 +258,9 @@ class Query
     /**
      * @return TModel
      */
-    public function first(): ?Model
+    public function first(?Database $database=null): ?Model
     {
-        return $this->limit(1)->fetch()[0] ?? null;
+        return $this->limit(1)->fetch($database)[0] ?? null;
     }
 
     /**
@@ -254,5 +270,35 @@ class Query
     {
         $database ??= Database::getInstance();
         return Bunch::of($this->fetch());
+    }
+
+    public function exploreModel(Model|string $class, string $joinAcc): self
+    {
+        $fields = Bunch::fromValues($class::fields());
+
+        $fields->forEach(function(ModelField $field) use (&$joinAcc, $class) {
+            $fieldName = $field->name;
+            $fieldAlias = "$joinAcc.$fieldName";
+            $this->selectField($fieldName, $joinAcc, $fieldAlias, $class, $field);
+        });
+
+        $fields
+        ->filter(fn(ModelField $x) => $x->referenceModel)
+        ->forEach(function(ModelField $field) use (&$joinAcc) {
+            $fieldName = $field->name;
+            $refModel = $field->referenceModel;
+            $refColumn = $field->referenceField;
+
+            $refTable = $refModel::table();
+            $newAcc = $joinAcc . "&" . $refTable;
+            $this->join("LEFT", $refTable, $newAcc,
+                new FieldComparaison($joinAcc, $fieldName, "=", $newAcc, $refColumn)
+            );
+
+            $toExploreQueue[] = [$refModel, $newAcc];
+            $this->exploreModel($refModel, $newAcc);
+        });
+
+        return $this;
     }
 }

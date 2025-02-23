@@ -1,0 +1,26 @@
+
+services:
+  mysql:
+    image: mysql
+    restart: always
+    volumes:
+      - type: tmpfs
+        target: /var/lib
+        tmpfs:
+          size: 134217728
+    ports:
+      - ${CUBE_TEST_MYSQL_PORT:-8001}:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: ${CUBE_TEST_DATABASE_PASSWORD:-root}
+  postgres:
+    image: postgres
+    restart: always
+    volumes:
+      - type: tmpfs
+        target: /dev/shm
+        tmpfs:
+          size: 134217728
+    ports:
+      - ${CUBE_TEST_POSTGRES_PORT:-8002}:5432
+    environment:
+      POSTGRES_PASSWORD: ${CUBE_TEST_DATABASE_PASSWORD:-root}

@@ -2,12 +2,13 @@
 
 namespace Cube\Models\Relations;
 
+use Cube\Models\Events\SavedModel;
 use Cube\Models\Model;
 
 /**
  * @template TModel of Model
  *
- * @property class-string<Model> $model
+ * @property Model $model
  * @property class-string<Model> $fromModel
  * @property class-string<Model> $toModel
  */
@@ -48,11 +49,12 @@ class HasOne implements Relation
         $fromColumn = $this->fromColumn;
         $toColumn = $this->toColumn;
 
-        $thisModel->onSaved(function() use ($model, $thisModel, $toColumn, $fromColumn) {
+        $thisModel->onSaved(function(SavedModel $event) use ($model, $thisModel, $toColumn, $fromColumn) {
             if ($model::hasField($toColumn))
                 $model->data->$toColumn = $thisModel->data->$fromColumn;
 
-            $model->save();
+            $model->reload($event->database);
+            $model->save($event->database);
         });
 
         $thisModel->setReference($this->getName(), $model);

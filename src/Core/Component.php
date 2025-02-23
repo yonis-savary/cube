@@ -57,4 +57,10 @@ trait Component
 
         self::setInstance($oldInstance);
     }
+
+
+    public function asGlobalInstance(callable $callback): void
+    {
+        self::withInstance($this, $callback);
+    }
 }

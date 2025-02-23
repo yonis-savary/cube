@@ -209,6 +209,19 @@ class Bunch
         return $this->withNewData(array_map($callback, $this->data));
     }
 
+    /**
+     * @param string $key
+     * @return Bunch<TKey,TValue[$key]>
+     */
+    public function key(string $key): self
+    {
+        $arrayMode = is_array($this->data[0] ?? false);
+
+        return $arrayMode ?
+            $this->map(fn($element) => $element[$key]):
+            $this->map(fn($element) => $element->$key);
+    }
+
     public function flat(): self
     {
         $data = [];

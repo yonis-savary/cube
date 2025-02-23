@@ -9,6 +9,8 @@ use Cube\Core\Component;
 use Cube\Env\Storage;
 use Cube\Utils\Path;
 
+use function Cube\debug;
+
 class Database
 {
     use Component;
@@ -30,15 +32,27 @@ class Database
         );
     }
 
+    public static function fromPDO(PDO $connection): self
+    {
+        return new self(connection: $connection);
+    }
+
     public function __construct(
         protected string $driver="sqlite",
         protected ?string $database=null,
         protected ?string $host=null,
         protected ?int $port=null,
         protected ?string $user=null,
-        protected ?string $password=null
+        protected ?string $password=null,
+        ?PDO $connection=null
     )
     {
+        if ($connection)
+        {
+            $this->connection = $connection;
+            return;
+        }
+
         if ($driver === "sqlite")
         {
             $dsn = $database ?
@@ -191,6 +205,7 @@ class Database
     {
         $queryWithContext = $this->build($query, $context);
 
+        debug([$this->getDriver(), $queryWithContext]);
         $statement = $this->connection->query($queryWithContext);
         $this->lastStatement = $statement;
 

@@ -1,9 +1,0 @@
-
-services:
-  mysql:
-    image: mysql
-    restart: always
-    ports:
-      - "${CUBE_TEST_MYSQL_PORT:-8001}:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: dummypassword

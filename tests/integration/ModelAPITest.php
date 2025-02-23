@@ -35,8 +35,6 @@ class ModelAPITest extends CubeTestCase
         ->assertCreated()
         ->json();
 
-        debug($product);
-
         $this->assertIsArray($product[0]);
         $this->assertEquals('Painting', $product[0]['name']);
         $this->assertEquals(120, $product[0]['price_dollar']);

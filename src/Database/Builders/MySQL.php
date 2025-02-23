@@ -15,7 +15,7 @@ use Cube\Database\Query\QueryBase;
 use Cube\Database\Query\RawCondition;
 use Cube\Database\Query\UpdateField;
 
-class MySQL implements BuilderInterface
+class MySQL extends QueryBuilder
 {
     protected Database $database;
     protected Query $query;
@@ -258,5 +258,14 @@ class MySQL implements BuilderInterface
             case QueryBase::UPDATE: return $this->buildUpdate();
             case QueryBase::DELETE: return $this->buildDelete();
         }
+    }
+
+    public function count(Query $query, Database $database): int
+    {
+        $baseQuery = $this->build($query, $database);
+
+        $wrappedQuery = "SELECT COUNT(*) AS __count FROM ($baseQuery) AS __base";
+
+        return $database->query($wrappedQuery)[0]['__count'];
     }
 }

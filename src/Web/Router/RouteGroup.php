@@ -44,8 +44,6 @@ class RouteGroup
         $route = new Route("/{any:any}", fn() => null);
         $this->applyToRoute($route);
 
-        debug($request->getPath() ." === ".$this->prefix);
-
         return ($request->getPath() === $this->prefix) || $route->match($request);
     }
 

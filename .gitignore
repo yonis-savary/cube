@@ -4,3 +4,4 @@
 /tests/integration-apps
 /Storage
 /tests/Storage
+.env

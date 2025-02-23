@@ -1,0 +1,270 @@
+<?php
+
+namespace Cube\Tests\Units\Models;
+
+use Cube\Data\Bunch;
+use Cube\Database\Database;
+use Cube\Database\Query;
+use Cube\Http\Request;
+use Cube\Http\Rules\Validator;
+use Cube\Tests\Units\Database\TestMultipleDrivers;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
+use function Cube\debug;
+
+class ProductTest extends TestCase
+{
+    use TestMultipleDrivers;
+
+    public function test_id()
+    {
+        $product = new Product();
+        $this->assertFalse($product->id());
+
+        $product->id = 52;
+        $this->assertEquals(52, $product->id());
+    }
+
+    public function test_hasField()
+    {
+        $this->assertTrue(Product::hasField('id'));
+        $this->assertTrue(Product::hasField('name'));
+
+        // Inexistant
+        $this->assertFalse(Product::hasField('release_date'));
+    }
+
+    #[DataProvider('getDatabases')]
+    public function test_insert(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $product = Product::insertArray(['name' => 'Keyboard']);
+
+            $this->assertInstanceOf(Product::class, $product);
+            $this->assertNotFalse($product->id());
+
+            $this->assertEquals($product->data, Product::find($product->id())->data);
+        });
+    }
+
+
+    #[DataProvider('getDatabases')]
+    public function test_select(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            Product::insert()->insertField(['name'])->values(['keyboard'], ['mouse'], ['speakers'])->fetch();
+
+            $this->assertInstanceOf(Query::class, Product::select());
+            $this->assertCount(3, Product::select()->fetch());
+        });
+    }
+    #[DataProvider('getDatabases')]
+    public function test_update(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $this->assertInstanceOf(Query::class, Product::update());
+
+            $productId = Product::insertArray(['name' => 'keyboard'])->id();
+
+            Product::update()->where("id", $productId)->set('name', 'mouse')->fetch();
+
+            $product = Product::find($productId);
+            $this->assertEquals('mouse', $product->name);
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public static function updateRow(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $this->assertInstanceOf(Query::class, Product::update());
+
+            $productId = Product::insertArray(['name' => 'keyboard'])->id();
+
+            Product::updateRow($productId, ['name' => 'mouse']);
+
+            $product = Product::find($productId);
+            $this->assertEquals('mouse', $product->name);
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function test_insertArray(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $product = Product::insertArray(['name' => 'mouse']);
+            $this->assertIsNumeric($product->id());
+            $this->assertEquals('mouse', $product->name);
+        });
+    }
+
+
+    #[DataProvider('getDatabases')]
+    public function test_existsWhere(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+
+            Product::insert()->insertField(['name'])->values(['keyboard'], ['mouse'], ['speakers'])->fetch();
+
+            $this->assertTrue(Product::existsWhere(['name' => 'keyboard']));
+            $this->assertFalse(Product::existsWhere(['name' => 'screen']));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function test_exists(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $productId = Product::insertArray(['name' => 'mouse'])->id();
+
+            $this->assertTrue(Product::exists($productId));
+            $this->assertFalse(Product::exists(999));
+        });
+    }
+
+
+    #[DataProvider('getDatabases')]
+    public function test_findWhere(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+
+            Product::insertArray(['name' => 'mouse']);
+
+            $this->assertInstanceOf(Product::class, Product::findWhere(['name' => 'mouse']));
+            $this->assertNull(Product::findWhere(['name' => 'gamepad']));
+        });
+    }
+
+
+    #[DataProvider('getDatabases')]
+    public function test_toValidator(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $validator = Product::toValidator();
+
+            $this->assertInstanceOf(Validator::class, $validator);
+
+            $this->assertTrue($validator->validateArray(['name' => 'mousepad']));
+            $this->assertNotTrue($validator->validateArray([]));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function test_find(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $productId = Product::insertArray(['name' => 'usb-cable'])->id();
+
+            $this->assertInstanceOf(Product::class, Product::find($productId));
+            $this->assertNull(Product::find(999));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function test_delete(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            Product::insert()->insertField(['name'])->values(['keyboard'], ['mouse'], ['speakers'])->fetch();
+
+            $this->assertInstanceOf(Query::class, Product::delete());
+
+            Product::delete()->where('name', 'mouse')->fetch();
+
+            $this->assertCount(2, Product::select()->fetch());
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function test_deleteId(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            Product::insertArray(['name' => 'power supply'])->id();
+            $productId = Product::insertArray(['name' => 'usb-cable'])->id();
+
+            $this->assertEquals(2, Product::select()->count());
+
+            Product::deleteId($productId);
+            $this->assertEquals(1, Product::select()->count());
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function test_deleteWhere(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            Product::insertArray(['name' => 'power supply'])->id();
+            Product::insertArray(['name' => 'usb-cable'])->id();
+
+            $this->assertEquals(2, Product::select()->count());
+
+            Product::deleteWhere(['name' => 'usb-cable']);
+            $this->assertEquals(1, Product::select()->count());
+        });
+    }
+
+
+    #[DataProvider('getDatabases')]
+    public function test_fromArray(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $product = Product::fromArray([
+                'name' => 'usb-cable',
+                'managers' => [
+                    ['manager' => 'Luigi'],
+                    ['manager' => 'Mario']
+                ]
+            ]);
+
+            $this->assertInstanceOf(Product::class, $product);
+            $this->assertEquals('usb-cable', $product->name);
+            $this->assertEquals(['Luigi', 'Mario'], Bunch::of($product->managers)->key('manager')->toArray());
+        });
+    }
+
+
+    #[DataProvider('getDatabases')]
+    public function test_fromRequest(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+
+            $request = new Request("GET", "/", body: json_encode(
+                [
+                    'name' => 'usb-cable',
+                    'managers' => [
+                        ['manager' => 'Luigi'],
+                        ['manager' => 'Mario']
+                    ]
+                ]),
+                headers: ['content-type' => 'application/json']
+            );
+
+            $product = Product::fromRequest($request);
+
+            $this->assertInstanceOf(Product::class, $product);
+            $this->assertEquals('usb-cable', $product->name);
+            $this->assertEquals(['Luigi', 'Mario'], Bunch::of($product->managers)->key('manager')->toArray());
+        });
+    }
+
+
+
+    #[DataProvider('getDatabases')]
+    public function test_onSaved(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+            $product = Product::fromArray(['name' => 'mouse']);
+
+            $saved = false;
+            $product->onSaved(function() use (&$saved) { $saved = true; });
+
+            $product->save();
+            $this->assertTrue($saved);
+
+            $product->name = 'gamepad';
+            $saved = false;
+            $product->save();
+            $this->assertTrue($saved);
+        });
+    }
+}

@@ -3,7 +3,6 @@
 namespace Cube\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
-use Cube\Utils\Shell;
 
 class ModelGenerationTest extends TestCase
 {

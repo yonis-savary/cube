@@ -2,8 +2,11 @@
 
 namespace Cube\Models\Relations;
 
+use Cube\Models\Events\SavedModel;
 use Cube\Models\Model;
 use Cube\Utils\Text;
+
+use function Cube\debug;
 
 /**
  * @property Model|string $model
@@ -48,9 +51,10 @@ class HasMany implements Relation
         $fromColumn = $this->fromColumn;
         $toColumn = $this->toColumn;
 
-        $thisModel->onSaved(function() use ($model, $thisModel, $toColumn, $fromColumn) {
+        $thisModel->onSaved(function(SavedModel $event) use ($model, $thisModel, $toColumn, $fromColumn) {
             $model->data->$toColumn = $thisModel->data->$fromColumn;
-            $model->save();
+            $model->save($event->database);
+            $model->reload($event->database);
         });
 
         $thisModel->pushReference($this->getName(), $model);
@@ -64,6 +68,12 @@ class HasMany implements Relation
         $fromColumn = $this->fromColumn;
         $toModel = $this->toModel;
         $toColumn = $this->toColumn;
+
+        debug([
+            "fromColumn" => $fromColumn,
+            "toModel" => $toModel,
+            "toColumn" => $toColumn,
+        ]);
 
         $thisModel->setReference(
             $this->getName(),

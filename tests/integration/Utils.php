@@ -9,10 +9,12 @@ use Cube\Env\Storage;
 use Cube\Logger\Logger;
 use Cube\Utils\Path;
 use Cube\Utils\Shell;
+use Cube\Web\CubeServer;
 
 class Utils
 {
     protected static ?Storage $storage = null;
+    protected static ?CubeServer $server = null;
 
     public static function getIntegrationAppStorage(): Storage
     {
@@ -31,6 +33,15 @@ class Utils
         ->forEach(fn(Migration $migration) => $datbase->exec($migration->install));
 
         return $datbase;
+    }
+
+    public static function getDummyServer(): CubeServer
+    {
+        if (self::$server)
+            return self::$server;
+
+        $installation = self::getDummyApplicationStorage();
+        return self::$server = new CubeServer(null, $installation->path("Public"), Logger::getInstance());
     }
 
     public static function getDummyApplicationStorage(): Storage
@@ -65,7 +76,7 @@ class Utils
                     "type" => "path",
                     "url" => $cubeRoot,
                     "options" => [
-                        "symlink" => false
+                        "symlink" => true
                     ]
                 ]
                 ],

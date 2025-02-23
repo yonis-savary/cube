@@ -299,11 +299,8 @@ class Autoloader
             return false;
 
         if ($implements = class_implements($class))
-        {
-            debug("IMPLEMENTS");
-            debug($implements);
             return in_array($interface, $implements);
-        }
+
         return false;
     }
 

@@ -19,6 +19,12 @@ class Environment
         return $instance;
     }
 
+    public function __construct(?string $file=null)
+    {
+        if ($file)
+            return $this->mergeWithFile($file);
+    }
+
     public function mergeWithFile(string $file): self
     {
         $file = Path::relative($file);

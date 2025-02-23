@@ -178,7 +178,7 @@ class Request extends HttpMessage
 
     public function param(string $name, mixed $default=null): mixed
     {
-        return $this->get[$name] ?? $this->post[$name] ?? $default;
+        return $this->body[$name] ?? $this->get[$name] ?? $this->post[$name] ?? $default;
     }
 
     public function params(array $keys, array $default=[]): array

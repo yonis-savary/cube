@@ -174,8 +174,6 @@ class Router
 
     protected function adaptSingleValue(mixed &$value): mixed
     {
-        debug("ADAPT VALUE", print_r($value, true));
-
         if ($value instanceof Bunch)
             $value = $value->toArray();
 
@@ -190,8 +188,6 @@ class Router
 
     protected function adaptArray(mixed &$value): array
     {
-        debug("ADAPT ARRAY", print_r($value, true));
-
         foreach ($value as &$row)
             $row = $this->adaptSingleValue($row);
 

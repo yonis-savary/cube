@@ -8,28 +8,26 @@ use Cube\Database\Query;
 use Cube\Database\Query\Field;
 use Cube\Database\Query\FieldComparaison;
 use Cube\Database\Query\FieldCondition;
-use Cube\Database\Query\InsertField;
 use Cube\Database\Query\InsertValues;
 use Cube\Database\Query\Join;
 use Cube\Database\Query\Order;
 use Cube\Database\Query\QueryBase;
 use Cube\Database\Query\RawCondition;
 use Cube\Database\Query\UpdateField;
-use Cube\Logger\Logger;
 
-class SQLite extends MySQL
+class Postgres extends MySQL
 {
     protected Database $database;
     protected Query $query;
 
     public function getSupportedPDODriver(): string|array
     {
-        return ["sqlite"];
+        return ["pgsql"];
     }
 
     public function getTable(string $table): string
     {
-        return "$table";
+        return "\"$table\"";
     }
 
     public function getUpdateTables(): string
@@ -52,9 +50,9 @@ class SQLite extends MySQL
         $field = $fieldObject->field;
         $alias = $fieldObject->alias;
 
-        $fieldExpression = $table ? "$table.$field" : $field;
+        $fieldExpression = $table ? "\"$table\".$field" : $field;
 
-        return ($expression ?? $fieldExpression) . (($alias && (!str_contains($alias, '.'))) ? " AS `$alias`": '');
+        return ($expression ?? $fieldExpression) . ($alias ? " AS \"$alias\"": '');
     }
 
     public function getSelectFields(): string
@@ -70,7 +68,7 @@ class SQLite extends MySQL
         return
             "(" .
                 Bunch::of($this->query->insertFields->fields)
-                ->map(fn($field) => sprintf("%s", $field))
+                ->map(fn($field) => sprintf("\"%s\"", $field))
                 ->join(", ")
             . ")";
     }
@@ -93,7 +91,8 @@ class SQLite extends MySQL
         return
             Bunch::of($this->query->updateFields)
             ->map(function(UpdateField $field) {
-                return sprintf("%s = %s",
+                return sprintf("\"%s\".%s = %s",
+                    $field->table,
                     $field->field,
                     $this->getSQLValue($field->newValue)
                 );
@@ -108,7 +107,7 @@ class SQLite extends MySQL
 
     public function getFieldComparaison(FieldComparaison $condition)
     {
-        return sprintf("`%s`.%s %s `%s`.%s",
+        return sprintf("\"%s\".%s %s \"%s\".%s",
             $condition->source,
             $condition->sourceField,
             $condition->operator,
@@ -126,7 +125,7 @@ class SQLite extends MySQL
                     return $this->getFieldComparaison($condition);
                 else if ($condition instanceof FieldCondition)
                     return sprintf("%s%s %s %s",
-                        $condition->table ? "".$condition->table."." : '',
+                        $condition->table ? "\"".$condition->table."\"." : '',
                         $condition->field,
                         $condition->operator,
                         $this->getSQLValue($condition->expression),
@@ -164,10 +163,10 @@ class SQLite extends MySQL
     {
         return Bunch::of($this->query->joins)
             ->map(function(Join $join) {
-                return sprintf("%s JOIN %s %s %s",
+                return sprintf("%s JOIN \"%s\" %s %s",
                     $join->type,
                     $join->tableToJoin,
-                    $join->alias && (!str_contains($join->alias, ".")) ? " AS `".$join->alias."`": '',
+                    $join->alias ? " AS \"".$join->alias."\"": '',
                     $join->condition ? " ON " . $this->getFieldComparaison($join->condition): ''
                 );
             })
@@ -183,8 +182,8 @@ class SQLite extends MySQL
                 ->map(function(Order $order) {
                     return
                         $order->table ?
-                            sprintf("%s.%s %s", $order->table, $order->fieldOrAlias, $order->type):
-                            sprintf("%s %s", $order->fieldOrAlias, $order->type);
+                            sprintf("\"%s\".%s %s", $order->table, $order->fieldOrAlias, $order->type):
+                            sprintf("\"%s\" %s", $order->fieldOrAlias, $order->type);
                 })
                 ->join(", ")
             :'';
@@ -239,14 +238,11 @@ class SQLite extends MySQL
 
     protected function buildDelete(): string
     {
-
-        if ($this->query->limit)
-            Logger::getInstance()->warning("LIMIT statement for delete query is not supported by SQLite");
-
-        return sprintf("DELETE FROM %s \n%s \n%s",
+        return sprintf("DELETE FROM %s \n%s \n%s \n%s",
             $this->getTable($this->query->base->table),
             $this->getConditions(),
-            $this->getOrders()
+            $this->getOrders(),
+            $this->getLimit()
         );
     }
 
@@ -262,5 +258,14 @@ class SQLite extends MySQL
             case QueryBase::UPDATE: return $this->buildUpdate();
             case QueryBase::DELETE: return $this->buildDelete();
         }
+    }
+
+    public function count(Query $query, Database $database): int
+    {
+        $baseQuery = $this->build($query, $database);
+
+        $wrappedQuery = "SELECT COUNT(*) AS __count FROM ($baseQuery) AS __base";
+
+        return $database->query($wrappedQuery)[0]['__count'];
     }
 }

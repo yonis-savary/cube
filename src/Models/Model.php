@@ -9,23 +9,22 @@ use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Database\Database;
 use Cube\Database\Query;
-use Cube\Database\Query\FieldComparaison;
 use Cube\Event\EventDispatcher;
 use Cube\Http\Request;
 use Cube\Http\Rules\Param;
-use Cube\Http\Rules\Rule;
 use Cube\Http\Rules\Validator;
 use Cube\Models\Events\SavedModel;
 use Cube\Models\Relations\HasMany;
 use Cube\Models\Relations\HasOne;
 use Cube\Models\Relations\Relation;
+use Exception;
 
 use function Cube\debug;
 
 abstract class Model extends EventDispatcher
 {
     public object $data;
-    protected array $references = [];
+    public array $references = [];
 
     abstract public static function table(): string;
 
@@ -58,34 +57,6 @@ abstract class Model extends EventDispatcher
         return array_key_exists($field, $self::fields());
     }
 
-    protected static function exploreModel(Model|string $class, Query &$query, string $joinAcc)
-    {
-        $fields = Bunch::fromValues($class::fields());
-
-        $fields->forEach(function(ModelField $field) use (&$query, &$joinAcc, $class) {
-            $fieldName = $field->name;
-            $fieldAlias = "$joinAcc.$fieldName";
-            $query->selectField($fieldName, $joinAcc, $fieldAlias, $class, $field);
-        });
-
-        $fields
-        ->filter(fn(ModelField $x) => $x->referenceModel)
-        ->forEach(function(ModelField $field) use (&$query, &$joinAcc) {
-            $fieldName = $field->name;
-            $refModel = $field->referenceModel;
-            $refColumn = $field->referenceField;
-
-            $refTable = $refModel::table();
-            $newAcc = $joinAcc . "&" . $refTable;
-            $query->join("LEFT", $refTable, $newAcc,
-                new FieldComparaison($joinAcc, $fieldName, "=", $newAcc, $refColumn)
-            );
-
-            $toExploreQueue[] = [$refModel, $newAcc];
-            self::exploreModel($refModel, $query, $newAcc);
-        });
-    }
-
     /**
      * @return Query<static>
      */
@@ -98,7 +69,7 @@ abstract class Model extends EventDispatcher
         $query = Query::select($table)->withBaseModel($self);
         if ($withRelations)
         {
-            self::exploreModel($self, $query, $table);
+            $query->exploreModel($self, $table);
         }
         else
         {
@@ -120,6 +91,24 @@ abstract class Model extends EventDispatcher
         return Query::update($self::table())->withBaseModel($self);
     }
 
+
+    public static function updateRow(mixed $id, array $newData): self
+    {
+        /** @var class-string<static> $self */
+        $self = get_called_class();
+
+        if (!$self::primaryKey())
+            throw new RuntimeException("cannot call updateRow static function without a primary key"); // TODO Add a custom exception for needed primary key
+
+        $query = $self::update()->where($self::primaryKey(), $id);
+
+        foreach ($newData as $column => $value)
+            $query->set($column, $value);
+
+        $query->fetch();
+        return $self::find($id);
+    }
+
     /**
      * @return Query<static>
      */
@@ -131,17 +120,35 @@ abstract class Model extends EventDispatcher
         return Query::insert($self::table())->withBaseModel($self);
     }
 
-    public static function insertArray(array $data, ?Database $database=null): mixed
+    public static function last(?Database $database=null): self
+    {
+        /** @var class-string<static> $self */
+        $self = get_called_class();
+        $database ??= Database::getInstance();
+
+        if (! $primary = $self::primaryKey())
+            throw new Exception("Use of last() method without primary key is not supported");
+
+        return $self::select()
+            ->order($primary, 'DESC')
+            ->first($database);
+    }
+
+    public static function insertArray(array $data, ?Database $database=null): self
     {
         $database ??= Database::getInstance();
-        $keys = array_keys($data);
-        $values = array_values($data);
 
-         /** @var class-string<static> $self */
+         /** @var class-string<Model> $self */
         $self = get_called_class();
-        $self::insert()->insertField($keys)->values($values)->fetch($database);
 
-        return $database->lastInsertId();
+        $validator = $self::toValidator();
+        if (true !== ($errors = $validator->validateArray($data)))
+            throw new InvalidArgumentException("Given data does not match mode validator : ".  print_r($errors, true));
+
+        $instance = new $self($data);
+        $instance->save($database);
+
+        return $instance;
     }
 
     public static function existsWhere(array $conditions, ?Database $database=null): bool
@@ -242,6 +249,41 @@ abstract class Model extends EventDispatcher
         return Query::delete($self::table())->withBaseModel($self);
     }
 
+    public static function deleteId(mixed $id): ?static
+    {
+        /** @var class-string<static> $self */
+       $self = get_called_class();
+
+        if (! $primaryKey = $self::primaryKey())
+            throw new InvalidArgumentException("Cannot call deleteId on a model without a primary key");
+
+        if ($toDelete = $self::find($id))
+            $toDelete->destroy();
+
+        return $toDelete;
+    }
+
+    /**
+     * @return self[]
+     */
+    public static function deleteWhere(array $conditions, ?Database $database=null): array
+    {
+        /** @var class-string<static> $self */
+        $self = get_called_class();
+        $select = $self::select();
+        $delete = $self::delete();
+
+        foreach ($conditions as $field => $value)
+        {
+            $select->where($field, $value);
+            $delete->where($field, $value);
+        }
+
+        $deleted = $select->fetch($database);
+        $delete->fetch($database);
+
+        return $deleted;
+    }
 
     public static function fromArray(Array $array): static
     {
@@ -262,7 +304,11 @@ abstract class Model extends EventDispatcher
         $self = get_called_class();
 
         $validator = $self::toValidator();
-        $validated = $request->validated($validator);
+        $error = $validator->validateRequest($request);
+
+        debug($error);
+
+        $validated = $validator->getLastValues();
 
         return new $self($validated);
     }
@@ -386,9 +432,6 @@ abstract class Model extends EventDispatcher
     {
         $array = (array) $this->data;
 
-        debug("TRANSLATE MODEL " . $this::class, $array);
-
-
         /** @var Model $model */
         foreach ($this->references as $key => $modelOrCollection)
         {
@@ -412,7 +455,7 @@ abstract class Model extends EventDispatcher
 
 
     /**
-     * @return HasOne<static>
+     * @return HasMany<static>
      */
     public function hasMany(string $toModel, string $toColumn, string $fromColumn): HasMany
     {
@@ -432,12 +475,12 @@ abstract class Model extends EventDispatcher
         return $primaryKey && $this->$primaryKey;
     }
 
-    public function save()
+    public function save(?Database $database=null)
     {
         if ($this->existsInDatabase())
-            $this->saveExisting();
+            $this->saveExisting($database);
         else
-            $this->saveNew();
+            $this->saveNew($database);
     }
 
     protected function saveExisting(?Database $database=null)
@@ -452,7 +495,7 @@ abstract class Model extends EventDispatcher
             $query->set($key, $value);
 
         $query->fetch($database);
-        $this->dispatch(new SavedModel($this));
+        $this->dispatch(new SavedModel($this, $database));
     }
 
     protected function saveNew(?Database $database=null)
@@ -472,26 +515,54 @@ abstract class Model extends EventDispatcher
 
         if (count($data))
         {
-            $id = $self::insertArray($data, $database);
+            $self::insert()
+                ->insertField(array_keys($data))
+                ->values(array_values($data))
+                ->fetch($database);
 
             if ($primaryKey = $this->primaryKey())
             {
+                $id = $self::last($database)->id();
                 $this->data->$primaryKey = $id;
-                $this->reload();
+                $this->reload($database);
             }
 
-            $this->dispatch(new SavedModel($this));
+            $this->dispatch(new SavedModel($this, $database));
         }
     }
 
-    public function reload(): void
+    public function destroy(?Database $database=null): void
     {
-        if (! $primary = $this->primaryKey())
-            throw new RuntimeException("Cannot reload a model without a primary key");
+        if (!$this->existsInDatabase())
+            return;
+
+        /** @var class-string<static> $self */
+        $self = get_called_class();
+
+        $query = $self::delete();
+
+        if ($primaryKey = $self::primaryKey())
+        {
+            $query->where($primaryKey, $this->id());
+        }
+        else
+        {
+            foreach ($this->data as $key => $value)
+                $query->where($key, $value);
+        }
+        $query->limit(1)->fetch($database);
+    }
+
+    public function reload(?Database $database=null): void
+    {
+        if (! $this->primaryKey())
+            return;
 
         /** @var self $self */
         $self = get_called_class();
 
-        $this->data = $self::find($this->data->$primary)->data;
+        $newInstance = $self::find($this->id(), database: $database);
+        $this->data = $newInstance->data;
+        $this->references = $newInstance->references;
     }
 }
