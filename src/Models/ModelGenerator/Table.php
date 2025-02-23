@@ -83,10 +83,10 @@ class Table
             ->filter(fn(HasOne $relation) => $relation->concern($className))
             ->filter(fn(HasOne $relation) => $relation->fromModel !== $className)
             ->map(function(HasOne $relation) {
-                $fromModel = $relation->fromModel;
-                $fromColumn = $relation->fromColumn;
-                $toModel = $relation->toModel;
-                $toColumn = $relation->toColumn;
+                $toModel = $relation->fromModel;
+                $toColumn = $relation->fromColumn;
+                $fromModel = $relation->toModel;
+                $fromColumn = $relation->toColumn;
 
                 $dummy = new DummyModel();
                 $relation = new HasMany($fromModel, $fromColumn, $toModel, $toColumn, $dummy);
@@ -178,24 +178,26 @@ class Table
                 ", 1);
             })->join("\n\n") ."
 
-
             \n". Bunch::of($relations)
             ->onlyInstancesOf(HasOne::class)
             ->filter(fn(HasOne $relation) => $relation->concern($className))
             ->filter(fn(HasOne $relation) => $relation->fromModel !== $className)
             ->map(function(HasOne $relation) use (&$relationsNames) {
-                $fromModel = $relation->fromModel;
-                $fromColumn = $relation->fromColumn;
-                $toModel = $relation->toModel;
-                $relationName = Text::endsWith(str_replace(strtolower(basename($toModel)), '', strtolower(basename($fromModel))), 's');
-                $toColumn = $relation->toColumn;
+                $toModel = $relation->fromModel;
+                $toColumn = $relation->fromColumn;
+                $fromModel = $relation->toModel;
+                $fromColumn = $relation->toColumn;
+
+                $dummyModel = new DummyModel();
+                $relation = new HasMany($fromModel, $fromColumn, $toModel, $toColumn, $dummyModel);
+                $relationName = $relation->getName();
 
                 $relationsNames[] = $relationName;
 
                 return Text::toFile("
                 public function $relationName(): HasMany
                 {
-                    return \$this->hasMany($fromModel::class, '$fromColumn', '$toColumn');
+                    return \$this->hasMany($toModel::class, '$toColumn', '$fromColumn');
                 }
                 ", 1);
             })->join("\n\n") ."

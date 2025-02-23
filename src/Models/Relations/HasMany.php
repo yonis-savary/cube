@@ -59,7 +59,7 @@ class HasMany implements Relation
 
         $thisModel->pushReference($this->getName(), $model);
 
-        return $this->model;
+        return $thisModel;
     }
 
     public function load(): void
@@ -68,12 +68,6 @@ class HasMany implements Relation
         $fromColumn = $this->fromColumn;
         $toModel = $this->toModel;
         $toColumn = $this->toColumn;
-
-        debug([
-            "fromColumn" => $fromColumn,
-            "toModel" => $toModel,
-            "toColumn" => $toColumn,
-        ]);
 
         $thisModel->setReference(
             $this->getName(),

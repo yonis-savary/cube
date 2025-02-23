@@ -14,6 +14,7 @@ use Cube\Database\Query\Order;
 use Cube\Database\Query\QueryBase;
 use Cube\Database\Query\RawCondition;
 use Cube\Database\Query\UpdateField;
+use Cube\Logger\Logger;
 
 class Postgres extends MySQL
 {
@@ -91,8 +92,7 @@ class Postgres extends MySQL
         return
             Bunch::of($this->query->updateFields)
             ->map(function(UpdateField $field) {
-                return sprintf("\"%s\".%s = %s",
-                    $field->table,
+                return sprintf("%s = %s",
                     $field->field,
                     $this->getSQLValue($field->newValue)
                 );
@@ -238,11 +238,13 @@ class Postgres extends MySQL
 
     protected function buildDelete(): string
     {
-        return sprintf("DELETE FROM %s \n%s \n%s \n%s",
+        if ($this->query->limit)
+            Logger::getInstance()->warning("LIMIT statement for delete query is not supported by SQLite");
+
+        return sprintf("DELETE FROM %s \n%s \n%s",
             $this->getTable($this->query->base->table),
             $this->getConditions(),
-            $this->getOrders(),
-            $this->getLimit()
+            $this->getOrders()
         );
     }
 

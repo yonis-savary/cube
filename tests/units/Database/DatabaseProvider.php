@@ -49,10 +49,7 @@ abstract class DatabaseProvider
             $connection = $this->createDatabase($name);
 
             if ($file = $this->getDumpPath())
-            {
-                debug($file);
                 $connection->exec(file_get_contents($file));
-            }
 
             return Database::fromPDO($connection);
         }

@@ -49,6 +49,7 @@ class Database
     {
         if ($connection)
         {
+            $this->driver = $connection->getAttribute(PDO::ATTR_DRIVER_NAME);
             $this->connection = $connection;
             return;
         }
@@ -205,7 +206,6 @@ class Database
     {
         $queryWithContext = $this->build($query, $context);
 
-        debug([$this->getDriver(), $queryWithContext]);
         $statement = $this->connection->query($queryWithContext);
         $this->lastStatement = $statement;
 

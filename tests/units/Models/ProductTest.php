@@ -267,4 +267,42 @@ class ProductTest extends TestCase
             $this->assertTrue($saved);
         });
     }
+
+
+    #[DataProvider('getDatabases')]
+    public function test_replicate(Database $database)
+    {
+        $database->asGlobalInstance(function(){
+
+            $product = new Product([
+                'name' => 'Laptop',
+                'managers' => [['manager' => 'Dale']]
+            ]);
+
+            $product->save();
+
+            $this->assertIsNumeric($product->id());
+            $this->assertIsNumeric($product->managers[0]->product);
+
+            $clone = $product->replicate();
+            $clone->name = "PC Case";
+            debug("INITIAL CLONE IS ", $clone->toArray());
+            $clone->save();
+            debug("CLONE IS ", $clone->toArray());
+
+
+            debug("PRODUCT IS ", $product->toArray());
+
+
+            $this->assertIsNumeric($clone->id());
+            $this->assertIsNumeric($clone->managers[0]->product);
+
+
+
+
+            $this->assertNotEquals($product->id(), $clone->id());
+            $this->assertNotEquals($product->managers[0]->product, $clone->managers[0]->product);
+        });
+
+    }
 }

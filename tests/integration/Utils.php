@@ -41,7 +41,8 @@ class Utils
             return self::$server;
 
         $installation = self::getDummyApplicationStorage();
-        return self::$server = new CubeServer(null, $installation->path("Public"), Logger::getInstance());
+        self::$server = new CubeServer(null, $installation->path("Public"), Logger::getInstance());
+        return self::$server;
     }
 
     public static function getDummyApplicationStorage(): Storage

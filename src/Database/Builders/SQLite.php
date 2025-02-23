@@ -52,7 +52,7 @@ class SQLite extends MySQL
         $field = $fieldObject->field;
         $alias = $fieldObject->alias;
 
-        $fieldExpression = $table ? "$table.$field" : $field;
+        $fieldExpression = $table ? "`$table`.$field" : $field;
 
         return ($expression ?? $fieldExpression) . (($alias && (!str_contains($alias, '.'))) ? " AS `$alias`": '');
     }
@@ -239,7 +239,6 @@ class SQLite extends MySQL
 
     protected function buildDelete(): string
     {
-
         if ($this->query->limit)
             Logger::getInstance()->warning("LIMIT statement for delete query is not supported by SQLite");
 

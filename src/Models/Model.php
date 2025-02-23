@@ -306,15 +306,13 @@ abstract class Model extends EventDispatcher
         $validator = $self::toValidator();
         $error = $validator->validateRequest($request);
 
-        debug($error);
-
         $validated = $validator->getLastValues();
 
         return new $self($validated);
     }
 
 
-    public function __construct(array $data=[])
+    public function __construct(array $data=[], string $relationAccumulator="")
     {
         $fields = $this->fields();
 
@@ -330,11 +328,11 @@ abstract class Model extends EventDispatcher
         }
 
         $this->data = empty($modelData) ? new stdClass : (object) $modelData;
-        $this->completeModelDataWithRelations($data);
+        $this->completeModelDataWithRelations($data, $relationAccumulator);
     }
 
 
-    public function completeModelDataWithRelations(array $constructData)
+    public function completeModelDataWithRelations(array $constructData, string $relationAccumulator="")
     {
         /** @var self $self */
         $self = get_called_class();
@@ -344,25 +342,31 @@ abstract class Model extends EventDispatcher
             /** @var Relation $relation */
             $relation = $this->$relationName();
             $relationKey = $relation->getName();
+            $relationModel = $relation->toModel;
 
             if ($relation instanceof HasOne)
             {
-                $relationModel = $relation->toModel;
+                $accumulatorKey = $relation->fromModel . ":" . $relationKey;
+                if (str_contains($relationAccumulator, $accumulatorKey))
+                    continue;
 
-                if ($data = $constructData[$relation->fromColumn] ?? false)
+                if ($data = $constructData[$relationKey] ?? false)
                 {
-                    $oneModel = new $relationModel($data);
+                    $oneModel = new $relationModel($data, "$relationAccumulator&$accumulatorKey");
                     $relation->bind($oneModel);
                 }
             }
             else if ($relation instanceof HasMany)
             {
-                $relationModel = $relation->toModel;
+                $accumulatorKey = $relation->fromModel . ":" . $relationKey;
+                if (str_contains($relationAccumulator, $accumulatorKey))
+                    continue;
+
                 if ($data = $constructData[$relationKey] ?? false)
                 {
                     foreach ($data as $row)
                     {
-                        $manyModel = new $relationModel($row);
+                        $manyModel = new $relationModel($row, "$relationAccumulator&$accumulatorKey");
                         $relation->bind($manyModel);
                     }
                 }
@@ -558,11 +562,75 @@ abstract class Model extends EventDispatcher
         if (! $this->primaryKey())
             return;
 
+        debug("RELOAD MODEL ! WITH ID =" . $this->id() . " = " . get_called_class());
+
         /** @var self $self */
         $self = get_called_class();
 
         $newInstance = $self::find($this->id(), database: $database);
         $this->data = $newInstance->data;
-        $this->references = $newInstance->references;
+        foreach ($this->references as $referenceObject)
+        {
+            if (is_array($referenceObject))
+            {
+                foreach ($referenceObject as $model)
+                    $model->reload($database);
+            }
+            else
+            {
+                $referenceObject->reload($database);
+            }
+        }
+    }
+
+    public function anonymize(): self
+    {
+        if ($key = $this->primaryKey())
+            unset($this->data->$key);
+
+        foreach ($this->references as $referenceObject)
+        {
+            if (is_array($referenceObject))
+            {
+                foreach ($referenceObject as $model)
+                    $model->anonymize();
+            }
+            else
+            {
+                $referenceObject->anonymize();
+            }
+        }
+
+        return $this;
+    }
+
+    public function replicate(): static
+    {
+        /** @var class-string<static> $self */
+        $self = get_called_class();
+
+        $newInstance = new $self();
+        $newInstance->data = clone($this->data);
+
+        $newInstance->references = [];
+        foreach ($this->references as $refName => $referenceObject)
+        {
+            /** @var Relation $relation */
+            $relation = $newInstance->$refName();
+
+            if ($relation instanceof HasMany)
+            {
+                foreach ($referenceObject as $model)
+                    $relation->bind($model->replicate());
+            }
+            else if ($relation instanceof HasOne)
+            {
+                $relation->bind($referenceObject->replicate());
+            }
+        }
+
+        $newInstance->anonymize();
+
+        return $newInstance;
     }
 }

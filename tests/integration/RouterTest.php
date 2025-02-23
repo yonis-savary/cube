@@ -12,8 +12,7 @@ class RouterTest extends CubeTestCase
 {
     public function getServer(): CubeServer
     {
-        $installation = Utils::getDummyApplicationStorage();
-        $server = new CubeServer(null, $installation->path("Public"), Logger::getInstance());
+        $server = Utils::getDummyServer();
 
         Shell::executeInDirectory("php do clear-database", $server->getPublicStorage()->parent()->getRoot());
         return $server;

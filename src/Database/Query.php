@@ -193,8 +193,6 @@ class Query
         $database ??= Database::getInstance();
         $builder = $this->getQueryBuilder($database);
 
-        debug("Builder class " . $builder::class . " for driver " . $database->getDriver());
-
         return $builder->build($this, $database);
     }
 

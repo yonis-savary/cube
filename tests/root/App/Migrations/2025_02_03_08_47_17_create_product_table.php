@@ -6,7 +6,7 @@ return new Migration(
     "CREATE TABLE product (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        name VARCHAR(200) UNIQUE,
+        name VARCHAR(200) NOT NULL UNIQUE,
         price_dollar DECIMAL(10,5) NULL
     );
 

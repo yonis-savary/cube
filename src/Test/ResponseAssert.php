@@ -21,7 +21,7 @@ class ResponseAssert extends Assert
 
     public function json(): mixed
     {
-        return json_decode($this->response->getBody(), JSON_THROW_ON_ERROR);
+        return json_decode($this->body(), JSON_THROW_ON_ERROR);
     }
 
     public function assertJsonContent(mixed $expectedContent): self
