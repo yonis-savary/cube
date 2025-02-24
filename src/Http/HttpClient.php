@@ -7,6 +7,7 @@ use RuntimeException;
 use Cube\Data\Bunch;
 use Cube\Logger\Logger;
 use Cube\Logger\NullLogger;
+use Cube\Utils\Path;
 use Cube\Utils\Utils;
 
 class HttpClient
@@ -48,6 +49,28 @@ class HttpClient
         $this->request = $request;
     }
 
+
+    public function baseURL(): ?string
+    {
+        return null;
+    }
+
+    public function baseHeaders(): array
+    {
+        return [];
+    }
+
+    public function baseURLParameters(): array
+    {
+        return [];
+    }
+
+    public function basePostParameters(): array
+    {
+        return [];
+    }
+
+
     /**
      * Build a cURL handle for the Request object
      *
@@ -68,16 +91,21 @@ class HttpClient
         $logger->info('');
         $logger->info('Building CURL handle');
 
-        $thisGET = $request->get() ?? [];
-        $thisPOST = $request->post() ?? [];
+        $thisGET = array_merge($this->baseURLParameters(), $request->get() ?? []);
+        $thisPOST = array_merge($this->basePostParameters(), $request->post() ?? []);
         $thisMethod = $request->getMethod();
         $thisUploads = $request->getUploads();
-        $headers = $request->getHeaders();
+        $headers = array_merge($this->baseHeaders(), $request->getHeaders());
         $isJSONRequest = $request->isJSON();
         $thisBody = $request->getBody();
 
         $getParams = count($thisGET) ? '?' . http_build_query($request->get(), '', '&') : '';
-        $url = trim($request->getPath() . $getParams);
+
+        $path = $request->getPath();
+        if ($base = $this->baseURL())
+            $path = Path::join($base, $path);
+
+        $url = trim($path . $getParams);
 
         $logger->info("CURL URL [$url]");
         $handle = curl_init($url);

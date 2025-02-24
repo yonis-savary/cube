@@ -315,12 +315,13 @@ class Request extends HttpMessage
         ?int $timeout=null,
         ?string $userAgent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
         bool $supportRedirection=true,
-        int $logFlags = HttpClient::DEBUG_ESSENTIALS
+        int $logFlags = HttpClient::DEBUG_ESSENTIALS,
+        ?HttpClient $httpClient=null
     ): Response
     {
-        $client = new HttpClient($this);
+        $httpClient ??= new HttpClient($this);
 
-        return $client->fetch(
+        return $httpClient->fetch(
             $logger,
             $timeout,
             $userAgent,

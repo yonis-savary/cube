@@ -562,8 +562,6 @@ abstract class Model extends EventDispatcher
         if (! $this->primaryKey())
             return;
 
-        debug("RELOAD MODEL ! WITH ID =" . $this->id() . " = " . get_called_class());
-
         /** @var self $self */
         $self = get_called_class();
 

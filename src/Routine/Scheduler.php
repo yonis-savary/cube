@@ -4,6 +4,7 @@ namespace Cube\Routine;
 
 use DateTime;
 use Cube\Core\Component;
+use Cube\Data\Bunch;
 
 class Scheduler
 {
@@ -19,15 +20,15 @@ class Scheduler
 
     public function launch(DateTime|string $datetime='now'): void
     {
-        foreach ($this->handlers as $handler)
-        {
-            /** @var CronExpression $expression */
-            list($expression, $callback) = $handler;
+        if (is_string($datetime))
+            $datetime = new DateTime($datetime);
 
-            if (!$expression->matches($datetime))
-                continue;
+        $handlersToLaunch = Bunch::of($this->handlers)
+            ->filter(fn($handler) => $handler[0]->matches($datetime))
+            ->map(fn($handler) => $handler[1])
+            ->toArray();
 
+        foreach ($handlersToLaunch as $callback)
             $callback();
-        }
     }
 }

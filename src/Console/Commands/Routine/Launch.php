@@ -6,6 +6,7 @@ use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
+use Cube\Logger\HasLogger;
 use Cube\Logger\Logger;
 use Cube\Routine\Queue;
 use Cube\Routine\Scheduler;
@@ -13,6 +14,8 @@ use Cube\Utils\Console;
 
 class Launch extends Command
 {
+    use HasLogger;
+
     public function getScope(): string
     {
         return "routine";
@@ -25,8 +28,7 @@ class Launch extends Command
 
     protected function launchQueues(Logger $logger): void
     {
-        Logger::withInstance($logger, function() {
-
+        $logger->asGlobalInstance(function(){
             Console::print("Processing queues handlers...");
 
             $toLaunch = Bunch::of(Autoloader::classesThatExtends(Queue::class))
@@ -35,6 +37,7 @@ class Launch extends Command
             ->get();
 
             Console::withProgressBar($toLaunch, function(Queue $queue) {
+                $this->info("Launching queue {class}", ['class' => $queue::class]);
                 $count = $queue::batchSize();
                 $trueCount = max($queue::countToProcess(), $count);
 
@@ -47,7 +50,7 @@ class Launch extends Command
 
     protected function launchScheduler(Logger $logger): void
     {
-        Logger::withInstance($logger, function() {
+        $logger->asGlobalInstance(function(){
             Console::print("Launching Scheduler");
             Scheduler::getInstance()->launch();
         });
@@ -55,12 +58,11 @@ class Launch extends Command
 
     public function execute(Args $args): int
     {
-        $logger = new Logger("routine-launches.csv");
-        $logger->info("Watching routine command on " . date("Y-m-d H:i:s"));
+        $logger = $this->getLogger();
+        $logger->info("Launched routine command on " . date("Y-m-d H:i:s"));
 
-        $contextLogger = new Logger("routine.csv");
-        $this->launchQueues($contextLogger);
-        $this->launchScheduler($contextLogger);
+        $this->launchQueues($logger);
+        $this->launchScheduler($logger);
 
         return 0;
     }

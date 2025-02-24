@@ -286,19 +286,10 @@ class ProductTest extends TestCase
 
             $clone = $product->replicate();
             $clone->name = "PC Case";
-            debug("INITIAL CLONE IS ", $clone->toArray());
             $clone->save();
-            debug("CLONE IS ", $clone->toArray());
-
-
-            debug("PRODUCT IS ", $product->toArray());
-
 
             $this->assertIsNumeric($clone->id());
             $this->assertIsNumeric($clone->managers[0]->product);
-
-
-
 
             $this->assertNotEquals($product->id(), $clone->id());
             $this->assertNotEquals($product->managers[0]->product, $clone->managers[0]->product);

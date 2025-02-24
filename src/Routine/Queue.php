@@ -5,10 +5,13 @@ namespace Cube\Routine;
 use Throwable;
 use Cube\Data\Bunch;
 use Cube\Env\Storage;
+use Cube\Logger\HasLogger;
 use Cube\Logger\Logger;
 
 abstract class Queue extends Routine
 {
+    use HasLogger;
+
     abstract public static function batchSize(): int;
 
     public static function when(): CronExpression

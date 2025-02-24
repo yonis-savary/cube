@@ -2,6 +2,8 @@
 
 namespace Cube\Web\Router;
 
+use Cube\Data\Bunch;
+use Cube\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Http\Request;
 use Cube\Utils\Path;
 
@@ -11,6 +13,9 @@ class RouteGroup
 {
     /** @var Route[] */
     protected array $routes = [];
+
+    /** @var RouteGroup[] */
+    protected array $groups = [];
 
     public function __construct(
         public string $prefix="/",
@@ -47,10 +52,13 @@ class RouteGroup
         return ($request->getPath() === $this->prefix) || $route->match($request);
     }
 
-    public function addRoute(Route $route): void
+    public function addRoutes(Route ...$routes): void
     {
-        $this->applyToRoute($route);
-        $this->routes[] = $route;
+        foreach ($routes as $route)
+        {
+            $this->applyToRoute($route);
+            $this->routes[] = $route;
+        }
     }
 
     /**
@@ -58,6 +66,49 @@ class RouteGroup
      */
     public function getRoutes(): array
     {
-        return $this->routes;
+        $routes = [];
+
+        foreach ($this->groups as $group)
+            array_push($routes, ...$group->getRoutes());
+
+        array_push($routes, ...$this->routes);
+        return $routes;
     }
+
+
+    public function &addSubGroup(RouteGroup $paramGroup): RouteGroup
+    {
+        $addedGroup = $this->mergeWith($paramGroup);
+        $this->groups[] = &$addedGroup;
+
+        return $addedGroup;
+    }
+
+    public function findMatchingRoute(Request $request, array &$exceptions=[]): Route|false
+    {
+        foreach ($this->routes as $route)
+        {
+            try
+            {
+                if ($route->match($request))
+                    return $route;
+            }
+            catch (InvalidRequestMethodException $newException)
+            {
+                $exceptions[] = $newException;
+            }
+        }
+
+        foreach ($this->groups as $group)
+        {
+            if (!$group->matches($request))
+                continue;
+
+            return $group->findMatchingRoute($request, $exceptions);
+        }
+
+        return false;
+    }
+
+
 }

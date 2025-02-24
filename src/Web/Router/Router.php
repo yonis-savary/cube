@@ -23,16 +23,10 @@ class Router
     use Component;
 
     protected RouterConfiguration $configuration;
-
-    protected RouteGroup $group;
-
-    /**
-     * @var array<RouteGroup>
-     */
-    protected array $groups = [];
+    protected RouteGroup $rootHolder;
+    protected RouteGroup $currentGroup;
 
     protected ?Cache $cache = null;
-
     protected bool $routesAreLoaded = false;
 
     public static function getDefaultInstance(): static
@@ -47,12 +41,12 @@ class Router
         if ($config->cached)
             $this->cache = Cache::getInstance()->child("Routers")->child(md5(get_called_class()));
 
-        $this->group = new RouteGroup(
+        $this->rootHolder = new RouteGroup(
             $config->commonPrefix,
             $config->commonMiddlewares,
             []
         );
-        $this->groups[] = &$this->group;
+        $this->currentGroup = $this->rootHolder;
         $this->configuration = $config;
     }
 
@@ -107,12 +101,15 @@ class Router
                 return;
 
             if ($route instanceof Route)
-                $this->group->addRoute($route);
+                $this->currentGroup->addRoutes($route);
             else
                 ($route)($this);
         }
     }
 
+    /**
+     * @param \Closure(Router,RouterGroup) $callback
+     */
     public function group(
         string $prefix="/",
         array $middlewares=[],
@@ -122,14 +119,12 @@ class Router
     {
         $subGroup = new RouteGroup($prefix,$middlewares,$extras);
 
-        $oldGroup = &$this->group;
-        $newGroup = $this->group->mergeWith($subGroup);
-        $this->group = &$newGroup;
+        $parentGroup = $this->currentGroup;
+        $this->currentGroup = $this->currentGroup->addSubGroup($subGroup);
 
-        ($callback)($this);
+        ($callback)($this, $this->currentGroup);
 
-        $this->groups[] = $this->group;
-        $this->group = $oldGroup;
+        $this->currentGroup = $parentGroup;
     }
 
     public function getCachedRouteForRequest(Request $request): Route|false
@@ -140,34 +135,27 @@ class Router
         return $this->cache->get($request->getPath(), false);
     }
 
+    public function getRoutes(): array
+    {
+        return $this->rootHolder->getRoutes();
+    }
+
     public function findMatchingRoute(Request $request): Route|false
     {
-        $gotInvalidMethod = false;
-        $allowedMethods = [];
+        /** @var InvalidRequestMethodException[] */
+        $exceptions = [];
 
-
-        $firstRoute = Bunch::of($this->groups)
-            ->filter(fn(RouteGroup $group) => $group->matches($request))
-            ->map(fn(RouteGroup $group) => $group->getRoutes())
-            ->flat()
-            ->first(function(Route $route) use ($request, &$gotInvalidMethod, &$allowedMethods) {
-                try
-                {
-                    return $route->match($request);
-                }
-                catch (InvalidRequestMethodException $invalid)
-                {
-                    $gotInvalidMethod = true;
-                    $allowedMethods = [...$allowedMethods, ...$invalid->allowedMethods];
-                    return false;
-                }
-            });
-
-        if ($firstRoute)
+        if ($firstRoute = $this->rootHolder->findMatchingRoute($request, $exceptions))
             return $firstRoute;
 
-        if ($gotInvalidMethod)
+        if (count($exceptions))
+        {
+            $allowedMethods = Bunch::of($exceptions)->reduce(
+                fn($acc, $exception) => array_merge($acc, $exception->allowedMethods), []
+            );
+
             throw new InvalidRequestMethodException($request->getMethod(), $allowedMethods);
+        }
 
         return false;
     }

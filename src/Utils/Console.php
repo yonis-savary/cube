@@ -42,6 +42,11 @@ class Console
         echo "8";
     }
 
+    public static function eraseFromCursor(): void
+    {
+        echo "[0J";
+    }
+
     public static function reset(): void
     {
         echo "[0m";
@@ -119,7 +124,9 @@ class Console
 
             if ($output = ob_get_clean())
             {
-                Console::log(...explode("\n", $output));
+                self::restoreCursor();
+                self::eraseFromCursor();
+                Console::log(... Bunch::fromExplode("\n", $output)->filter()->get());
                 self::saveCursor();
             }
 
