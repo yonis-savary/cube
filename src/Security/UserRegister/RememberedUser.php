@@ -10,5 +10,5 @@ class RememberedUser extends Event
     public function __construct(
         public Model $userData,
         public mixed $userPrimaryKeyValue
-    ){}
+    ) {}
 }

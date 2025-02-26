@@ -10,6 +10,6 @@ class SavedModel extends Event
 {
     public function __construct(
         public Model $created,
-        public ?Database $database=null
-    ){}
+        public ?Database $database = null
+    ) {}
 }

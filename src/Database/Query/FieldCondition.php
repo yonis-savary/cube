@@ -9,6 +9,5 @@ class FieldCondition
         public readonly string $field,
         public readonly string $operator,
         public readonly mixed $expression
-    )
-    {}
+    ) {}
 }

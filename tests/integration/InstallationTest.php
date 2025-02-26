@@ -2,20 +2,24 @@
 
 namespace Cube\Tests\Integration;
 
-use PHPUnit\Framework\TestCase;
 use Cube\Utils\Shell;
+use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class InstallationTest extends TestCase
 {
-    public function test_installation()
+    public function testInstallation()
     {
         $storage = Utils::getDummyApplicationStorage();
 
-        $this->assertTrue($storage->isDirectory("vendor/yonis-savary/cube"));
-        $this->assertTrue($storage->isFile("do"));
+        $this->assertTrue($storage->isDirectory('vendor/yonis-savary/cube'));
+        $this->assertTrue($storage->isFile('do'));
 
-        $proc = Shell::executeInDirectory("php do hello-world", $storage->getRoot());
-        $this->assertStringStartsWith("Hello World !", $proc->getOutput());
-
+        $proc = Shell::executeInDirectory('php do hello-world', $storage->getRoot());
+        $this->assertStringStartsWith('Hello World !', $proc->getOutput());
     }
 }

@@ -2,13 +2,12 @@
 
 namespace Cube\Http;
 
-use Psr\Log\LoggerInterface;
-use Stringable;
 use Cube\Data\Bunch;
 use Cube\Http\Rules\Validator;
 use Cube\Logger\Logger;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
+use Psr\Log\LoggerInterface;
 
 class Request extends HttpMessage
 {
@@ -25,31 +24,29 @@ class Request extends HttpMessage
     protected array $slugValues = [];
 
     /**
-     * @var string $method
-     * @var string $path
-     * @var array $get
-     * @var array $post
-     * @var array $headers
-     * @var Upload[] $uploads
-     * @var string $body
-     * @var ?string $ip
-     * @var array $cookies
+     * @var string
+     * @var string
+     * @var array
+     * @var array
+     * @var array
+     * @var Upload[]
+     * @var string
+     * @var ?string
+     * @var array
      */
     public function __construct(
-        string $method="GET",
-        string $path="/",
-        array $get=[],
-        array $post=[],
-        array $headers=[],
-
-        array $uploads=[],
-        string $body="",
-        ?string $ip=null,
-        array $cookies=[]
-    )
-    {
+        string $method = 'GET',
+        string $path = '/',
+        array $get = [],
+        array $post = [],
+        array $headers = [],
+        array $uploads = [],
+        string $body = '',
+        ?string $ip = null,
+        array $cookies = []
+    ) {
         $this->method = $method;
-        $this->path = preg_replace('/\\?.+/', '', $path);
+        $this->path = preg_replace('/\?.+/', '', $path);
         $this->get = $get;
         $this->post = $post;
         $this->setHeaders($headers);
@@ -58,11 +55,11 @@ class Request extends HttpMessage
         $this->ip = $ip;
         $this->cookies = $cookies;
 
-        if ($this->isJSON() && $body && !count($post))
-        {
+        if ($this->isJSON() && $body && !count($post)) {
             $decodedBody = json_decode($body, JSON_THROW_ON_ERROR);
-            if (is_array($decodedBody))
+            if (is_array($decodedBody)) {
                 $this->post = $decodedBody;
+            }
         }
     }
 
@@ -72,85 +69,34 @@ class Request extends HttpMessage
         $class = get_called_class();
         $newReq = new $class();
 
-        $newReq->method     = $source->method;
-        $newReq->path       = $source->path;
-        $newReq->get        = $source->get;
-        $newReq->post       = $source->post;
-        $newReq->uploads    = $source->uploads;
-        $newReq->ip         = $source->ip;
-        $newReq->cookies    = $source->cookies;
-        $newReq->route      = $source->route;
+        $newReq->method = $source->method;
+        $newReq->path = $source->path;
+        $newReq->get = $source->get;
+        $newReq->post = $source->post;
+        $newReq->uploads = $source->uploads;
+        $newReq->ip = $source->ip;
+        $newReq->cookies = $source->cookies;
+        $newReq->route = $source->route;
         $newReq->slugValues = $source->slugValues;
-        $newReq->headers    = $source->headers;
+        $newReq->headers = $source->headers;
 
         return $newReq;
     }
 
-
-    public function logSelf(?LoggerInterface $logger=null)
+    public function logSelf(?LoggerInterface $logger = null)
     {
         $logger ??= Logger::getInstance();
-        $logger->log('info', "{method} {path}", [
-            "method" => $this->getMethod(),
-            "path" => $this->getPath()
+        $logger->log('info', '{method} {path}', [
+            'method' => $this->getMethod(),
+            'path' => $this->getPath(),
         ]);
-    }
-
-    protected static function parseDictionaryValues(array $data): array
-    {
-        foreach ($data as $key => &$value)
-        {
-            if (!($value instanceof Stringable || is_string($value)))
-                continue;
-
-            $lower = strtolower("$value");
-
-            if ($lower === 'null')
-                $value = null ;
-            else if ($lower === 'false' || $lower === 'off')
-                $value = false;
-            else if ($lower === 'true' || $lower === 'on')
-                $value = true;
-        }
-        return $data;
-    }
-
-
-    protected static function getUploadsArray(array $data): array
-    {
-        $cleanedUploads = [];
-
-        foreach($data as $inputName => $fileData)
-        {
-            $isMultiple = is_array($fileData['name']);
-            $uploadCount = $isMultiple ? count($fileData['name']): null;
-            $toAdd = [];
-
-            if ($isMultiple)
-            {
-                $keys = array_keys($fileData);
-                for ($i=0; $i<$uploadCount; $i++)
-                    $toAdd[] = array_combine($keys, array_map(fn($arr) => $arr[$i], $fileData));
-            }
-            else
-            {
-                $toAdd[] = $fileData;
-            }
-
-            foreach ($toAdd as &$upload)
-                $upload = new Upload($upload, $inputName);
-
-            array_push($cleanedUploads, ...$toAdd);
-        }
-
-        return $cleanedUploads;
     }
 
     public static function fromGlobals(): self
     {
-        $headers = function_exists('getallheaders') ?
-            getallheaders() :
-            [];
+        $headers = function_exists('getallheaders')
+            ? getallheaders()
+            : [];
 
         $get = self::parseDictionaryValues($_GET);
         $post = self::parseDictionaryValues($_POST);
@@ -158,10 +104,11 @@ class Request extends HttpMessage
         $uploads = self::getUploadsArray($_FILES);
 
         $uri = $_SERVER['REQUEST_URI'] ?? '/';
-        if ($uri != "/")
-            $uri = Text::dontEndsWith($uri, "/");
+        if ('/' != $uri) {
+            $uri = Text::dontEndsWith($uri, '/');
+        }
 
-        $request = new self (
+        $request = new self(
             $_SERVER['REQUEST_METHOD'] ?? php_sapi_name(),
             $uri,
             $get,
@@ -176,16 +123,17 @@ class Request extends HttpMessage
         return $request;
     }
 
-    public function param(string $name, mixed $default=null): mixed
+    public function param(string $name, mixed $default = null): mixed
     {
         return $this->body[$name] ?? $this->get[$name] ?? $this->post[$name] ?? $default;
     }
 
-    public function params(array $keys, array $default=[]): array
+    public function params(array $keys, array $default = []): array
     {
         $data = [];
-        foreach ($keys as $key)
+        foreach ($keys as $key) {
             $data[$key] = $this->param($key, $default[$key] ?? null);
+        }
 
         return $data;
     }
@@ -195,7 +143,7 @@ class Request extends HttpMessage
         return Bunch::of($this->param($key));
     }
 
-    public function list(array $keys, array $default=[]): array
+    public function list(array $keys, array $default = []): array
     {
         return array_values($this->params($keys, $default));
     }
@@ -203,7 +151,8 @@ class Request extends HttpMessage
     public function upload(string $inputName): ?Upload
     {
         return Bunch::of($this->uploads)
-            ->first(fn(Upload $upload) => $upload->inputName === $inputName);
+            ->first(fn (Upload $upload) => $upload->inputName === $inputName)
+        ;
     }
 
     /**
@@ -212,8 +161,9 @@ class Request extends HttpMessage
     public function uploads(string $inputName): array
     {
         return Bunch::of($this->uploads)
-            ->filter(fn(Upload $upload) => $upload->inputName === $inputName)
-            ->get();
+            ->filter(fn (Upload $upload) => $upload->inputName === $inputName)
+            ->get()
+        ;
     }
 
     /** @return Upload[] */
@@ -247,11 +197,11 @@ class Request extends HttpMessage
         return $this->post;
     }
 
-    public function all(bool $getParamsGotPriority=true): array
+    public function all(bool $getParamsGotPriority = true): array
     {
-        return $getParamsGotPriority ?
-            array_merge($this->post, $this->get):
-            array_merge($this->get, $this->post);
+        return $getParamsGotPriority
+            ? array_merge($this->post, $this->get)
+            : array_merge($this->get, $this->post);
     }
 
     public function getCookies(): array
@@ -268,7 +218,6 @@ class Request extends HttpMessage
     {
         return $this->route;
     }
-
 
     public function setSlugValues(array $values): void
     {
@@ -288,19 +237,21 @@ class Request extends HttpMessage
     final public function getValidator(): Validator
     {
         $rules = $this->getRules();
-        if ($rules instanceof Validator)
+        if ($rules instanceof Validator) {
             return $rules;
+        }
 
         return Validator::from($rules);
     }
 
-    public function isValid(): true|array
+    public function isValid(): array|true
     {
         $validator = $this->getValidator();
+
         return $validator->validateRequest($this);
     }
 
-    public function validated(?Validator $validator=null): array
+    public function validated(?Validator $validator = null): array
     {
         $validator ??= $this->getValidator();
 
@@ -309,16 +260,14 @@ class Request extends HttpMessage
         return $validator->getLastValues();
     }
 
-
     public function fetch(
-        ?Logger $logger=null,
-        ?int $timeout=null,
-        ?string $userAgent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
-        bool $supportRedirection=true,
+        ?Logger $logger = null,
+        ?int $timeout = null,
+        ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        bool $supportRedirection = true,
         int $logFlags = HttpClient::DEBUG_ESSENTIALS,
-        ?HttpClient $httpClient=null
-    ): Response
-    {
+        ?HttpClient $httpClient = null
+    ): Response {
         $httpClient ??= new HttpClient($this);
 
         return $httpClient->fetch(
@@ -330,6 +279,52 @@ class Request extends HttpMessage
         );
     }
 
+    protected static function parseDictionaryValues(array $data): array
+    {
+        foreach ($data as $key => &$value) {
+            if (!($value instanceof \Stringable || is_string($value))) {
+                continue;
+            }
 
+            $lower = strtolower("{$value}");
 
+            if ('null' === $lower) {
+                $value = null;
+            } elseif ('false' === $lower || 'off' === $lower) {
+                $value = false;
+            } elseif ('true' === $lower || 'on' === $lower) {
+                $value = true;
+            }
+        }
+
+        return $data;
+    }
+
+    protected static function getUploadsArray(array $data): array
+    {
+        $cleanedUploads = [];
+
+        foreach ($data as $inputName => $fileData) {
+            $isMultiple = is_array($fileData['name']);
+            $uploadCount = $isMultiple ? count($fileData['name']) : null;
+            $toAdd = [];
+
+            if ($isMultiple) {
+                $keys = array_keys($fileData);
+                for ($i = 0; $i < $uploadCount; ++$i) {
+                    $toAdd[] = array_combine($keys, array_map(fn ($arr) => $arr[$i], $fileData));
+                }
+            } else {
+                $toAdd[] = $fileData;
+            }
+
+            foreach ($toAdd as &$upload) {
+                $upload = new Upload($upload, $inputName);
+            }
+
+            array_push($cleanedUploads, ...$toAdd);
+        }
+
+        return $cleanedUploads;
+    }
 }

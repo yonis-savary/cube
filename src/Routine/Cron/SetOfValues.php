@@ -6,16 +6,16 @@ use Cube\Data\Bunch;
 
 class SetOfValues implements CronValue
 {
-    public static function accepts(string $value): bool
-    {
-        return preg_match("/^(\d+,)+\d+$/", $value);
-    }
-
     public array $values = [];
 
     public function __construct(string $rawSet)
     {
-        $this->values = Bunch::fromExplode(",", $rawSet)->asIntegers()->get();
+        $this->values = Bunch::fromExplode(',', $rawSet)->asIntegers()->get();
+    }
+
+    public static function accepts(string $value): bool
+    {
+        return preg_match('/^(\\d+,)+\\d+$/', $value);
     }
 
     public function matches(int $value): bool

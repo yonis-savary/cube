@@ -4,9 +4,6 @@ namespace Cube\Data;
 
 use Cube\Data\Classes\NoValue;
 use Cube\Utils\Utils;
-use InvalidArgumentException;
-
-use function Cube\debug;
 
 /**
  * @template TKey
@@ -19,23 +16,45 @@ class Bunch
 
     /**
      * @template TType
+     *
+     * @param array<TType> $initialData
+     *
+     * @return self<int,TType>
+     */
+    public function __construct(array $initialData = [])
+    {
+        $this->data = $initialData;
+    }
+
+    public function __clone()
+    {
+        return new self($this->get());
+    }
+
+    /**
+     * @template TType
      * @template TTypeKey
-     * @param array<TType>|TType|Bunch<TTypeKey,TType> $element
+     *
+     * @param array<TType>|Bunch<TTypeKey,TType>|TType $element
+     *
      * @return self<int,TType>
      */
     public static function of(mixed $element): self
     {
-        if ($element instanceof Bunch)
+        if ($element instanceof Bunch) {
             $element = $element->get();
+        }
 
-        if (!(is_array($element) && Utils::isList($element)))
+        if (!(is_array($element) && Utils::isList($element))) {
             $element = [$element];
+        }
 
         return new self($element);
     }
 
     /**
      * @template TType
+     *
      * @return self<int,TType>
      */
     public static function fill(int $count, mixed $value): self
@@ -46,7 +65,7 @@ class Bunch
     /**
      * @return self<int,int>
      */
-    public static function range(int $end, int $start=1, int $step=1): self
+    public static function range(int $end, int $start = 1, int $step = 1): self
     {
         return self::of(range($start, $end, $step));
     }
@@ -54,7 +73,9 @@ class Bunch
     /**
      * @template TType
      * @template TTypeKey
+     *
      * @param array<TTypeKey,TType>
+     *
      * @return self<int,TType>
      */
     public static function fromValues(array $assoc): self
@@ -65,7 +86,9 @@ class Bunch
     /**
      * @template TType
      * @template TTypeKey
+     *
      * @param array<TTypeKey,TType>
+     *
      * @return self<int,TTypeKey>
      */
     public static function fromKeys(array $assoc): self
@@ -78,6 +101,7 @@ class Bunch
      * @template TArrayValue
      *
      * @param array<TArrayKey,TArrayValue> $assoc
+     *
      * @return Bunch<int,array{TArrayKey,TArrayValue}>
      */
     public static function unzip(array $assoc): self
@@ -87,8 +111,9 @@ class Bunch
         $values = array_values($assoc);
         $count = count($keys);
 
-        for ($i=0; $i<$count; $i++)
+        for ($i = 0; $i < $count; ++$i) {
             $data[] = [$keys[$i], $values[$i]];
+        }
 
         return self::of($data);
     }
@@ -96,17 +121,19 @@ class Bunch
     /**
      * @template TReturnKey
      * @template TReturnValue
+     *
      * @param null|\Closure(TValue):array<TReturnKey|TReturnValue> $mapFunction
      */
-    public function zip(?callable $mapFunction=null): array
+    public function zip(?callable $mapFunction = null): array
     {
         $clone = Bunch::of($this);
-        if ($mapFunction)
+        if ($mapFunction) {
             $clone->map($mapFunction);
+        }
 
         return array_combine(
-            Bunch::of($clone)->map(fn($x) => $x[0])->toArray(),
-            Bunch::of($clone)->map(fn($x) => $x[1])->toArray(),
+            Bunch::of($clone)->map(fn ($x) => $x[0])->toArray(),
+            Bunch::of($clone)->map(fn ($x) => $x[1])->toArray(),
         );
     }
 
@@ -119,21 +146,6 @@ class Bunch
     }
 
     /**
-     * @template TType
-     * @param array<TType> $initialData
-     * @return self<int,TType>
-     */
-    public function __construct(array $initialData=[])
-    {
-        $this->data = $initialData;
-    }
-
-    public function __clone()
-    {
-        return new self($this->get());
-    }
-
-    /**
      * @return array<TKey,TValue>
      */
     public function get(): array
@@ -142,7 +154,8 @@ class Bunch
     }
 
     /**
-     * Alias of `get()`
+     * Alias of `get()`.
+     *
      * @return array<TKey,TValue>
      */
     public function toArray(): array
@@ -150,18 +163,12 @@ class Bunch
         return $this->get();
     }
 
-    protected function withNewData(array $data): self
-    {
-        $this->data = array_values($data);
-        return $this;
-    }
-
     /**
      * @return self<int>
      */
     public function asIntegers(): self
     {
-        return $this->filter(fn($x) => is_numeric($x))->map(fn($x) => (int) $x);
+        return $this->filter(fn ($x) => is_numeric($x))->map(fn ($x) => (int) $x);
     }
 
     /**
@@ -169,15 +176,17 @@ class Bunch
      */
     public function asFloats(): self
     {
-        return $this->filter(fn($x) => is_numeric($x))->map(fn($x) => (float) $x);
+        return $this->filter(fn ($x) => is_numeric($x))->map(fn ($x) => (float) $x);
     }
 
     /**
      * @template TDefault
+     *
      * @param TDefault $default Default value used when no value is present
-     * @return TValue|TDefault
+     *
+     * @return TDefault|TValue
      */
-    public function min(mixed $default=null): mixed
+    public function min(mixed $default = null): mixed
     {
         return $this->count()
             ? min(...$this->data)
@@ -186,62 +195,67 @@ class Bunch
 
     /**
      * @template TDefault
+     *
      * @param TDefault $default Default value used when no value is present
-     * @return TValue|TDefault
+     *
+     * @return TDefault|TValue
      */
-    public function max(mixed $default=null): mixed
+    public function max(mixed $default = null): mixed
     {
         return $this->count()
             ? max(...$this->data)
             : $default;
     }
 
-
     /**
      * @template TDefault
+     *
      * @param TDefault $default Default value used when no value is present
-     * @return TValue|TDefault
+     *
+     * @return TDefault|TValue
      */
-    public function average(mixed $default=null): mixed
+    public function average(mixed $default = null): mixed
     {
         $count = $this->count();
-        if (!$count)
+        if (!$count) {
             return $default;
+        }
 
-        /** @var array<null|bool|int|float|string|array> $data */
+        /** @var array<null|array|bool|float|int|string> $data */
         $data = $this->data;
         $sum = $data[0];
 
-        for ($i=1; $i<$count; $i++)
+        for ($i = 1; $i < $count; ++$i) {
             $sum += $data[$i];
+        }
 
         return $sum / $count;
     }
 
-
     /**
      * @return static
      */
-    public function filter(?callable $callback=null): self
+    public function filter(?callable $callback = null): self
     {
         return $this->withNewData(array_filter($this->data, $callback));
     }
 
     /**
      * @template X
+     *
      * @param string|X $class
+     *
      * @return self<X>
      */
     public function onlyInstancesOf(string $class): self
     {
-        return $this->filter(fn($x) => $x instanceof $class);
+        return $this->filter(fn ($x) => $x instanceof $class);
     }
 
     public function partitionFilter(callable $callback): array
     {
         $output = [];
-        foreach ($this->data as $element)
-        {
+        foreach ($this->data as $element) {
             $result = (int) $callback($element);
             $output[$result] ??= [];
             $output[$result][] = $element;
@@ -252,7 +266,9 @@ class Bunch
 
     /**
      * @template TReturnValue
+     *
      * @param \Closure(TValue):TReturnValue $callback
+     *
      * @return Bunch<TKey,TReturnValue>
      */
     public function map(callable $callback): self
@@ -262,57 +278,47 @@ class Bunch
 
     public function diff(array|Bunch $values): self
     {
-        if ($values instanceof Bunch)
+        if ($values instanceof Bunch) {
             $values = $values->get();
+        }
+
         return $this->withNewData(array_diff($this->data, $values));
     }
 
-    protected function getValueFromCompoundKey($object, string $compoundKey, callable $valueGetter, string $compoundKeySeparator=".")
-    {
-        if (!str_contains($compoundKey, $compoundKeySeparator))
-            return ($valueGetter)($object, $compoundKey);
-
-        list($key, $rest) = explode($compoundKeySeparator, $compoundKey, 2);
-        $subValue = ($valueGetter)($object, $key);
-
-        if ($subValue instanceof NoValue)
-            return $subValue;
-
-        return $this->getValueFromCompoundKey($subValue, $rest, $valueGetter, $compoundKeySeparator);
-    }
-
     /**
-     * @param string $key
      * @return Bunch<TKey,TValue[$key]>
      */
-    public function key(string|array $keys, string $compoundKeySeparator="."): self
+    public function key(array|string $keys, string $compoundKeySeparator = '.'): self
     {
-        if (!$this->count())
+        if (!$this->count()) {
             return $this;
+        }
 
         $keys = Utils::toArray($keys);
 
         $arrayMode = is_array($this->data[0] ?? false);
         $valueGetter = $arrayMode
-            ? fn($object, $key) => $object[$key] ?? new NoValue
-            : fn($object, $key) => $object->$key ?? new NoValue;
+            ? fn ($object, $key) => $object[$key] ?? new NoValue()
+            : fn ($object, $key) => $object->{$key} ?? new NoValue();
 
-        return $this->map(function($element) use (&$keys, $valueGetter, $compoundKeySeparator) {
-            foreach ($keys as $key)
-            {
+        return $this->map(function ($element) use (&$keys, $valueGetter, $compoundKeySeparator) {
+            foreach ($keys as $key) {
                 $loopValue = $this->getValueFromCompoundKey($element, $key, $valueGetter, $compoundKeySeparator);
-                if (! ($loopValue instanceof NoValue))
+                if (!$loopValue instanceof NoValue) {
                     return $loopValue;
+                }
             }
-            throw new InvalidArgumentException("No value found in object for keys " . print_r($keys, true));
+
+            throw new \InvalidArgumentException('No value found in object for keys '.print_r($keys, true));
         });
     }
 
     public function flat(): self
     {
         $data = [];
-        foreach ($this->data as $array)
+        foreach ($this->data as $array) {
             array_push($data, ...$array);
+        }
 
         return $this->withNewData($data);
     }
@@ -320,8 +326,10 @@ class Bunch
     /**
      * @template TMergedKey
      * @template TMergedValue
+     *
      * @param array<TMergedKey,TMergedValue>|Bunch<TMergedKey,TMergedValue> $value
-     * @return Bunch<TKey|TMergedKey,TValue|TMergedValue>
+     *
+     * @return Bunch<TKey|TMergedKey,TMergedValue|TValue>
      */
     public function merge(array|Bunch $value): self
     {
@@ -330,14 +338,12 @@ class Bunch
         );
     }
 
-    /**
-     * @param \Closure(TValue) $callback
-     */
-    public function sort(callable|int $callbackOrSortMode=SORT_REGULAR): self
+    public function sort(callable|int $callbackOrSortMode = SORT_REGULAR): self
     {
-        is_callable($callbackOrSortMode) ?
-            usort($this->data, fn($a, $b) => $callbackOrSortMode($a) < $callbackOrSortMode($b) ? -1 : 1):
-            sort($this->data, $callbackOrSortMode);
+        is_callable($callbackOrSortMode)
+            ? usort($this->data, fn ($a, $b) => $callbackOrSortMode($a) < $callbackOrSortMode($b) ? -1 : 1)
+            : sort($this->data, $callbackOrSortMode);
+
         return $this->withNewData($this->data);
     }
 
@@ -347,6 +353,7 @@ class Bunch
     public function forEach(callable $callback): self
     {
         array_walk($this->data, $callback);
+
         return $this;
     }
 
@@ -355,11 +362,12 @@ class Bunch
      */
     public function any(callable $callback): bool
     {
-        foreach ($this->data as $element)
-        {
-            if ($callback($element) === true)
+        foreach ($this->data as $element) {
+            if (true === $callback($element)) {
                 return true;
+            }
         }
+
         return false;
     }
 
@@ -368,11 +376,12 @@ class Bunch
      */
     public function all(callable $callback): bool
     {
-        foreach ($this->data as $element)
-        {
-            if ($callback($element) === false)
+        foreach ($this->data as $element) {
+            if (false === $callback($element)) {
                 return false;
+            }
         }
+
         return true;
     }
 
@@ -384,30 +393,36 @@ class Bunch
     public function push(mixed ...$element): self
     {
         array_push($this->data, ...$element);
+
         return $this;
     }
 
     public function unshift(mixed ...$element): self
     {
         array_unshift($this->data, ...$element);
+
         return $this;
     }
 
-    public function pop(int $count=1): self
+    public function pop(int $count = 1): self
     {
-        for ($i=0; ($i<$count) && count($this->data); $i++)
+        for ($i = 0; ($i < $count) && count($this->data); ++$i) {
             array_pop($this->data);
+        }
+
         return $this;
     }
 
-    public function shift(int $count=1): self
+    public function shift(int $count = 1): self
     {
-        for ($i=0; ($i<$count) && count($this->data); $i++)
+        for ($i = 0; ($i < $count) && count($this->data); ++$i) {
             array_shift($this->data);
+        }
+
         return $this;
     }
 
-    public function join(string $glue=","): string
+    public function join(string $glue = ','): string
     {
         return join($glue, $this->data);
     }
@@ -417,11 +432,12 @@ class Bunch
      */
     public function first(callable $callback): mixed
     {
-        foreach ($this->data as $element)
-        {
-            if ($callback($element) === true)
+        foreach ($this->data as $element) {
+            if (true === $callback($element)) {
                 return $element;
+            }
         }
+
         return null;
     }
 
@@ -431,12 +447,13 @@ class Bunch
     public function firstIndex(callable $callback): int
     {
         $dataCount = count($this->data);
-        for ($i=0; $i<$dataCount; $i++)
-        {
+        for ($i = 0; $i < $dataCount; ++$i) {
             $element = $this->data[$i];
-            if ($callback($element) === true)
+            if (true === $callback($element)) {
                 return $i;
+            }
         }
+
         return -1;
     }
 
@@ -453,20 +470,46 @@ class Bunch
     public function shuffle(): self
     {
         shuffle($this->data);
+
         return $this;
     }
 
     /**
      * @template TAcc
+     *
      * @param \Closure(TAcc,TValue):TAcc $callback
-     * @param TAcc $start
+     * @param TAcc                       $start
      */
-    public function reduce(callable $callback, mixed $start=0): mixed
+    public function reduce(callable $callback, mixed $start = 0): mixed
     {
         $acc = $start;
-        foreach ($this->data as $element)
+        foreach ($this->data as $element) {
             $acc = $callback($acc, $element);
+        }
 
         return $acc;
+    }
+
+    protected function withNewData(array $data): self
+    {
+        $this->data = array_values($data);
+
+        return $this;
+    }
+
+    protected function getValueFromCompoundKey($object, string $compoundKey, callable $valueGetter, string $compoundKeySeparator = '.')
+    {
+        if (!str_contains($compoundKey, $compoundKeySeparator)) {
+            return ($valueGetter)($object, $compoundKey);
+        }
+
+        list($key, $rest) = explode($compoundKeySeparator, $compoundKey, 2);
+        $subValue = ($valueGetter)($object, $key);
+
+        if ($subValue instanceof NoValue) {
+            return $subValue;
+        }
+
+        return $this->getValueFromCompoundKey($subValue, $rest, $valueGetter, $compoundKeySeparator);
     }
 }

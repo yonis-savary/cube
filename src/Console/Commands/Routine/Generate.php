@@ -11,23 +11,24 @@ class Generate extends Command
 {
     public function getScope(): string
     {
-        return "routine";
+        return 'routine';
     }
 
     public function getHelp(): string
     {
-        return "Generate a CRON syntax to launch routine:launch command";
+        return 'Generate a CRON syntax to launch routine:launch command';
     }
 
     public function execute(Args $args): int
     {
         $projectRoot = Autoloader::getProjectPath();
         Console::log(
-            "",
-            "Here is a command you can put in your Crontab :",
-            Console::withBlueColor("* * * * * cd \"$projectRoot\" && php do routine:launch", true),
-            "",
+            '',
+            'Here is a command you can put in your Crontab :',
+            Console::withBlueColor("* * * * * cd \"{$projectRoot}\" && php do routine:launch", true),
+            '',
         );
+
         return 0;
     }
 }

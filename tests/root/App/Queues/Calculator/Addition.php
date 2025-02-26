@@ -7,7 +7,7 @@ class Addition
     public function __construct(
         public readonly int $a,
         public readonly int $b,
-    ){}
+    ) {}
 
     public function getResult(): int
     {

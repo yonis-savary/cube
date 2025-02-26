@@ -3,9 +3,9 @@
 namespace App\Controllers;
 
 use App\Controllers\Requests\StoreProductRequest;
-use Cube\Http\Response;
 use App\Models\Product;
 use Cube\Http\Request;
+use Cube\Http\Response;
 use Cube\Web\Controller;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
@@ -15,8 +15,8 @@ class ProductController extends Controller
     public function routes(Router $router): void
     {
         $router->addRoutes(
-            Route::post("/product", [self::class, "storeProduct"]),
-            Route::get("/product/{int:id}", [self::class, "getProduct"]),
+            Route::post('/product', [self::class, 'storeProduct']),
+            Route::get('/product/{int:id}', [self::class, 'getProduct']),
         );
     }
 

@@ -3,18 +3,23 @@
 namespace Cube\Tests\Integration;
 
 use Cube\Database\Database;
-use Cube\Logger\Logger;
 use Cube\Test\CubeTestCase;
 use Cube\Utils\Shell;
 use Cube\Web\CubeServer;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class RouterTest extends CubeTestCase
 {
     public function getServer(): CubeServer
     {
         $server = Utils::getDummyServer();
 
-        Shell::executeInDirectory("php do clear-database", $server->getPublicStorage()->parent()->getRoot());
+        Shell::executeInDirectory('php do clear-database', $server->getPublicStorage()->parent()->getRoot());
+
         return $server;
     }
 
@@ -23,34 +28,35 @@ class RouterTest extends CubeTestCase
         return Utils::getIntegrationDatabase();
     }
 
-    public function test_ping()
+    public function testPing()
     {
-        $this->get("/ping")->assertOk()->assertJsonContent("OK");
-        $this->post("/ping")->assertMethodNotAllowed();
+        $this->get('/ping')->assertOk()->assertJsonContent('OK');
+        $this->post('/ping')->assertMethodNotAllowed();
     }
 
-    public function test_product()
+    public function testProduct()
     {
-        $this->get("/product")->assertMethodNotAllowed();
-        $this->post("/product")->assertUnprocessableContent();
+        $this->get('/product')->assertMethodNotAllowed();
+        $this->post('/product')->assertUnprocessableContent();
 
-        $response = $this->postJson("/product", [
-            "name" => "my-product",
-            "price_dollar" => 42,
-            'managers' => [['manager'=>'Joe'], ['manager'=>'Randy'], ['manager'=>'Bill']]
+        $response = $this->postJson('/product', [
+            'name' => 'my-product',
+            'price_dollar' => 42,
+            'managers' => [['manager' => 'Joe'], ['manager' => 'Randy'], ['manager' => 'Bill']],
         ]);
         $product = $response->json();
         $response->assertOk();
 
-        $this->assertIsNumeric($product["id"]);
-        $this->assertEquals("my-product", $product["name"]);
-        $this->assertEquals(42, $product["price_dollar"]);
+        $this->assertIsNumeric($product['id']);
+        $this->assertEquals('my-product', $product['name']);
+        $this->assertEquals(42, $product['price_dollar']);
         $this->assertCount(3, $product['managers']);
 
-        $productId = $product["id"];
+        $productId = $product['id'];
 
-        $this->get("/product/" . $productId)
+        $this->get('/product/'.$productId)
             ->assertOk()
-            ->assertJsonContent($product);
+            ->assertJsonContent($product)
+        ;
     }
 }

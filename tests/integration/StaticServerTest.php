@@ -3,18 +3,23 @@
 namespace Cube\Tests\Integration;
 
 use Cube\Database\Database;
-use Cube\Logger\Logger;
 use Cube\Test\CubeTestCase;
 use Cube\Utils\Shell;
 use Cube\Web\CubeServer;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class StaticServerTest extends CubeTestCase
 {
     public function getServer(): CubeServer
     {
         $server = Utils::getDummyServer();
 
-        Shell::executeInDirectory("php do clear-database", $server->getPublicStorage()->parent()->getRoot());
+        Shell::executeInDirectory('php do clear-database', $server->getPublicStorage()->parent()->getRoot());
+
         return $server;
     }
 
@@ -23,16 +28,18 @@ class StaticServerTest extends CubeTestCase
         return Utils::getIntegrationDatabase();
     }
 
-    public function test_servesFiles()
+    public function testServesFiles()
     {
-        $body = $this->get("/")
+        $body = $this->get('/')
             ->assertOk()
-            ->body();
+            ->body()
+        ;
         $this->assertStringContainsString("I'm a document", $body);
 
-        $file = $this->get("/my-file.txt")
+        $file = $this->get('/my-file.txt')
             ->assertOk()
-            ->body();
+            ->body()
+        ;
         $this->assertEquals('Hello!', $file);
     }
 }

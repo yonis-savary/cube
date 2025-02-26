@@ -6,7 +6,7 @@ class AnyValue implements CronValue
 {
     public static function accepts(string $value): bool
     {
-        return $value === "*";
+        return '*' === $value;
     }
 
     public function matches(int $value): bool

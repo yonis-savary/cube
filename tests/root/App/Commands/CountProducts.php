@@ -11,7 +11,7 @@ class CountProducts extends Command
 {
     public function getScope(): string
     {
-        return "app";
+        return 'app';
     }
 
     public function execute(Args $args): int
@@ -21,6 +21,7 @@ class CountProducts extends Command
                 Product::select()->fetch()
             )
         );
+
         return 0;
     }
 }

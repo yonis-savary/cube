@@ -6,7 +6,7 @@ class DummyModel extends Model
 {
     public static function table(): string
     {
-        return "sharp-dummy-model";
+        return 'sharp-dummy-model';
     }
 
     public static function fields(): array

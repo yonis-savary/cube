@@ -6,8 +6,6 @@ use Cube\Models\Events\SavedModel;
 use Cube\Models\Model;
 use Cube\Utils\Text;
 
-use function Cube\debug;
-
 /**
  * @property Model|string $model
  * @property Model|string $fromModel
@@ -21,7 +19,7 @@ class HasMany implements Relation
         public readonly string $toModel,
         public readonly string $toColumn,
         public Model &$model
-    ){}
+    ) {}
 
     public function isSource(string $model, string $column): bool
     {
@@ -36,9 +34,9 @@ class HasMany implements Relation
     public function getName(): string
     {
         return Text::endsWith(str_replace(
-            strtolower(basename(str_replace("\\", "/", $this->fromModel))),
+            strtolower(basename(str_replace('\\', '/', $this->fromModel))),
             '',
-            strtolower(basename(str_replace("\\", "/", $this->toModel)))
+            strtolower(basename(str_replace('\\', '/', $this->toModel)))
         ), 's');
     }
 
@@ -51,8 +49,8 @@ class HasMany implements Relation
         $fromColumn = $this->fromColumn;
         $toColumn = $this->toColumn;
 
-        $thisModel->onSaved(function(SavedModel $event) use ($model, $thisModel, $toColumn, $fromColumn) {
-            $model->data->$toColumn = $thisModel->data->$fromColumn;
+        $thisModel->onSaved(function (SavedModel $event) use ($model, $thisModel, $toColumn, $fromColumn) {
+            $model->data->{$toColumn} = $thisModel->data->{$fromColumn};
             $model->save($event->database);
             $model->reload($event->database);
         });
@@ -71,7 +69,7 @@ class HasMany implements Relation
 
         $thisModel->setReference(
             $this->getName(),
-            $toModel::select()->where($toColumn, $thisModel->$fromColumn)->fetch()
+            $toModel::select()->where($toColumn, $thisModel->{$fromColumn})->fetch()
         );
     }
 }

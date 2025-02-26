@@ -2,12 +2,10 @@
 
 namespace Cube\Exceptions;
 
-use InvalidArgumentException;
-
-class FileDoesNotExistsException extends InvalidArgumentException
+class FileDoesNotExistsException extends \InvalidArgumentException
 {
     public function __construct(string $file)
     {
-        parent::__construct("File [$file] does not exists !");
+        parent::__construct("File [{$file}] does not exists !");
     }
 }

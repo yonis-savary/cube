@@ -12,8 +12,9 @@ trait TestMultipleDrivers
     public static function getDatabases(): array
     {
         return Bunch::of(Autoloader::classesThatExtends(DatabaseProvider::class))
-            ->map(fn($providerClass) => new $providerClass())
-            ->map(fn(DatabaseProvider $providerClass) => [$providerClass->getEmptyDatabase()])
-            ->toArray();
+            ->map(fn ($providerClass) => new $providerClass())
+            ->map(fn (DatabaseProvider $providerClass) => [$providerClass->getEmptyDatabase()])
+            ->toArray()
+        ;
     }
 }

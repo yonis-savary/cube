@@ -13,12 +13,12 @@ class Generate extends Command
 {
     public function getHelp(): string
     {
-        return "Generate model files inside your application";
+        return 'Generate model files inside your application';
     }
 
     public function getScope(): string
     {
-        return "models";
+        return 'models';
     }
 
     public function execute(Args $args): int
@@ -29,11 +29,12 @@ class Generate extends Command
 
         $files = $generator->processDatabase(
             Database::getInstance(),
-            (new Storage($app))->child("Models")
+            (new Storage($app))->child('Models')
         );
 
-        foreach ($files as $file)
-            Console::log("Generated " . $file);
+        foreach ($files as $file) {
+            Console::log('Generated '.$file);
+        }
 
         return 0;
     }

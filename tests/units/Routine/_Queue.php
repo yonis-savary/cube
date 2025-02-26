@@ -2,12 +2,17 @@
 
 namespace Cube\Tests\Units\Routine;
 
-use PHPUnit\Framework\TestCase;
 use Cube\Tests\App\Queues\Calculator;
+use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class QueueTest extends TestCase
 {
-    public function test_creation()
+    public function testCreation()
     {
         Calculator::flush(true);
         $this->assertEquals(0, Calculator::countToProcess());

@@ -2,7 +2,6 @@
 
 namespace Cube;
 
-
 /**
  * @return float Time in microseconds
  */

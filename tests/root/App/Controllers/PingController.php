@@ -12,12 +12,12 @@ class PingController extends Controller
     public function routes(Router $router): void
     {
         $router->addRoutes(
-            Route::get("/ping", [self::class, "ping"])
+            Route::get('/ping', [self::class, 'ping'])
         );
     }
 
     public static function ping(Request $request)
     {
-        return "OK";
+        return 'OK';
     }
 }

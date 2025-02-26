@@ -2,8 +2,6 @@
 
 namespace Cube\Web\ModelAPI;
 
-use Exception;
-use InvalidArgumentException;
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Database\Database;
@@ -16,19 +14,18 @@ use Cube\Models\Model;
 use Cube\Models\ModelField;
 use Cube\Utils\Utils;
 use Cube\Web\Controller;
-use Cube\Web\ModelAPI\ModelAPIModes;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
 
 abstract class ModelAPI extends Controller
 {
-    const ROUTE_EXTRAS_MODEL_KEY = 'model-api-class';
+    public const ROUTE_EXTRAS_MODEL_KEY = 'model-api-class';
 
-    const CREATE = ModelAPIModes::CREATE;
-    const READ   = ModelAPIModes::READ;
-    const UPDATE = ModelAPIModes::UPDATE;
-    const DELETE = ModelAPIModes::DELETE;
+    public const CREATE = ModelAPIModes::CREATE;
+    public const READ = ModelAPIModes::READ;
+    public const UPDATE = ModelAPIModes::UPDATE;
+    public const DELETE = ModelAPIModes::DELETE;
 
     protected Model $model;
     protected RouteGroup $group;
@@ -37,6 +34,19 @@ abstract class ModelAPI extends Controller
      * @var array<ModelAPIModes>
      */
     protected array $modes;
+
+    public function __construct()
+    {
+        $modelClass = $this->getModelClass();
+        if (!Autoloader::extends($modelClass, Model::class)) {
+            throw new \InvalidArgumentException('$modelClass must extends Model class');
+        }
+
+        $this->model = new $modelClass();
+
+        $this->group = $this->getRouteGroup();
+        $this->modes = $this->getModes();
+    }
 
     /**
      * @return class-string<Model>
@@ -57,20 +67,8 @@ abstract class ModelAPI extends Controller
             self::CREATE,
             self::READ,
             self::UPDATE,
-            self::DELETE
+            self::DELETE,
         ];
-    }
-
-    public function __construct()
-    {
-        $modelClass = $this->getModelClass();
-        if (!Autoloader::extends($modelClass, Model::class))
-            throw new InvalidArgumentException('$modelClass must extends Model class');
-
-        $this->model = new $modelClass;
-
-        $this->group = $this->getRouteGroup();
-        $this->modes = $this->getModes();
     }
 
     public function routes(Router $router): void
@@ -90,21 +88,15 @@ abstract class ModelAPI extends Controller
             $modelGroup->prefix,
             $modelGroup->middlewares,
             $modelGroup->extras,
-            function(Router $router) use ($self, $modes) {
+            function (Router $router) use ($self, $modes) {
                 $router->addRoutes(
-                    in_array(self::CREATE, $modes) ? Route::post("/", [$self, "createItems"]) : null,
-                    in_array(self::READ, $modes) ? Route::get("/", [$self, "readItems"]) : null,
-                    in_array(self::UPDATE, $modes) ? new Route("/", [$self, "updateItem"], ['PUT', 'PATCH']) : null,
-                    in_array(self::DELETE, $modes) ? Route::delete("/", [$self, "deleteItem"]) : null,
+                    in_array(self::CREATE, $modes) ? Route::post('/', [$self, 'createItems']) : null,
+                    in_array(self::READ, $modes) ? Route::get('/', [$self, 'readItems']) : null,
+                    in_array(self::UPDATE, $modes) ? new Route('/', [$self, 'updateItem'], ['PUT', 'PATCH']) : null,
+                    in_array(self::DELETE, $modes) ? Route::delete('/', [$self, 'deleteItem']) : null,
                 );
             }
         );
-    }
-
-    protected static function getModel(Request $request): Model
-    {
-        $modelClass = $request->getRoute()->getExtras()[self::ROUTE_EXTRAS_MODEL_KEY] ?? false;
-        return new $modelClass();
     }
 
     public static function createItems(Request $request)
@@ -115,41 +107,26 @@ abstract class ModelAPI extends Controller
         /** @var Model[] $instances */
         $instances = [];
 
-        if ($request->isJSON())
-        {
+        if ($request->isJSON()) {
             $body = $request->all();
 
-            if (!is_array($body))
-                return Response::unprocessableContent("Array expected got " . gettype($body));
+            if (!is_array($body)) {
+                return Response::unprocessableContent('Array expected got '.gettype($body));
+            }
 
-            $instances = Utils::isList($body) ?
-                Bunch::of($body)->map(fn(array $row) => $model::fromArray($row))->toArray():
-                $model::fromArray($body);
-        }
-        else
-        {
+            $instances = Utils::isList($body)
+                ? Bunch::of($body)->map(fn (array $row) => $model::fromArray($row))->toArray()
+                : $model::fromArray($body);
+        } else {
             $instances[] = $model::fromRequest($request);
         }
 
-        foreach ($instances as &$instance)
-        {
+        foreach ($instances as &$instance) {
             $instance->save();
             $instance = $instance->toArray();
         }
 
         return Response::json($instances, StatusCode::CREATED);
-    }
-
-    protected static function makeSearchQuery(Query &$query, string $fieldName, mixed $value)
-    {
-        $database = Database::getInstance();
-
-        $conditions = Bunch::fromExplode(' ', (string) $value)
-            ->map(fn($word) => "%$word%")
-            ->map(fn($word) =>  $database->build("`$fieldName` LIKE {}", [$word]))
-            ->join(" AND ");
-
-        $query->conditions[] = new RawCondition($conditions);
     }
 
     public static function readItems(Request $request)
@@ -159,18 +136,20 @@ abstract class ModelAPI extends Controller
         $fields = $model::fields();
 
         $query = $model::select();
-        foreach ($request->all() as $fieldName => $value)
-        {
-            if (!($field = $fields[$fieldName] ?? false))
+        foreach ($request->all() as $fieldName => $value) {
+            if (!($field = $fields[$fieldName] ?? false)) {
                 continue;
+            }
 
-            switch ($field->type)
-            {
+            switch ($field->type) {
                 case ModelField::STRING:
                     self::makeSearchQuery($query, $fieldName, $value);
+
                     break;
+
                 default:
                     $query->where($fieldName, $value);
+
                     break;
             }
         }
@@ -183,24 +162,28 @@ abstract class ModelAPI extends Controller
         /** @var Model $model */
         $model = (get_called_class())::getModel($request);
 
-        if (! $primaryKey = $model::primaryKey())
-            throw new Exception("$model model does not have a primary key");
+        if (!$primaryKey = $model::primaryKey()) {
+            throw new \Exception("{$model} model does not have a primary key");
+        }
 
-        if (! $primaryKeyValue = $request->param($primaryKey))
-            return Response::unprocessableContent("Request must have a '$primaryKey' parameter");
+        if (!$primaryKeyValue = $request->param($primaryKey)) {
+            return Response::unprocessableContent("Request must have a '{$primaryKey}' parameter");
+        }
 
-        if (! $instance = $model::find($primaryKeyValue))
-            return Response::unprocessableContent("No $model with $primaryKey = $primaryKeyValue found");
+        if (!$instance = $model::find($primaryKeyValue)) {
+            return Response::unprocessableContent("No {$model} with {$primaryKey} = {$primaryKeyValue} found");
+        }
 
         $query = $model::update()->where($primaryKey, $primaryKeyValue);
 
-        foreach ($request->all() as $key => $value)
-        {
-            if ($instance::hasField($key))
+        foreach ($request->all() as $key => $value) {
+            if ($instance::hasField($key)) {
                 $query->set($key, $value);
+            }
         }
 
         $query->fetch();
+
         return $model::find($primaryKeyValue);
     }
 
@@ -209,17 +192,40 @@ abstract class ModelAPI extends Controller
         /** @var Model $model */
         $model = (get_called_class())::getModel($request);
 
-        if (! $primaryKey = $model::primaryKey())
-            throw new Exception("$model model does not have a primary key");
+        if (!$primaryKey = $model::primaryKey()) {
+            throw new \Exception("{$model} model does not have a primary key");
+        }
 
-        if (! $primaryKeyValue = $request->param($primaryKey))
-            return Response::unprocessableContent("Request must have a '$primaryKey' parameter");
+        if (!$primaryKeyValue = $request->param($primaryKey)) {
+            return Response::unprocessableContent("Request must have a '{$primaryKey}' parameter");
+        }
 
-        if (! $instance = $model::find($primaryKeyValue, false))
-            return Response::unprocessableContent("No $model with $primaryKey = $primaryKeyValue found");
+        if (!$instance = $model::find($primaryKeyValue, false)) {
+            return Response::unprocessableContent("No {$model} with {$primaryKey} = {$primaryKeyValue} found");
+        }
 
         $model::delete()->where($primaryKey, $primaryKeyValue)->fetch();
+
         return Response::ok();
     }
 
+    protected static function getModel(Request $request): Model
+    {
+        $modelClass = $request->getRoute()->getExtras()[self::ROUTE_EXTRAS_MODEL_KEY] ?? false;
+
+        return new $modelClass();
+    }
+
+    protected static function makeSearchQuery(Query &$query, string $fieldName, mixed $value)
+    {
+        $database = Database::getInstance();
+
+        $conditions = Bunch::fromExplode(' ', (string) $value)
+            ->map(fn ($word) => "%{$word}%")
+            ->map(fn ($word) => $database->build("`{$fieldName}` LIKE {}", [$word]))
+            ->join(' AND ')
+        ;
+
+        $query->conditions[] = new RawCondition($conditions);
+    }
 }

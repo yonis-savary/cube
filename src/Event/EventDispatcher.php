@@ -9,24 +9,29 @@ abstract class EventDispatcher
 
     /**
      * @template TEvent
-     * @param class-string<TEvent> $eventName
+     *
+     * @param class-string<TEvent>  $eventName
      * @param \Closure(TEvent):void $callback
      */
     public function on(string $eventName, callable $callback): self
     {
-        if (!array_key_exists($eventName, $this->subscriptions))
+        if (!array_key_exists($eventName, $this->subscriptions)) {
             $this->subscriptions[$eventName] = [];
+        }
 
         $this->subscriptions[$eventName][] = $callback;
+
         return $this;
     }
 
-    public function dispatch(string|Event $event): void
+    public function dispatch(Event|string $event): void
     {
-        if (is_string($event))
+        if (is_string($event)) {
             $event = new CustomEvent($event);
+        }
 
-        foreach ($this->subscriptions[$event->getName()] ?? [] as $callback)
+        foreach ($this->subscriptions[$event->getName()] ?? [] as $callback) {
             $callback($event);
+        }
     }
 }

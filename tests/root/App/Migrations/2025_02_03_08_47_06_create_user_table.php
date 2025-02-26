@@ -18,6 +18,7 @@ return new Migration(
     );
     INSERT INTO user (login, password, type) VALUES ('root', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 1);
 ",
-    "DROP TABLE IF EXISTS user;
+    'DROP TABLE IF EXISTS user;
     DROP TABLE IF EXISTS user_type;
-");
+'
+);

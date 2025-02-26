@@ -2,7 +2,6 @@
 
 namespace Cube\Logger;
 
-use Stringable;
 use Cube\Data\Bunch;
 use Cube\Logger\Events\LoggedMessage;
 
@@ -12,31 +11,35 @@ class StdOutLogger extends Logger
 
     public function __construct()
     {
-        if (self::$logger)
+        if (self::$logger) {
             return self::$logger;
+        }
 
-        $this->stream = fopen("php://stdout", "w");
+        $this->stream = fopen('php://stdout', 'w');
 
         self::$logger = $this;
+
         return $this;
     }
 
-    public function log($level, null|string|Stringable $message, array $context=[]): void
+    public function log($level, null|string|\Stringable $message, array $context = []): void
     {
         $message ??= 'null';
 
-        if (!is_resource($this->stream))
+        if (!is_resource($this->stream)) {
             return;
+        }
 
         $message = $this->interpolate($message, $context);
 
         Bunch::fromExplode("\n", $message)
-        ->forEach(function($line) use ($level) {
-            fwrite($this->stream, join(" ", [
-                date("[D M j G:i:s Y]"),
-                $line
-            ]) . "\n");
-        });
+            ->forEach(function ($line) {
+                fwrite($this->stream, join(' ', [
+                    date('[D M j G:i:s Y]'),
+                    $line,
+                ])."\n");
+            })
+        ;
 
         $this->dispatch(new LoggedMessage($level, $message, $context));
     }

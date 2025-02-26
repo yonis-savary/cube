@@ -11,13 +11,13 @@ class IndexRandomProducts extends Command
 {
     public function getScope(): string
     {
-        return "app";
+        return 'app';
     }
 
     public function execute(Args $args): int
     {
-        Console::withProgressBar(range(0, 999), function(){
-            ProductIndexer::addProduct(uniqid("product-", true));
+        Console::withProgressBar(range(0, 999), function () {
+            ProductIndexer::addProduct(uniqid('product-', true));
         });
 
         return 0;

@@ -11,13 +11,16 @@ use Cube\Tests\Units\Database\TestMultipleDrivers;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-use function Cube\debug;
-
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class ProductTest extends TestCase
 {
     use TestMultipleDrivers;
 
-    public function test_id()
+    public function testId()
     {
         $product = new Product();
         $this->assertFalse($product->id());
@@ -26,7 +29,7 @@ class ProductTest extends TestCase
         $this->assertEquals(52, $product->id());
     }
 
-    public function test_hasField()
+    public function testHasField()
     {
         $this->assertTrue(Product::hasField('id'));
         $this->assertTrue(Product::hasField('name'));
@@ -36,9 +39,9 @@ class ProductTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_insert(Database $database)
+    public function testInsert(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $product = Product::insertArray(['name' => 'Keyboard']);
 
             $this->assertInstanceOf(Product::class, $product);
@@ -48,26 +51,26 @@ class ProductTest extends TestCase
         });
     }
 
-
     #[DataProvider('getDatabases')]
-    public function test_select(Database $database)
+    public function testSelect(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             Product::insert()->insertField(['name'])->values(['keyboard'], ['mouse'], ['speakers'])->fetch();
 
             $this->assertInstanceOf(Query::class, Product::select());
             $this->assertCount(3, Product::select()->fetch());
         });
     }
+
     #[DataProvider('getDatabases')]
-    public function test_update(Database $database)
+    public function testUpdate(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $this->assertInstanceOf(Query::class, Product::update());
 
             $productId = Product::insertArray(['name' => 'keyboard'])->id();
 
-            Product::update()->where("id", $productId)->set('name', 'mouse')->fetch();
+            Product::update()->where('id', $productId)->set('name', 'mouse')->fetch();
 
             $product = Product::find($productId);
             $this->assertEquals('mouse', $product->name);
@@ -77,7 +80,7 @@ class ProductTest extends TestCase
     #[DataProvider('getDatabases')]
     public static function updateRow(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $this->assertInstanceOf(Query::class, Product::update());
 
             $productId = Product::insertArray(['name' => 'keyboard'])->id();
@@ -90,21 +93,19 @@ class ProductTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_insertArray(Database $database)
+    public function testInsertArray(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $product = Product::insertArray(['name' => 'mouse']);
             $this->assertIsNumeric($product->id());
             $this->assertEquals('mouse', $product->name);
         });
     }
 
-
     #[DataProvider('getDatabases')]
-    public function test_existsWhere(Database $database)
+    public function testExistsWhere(Database $database)
     {
-        $database->asGlobalInstance(function(){
-
+        $database->asGlobalInstance(function () {
             Product::insert()->insertField(['name'])->values(['keyboard'], ['mouse'], ['speakers'])->fetch();
 
             $this->assertTrue(Product::existsWhere(['name' => 'keyboard']));
@@ -113,9 +114,9 @@ class ProductTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_exists(Database $database)
+    public function testExists(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $productId = Product::insertArray(['name' => 'mouse'])->id();
 
             $this->assertTrue(Product::exists($productId));
@@ -123,12 +124,10 @@ class ProductTest extends TestCase
         });
     }
 
-
     #[DataProvider('getDatabases')]
-    public function test_findWhere(Database $database)
+    public function testFindWhere(Database $database)
     {
-        $database->asGlobalInstance(function(){
-
+        $database->asGlobalInstance(function () {
             Product::insertArray(['name' => 'mouse']);
 
             $this->assertInstanceOf(Product::class, Product::findWhere(['name' => 'mouse']));
@@ -136,11 +135,10 @@ class ProductTest extends TestCase
         });
     }
 
-
     #[DataProvider('getDatabases')]
-    public function test_toValidator(Database $database)
+    public function testToValidator(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $validator = Product::toValidator();
 
             $this->assertInstanceOf(Validator::class, $validator);
@@ -151,9 +149,9 @@ class ProductTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_find(Database $database)
+    public function testFind(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $productId = Product::insertArray(['name' => 'usb-cable'])->id();
 
             $this->assertInstanceOf(Product::class, Product::find($productId));
@@ -162,9 +160,9 @@ class ProductTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_delete(Database $database)
+    public function testDelete(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             Product::insert()->insertField(['name'])->values(['keyboard'], ['mouse'], ['speakers'])->fetch();
 
             $this->assertInstanceOf(Query::class, Product::delete());
@@ -176,9 +174,9 @@ class ProductTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_deleteId(Database $database)
+    public function testDeleteId(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             Product::insertArray(['name' => 'power supply'])->id();
             $productId = Product::insertArray(['name' => 'usb-cable'])->id();
 
@@ -190,9 +188,9 @@ class ProductTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_deleteWhere(Database $database)
+    public function testDeleteWhere(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             Product::insertArray(['name' => 'power supply'])->id();
             Product::insertArray(['name' => 'usb-cable'])->id();
 
@@ -203,17 +201,16 @@ class ProductTest extends TestCase
         });
     }
 
-
     #[DataProvider('getDatabases')]
-    public function test_fromArray(Database $database)
+    public function testFromArray(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $product = Product::fromArray([
                 'name' => 'usb-cable',
                 'managers' => [
                     ['manager' => 'Luigi'],
-                    ['manager' => 'Mario']
-                ]
+                    ['manager' => 'Mario'],
+                ],
             ]);
 
             $this->assertInstanceOf(Product::class, $product);
@@ -222,20 +219,22 @@ class ProductTest extends TestCase
         });
     }
 
-
     #[DataProvider('getDatabases')]
-    public function test_fromRequest(Database $database)
+    public function testFromRequest(Database $database)
     {
-        $database->asGlobalInstance(function(){
-
-            $request = new Request("GET", "/", body: json_encode(
-                [
-                    'name' => 'usb-cable',
-                    'managers' => [
-                        ['manager' => 'Luigi'],
-                        ['manager' => 'Mario']
+        $database->asGlobalInstance(function () {
+            $request = new Request(
+                'GET',
+                '/',
+                body: json_encode(
+                    [
+                        'name' => 'usb-cable',
+                        'managers' => [
+                            ['manager' => 'Luigi'],
+                            ['manager' => 'Mario'],
+                        ],
                     ]
-                ]),
+                ),
                 headers: ['content-type' => 'application/json']
             );
 
@@ -247,16 +246,14 @@ class ProductTest extends TestCase
         });
     }
 
-
-
     #[DataProvider('getDatabases')]
-    public function test_onSaved(Database $database)
+    public function testOnSaved(Database $database)
     {
-        $database->asGlobalInstance(function(){
+        $database->asGlobalInstance(function () {
             $product = Product::fromArray(['name' => 'mouse']);
 
             $saved = false;
-            $product->onSaved(function() use (&$saved) { $saved = true; });
+            $product->onSaved(function () use (&$saved) { $saved = true; });
 
             $product->save();
             $this->assertTrue($saved);
@@ -268,15 +265,13 @@ class ProductTest extends TestCase
         });
     }
 
-
     #[DataProvider('getDatabases')]
-    public function test_replicate(Database $database)
+    public function testReplicate(Database $database)
     {
-        $database->asGlobalInstance(function(){
-
+        $database->asGlobalInstance(function () {
             $product = new Product([
                 'name' => 'Laptop',
-                'managers' => [['manager' => 'Dale']]
+                'managers' => [['manager' => 'Dale']],
             ]);
 
             $product->save();
@@ -285,7 +280,7 @@ class ProductTest extends TestCase
             $this->assertIsNumeric($product->managers[0]->product);
 
             $clone = $product->replicate();
-            $clone->name = "PC Case";
+            $clone->name = 'PC Case';
             $clone->save();
 
             $this->assertIsNumeric($clone->id());
@@ -294,6 +289,5 @@ class ProductTest extends TestCase
             $this->assertNotEquals($product->id(), $clone->id());
             $this->assertNotEquals($product->managers[0]->product, $clone->managers[0]->product);
         });
-
     }
 }

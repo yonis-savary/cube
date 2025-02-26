@@ -16,8 +16,8 @@ class DocumentController extends Controller
     public function routes(Router $router): void
     {
         $router->addRoutes(
-            Route::post("/documents", [self::class, "uploadDocument"]),
-            Route::get ("/documents/{name}", [self::class, "readDocument"])
+            Route::post('/documents', [self::class, 'uploadDocument']),
+            Route::get('/documents/{name}', [self::class, 'readDocument'])
         );
     }
 
@@ -26,9 +26,9 @@ class DocumentController extends Controller
         $validated = $request->validated();
 
         /** @var Upload $upload */
-        $upload = $validated["to-upload"];
+        $upload = $validated['to-upload'];
 
-        $randomName = uniqid("file-") . ".json";
+        $randomName = uniqid('file-').'.json';
 
         $upload->move(
             Storage::getInstance(),
@@ -42,8 +42,9 @@ class DocumentController extends Controller
     {
         $store = Storage::getInstance();
 
-        if (!$store->isFile($name))
+        if (!$store->isFile($name)) {
             return Response::notFound();
+        }
 
         return Response::file($store->path($name));
     }

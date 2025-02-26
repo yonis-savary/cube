@@ -2,12 +2,9 @@
 
 namespace Cube\Web\Router;
 
-use Cube\Data\Bunch;
 use Cube\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Http\Request;
 use Cube\Utils\Path;
-
-use function Cube\debug;
 
 class RouteGroup
 {
@@ -18,10 +15,10 @@ class RouteGroup
     protected array $groups = [];
 
     public function __construct(
-        public string $prefix="/",
-        public array $middlewares=[],
-        public array $extras=[]
-    ){}
+        public string $prefix = '/',
+        public array $middlewares = [],
+        public array $extras = []
+    ) {}
 
     public function mergeWith(RouteGroup $group): RouteGroup
     {
@@ -34,19 +31,22 @@ class RouteGroup
 
     public function applyToRoute(Route $route)
     {
-        if ($prefix = $this->prefix)
+        if ($prefix = $this->prefix) {
             $route->setPath(Path::join($prefix, $route->getPath()));
+        }
 
-        if ($middlewares = $this->middlewares)
+        if ($middlewares = $this->middlewares) {
             $route->setMiddlewares(array_merge($route->getMiddlewares(), $middlewares));
+        }
 
-        if ($extras = $this->extras)
+        if ($extras = $this->extras) {
             $route->setExtras(array_merge($route->getExtras(), $extras));
+        }
     }
 
     public function matches(Request $request): bool
     {
-        $route = new Route("/{any:any}", fn() => null);
+        $route = new Route('/{any:any}', fn () => null);
         $this->applyToRoute($route);
 
         return ($request->getPath() === $this->prefix) || $route->match($request);
@@ -54,8 +54,7 @@ class RouteGroup
 
     public function addRoutes(Route ...$routes): void
     {
-        foreach ($routes as $route)
-        {
+        foreach ($routes as $route) {
             $this->applyToRoute($route);
             $this->routes[] = $route;
         }
@@ -68,13 +67,14 @@ class RouteGroup
     {
         $routes = [];
 
-        foreach ($this->groups as $group)
+        foreach ($this->groups as $group) {
             array_push($routes, ...$group->getRoutes());
+        }
 
         array_push($routes, ...$this->routes);
+
         return $routes;
     }
-
 
     public function &addSubGroup(RouteGroup $paramGroup): RouteGroup
     {
@@ -84,31 +84,26 @@ class RouteGroup
         return $addedGroup;
     }
 
-    public function findMatchingRoute(Request $request, array &$exceptions=[]): Route|false
+    public function findMatchingRoute(Request $request, array &$exceptions = []): false|Route
     {
-        foreach ($this->routes as $route)
-        {
-            try
-            {
-                if ($route->match($request))
+        foreach ($this->routes as $route) {
+            try {
+                if ($route->match($request)) {
                     return $route;
-            }
-            catch (InvalidRequestMethodException $newException)
-            {
+                }
+            } catch (InvalidRequestMethodException $newException) {
                 $exceptions[] = $newException;
             }
         }
 
-        foreach ($this->groups as $group)
-        {
-            if (!$group->matches($request))
+        foreach ($this->groups as $group) {
+            if (!$group->matches($request)) {
                 continue;
+            }
 
             return $group->findMatchingRoute($request, $exceptions);
         }
 
         return false;
     }
-
-
 }

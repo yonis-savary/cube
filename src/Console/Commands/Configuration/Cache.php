@@ -2,7 +2,6 @@
 
 namespace Cube\Console\Commands\Configuration;
 
-use Throwable;
 use Cube\Configuration\Configuration;
 use Cube\Console\Args;
 use Cube\Console\Command;
@@ -13,29 +12,26 @@ class Cache extends Command
 {
     public function getScope(): string
     {
-        return "configuration";
+        return 'configuration';
     }
 
     public function getHelp(): string
     {
-        return "Cache your configuration file for better performances";
+        return 'Cache your configuration file for better performances';
     }
 
     public function execute(Args $args): int
     {
-        try
-        {
+        try {
             $config = Configuration::getInstance();
             $storage = $config->putToCache();
 
             $directory = Path::toRelative($storage->getRoot());
-            Console::log(Console::withGreenColor("Cache file written to [$directory]"));
+            Console::log(Console::withGreenColor("Cache file written to [{$directory}]"));
 
             return 0;
-        }
-        catch (Throwable $e)
-        {
-            Console::log(Console::withRedBackground("Could not cache current configuration"));
+        } catch (\Throwable $e) {
+            Console::log(Console::withRedBackground('Could not cache current configuration'));
             Console::log(Console::withRedBackground($e::class));
             Console::log(Console::withRedBackground($e->getMessage()));
 

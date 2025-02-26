@@ -20,27 +20,28 @@ class MySQL extends QueryBuilder
     protected Database $database;
     protected Query $query;
 
-    public function getSupportedPDODriver(): string|array
+    public function getSupportedPDODriver(): array|string
     {
-        return ["mysql"];
+        return ['mysql'];
     }
 
     public function getTable(string $table): string
     {
-        return "`$table`";
+        return "`{$table}`";
     }
 
     public function getUpdateTables(): string
     {
         return
             Bunch::of($this->query->base->table)
-            ->push(
-                ...Bunch::of($this->query->joins)
-                ->map(fn(Join $join) => $join->tableToJoin)
-                ->get()
-            )
-            ->map(fn($table) => $this->getTable($table))
-            ->join(", ");
+                ->push(
+                    ...Bunch::of($this->query->joins)
+                        ->map(fn (Join $join) => $join->tableToJoin)
+                        ->get()
+                )
+                ->map(fn ($table) => $this->getTable($table))
+                ->join(', ')
+        ;
     }
 
     public function getField(Field $fieldObject): string
@@ -50,64 +51,70 @@ class MySQL extends QueryBuilder
         $field = $fieldObject->field;
         $alias = $fieldObject->alias;
 
-        $fieldExpression = $table ? "`$table`.$field" : $field;
+        $fieldExpression = $table ? "`{$table}`.{$field}" : $field;
 
-        return ($expression ?? $fieldExpression) . ($alias ? " AS `$alias`": '');
+        return ($expression ?? $fieldExpression).($alias ? " AS `{$alias}`" : '');
     }
 
     public function getSelectFields(): string
     {
         return
             Bunch::of($this->query->selectFields)
-            ->map(fn(Field $field) => $this->getField($field))
-            ->join(",\n ");
+                ->map(fn (Field $field) => $this->getField($field))
+                ->join(",\n ")
+        ;
     }
 
     public function getInsertFields(): string
     {
         return
-            "(" .
-                Bunch::of($this->query->insertFields->fields)
-                ->map(fn($field) => sprintf("`%s`", $field))
-                ->join(", ")
-            . ")";
+            '('
+                .Bunch::of($this->query->insertFields->fields)
+                    ->map(fn ($field) => sprintf('`%s`', $field))
+                    ->join(', ')
+            .')'
+        ;
     }
 
     public function getInsertValues(): string
     {
         return
             Bunch::of($this->query->insertValues)
-            ->map(fn(InsertValues $values) =>
-                $this->database->build(
-                    "(". Bunch::fill(count($values->values), "{}")->join(", ") . ")",
-                    $values->values
+                ->map(
+                    fn (InsertValues $values) => $this->database->build(
+                        '('.Bunch::fill(count($values->values), '{}')->join(', ').')',
+                        $values->values
+                    )
                 )
-            )
-            ->join(", ");
+                ->join(', ')
+        ;
     }
 
     public function getUpdates(): string
     {
         return
             Bunch::of($this->query->updateFields)
-            ->map(function(UpdateField $field) {
-                return sprintf("`%s`.%s = %s",
-                    $field->table,
-                    $field->field,
-                    $this->getSQLValue($field->newValue)
-                );
-            })
-            ->join(", ");
+                ->map(function (UpdateField $field) {
+                    return sprintf(
+                        '`%s`.%s = %s',
+                        $field->table,
+                        $field->field,
+                        $this->getSQLValue($field->newValue)
+                    );
+                })
+                ->join(', ')
+        ;
     }
 
     public function getSQLValue(mixed $value): string
     {
-        return $this->database->build("{}", [$value]);
+        return $this->database->build('{}', [$value]);
     }
 
     public function getFieldComparaison(FieldComparaison $condition)
     {
-        return sprintf("`%s`.%s %s `%s`.%s",
+        return sprintf(
+            '`%s`.%s %s `%s`.%s',
             $condition->source,
             $condition->sourceField,
             $condition->operator,
@@ -118,93 +125,129 @@ class MySQL extends QueryBuilder
 
     public function getConditions(): string
     {
-        return count($this->query->conditions) ? "WHERE (" .
-            Bunch::of($this->query->conditions)
-            ->map(function(FieldComparaison|FieldCondition|RawCondition $condition) {
-                if ($condition instanceof FieldComparaison)
-                    return $this->getFieldComparaison($condition);
-                else if ($condition instanceof FieldCondition)
-                    return sprintf("%s%s %s %s",
-                        $condition->table ? "`".$condition->table."`." : '',
-                        $condition->field,
-                        $condition->operator,
-                        $this->getSQLValue($condition->expression),
-                    );
-                else if ($condition instanceof RawCondition)
-                    return $condition->expression;
-            })
-            ->join(") \n AND \n (")
-        . ")": '';
+        return count($this->query->conditions) ? 'WHERE ('
+            .Bunch::of($this->query->conditions)
+                ->map(function (FieldComparaison|FieldCondition|RawCondition $condition) {
+                    if ($condition instanceof FieldComparaison) {
+                        return $this->getFieldComparaison($condition);
+                    }
+                    if ($condition instanceof FieldCondition) {
+                        return sprintf(
+                            '%s%s %s %s',
+                            $condition->table ? '`'.$condition->table.'`.' : '',
+                            $condition->field,
+                            $condition->operator,
+                            $this->getSQLValue($condition->expression),
+                        );
+                    }
+                    if ($condition instanceof RawCondition) {
+                        return $condition->expression;
+                    }
+                })
+                ->join(") \n AND \n (")
+        .')' : '';
     }
 
     public function getUpdateConditions(): string
     {
         $baseConditions = $this->getConditions();
 
-        $updateConditions = count($this->query->joins) ?
-            "(" .
-                Bunch::of($this->query->joins)
-                ->map(fn(Join $join) => $this->getFieldComparaison($join->condition))
-                ->join(") \n AND \n (")
-            .")"
-        : "";
+        $updateConditions = count($this->query->joins)
+            ? '('
+                .Bunch::of($this->query->joins)
+                    ->map(fn (Join $join) => $this->getFieldComparaison($join->condition))
+                    ->join(") \n AND \n (")
+            .')'
+        : '';
 
-        if ($baseConditions && $updateConditions)
-            return "$baseConditions AND $updateConditions";
-        else if ($baseConditions)
+        if ($baseConditions && $updateConditions) {
+            return "{$baseConditions} AND {$updateConditions}";
+        }
+        if ($baseConditions) {
             return $baseConditions;
-        else if ($updateConditions)
+        }
+        if ($updateConditions) {
             return $updateConditions;
-        else
-            return "";
-    }
+        }
 
-    protected function getJoins(): string
-    {
-        return Bunch::of($this->query->joins)
-            ->map(function(Join $join) {
-                return sprintf("%s JOIN `%s` %s %s",
-                    $join->type,
-                    $join->tableToJoin,
-                    $join->alias ? " AS `".$join->alias."`": '',
-                    $join->condition ? " ON " . $this->getFieldComparaison($join->condition): ''
-                );
-            })
-            ->join("\n")
-            ;
+        return '';
     }
 
     public function getOrders(): string
     {
-        return count($this->query->orders) ?
-                "ORDER BY " .
-                Bunch::of($this->query->orders)
-                ->map(function(Order $order) {
-                    return
-                        $order->table ?
-                            sprintf("`%s`.%s %s", $order->table, $order->fieldOrAlias, $order->type):
-                            sprintf("`%s` %s", $order->fieldOrAlias, $order->type);
-                })
-                ->join(", ")
-            :'';
+        return count($this->query->orders)
+                ? 'ORDER BY '
+                .Bunch::of($this->query->orders)
+                    ->map(function (Order $order) {
+                        return
+                            $order->table
+                                ? sprintf('`%s`.%s %s', $order->table, $order->fieldOrAlias, $order->type)
+                                : sprintf('`%s` %s', $order->fieldOrAlias, $order->type);
+                    })
+                    ->join(', ')
+            : '';
     }
 
     public function getLimit(): string
     {
-        if (! $limit = $this->query->limit)
-            return "";
+        if (!$limit = $this->query->limit) {
+            return '';
+        }
 
         $offset = $limit->offset;
         $limit = $limit->limit;
 
         return
-            ($limit ? ("LIMIT " . $limit) : '').
-            ($offset ? (" OFFSET " . $offset) : '');
+            ($limit ? ('LIMIT '.$limit) : '')
+            .($offset ? (' OFFSET '.$offset) : '');
+    }
+
+    public function build(Query $query, Database $database): string
+    {
+        $this->query = $query;
+        $this->database = $database;
+        $base = $query->base->type;
+
+        switch ($base) {
+            case QueryBase::INSERT: return $this->buildInsert();
+
+            case QueryBase::SELECT: return $this->buildSelect();
+
+            case QueryBase::UPDATE: return $this->buildUpdate();
+
+            case QueryBase::DELETE: return $this->buildDelete();
+        }
+    }
+
+    public function count(Query $query, Database $database): int
+    {
+        $baseQuery = $this->build($query, $database);
+
+        $wrappedQuery = "SELECT COUNT(*) AS __count FROM ({$baseQuery}) AS __base";
+
+        return $database->query($wrappedQuery)[0]['__count'];
+    }
+
+    protected function getJoins(): string
+    {
+        return Bunch::of($this->query->joins)
+            ->map(function (Join $join) {
+                return sprintf(
+                    '%s JOIN `%s` %s %s',
+                    $join->type,
+                    $join->tableToJoin,
+                    $join->alias ? ' AS `'.$join->alias.'`' : '',
+                    $join->condition ? ' ON '.$this->getFieldComparaison($join->condition) : ''
+                );
+            })
+            ->join("\n")
+        ;
     }
 
     protected function buildInsert(): string
     {
-        return sprintf("INSERT INTO %s %s \n VALUES %s",
+        return sprintf(
+            "INSERT INTO %s %s \n VALUES %s",
             $this->getTable($this->query->base->table),
             $this->getInsertFields(),
             $this->getInsertValues()
@@ -238,34 +281,12 @@ class MySQL extends QueryBuilder
 
     protected function buildDelete(): string
     {
-        return sprintf("DELETE FROM %s \n%s \n%s \n%s",
+        return sprintf(
+            "DELETE FROM %s \n%s \n%s \n%s",
             $this->getTable($this->query->base->table),
             $this->getConditions(),
             $this->getOrders(),
             $this->getLimit()
         );
-    }
-
-    public function build(Query $query, Database $database): string
-    {
-        $this->query = $query;
-        $this->database = $database;
-        $base = $query->base->type;
-        switch ($base)
-        {
-            case QueryBase::INSERT: return $this->buildInsert();
-            case QueryBase::SELECT: return $this->buildSelect();
-            case QueryBase::UPDATE: return $this->buildUpdate();
-            case QueryBase::DELETE: return $this->buildDelete();
-        }
-    }
-
-    public function count(Query $query, Database $database): int
-    {
-        $baseQuery = $this->build($query, $database);
-
-        $wrappedQuery = "SELECT COUNT(*) AS __count FROM ($baseQuery) AS __base";
-
-        return $database->query($wrappedQuery)[0]['__count'];
     }
 }

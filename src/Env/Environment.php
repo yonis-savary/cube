@@ -12,35 +12,38 @@ class Environment
 
     protected array $content = [];
 
+    public function __construct(?string $file = null)
+    {
+        if ($file) {
+            return $this->mergeWithFile($file);
+        }
+    }
+
     public static function getDefaultInstance(): static
     {
         $instance = new self();
-        $instance->mergeWithFile(".env");
-        return $instance;
-    }
+        $instance->mergeWithFile('.env');
 
-    public function __construct(?string $file=null)
-    {
-        if ($file)
-            return $this->mergeWithFile($file);
+        return $instance;
     }
 
     public function mergeWithFile(string $file): self
     {
         $file = Path::relative($file);
 
-        if (!is_file($file))
-        {
-            Logger::getInstance()->warning("Environment: could not read [{file}]", ["file" => $file]);
+        if (!is_file($file)) {
+            Logger::getInstance()->warning('Environment: could not read [{file}]', ['file' => $file]);
+
             return $this;
         }
 
         $content = parse_ini_file($file);
         $this->content = array_merge($this->content, $content);
+
         return $this;
     }
 
-    public function get(string $key, mixed $default=null): mixed
+    public function get(string $key, mixed $default = null): mixed
     {
         return $this->content[$key] ?? $default;
     }

@@ -16,6 +16,7 @@ return new Migration(
     );
     INSERT INTO module_user (user, module) VALUES (1, 4);
 ",
-    "DROP TABLE module_user;
+    'DROP TABLE module_user;
     DROP TABLE module;
-");
+'
+);

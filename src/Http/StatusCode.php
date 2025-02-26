@@ -4,321 +4,318 @@ namespace Cube\Http;
 
 class StatusCode
 {
+    /**
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/100
+     */
+    public const CONTINUE = 100;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/100
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
      */
-    const CONTINUE = 100;
+    public const SWITCHING_PROTOCOLS = 101;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/101
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/102
      */
-    const SWITCHING_PROTOCOLS = 101;
+    public const PROCESSING = 102;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/102
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/103
      */
-    const PROCESSING = 102;
+    public const EARLY_HINTS = 103;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/103
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200
      */
-    const EARLY_HINTS = 103;
+    public const OK = 200;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201
      */
-    const OK = 200;
+    public const CREATED = 201;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/202
      */
-    const CREATED = 201;
+    public const ACCEPTED = 202;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/202
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/203
      */
-    const ACCEPTED = 202;
+    public const NON_AUTHORITATIVE_INFORMATION = 203;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/203
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204
      */
-    const NON_AUTHORITATIVE_INFORMATION = 203;
+    public const NO_CONTENT = 204;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/205
      */
-    const NO_CONTENT = 204;
+    public const RESET_CONTENT = 205;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/205
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206
      */
-    const RESET_CONTENT = 205;
+    public const PARTIAL_CONTENT = 206;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/207
      */
-    const PARTIAL_CONTENT = 206;
+    public const MULTI_STATUS = 207;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/207
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/208
      */
-    const MULTI_STATUS = 207;
+    public const ALREADY_REPORTED = 208;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/208
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/226
      */
-    const ALREADY_REPORTED = 208;
+    public const IM_USED = 226;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/226
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/300
      */
-    const IM_USED = 226;
+    public const MULTIPLE_CHOICES = 300;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/300
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301
      */
-    const MULTIPLE_CHOICES = 300;
+    public const MOVED_PERMANENTLY = 301;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/302
      */
-    const MOVED_PERMANENTLY = 301;
+    public const FOUND = 302;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/302
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
      */
-    const FOUND = 302;
+    public const SEE_OTHER = 303;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/303
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304
      */
-    const SEE_OTHER = 303;
+    public const NOT_MODIFIED = 304;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/305
      */
-    const NOT_MODIFIED = 304;
+    public const USE_PROXY = 305;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/305
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/306
      */
-    const USE_PROXY = 305;
+    public const UNUSED = 306;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/306
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/307
      */
-    const UNUSED = 306;
+    public const TEMPORARY_REDIRECT = 307;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/307
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308
      */
-    const TEMPORARY_REDIRECT = 307;
+    public const PERMANENT_REDIRECT = 308;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
      */
-    const PERMANENT_REDIRECT = 308;
+    public const BAD_REQUEST = 400;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
      */
-    const BAD_REQUEST = 400;
+    public const UNAUTHORIZED = 401;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402
      */
-    const UNAUTHORIZED = 401;
+    public const PAYMENT_REQUIRED = 402;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
      */
-    const PAYMENT_REQUIRED = 402;
+    public const FORBIDDEN = 403;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
      */
-    const FORBIDDEN = 403;
+    public const NOT_FOUND = 404;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/405
      */
-    const NOT_FOUND = 404;
+    public const METHOD_NOT_ALLOWED = 405;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/405
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406
      */
-    const METHOD_NOT_ALLOWED = 405;
+    public const NOT_ACCEPTABLE = 406;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/406
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/407
      */
-    const NOT_ACCEPTABLE = 406;
+    public const PROXY_AUTHENTICATION_REQUIRED = 407;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/407
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/408
      */
-    const PROXY_AUTHENTICATION_REQUIRED = 407;
+    public const REQUEST_TIMEOUT = 408;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/408
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
      */
-    const REQUEST_TIMEOUT = 408;
+    public const CONFLICT = 409;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410
      */
-    const CONFLICT = 409;
+    public const GONE = 410;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/411
      */
-    const GONE = 410;
+    public const LENGTH_REQUIRED = 411;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/411
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/412
      */
-    const LENGTH_REQUIRED = 411;
+    public const PRECONDITION_FAILED = 412;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/412
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413
      */
-    const PRECONDITION_FAILED = 412;
+    public const CONTENT_TOO_LARGE = 413;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/414
      */
-    const CONTENT_TOO_LARGE = 413;
+    public const URI_TOO_LONG = 414;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/414
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/415
      */
-    const URI_TOO_LONG = 414;
+    public const UNSUPPORTED_MEDIA_TYPE = 415;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/415
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/416
      */
-    const UNSUPPORTED_MEDIA_TYPE = 415;
+    public const RANGE_NOT_SATISFIABLE = 416;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/416
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417
      */
-    const RANGE_NOT_SATISFIABLE = 416;
+    public const EXPECTATION_FAILED = 417;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/417
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/418
      */
-    const EXPECTATION_FAILED = 417;
+    public const IM_A_TEAPOT = 418;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/418
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/421
      */
-    const IM_A_TEAPOT = 418;
+    public const MISDIRECTED_REQUEST = 421;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/421
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422
      */
-    const MISDIRECTED_REQUEST = 421;
+    public const UNPROCESSABLE_CONTENT = 422;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/423
      */
-    const UNPROCESSABLE_CONTENT = 422;
+    public const LOCKED = 423;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/423
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/424
      */
-    const LOCKED = 423;
+    public const FAILED_DEPENDENCY = 424;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/424
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/425
      */
-    const FAILED_DEPENDENCY = 424;
+    public const TOO_EARLY = 425;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/425
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/426
      */
-    const TOO_EARLY = 425;
+    public const UPGRADE_REQUIRED = 426;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/426
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/428
      */
-    const UPGRADE_REQUIRED = 426;
+    public const PRECONDITION_REQUIRED = 428;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/428
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
      */
-    const PRECONDITION_REQUIRED = 428;
+    public const TOO_MANY_REQUESTS = 429;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/431
      */
-    const TOO_MANY_REQUESTS = 429;
+    public const REQUEST_HEADER_FIELDS_TOO_LARGE = 431;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/431
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/451
      */
-    const REQUEST_HEADER_FIELDS_TOO_LARGE = 431;
+    public const UNAVAILABLE_FOR_LEGAL_REASONS = 451;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/451
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
      */
-    const UNAVAILABLE_FOR_LEGAL_REASONS = 451;
+    public const INTERNAL_SERVER_ERROR = 500;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/501
      */
-    const INTERNAL_SERVER_ERROR = 500;
+    public const NOT_IMPLEMENTED = 501;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/501
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
      */
-    const NOT_IMPLEMENTED = 501;
+    public const BAD_GATEWAY = 502;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
      */
-    const BAD_GATEWAY = 502;
+    public const SERVICE_UNAVAILABLE = 503;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504
      */
-    const SERVICE_UNAVAILABLE = 503;
+    public const GATEWAY_TIMEOUT = 504;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/505
      */
-    const GATEWAY_TIMEOUT = 504;
+    public const HTTP_VERSION_NOT_SUPPORTED = 505;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/505
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/506
      */
-    const HTTP_VERSION_NOT_SUPPORTED = 505;
+    public const VARIANT_ALSO_NEGOTIATES = 506;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/506
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/507
      */
-    const VARIANT_ALSO_NEGOTIATES = 506;
+    public const INSUFFICIENT_STORAGE = 507;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/507
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/508
      */
-    const INSUFFICIENT_STORAGE = 507;
+    public const LOOP_DETECTED = 508;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/508
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/510
      */
-    const LOOP_DETECTED = 508;
+    public const NOT_EXTENDED = 510;
 
     /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/510
+     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/511
      */
-    const NOT_EXTENDED = 510;
-
-    /**
-     * @link https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/511
-     */
-    const NETWORK_AUTHENTICATION_REQUIRED = 511;
-
-
+    public const NETWORK_AUTHENTICATION_REQUIRED = 511;
 }

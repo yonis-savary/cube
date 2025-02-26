@@ -11,7 +11,7 @@ class StoreDocumentRequest extends Request
     public function getRules(): array
     {
         return [
-            "to-upload" => UploadRule::new()->withMimeType("application/json")->withMaxSize(File::KILOBYTES * 5)
+            'to-upload' => UploadRule::new()->withMimeType('application/json')->withMaxSize(File::KILOBYTES * 5),
         ];
     }
 }

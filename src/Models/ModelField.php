@@ -3,22 +3,20 @@
 namespace Cube\Models;
 
 use Cube\Http\Rules\Param;
-use DateTime;
-use InvalidArgumentException;
 use Cube\Http\Rules\Rule;
 
 class ModelField
 {
-    const STRING    = "STRING";
-    const INTEGER   = "INTEGER";
-    const FLOAT     = "FLOAT";
-    const BOOLEAN   = "BOOLEAN";
-    const DECIMAL   = "DECIMAL";
-    const DATE      = "DATE";
-    const DATETIME  = "DATETIME";
-    const TIMESTAMP = "TIMESTAMP";
+    public const STRING = 'STRING';
+    public const INTEGER = 'INTEGER';
+    public const FLOAT = 'FLOAT';
+    public const BOOLEAN = 'BOOLEAN';
+    public const DECIMAL = 'DECIMAL';
+    public const DATE = 'DATE';
+    public const DATETIME = 'DATETIME';
+    public const TIMESTAMP = 'TIMESTAMP';
 
-    const ALLOWED_TYPES = [
+    public const ALLOWED_TYPES = [
         self::STRING,
         self::INTEGER,
         self::FLOAT,
@@ -33,8 +31,8 @@ class ModelField
     public bool $nullable = true;
     public bool $hasDefault = true;
 
-    public string|Model|null $referenceModel = null ;
-    public ?string $referenceField = null ;
+    public null|Model|string $referenceModel = null;
+    public ?string $referenceField = null;
 
     public bool $autoIncrement = false;
 
@@ -44,28 +42,33 @@ class ModelField
 
     public function type(string $type): self
     {
-        if (!in_array($type, self::ALLOWED_TYPES))
-            throw new InvalidArgumentException("Model field \$type must be in ". join(", ", self::ALLOWED_TYPES));
+        if (!in_array($type, self::ALLOWED_TYPES)) {
+            throw new \InvalidArgumentException('Model field $type must be in '.join(', ', self::ALLOWED_TYPES));
+        }
 
         $this->type = $type;
+
         return $this;
     }
 
     public function autoIncrement(): self
     {
         $this->autoIncrement = true;
+
         return $this;
     }
 
-    public function nullable(bool $nullable=true): self
+    public function nullable(bool $nullable = true): self
     {
         $this->nullable = $nullable;
+
         return $this;
     }
 
-    public function hasDefault(bool $hasDefault=true): self
+    public function hasDefault(bool $hasDefault = true): self
     {
         $this->hasDefault = $hasDefault;
+
         return $this;
     }
 
@@ -73,6 +76,7 @@ class ModelField
     {
         $this->referenceModel = $model;
         $this->referenceField = $field;
+
         return $this;
     }
 
@@ -84,33 +88,37 @@ class ModelField
     public function toPHPExpression(): string
     {
         return
-            "(new ModelField('". $this->name ."'))" .
-            "->type('". $this->type ."')" .
-            ($this->autoIncrement ? "->autoIncrement()" : '') .
-            "->nullable(" . (($this->nullable && (!$this->autoIncrement)) ? "true": "false") . ")" .
-            "->hasDefault(" . ($this->hasDefault ? 'true': 'false') . ")" .
-            ($this->referenceModel ? "->references(" . $this->referenceModel . "::class,'" . $this->referenceField . "')" : '');
+            "(new ModelField('".$this->name."'))"
+            ."->type('".$this->type."')"
+            .($this->autoIncrement ? '->autoIncrement()' : '')
+            .'->nullable('.(($this->nullable && (!$this->autoIncrement)) ? 'true' : 'false').')'
+            .'->hasDefault('.($this->hasDefault ? 'true' : 'false').')'
+            .($this->referenceModel ? '->references('.$this->referenceModel."::class,'".$this->referenceField."')" : '');
     }
-
 
     public function parse(mixed $value): mixed
     {
-        if ($value === null)
+        if (null === $value) {
             return null;
+        }
 
-        switch ($this->type)
-        {
+        switch ($this->type) {
             case self::INTEGER:
                 return (int) $value;
+
             case self::FLOAT:
                 return (float) $value;
+
             case self::BOOLEAN:
                 return in_array(strtolower($value), ['true', '1']);
+
             case self::DATE:
             case self::DATETIME:
-                return new DateTime($value);
+                return new \DateTime($value);
+
             case self::TIMESTAMP:
                 return $value;
+
             default:
                 return $value;
         }
@@ -119,7 +127,8 @@ class ModelField
     public function toRule(): Rule
     {
         $nullable = $this->nullable;
-        $baseRule = match($this->type) {
+
+        return match ($this->type) {
             self::STRING => Param::string(false, $nullable),
             self::INTEGER => Param::integer($nullable),
             self::FLOAT => Param::float($nullable),
@@ -130,7 +139,5 @@ class ModelField
             self::TIMESTAMP => Param::datetime(),
             default => Param::string(true, $nullable),
         };
-
-        return $baseRule;
     }
 }

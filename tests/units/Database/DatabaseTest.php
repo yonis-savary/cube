@@ -6,6 +6,11 @@ use Cube\Database\Database;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class DatabaseTest extends TestCase
 {
     use TestMultipleDrivers;
@@ -14,7 +19,7 @@ class DatabaseTest extends TestCase
     public function testBase(Database $database)
     {
         $this->assertNotNull(
-            $database->query("SELECT 1")
+            $database->query('SELECT 1')
         );
     }
 }

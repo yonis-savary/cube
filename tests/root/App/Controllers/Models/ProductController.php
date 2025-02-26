@@ -15,6 +15,6 @@ class ProductController extends ModelAPI
 
     public function getRouteGroup(): RouteGroup
     {
-        return new RouteGroup("auto-api");
+        return new RouteGroup('auto-api');
     }
 }

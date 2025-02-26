@@ -2,21 +2,26 @@
 
 namespace Cube\Tests\Units\Events;
 
-use PHPUnit\Framework\TestCase;
 use Cube\Event\CustomEvent;
 use Cube\Event\EventDispatcher;
+use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class EventDispatcherTest extends TestCase
 {
-    public function test_dispatch()
+    public function testDispatch()
     {
         $class = new class extends EventDispatcher {};
 
-        $object = new $class;
+        $object = new $class();
 
         $myValue = 0;
 
-        $object->on('my-event', function(CustomEvent $event) use (&$myValue) { $myValue = $event->data ?? 5; });
+        $object->on('my-event', function (CustomEvent $event) use (&$myValue) { $myValue = $event->data ?? 5; });
 
         $this->assertEquals(0, $myValue);
 
@@ -27,6 +32,5 @@ class EventDispatcherTest extends TestCase
         $object->dispatch(new CustomEvent('my-event', 12));
 
         $this->assertEquals(12, $myValue);
-
     }
 }

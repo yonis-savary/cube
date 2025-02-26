@@ -3,19 +3,24 @@
 namespace Cube\Tests\Integration;
 
 use Cube\Database\Database;
-use Cube\Logger\Logger;
 use Cube\Test\CubeTestCase;
 use Cube\Utils\File;
 use Cube\Utils\Shell;
 use Cube\Web\CubeServer;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class UploadTest extends CubeTestCase
 {
     public function getServer(): CubeServer
     {
         $server = Utils::getDummyServer();
 
-        Shell::executeInDirectory("php do clear-database", $server->getPublicStorage()->parent()->getRoot());
+        Shell::executeInDirectory('php do clear-database', $server->getPublicStorage()->parent()->getRoot());
+
         return $server;
     }
 
@@ -24,30 +29,34 @@ class UploadTest extends CubeTestCase
         return Utils::getIntegrationDatabase();
     }
 
-    public function test_upload()
+    public function testUpload()
     {
         $this->post('/documents')
-            ->assertUnprocessableContent();
+            ->assertUnprocessableContent()
+        ;
 
         $tooBigUpload = $this->makeFakeUploadFromContent('to-upload', json_encode(['key' => str_repeat('0', File::MEGABYTES)]));
         $this->post('/documents', uploads: [$tooBigUpload])
-            ->assertUnprocessableContent();
+            ->assertUnprocessableContent()
+        ;
 
-        $correctUpload = $this->makeFakeUploadFromContent("to-upload", json_encode(["Hello" => "Goodbye"]));
-        $documentName =
-            $this->post('/documents', uploads:[$correctUpload])
-            ->assertCreated()
-            ->assertIsJson()
-            ->json();
+        $correctUpload = $this->makeFakeUploadFromContent('to-upload', json_encode(['Hello' => 'Goodbye']));
+        $documentName
+            = $this->post('/documents', uploads: [$correctUpload])
+                ->assertCreated()
+                ->assertIsJson()
+                ->json()
+        ;
 
         $this->assertIsString($documentName);
-        $this->assertStringStartsWith("file-", $documentName);
-        $this->assertStringEndsWith(".json", $documentName);
+        $this->assertStringStartsWith('file-', $documentName);
+        $this->assertStringEndsWith('.json', $documentName);
 
-        $document = $this->get("/documents/$documentName")
+        $document = $this->get("/documents/{$documentName}")
             ->assertOk()
-            ->json();
+            ->json()
+        ;
 
-        $this->assertEquals(["Hello" => "Goodbye"], $document);
+        $this->assertEquals(['Hello' => 'Goodbye'], $document);
     }
 }

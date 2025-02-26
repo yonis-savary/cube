@@ -6,6 +6,5 @@ class RawCondition
 {
     public function __construct(
         public readonly string $expression
-    )
-    {}
+    ) {}
 }

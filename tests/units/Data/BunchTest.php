@@ -2,58 +2,62 @@
 
 namespace Cube\Tests\Units\Data;
 
-use PHPUnit\Framework\TestCase;
 use Cube\Data\Bunch;
-use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class BunchTest extends TestCase
 {
-    public function test_of()
+    public function testOf()
     {
         $this->assertEquals([], Bunch::of([])->get());
-        $this->assertEquals([1,2,3], Bunch::of([1,2,3])->get());
-        $this->assertEquals([["A" => 0]], Bunch::of(["A" => 0])->get());
-        $this->assertEquals(["test"], Bunch::of("test")->get());
+        $this->assertEquals([1, 2, 3], Bunch::of([1, 2, 3])->get());
+        $this->assertEquals([['A' => 0]], Bunch::of(['A' => 0])->get());
+        $this->assertEquals(['test'], Bunch::of('test')->get());
     }
 
-    public function test_fill()
+    public function testFill()
     {
         $this->assertEquals([0, 0, 0], Bunch::fill(3, 0)->get());
         $this->assertEquals([null], Bunch::fill(1, null)->get());
         $this->assertEquals([], Bunch::fill(0, null)->get());
     }
 
-    public function test_range()
+    public function testRange()
     {
-        $this->assertEquals([1,2,3,4,5], Bunch::range(5)->get());
-        $this->assertEquals([0,2,4,6,8,10], Bunch::range(10, 0, 2)->get());
+        $this->assertEquals([1, 2, 3, 4, 5], Bunch::range(5)->get());
+        $this->assertEquals([0, 2, 4, 6, 8, 10], Bunch::range(10, 0, 2)->get());
     }
 
-    public function test_fromValues()
+    public function testFromValues()
     {
-        $this->assertEquals([0, 1, 2], Bunch::fromValues(["A" => 0, "B" => 1, "C" => 2])->get());
+        $this->assertEquals([0, 1, 2], Bunch::fromValues(['A' => 0, 'B' => 1, 'C' => 2])->get());
         $this->assertEquals([455, 1024, 3002], Bunch::fromValues([455, 1024, 3002])->get());
     }
 
-    public function test_fromKeys()
+    public function testFromKeys()
     {
-        $this->assertEquals(["A", "B", "C"], Bunch::fromKeys(["A" => 0, "B" => 1, "C" => 2])->get());
+        $this->assertEquals(['A', 'B', 'C'], Bunch::fromKeys(['A' => 0, 'B' => 1, 'C' => 2])->get());
         $this->assertEquals([0, 1, 2], Bunch::fromKeys([455, 1024, 3002])->get());
     }
 
-    public function test_unzip()
+    public function testUnzip()
     {
         $this->assertEquals([
-            ["A", 0],
-            ["B", 1],
-            ["C", 2]
-        ], Bunch::unzip(["A" => 0, "B" => 1, "C" => 2])->get());
+            ['A', 0],
+            ['B', 1],
+            ['C', 2],
+        ], Bunch::unzip(['A' => 0, 'B' => 1, 'C' => 2])->get());
     }
 
-    public function test_clone()
+    public function testClone()
     {
-        $first = Bunch::of([1,2,3]);
-        $second = clone($first);
+        $first = Bunch::of([1, 2, 3]);
+        $second = clone $first;
 
         $first->push(4);
 
@@ -61,264 +65,256 @@ class BunchTest extends TestCase
         $this->assertCount(3, $second->get());
     }
 
-    public function test_get()
+    public function testGet()
     {
         // Implicitly tested by other tests
         // Same for toArray() which is an alias of get()
-        $this->assertEquals([1,2,3], Bunch::of([1,2,3])->get());
+        $this->assertEquals([1, 2, 3], Bunch::of([1, 2, 3])->get());
     }
 
-    public function test_asIntegers()
+    public function testAsIntegers()
     {
-        $this->assertEquals([1, -2, 3], Bunch::of(["1", "-2", "3.1416"])->asIntegers()->get());
-        $this->assertEquals([1, -2, 3], Bunch::of(["1", null, "-2", "3.1416"])->asIntegers()->get());
-        $this->assertEquals([1, -2, 3], Bunch::of(["1", "Hello World", "-2", "3.1416"])->asIntegers()->get());
-        $this->assertEquals([1, 12, -2, 3], Bunch::of(["1", 12, "-2", "3.1416"])->asIntegers()->get());
+        $this->assertEquals([1, -2, 3], Bunch::of(['1', '-2', '3.1416'])->asIntegers()->get());
+        $this->assertEquals([1, -2, 3], Bunch::of(['1', null, '-2', '3.1416'])->asIntegers()->get());
+        $this->assertEquals([1, -2, 3], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asIntegers()->get());
+        $this->assertEquals([1, 12, -2, 3], Bunch::of(['1', 12, '-2', '3.1416'])->asIntegers()->get());
     }
 
-    public function test_asFloats()
+    public function testAsFloats()
     {
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(["1", "-2", "3.1416"])->asFloats()->get());
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(["1", null, "-2", "3.1416"])->asFloats()->get());
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(["1", "Hello World", "-2", "3.1416"])->asFloats()->get());
-        $this->assertEquals([1, 12, -2, 3.1416], Bunch::of(["1", 12, "-2", "3.1416"])->asFloats()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', '-2', '3.1416'])->asFloats()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', null, '-2', '3.1416'])->asFloats()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asFloats()->get());
+        $this->assertEquals([1, 12, -2, 3.1416], Bunch::of(['1', 12, '-2', '3.1416'])->asFloats()->get());
     }
 
-    public function test_filter()
+    public function testFilter()
     {
-        $this->assertEquals([0, 2, 4, 6, 8], Bunch::of([0,1,2,3,4,5,6,7,8,9])->filter(fn($x) => $x % 2 == 0)->get());
+        $this->assertEquals([0, 2, 4, 6, 8], Bunch::of([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])->filter(fn ($x) => 0 == $x % 2)->get());
     }
 
-    public function test_partitionFilter()
+    public function testPartitionFilter()
     {
         list($group1, $group2, $group3) = Bunch::of([
-            "1-paris",
-            "2-berlin",
-            "3-rome",
-            "4-tokyo",
-            "5-oulan-bator",
-            "6-washington"
-        ])->partitionFilter(fn($x) => floor((intval(substr($x, 0, 1))-1)/2)  );
+            '1-paris',
+            '2-berlin',
+            '3-rome',
+            '4-tokyo',
+            '5-oulan-bator',
+            '6-washington',
+        ])->partitionFilter(fn ($x) => floor((intval(substr($x, 0, 1)) - 1) / 2));
 
-        $this->assertEquals(["1-paris", "2-berlin"], $group1);
-        $this->assertEquals(["3-rome", "4-tokyo"], $group2);
-        $this->assertEquals(["5-oulan-bator", "6-washington"], $group3);
+        $this->assertEquals(['1-paris', '2-berlin'], $group1);
+        $this->assertEquals(['3-rome', '4-tokyo'], $group2);
+        $this->assertEquals(['5-oulan-bator', '6-washington'], $group3);
     }
 
-    public function test_map()
+    public function testMap()
     {
         $this->assertEquals(
-            [0,1,8,27],
-            Bunch::of([0,1,2,3])
-            ->map(fn($x) => pow($x, 3))
-            ->get()
+            [0, 1, 8, 27],
+            Bunch::of([0, 1, 2, 3])
+                ->map(fn ($x) => pow($x, 3))
+                ->get()
         );
     }
 
-    public function test_merge()
+    public function testMerge()
     {
-        $first = Bunch::of([0,1,2]);
-        $second = Bunch::of([3,4,5]);
-        $third = [6,7,8,9];
+        $first = Bunch::of([0, 1, 2]);
+        $second = Bunch::of([3, 4, 5]);
+        $third = [6, 7, 8, 9];
 
         $first->merge($second)->merge($third);
 
-        $this->assertEquals([0,1,2,3,4,5,6,7,8,9], $first->get());
+        $this->assertEquals([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], $first->get());
     }
 
-    public function test_sort()
+    public function testSort()
     {
-        $target = [0,1,2,3,4,5,6,7,8,9];
-        $set = [0,1,2,3,4,5,6,7,8,9];
+        $target = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        $set = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-        for ($i=0; $i<100; $i++)
-        {
+        for ($i = 0; $i < 100; ++$i) {
             shuffle($set);
             $this->assertNotEquals($set, $target);
             $this->assertEquals(Bunch::of($set)->sort()->get(), $target);
         }
 
+        $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
 
-        $elements = [["A"=>3], ["A"=>2], ["A"=>5], ["A"=>12], ["A"=>-3], ["A"=>0]];
-
-        $sorted = Bunch::of($elements)->sort(fn($x) => $x["A"])->get();
+        $sorted = Bunch::of($elements)->sort(fn ($x) => $x['A'])->get();
 
         $this->assertEquals(
-            [["A"=>-3], ["A"=>0], ["A"=>2], ["A"=>3], ["A"=>5], ["A"=>12]],
+            [['A' => -3], ['A' => 0], ['A' => 2], ['A' => 3], ['A' => 5], ['A' => 12]],
             $sorted
         );
     }
 
-    public function test_forEach()
+    public function testForEach()
     {
         $sum = 0;
-        Bunch::of([1000,100,10,1])
-        ->forEach(function($x) use (&$sum) {
-            $sum += $x;
-        });
+        Bunch::of([1000, 100, 10, 1])
+            ->forEach(function ($x) use (&$sum) {
+                $sum += $x;
+            })
+        ;
         $this->assertEquals(1111, $sum);
     }
 
-    public function test_any()
+    public function testAny()
     {
-        $elements = [["A"=>3], ["A"=>2], ["A"=>5], ["A"=>12], ["A"=>-3], ["A"=>0]];
+        $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
         $elements = Bunch::of($elements);
 
-        $this->assertTrue($elements->any(fn($x) => $x["A"] === 3));
-        $this->assertFalse($elements->any(fn($x) => $x["A"] === 5292));
+        $this->assertTrue($elements->any(fn ($x) => 3 === $x['A']));
+        $this->assertFalse($elements->any(fn ($x) => 5292 === $x['A']));
     }
 
-    public function test_all()
+    public function testAll()
     {
-        $elements = [["A"=>3], ["A"=>2], ["A"=>5], ["A"=>12], ["A"=>-3], ["A"=>0]];
+        $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
         $elements = Bunch::of($elements);
 
-        $this->assertTrue($elements->all(fn($x) => $x["A"] > -30));
-        $this->assertFalse($elements->all(fn($x) => $x["A"] > 0));
+        $this->assertTrue($elements->all(fn ($x) => $x['A'] > -30));
+        $this->assertFalse($elements->all(fn ($x) => $x['A'] > 0));
     }
 
-    public function test_uniques()
+    public function testUniques()
     {
         $this->assertEquals(
-            [0,1,2,3,4,5,6,7,8,9],
-            Bunch::of([0,1,2,1,1,3,4,5,6,7,5,5,8,0,9])->uniques()->get()
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            Bunch::of([0, 1, 2, 1, 1, 3, 4, 5, 6, 7, 5, 5, 8, 0, 9])->uniques()->get()
         );
     }
 
-    public function test_push()
+    public function testPush()
     {
-        $this->assertEquals([1,2,3,"A","B","C"], Bunch::of([1,2,3])->push("A", "B")->push("C")->get());
+        $this->assertEquals([1, 2, 3, 'A', 'B', 'C'], Bunch::of([1, 2, 3])->push('A', 'B')->push('C')->get());
     }
 
-    public function test_unshift()
+    public function testUnshift()
     {
-        $this->assertEquals(["A","B","C",1,2,3], Bunch::of([1,2,3])->unshift("B", "C")->unshift("A")->get());
-
+        $this->assertEquals(['A', 'B', 'C', 1, 2, 3], Bunch::of([1, 2, 3])->unshift('B', 'C')->unshift('A')->get());
     }
 
-    public function test_pop()
+    public function testPop()
     {
-        $this->assertEquals([1,2], Bunch::of([1,2,3])->pop(1)->get());
-        $this->assertEquals([1], Bunch::of([1,2,3])->pop(2)->get());
-        $this->assertEquals([], Bunch::of([1,2,3])->pop(3)->get());
-        $this->assertEquals([], Bunch::of([1,2,3])->pop(12)->get());
+        $this->assertEquals([1, 2], Bunch::of([1, 2, 3])->pop(1)->get());
+        $this->assertEquals([1], Bunch::of([1, 2, 3])->pop(2)->get());
+        $this->assertEquals([], Bunch::of([1, 2, 3])->pop(3)->get());
+        $this->assertEquals([], Bunch::of([1, 2, 3])->pop(12)->get());
     }
 
-    public function test_shift()
+    public function testShift()
     {
-        $this->assertEquals([2,3], Bunch::of([1,2,3])->shift(1)->get());
-        $this->assertEquals([3], Bunch::of([1,2,3])->shift(2)->get());
-        $this->assertEquals([], Bunch::of([1,2,3])->shift(3)->get());
-        $this->assertEquals([], Bunch::of([1,2,3])->shift(12)->get());
+        $this->assertEquals([2, 3], Bunch::of([1, 2, 3])->shift(1)->get());
+        $this->assertEquals([3], Bunch::of([1, 2, 3])->shift(2)->get());
+        $this->assertEquals([], Bunch::of([1, 2, 3])->shift(3)->get());
+        $this->assertEquals([], Bunch::of([1, 2, 3])->shift(12)->get());
     }
 
-    public function test_join()
+    public function testJoin()
     {
-        $this->assertEquals("Hello World !", Bunch::of(["Hello", "World", "!"])->join(" "));
+        $this->assertEquals('Hello World !', Bunch::of(['Hello', 'World', '!'])->join(' '));
     }
 
-    public function test_first()
+    public function testFirst()
     {
-        $elements = [["A"=>3], ["A"=>2], ["A"=>5], ["A"=>12], ["A"=>-3], ["A"=>0]];
+        $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
         $elements = Bunch::of($elements);
 
-        $this->assertEquals(["A"=>3], $elements->first(fn($x) => $x["A"] == 3));
-        $this->assertNull($elements->first(fn($x) => $x["A"] === 4787));
+        $this->assertEquals(['A' => 3], $elements->first(fn ($x) => 3 == $x['A']));
+        $this->assertNull($elements->first(fn ($x) => 4787 === $x['A']));
     }
 
-    public function test_has()
+    public function testHas()
     {
-        $elements = [["A"=>3], ["A"=>2], ["A"=>5], ["A"=>12], ["A"=>-3], ["A"=>0]];
+        $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
         $elements = Bunch::of($elements);
 
-        $this->assertTrue($elements->has(["A"=>3]));
-        $this->assertFalse($elements->has(["A"=>3000]));
+        $this->assertTrue($elements->has(['A' => 3]));
+        $this->assertFalse($elements->has(['A' => 3000]));
     }
 
-    public function test_count()
+    public function testCount()
     {
-        $this->assertEquals(4, Bunch::of([1,2,3])->push(4)->count());
+        $this->assertEquals(4, Bunch::of([1, 2, 3])->push(4)->count());
         $this->assertEquals(1000, Bunch::fill(1000, null)->count());
     }
 
-    public function test_reduce()
+    public function testReduce()
     {
-        $this->assertEquals(120, Bunch::range(5)->reduce(fn($acc, $cur) => $acc * $cur, 1));
+        $this->assertEquals(120, Bunch::range(5)->reduce(fn ($acc, $cur) => $acc * $cur, 1));
     }
 
-
-    public function test_key()
+    public function testKey()
     {
         $baseData = [
             ['id' => 1],
             ['id' => 2],
             ['id' => 3],
         ];
-        $this->assertEquals([1,2,3], Bunch::of($baseData)->key('id')->get());
+        $this->assertEquals([1, 2, 3], Bunch::of($baseData)->key('id')->get());
 
         $compound = [
             ['a' => ['b' => ['c' => 1]]],
             ['a' => ['b' => ['c' => 2]]],
             ['a' => ['b' => ['c' => 3]]],
         ];
-        $this->assertEquals([1,2,3], Bunch::of($compound)->key("a.b.c")->get());
+        $this->assertEquals([1, 2, 3], Bunch::of($compound)->key('a.b.c')->get());
 
         $multiples = [
             ['apiV1' => ['info' => ['name' => 1]]],
             ['V3Name' => 2],
             ['_V2' => ['name' => 3]],
         ];
-        $this->assertEquals([1,2,3], Bunch::of($multiples)->key(["apiV1.info.name","_V2.name","V3Name",])->get());
+        $this->assertEquals([1, 2, 3], Bunch::of($multiples)->key(['apiV1.info.name', '_V2.name', 'V3Name'])->get());
 
         $dotsInKey = [
             ['api.V1' => ['meta.info' => ['name' => 1]]],
             ['V3.name' => 2],
             ['V2' => ['name' => 3]],
         ];
-        $this->assertEquals([1,2,3], Bunch::of($dotsInKey)->key(["api.V1_meta.info_name","V2_name","V3.name",], "_")->get());
-
-
+        $this->assertEquals([1, 2, 3], Bunch::of($dotsInKey)->key(['api.V1_meta.info_name', 'V2_name', 'V3.name'], '_')->get());
 
         $baseData = [
             ['id' => 1],
             ['serial' => 2],
             ['id' => 3],
         ];
-        $this->expectException(InvalidArgumentException::class);
-        $this->assertEquals([1,2,3], Bunch::of($baseData)->key('id')->get());
-
+        $this->expectException(\InvalidArgumentException::class);
+        $this->assertEquals([1, 2, 3], Bunch::of($baseData)->key('id')->get());
 
         $baseData = [
             ['id' => 1],
             ['serial' => 2],
             ['id' => 3],
         ];
-        $this->assertEquals([1,2,3], Bunch::of($baseData)->key(['id', 'serial'])->get());
-
+        $this->assertEquals([1, 2, 3], Bunch::of($baseData)->key(['id', 'serial'])->get());
     }
 
-    public function test_max()
+    public function testMax()
     {
-        $this->assertEquals(10, Bunch::of([1,5,-5,9,10])->max());
+        $this->assertEquals(10, Bunch::of([1, 5, -5, 9, 10])->max());
         $this->assertEquals(null, Bunch::of([])->max());
         $this->assertEquals(12, Bunch::of([])->max(12));
         $this->assertEquals(12, Bunch::of([])->max() ?? 12);
     }
 
-    public function test_min()
+    public function testMin()
     {
-        $this->assertEquals(-5, Bunch::of([1,5,-5,9,10])->min());
+        $this->assertEquals(-5, Bunch::of([1, 5, -5, 9, 10])->min());
         $this->assertEquals(null, Bunch::of([])->min());
         $this->assertEquals(12, Bunch::of([])->min(12));
         $this->assertEquals(12, Bunch::of([])->min() ?? 12);
     }
 
-    public function test_average()
+    public function testAverage()
     {
-        $this->assertEquals(50, Bunch::of([0,100])->average());
+        $this->assertEquals(50, Bunch::of([0, 100])->average());
         $this->assertEquals(null, Bunch::of([])->average());
         $this->assertEquals(12, Bunch::of([])->average(12));
         $this->assertEquals(12, Bunch::of([])->average() ?? 12);
     }
-
 }

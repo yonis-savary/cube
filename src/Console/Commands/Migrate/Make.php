@@ -7,18 +7,17 @@ use Cube\Console\Command;
 use Cube\Database\MigrationManager;
 use Cube\Env\Storage;
 use Cube\Utils\Console;
-use Cube\Utils\Shell;
 
 class Make extends Command
 {
     public function getScope(): string
     {
-        return "migrate";
+        return 'migrate';
     }
 
     public function execute(Args $args): int
     {
-        $migrationName = $args->getValue() ?? readline("Migration name ? ");
+        $migrationName = $args->getValue() ?? readline('Migration name ? ');
 
         $migrationManager = MigrationManager::getDefaultInstance();
 
@@ -31,7 +30,7 @@ class Make extends Command
         );
 
         Console::log(
-            Console::withGreenBackground("Written file $writtenFile")
+            Console::withGreenBackground("Written file {$writtenFile}")
         );
 
         return 0;

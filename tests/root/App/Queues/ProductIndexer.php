@@ -13,16 +13,16 @@ class ProductIndexer extends Queue
         return 1000;
     }
 
+    public static function addProduct(string $name)
+    {
+        return self::pushToQueue(['name' => $name]);
+    }
+
     protected static function process($object): bool
     {
-        Console::log("Inserting product :" . $object["name"]);
+        Console::log('Inserting product :'.$object['name']);
         Product::insertArray($object);
 
         return true;
-    }
-
-    public static function addProduct(string $name)
-    {
-        return self::pushToQueue(["name" => $name]);
     }
 }

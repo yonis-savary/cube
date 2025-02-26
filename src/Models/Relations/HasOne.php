@@ -8,7 +8,7 @@ use Cube\Models\Model;
 /**
  * @template TModel of Model
  *
- * @property Model $model
+ * @property Model               $model
  * @property class-string<Model> $fromModel
  * @property class-string<Model> $toModel
  */
@@ -23,7 +23,7 @@ class HasOne implements Relation
         public readonly string $toModel,
         public readonly string $toColumn,
         public Model &$model
-    ){}
+    ) {}
 
     public function isSource(string $model, string $column): bool
     {
@@ -37,7 +37,7 @@ class HasOne implements Relation
 
     public function getName(): string
     {
-        return strtolower(basename(str_replace("\\", "/", $this->toModel)));
+        return strtolower(basename(str_replace('\\', '/', $this->toModel)));
     }
 
     /**
@@ -49,9 +49,10 @@ class HasOne implements Relation
         $fromColumn = $this->fromColumn;
         $toColumn = $this->toColumn;
 
-        $thisModel->onSaved(function(SavedModel $event) use ($model, $thisModel, $toColumn, $fromColumn) {
-            if ($model::hasField($toColumn))
-                $model->data->$toColumn = $thisModel->data->$fromColumn;
+        $thisModel->onSaved(function (SavedModel $event) use ($model, $thisModel, $toColumn, $fromColumn) {
+            if ($model::hasField($toColumn)) {
+                $model->data->{$toColumn} = $thisModel->data->{$fromColumn};
+            }
 
             $model->reload($event->database);
             $model->save($event->database);
@@ -72,7 +73,7 @@ class HasOne implements Relation
 
         $thisModel->setReference(
             $this->getName(),
-            $toModel::findWhere([$toColumn => $thisModel->$fromColumn])
+            $toModel::findWhere([$toColumn => $thisModel->{$fromColumn}])
         );
     }
 }

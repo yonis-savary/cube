@@ -11,7 +11,7 @@ abstract class Straw
         return md5(get_called_class());
     }
 
-    public static function get(?Session $session=null): mixed
+    public static function get(?Session $session = null): mixed
     {
         /** @var self $self */
         $self = get_called_class();
@@ -20,7 +20,7 @@ abstract class Straw
         return $session->get($self::getKey());
     }
 
-    public static function set(mixed $value, ?Session $session=null): void
+    public static function set(mixed $value, ?Session $session = null): void
     {
         /** @var self $self */
         $self = get_called_class();

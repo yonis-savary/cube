@@ -9,7 +9,7 @@ use Cube\Database\Query;
 abstract class QueryBuilder
 {
     /** @return string|string[] */
-    abstract public function getSupportedPDODriver(): string|array;
+    abstract public function getSupportedPDODriver(): array|string;
 
     abstract public function build(Query $query, Database $database): string;
 

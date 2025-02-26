@@ -2,7 +2,6 @@
 
 namespace Cube\Security;
 
-use InvalidArgumentException;
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Database\Database;
@@ -13,42 +12,42 @@ use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Utils\Path;
 use Cube\Utils\Utils;
-use RuntimeException;
 
 class Authentication
 {
     use Component;
     use HasScopedSession;
 
-    const SESSION_USER_ID = "session-user-id";
-    const SESSION_USER_DATA = "session-user-data";
-
-    public static function getDefaultInstance(): static
-    {
-        $config = AuthenticationConfiguration::resolve();
-        return new self(
-            $config->model,
-            $config->loginFields,
-            $config->passwordField,
-            $config->saltField
-        );
-    }
+    public const SESSION_USER_ID = 'session-user-id';
+    public const SESSION_USER_DATA = 'session-user-data';
 
     /**
      * @param class-string<Model> $model
      */
     public function __construct(
         public readonly string $model,
-        public readonly string|array $loginFields,
+        public readonly array|string $loginFields,
         public readonly string $passwordField,
-        public readonly ?string $saltField=null,
-        protected ?Database $database=null
-    )
-    {
-        if (!Autoloader::extends($model, Model::class))
-            throw new InvalidArgumentException("$model class does not extends Model");
+        public readonly ?string $saltField = null,
+        protected ?Database $database = null
+    ) {
+        if (!Autoloader::extends($model, Model::class)) {
+            throw new \InvalidArgumentException("{$model} class does not extends Model");
+        }
 
         $this->database ??= Database::getInstance();
+    }
+
+    public static function getDefaultInstance(): static
+    {
+        $config = AuthenticationConfiguration::resolve();
+
+        return new self(
+            $config->model,
+            $config->loginFields,
+            $config->passwordField,
+            $config->saltField
+        );
     }
 
     public function getSessionKey(string $key): string
@@ -58,8 +57,9 @@ class Authentication
 
     public function saltString(string &$string, Model $user): void
     {
-        if ($saltField = $this->saltField)
-            $string .= $user->$saltField;
+        if ($saltField = $this->saltField) {
+            $string .= $user->{$saltField};
+        }
     }
 
     public function attempt(string $login, string $userPassword): bool
@@ -71,35 +71,37 @@ class Authentication
         $loginFields = Utils::toArray($this->loginFields);
         $query = $model::select();
 
-        foreach ($loginFields as $field)
-            $query->where($field, $login, "=", $model::table());
+        foreach ($loginFields as $field) {
+            $query->where($field, $login, '=', $model::table());
+        }
 
-        if (! $user = $query->first())
+        if (!$user = $query->first()) {
             return false;
+        }
 
         $passwordField = $this->passwordField;
-        $hash = $user->$passwordField;
+        $hash = $user->{$passwordField};
 
         $this->saltString($userPassword, $user);
 
-        if (!password_verify($userPassword, $hash))
-        {
+        if (!password_verify($userPassword, $hash)) {
             (new FailedAuthentication())->dispatch();
+
             return false;
         }
 
         $userPrimaryKey = $model::primaryKey();
         $this->login(
-            $user->$userPrimaryKey,
+            $user->{$userPrimaryKey},
             $user->toArray()
         );
 
-        (new AuthenticatedUser($user, $user->$userPrimaryKey))->dispatch();
+        (new AuthenticatedUser($user, $user->{$userPrimaryKey}))->dispatch();
 
         return true;
     }
 
-    public function login(mixed $userId, ?array $userData=null): void
+    public function login(mixed $userId, ?array $userData = null): void
     {
         $session = $this->getSession();
 
@@ -122,7 +124,7 @@ class Authentication
         $session = $this->getSession();
         $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA), false);
 
-        return $userArrayData != false;
+        return false != $userArrayData;
     }
 
     public function user(): Model
@@ -130,8 +132,9 @@ class Authentication
         $session = $this->getSession();
         $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA));
 
-        if (!$this->isLogged())
-            throw new RuntimeException("Cannot retrieve data of unauthenticated user");
+        if (!$this->isLogged()) {
+            throw new \RuntimeException('Cannot retrieve data of unauthenticated user');
+        }
 
         return new Model($userArrayData);
     }
@@ -141,13 +144,15 @@ class Authentication
         $session = $this->getSession();
         $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA), false);
 
-        if (!$this->isLogged())
-            throw new RuntimeException("Cannot retrieve data of unauthenticated user");
+        if (!$this->isLogged()) {
+            throw new \RuntimeException('Cannot retrieve data of unauthenticated user');
+        }
 
         $primaryKey = $this->model::primaryKey();
 
-        if (!array_key_exists($primaryKey, $userArrayData))
-            throw new RuntimeException("Could not retrieve $primaryKey key on logged user");
+        if (!array_key_exists($primaryKey, $userArrayData)) {
+            throw new \RuntimeException("Could not retrieve {$primaryKey} key on logged user");
+        }
 
         return $userArrayData[$primaryKey];
     }

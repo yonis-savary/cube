@@ -10,7 +10,8 @@ trait HasScopedSession
 
     public function getSession(): Session
     {
-        $this->session ??= new session($this->getScope());
+        $this->session ??= new Session($this->getScope());
+
         return $this->session;
     }
 

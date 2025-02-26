@@ -10,35 +10,27 @@ class Args
 
     public static function fromArgv(array $argv): self
     {
-        $args = new Args;
+        $args = new Args();
         $currentArg = null;
 
-        foreach ($argv as $arg)
-        {
-            if (str_starts_with($arg, "-"))
-            {
-                if (str_contains($arg, "="))
-                {
-                    list($param, $value) = explode("=", $arg);
+        foreach ($argv as $arg) {
+            if (str_starts_with($arg, '-')) {
+                if (str_contains($arg, '=')) {
+                    list($param, $value) = explode('=', $arg);
 
                     $args->addValue($param, $value);
                     $currentArg = null;
-                }
-                else
-                {
+                } else {
                     $currentArg = $arg;
                     $args->addParameter($arg);
                 }
-            }
-            else
-            {
+            } else {
                 $args->addValue($currentArg, $arg);
             }
         }
 
         return $args;
     }
-
 
     public function dump(): array
     {
@@ -47,10 +39,11 @@ class Args
 
     public function toString(): string
     {
-        $string = "";
+        $string = '';
 
-        foreach ($this->values as $param => $values)
-            $string .= $param . " " . join(" ", $values);
+        foreach ($this->values as $param => $values) {
+            $string .= $param.' '.join(' ', $values);
+        }
 
         return $string;
     }
@@ -68,33 +61,35 @@ class Args
         return $this;
     }
 
-    public function has(?string $short=null, ?string $long=null): bool
+    public function has(?string $short = null, ?string $long = null): bool
     {
-        $short = Text::startsWith($short ?? "", "-");
-        $long = Text::startsWith($long ?? "", "--");
+        $short = Text::startsWith($short ?? '', '-');
+        $long = Text::startsWith($long ?? '', '--');
 
-        return array_key_exists($short, $this->values) ||
-            array_key_exists($long, $this->values);
+        return array_key_exists($short, $this->values)
+            || array_key_exists($long, $this->values);
     }
 
-    public function getValues(?string $short=null, ?string $long=null): array
+    public function getValues(?string $short = null, ?string $long = null): array
     {
-        if ($short === null && $long === null)
+        if (null === $short && null === $long) {
             return $this->values[null] ?? [];
+        }
 
-        $short ??= "";
-        $long ??= "";
+        $short ??= '';
+        $long ??= '';
 
-        $short = Text::startsWith($short, "-");
-        $long = Text::startsWith($long, "--");
+        $short = Text::startsWith($short, '-');
+        $long = Text::startsWith($long, '--');
 
         return array_merge(
             $this->values[$short] ?? [],
             $this->values[$long] ?? [],
         );
     }
-    public function getValue(?string $short=null, ?string $long=null, mixed $default=null): mixed
+
+    public function getValue(?string $short = null, ?string $long = null, mixed $default = null): mixed
     {
-        return ($this->getValues($short, $long)[0]) ?? $default;
+        return $this->getValues($short, $long)[0] ?? $default;
     }
 }

@@ -10,6 +10,5 @@ class FieldComparaison
         public readonly string $operator,
         public readonly string $target,
         public readonly string $targetField,
-    )
-    {}
+    ) {}
 }

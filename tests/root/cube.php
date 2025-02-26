@@ -11,14 +11,14 @@ use function Cube\env;
 return [
     new Applications('App'),
     new DatabaseConfiguration(
-        "sqlite",
-        env("DB_FILENAME", "invalid.sqlite")
+        'sqlite',
+        env('DB_FILENAME', 'invalid.sqlite')
     ),
 
     new RouterConfiguration(
         apis: [
             AssetServer::class,
-            new StaticServer("App/Static")
+            new StaticServer('App/Static'),
         ]
-    )
+    ),
 ];

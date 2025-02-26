@@ -8,17 +8,17 @@ use Cube\Utils\Path;
 
 class Upload
 {
-    const KB = 1024;
-    const MB = 1024 * self::KB;
-    const GB = 1024 * self::MB;
+    public const KB = 1024;
+    public const MB = 1024 * self::KB;
+    public const GB = 1024 * self::MB;
 
-    const PHP_ERROR_EXPLAINATION = [
-        UPLOAD_ERR_OK         => 'UPLOAD_ERR_OK: No error with the upload',
-        UPLOAD_ERR_PARTIAL    => 'UPLOAD_ERR_PARTIAL: File only partially uploaded',
-        UPLOAD_ERR_NO_FILE    => 'UPLOAD_ERR_NO_FILE: No file was uploaded',
-        UPLOAD_ERR_EXTENSION  => 'UPLOAD_ERR_EXTENSION: File upload stopped by a PHP extension',
-        UPLOAD_ERR_FORM_SIZE  => 'UPLOAD_ERR_FORM_SIZE: File exceeds MAX_FILE_SIZE in the HTML form',
-        UPLOAD_ERR_INI_SIZE   => 'UPLOAD_ERR_INI_SIZE: File exceeds upload_max_filesize in php.ini',
+    public const PHP_ERROR_EXPLAINATION = [
+        UPLOAD_ERR_OK => 'UPLOAD_ERR_OK: No error with the upload',
+        UPLOAD_ERR_PARTIAL => 'UPLOAD_ERR_PARTIAL: File only partially uploaded',
+        UPLOAD_ERR_NO_FILE => 'UPLOAD_ERR_NO_FILE: No file was uploaded',
+        UPLOAD_ERR_EXTENSION => 'UPLOAD_ERR_EXTENSION: File upload stopped by a PHP extension',
+        UPLOAD_ERR_FORM_SIZE => 'UPLOAD_ERR_FORM_SIZE: File exceeds MAX_FILE_SIZE in the HTML form',
+        UPLOAD_ERR_INI_SIZE => 'UPLOAD_ERR_INI_SIZE: File exceeds upload_max_filesize in php.ini',
         UPLOAD_ERR_NO_TMP_DIR => 'UPLOAD_ERR_NO_TMP_DIR: Temporary folder not found',
         UPLOAD_ERR_CANT_WRITE => 'UPLOAD_ERR_CANT_WRITE: Unknown upload error',
     ];
@@ -34,10 +34,10 @@ class Upload
     protected ?string $newPath = null;
 
     /**
-     * @param array $data Data from PHP $_FILES
+     * @param array  $data      Data from PHP $_FILES
      * @param string $inputName Input name key from $_FILES
      */
-    public function __construct(array $data, string $inputName='uploads')
+    public function __construct(array $data, string $inputName = 'uploads')
     {
         // $_FILES data
         $this->filename = $data['name'];
@@ -55,12 +55,13 @@ class Upload
     {
         $destination = $destination->getRoot();
         $logger = Logger::getInstance();
-        $logger->error("Could not move file {path} ({size} bytes) into {dest}", [
-            "path" => $this->tempName,
-            "size" => $this->size,
-            "dest" => $destination
+        $logger->error('Could not move file {path} ({size} bytes) into {dest}', [
+            'path' => $this->tempName,
+            'size' => $this->size,
+            'dest' => $destination,
         ]);
-        $logger->error("Reason: {reason}", ["reason" => $reason]);
+        $logger->error('Reason: {reason}', ['reason' => $reason]);
+
         return false;
     }
 
@@ -70,46 +71,54 @@ class Upload
     }
 
     /**
-     * Try to move the file to a new directory, return `true` on success or `false` on failure
+     * Try to move the file to a new directory, return `true` on success or `false` on failure.
      *
-     * @param string|Storage $destination Either a target directory name (relative to Storage directory), or a Storage object
-     * @param string $newName New name of the file, a name is generated if null is given
-     * @return string|false The new file path on success, `false` on fail, see `getFailReason()` to get the reason behind a failure
+     * @param Storage|string $destination Either a target directory name (relative to Storage directory), or a Storage object
+     * @param string         $newName     New name of the file, a name is generated if null is given
+     *
+     * @return false|string The new file path on success, `false` on fail, see `getFailReason()` to get the reason behind a failure
      */
-    public function move(string|Storage|null $destination=null, ?string $newName=null): string|false
+    public function move(null|Storage|string $destination = null, ?string $newName = null): false|string
     {
-        if ($movedFile = $this->newPath)
+        if ($movedFile = $this->newPath) {
             return $movedFile;
+        }
 
-        $newName = $newName ?? uniqid(time() . "-", true);
+        $newName = $newName ?? uniqid(time().'-', true);
 
-        $destination ??= "Uploads";
-        if (is_string($destination))
+        $destination ??= 'Uploads';
+        if (is_string($destination)) {
             $destination = Storage::getInstance()->child($destination);
+        }
 
         $newPath = $destination->path($newName);
 
-        if ($this->error !== UPLOAD_ERR_OK)
+        if (UPLOAD_ERR_OK !== $this->error) {
             return $this->fail($this->getPHPUploadErrorMessage(), $destination);
+        }
 
-        if (!is_writable($destination->getRoot()))
-            return $this->fail("Target directory [".Path::toRelative($destination->getRoot())."] is not writable", $destination);
+        if (!is_writable($destination->getRoot())) {
+            return $this->fail('Target directory ['.Path::toRelative($destination->getRoot()).'] is not writable', $destination);
+        }
 
-        if (is_file($newPath))
-            return $this->fail("[". Path::toRelative($newPath) ."] already exists", $destination);
+        if (is_file($newPath)) {
+            return $this->fail('['.Path::toRelative($newPath).'] already exists', $destination);
+        }
 
-        if (!rename($this->tempName, $newPath))
-            return $this->fail("rename() function failed", $destination);
+        if (!rename($this->tempName, $newPath)) {
+            return $this->fail('rename() function failed', $destination);
+        }
 
-        if (!$destination->isFile($newName))
-            return $this->fail("successful renamed() but [". Path::toRelative($newPath) ."] does not exists", $destination);
+        if (!$destination->isFile($newName)) {
+            return $this->fail('successful renamed() but ['.Path::toRelative($newPath).'] does not exists', $destination);
+        }
 
-        if (filesize($newPath) != $this->size)
-            return $this->fail("New file size do not match PHP upload size", $destination);
+        if (filesize($newPath) != $this->size) {
+            return $this->fail('New file size do not match PHP upload size', $destination);
+        }
 
         $this->newPath = $newPath;
+
         return $newPath;
     }
-
-
 }

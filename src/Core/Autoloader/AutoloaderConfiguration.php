@@ -15,7 +15,7 @@ class AutoloaderConfiguration extends ConfigurationElement
      */
     public function __construct(
         ?bool $cached = null
-    ){
+    ) {
         $this->cached = $cached ?? str_starts_with(strtolower(env('env', 'debug')), 'prod');
     }
 }

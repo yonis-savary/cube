@@ -7,7 +7,7 @@ class Migration
     public readonly mixed $mustInstallChecker;
 
     public function __construct(
-        public readonly ?string $install=null,
-        public readonly ?string $uninstall=null
-    ){}
+        public readonly ?string $install = null,
+        public readonly ?string $uninstall = null
+    ) {}
 }

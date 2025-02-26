@@ -3,8 +3,8 @@
 namespace Cube\Models\ModelGenerator\Adapters;
 
 use Cube\Database\Database;
-use Cube\Models\Relations\Relation;
 use Cube\Models\ModelGenerator\Table;
+use Cube\Models\Relations\Relation;
 
 abstract class DatabaseAdapter
 {
@@ -21,7 +21,7 @@ abstract class DatabaseAdapter
         $this->database = $database;
     }
 
-    abstract public function getSupportedDriver(): string|array ;
+    abstract public function getSupportedDriver(): array|string;
 
     abstract public function process(): void;
 

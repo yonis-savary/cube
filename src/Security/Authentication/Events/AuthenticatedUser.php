@@ -10,5 +10,5 @@ class AuthenticatedUser extends Event
     public function __construct(
         public Model $authenticatedUser,
         public mixed $userId
-    ){}
+    ) {}
 }

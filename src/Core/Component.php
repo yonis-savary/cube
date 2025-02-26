@@ -6,27 +6,24 @@ trait Component
 {
     private static ?self $instance = null;
 
-    /**
-     * @return static
-     */
     public static function getDefaultInstance(): static
     {
         return new self();
     }
 
-    /**
-     * @return static
-     */
     public static function getInstance(): static
     {
-        if (!self::hasInstance())
+        if (!self::hasInstance()) {
             self::$instance = self::getDefaultInstance();
+        }
 
         return self::$instance;
     }
 
     /**
-     * @var static $instance
+     * @var static
+     *
+     * @param mixed $instance
      */
     public static function setInstance($instance): void
     {
@@ -43,10 +40,11 @@ trait Component
         self::$instance = null;
     }
 
-
     /**
-     * @var static $scopedInstance
-     * @var callable $callback Callback
+     * @var static
+     * @var callable Callback
+     *
+     * @param mixed $scopedInstance
      */
     public static function withInstance($scopedInstance, callable $callback): void
     {
@@ -57,7 +55,6 @@ trait Component
 
         self::setInstance($oldInstance);
     }
-
 
     public function asGlobalInstance(callable $callback): void
     {

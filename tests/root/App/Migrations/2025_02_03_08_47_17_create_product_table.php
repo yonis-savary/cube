@@ -3,7 +3,7 @@
 use Cube\Database\Migration\Migration;
 
 return new Migration(
-    "CREATE TABLE product (
+    'CREATE TABLE product (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         name VARCHAR(200) NOT NULL UNIQUE,
@@ -15,7 +15,8 @@ return new Migration(
         manager VARCHAR(200) NOT NULL,
         UNIQUE (product, manager)
     );
-",
-    "DROP TABLE product_manager;
+',
+    'DROP TABLE product_manager;
     DROP TABLE product;
-");
+'
+);

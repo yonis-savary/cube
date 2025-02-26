@@ -10,17 +10,18 @@ class HelloWorld extends Command
 {
     public function getHelp(): string
     {
-        return "Simply prints \"Hello World !\" in the console";
+        return 'Simply prints "Hello World !" in the console';
     }
 
     public function getScope(): string
     {
-        return "cube";
+        return 'cube';
     }
 
     public function execute(Args $args): int
     {
-        Console::log("Hello World !");
+        Console::log('Hello World !');
+
         return 0;
     }
 }

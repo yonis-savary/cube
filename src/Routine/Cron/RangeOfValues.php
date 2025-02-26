@@ -2,28 +2,28 @@
 
 namespace Cube\Routine\Cron;
 
-use InvalidArgumentException;
 use Cube\Data\Bunch;
 
 class RangeOfValues implements CronValue
 {
-    public static function accepts(string $value): bool
-    {
-        return preg_match("/^\d+-\d+$/", $value);
-    }
-
     public int $min;
     public int $max;
 
     public function __construct(string $rawSet)
     {
-        list($min, $max) = Bunch::fromExplode("-", $rawSet)->asIntegers()->get();
+        list($min, $max) = Bunch::fromExplode('-', $rawSet)->asIntegers()->get();
 
-        if (!($min < $max))
-            throw new InvalidArgumentException("Max must be greater than min value (Got min=$min, max=$max)");
+        if (!($min < $max)) {
+            throw new \InvalidArgumentException("Max must be greater than min value (Got min={$min}, max={$max})");
+        }
 
         $this->min = $min;
         $this->max = $max;
+    }
+
+    public static function accepts(string $value): bool
+    {
+        return preg_match('/^\\d+-\\d+$/', $value);
     }
 
     public function matches(int $value): bool

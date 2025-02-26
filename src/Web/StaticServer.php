@@ -17,24 +17,23 @@ class StaticServer extends WebAPI
     protected string $indexFile;
 
     public function __construct(
-        string|Storage $directory,
+        Storage|string $directory,
         bool $secure = true,
         bool $supportsIndex = true
-    )
-    {
-        if (is_string($directory))
+    ) {
+        if (is_string($directory)) {
             $directory = new Storage($directory);
+        }
 
         $this->directory = $directory;
         $this->secure = $secure;
 
         $indexFile = null;
-        if ($supportsIndex)
-        {
-            foreach (["index.php", "index.html"] as $possibleFile)
-            {
-                if (!$directory->isFile($possibleFile))
+        if ($supportsIndex) {
+            foreach (['index.php', 'index.html'] as $possibleFile) {
+                if (!$directory->isFile($possibleFile)) {
                     continue;
+                }
 
                 $indexFile = $directory->path($possibleFile);
             }
@@ -45,28 +44,24 @@ class StaticServer extends WebAPI
         $this->supportsIndex = $supportsIndex;
     }
 
-    protected function isPathDangerous(string $path): bool
-    {
-        return str_contains($path, "..");
-    }
-
-
     public function registerFallbackRoute(Router $router): void
     {
-        if (!$this->supportsIndex)
+        if (!$this->supportsIndex) {
             return;
+        }
 
         $directory = $this->directory;
         $indexPath = $directory->path($this->indexFile);
 
         $router->addRoutes(
-            Route::get("/{any:any}", [(get_called_class())::class, 'serveIndexFile'], extras:['file' => $indexPath])
+            Route::get('/{any:any}', [(get_called_class())::class, 'serveIndexFile'], extras: ['file' => $indexPath])
         );
     }
 
     public static function serveIndexFile(Request $request)
     {
         $file = $request->getRoute()->getExtras()['file'];
+
         return Response::file($file);
     }
 
@@ -75,15 +70,23 @@ class StaticServer extends WebAPI
         $path = $request->getPath();
         $directory = $this->directory;
 
-        if ($this->secure && $this->isPathDangerous($path))
+        if ($this->secure && $this->isPathDangerous($path)) {
             return null;
+        }
 
-        if ($directory->isFile($path))
+        if ($directory->isFile($path)) {
             return Response::file($directory->path($path));
+        }
 
-        if ($this->supportsIndex && $path === "/")
+        if ($this->supportsIndex && '/' === $path) {
             return Response::file($this->indexFile);
+        }
 
         return null;
+    }
+
+    protected function isPathDangerous(string $path): bool
+    {
+        return str_contains($path, '..');
     }
 }

@@ -12,23 +12,25 @@ abstract class DiskDriver
     protected const EXPLORE_DIRECTORIES = 2;
 
     /**
-     * Write a file
+     * Write a file.
+     *
      * @return bool `true` if the write was successful, `false` otherwise
      */
-    abstract public function write(string $path, string $content, int $flags=0): bool;
+    abstract public function write(string $path, string $content, int $flags = 0): bool;
 
     abstract public function read(string $path): string;
 
     /**
-     * Make a new directory
+     * Make a new directory.
+     *
      * @return bool `true` if the directory now exists, `false` otherwise
      */
-    abstract public function makeDirectory(string $path, bool $recursive=true): bool;
+    abstract public function makeDirectory(string $path, bool $recursive = true): bool;
 
     /**
      * @return bool `true` weither `$path` is a directory or file, `false` otherwise
      */
-    abstract public function exists(string $path): bool ;
+    abstract public function exists(string $path): bool;
 
     abstract public function isFile(string $path): bool;
 
@@ -43,7 +45,6 @@ abstract class DiskDriver
 
     abstract public function isReadable(string $path): bool;
 
-
     /**
      * @return array Array of absolute directories paths inside `$path`
      */
@@ -55,9 +56,10 @@ abstract class DiskDriver
     public function files(string $path): array
     {
         return Bunch::of($this->scanDirectory($path))
-            ->map(fn($el) => Path::join($path, $el))
-            ->filter(fn($el) => $this->isFile($el))
-            ->get();
+            ->map(fn ($el) => Path::join($path, $el))
+            ->filter(fn ($el) => $this->isFile($el))
+            ->get()
+        ;
     }
 
     /**
@@ -66,39 +68,15 @@ abstract class DiskDriver
     public function directories(string $path): array
     {
         return Bunch::of($this->scanDirectory($path))
-            ->map(fn($el) => Path::join($path, $el))
-            ->filter(fn($el) => $this->isDirectory($el))
-            ->get();
-    }
-
-    protected function exploreDirectory(string $path, int $mode=self::EXPLORE_ALL): array
-    {
-        $results = [];
-
-        $partitions = Bunch::of($this->scanDirectory($path))
-            ->map(fn($e) => Path::relative($e, $path))
-            ->partitionFilter(fn($e) => $this->isDirectory($e));
-
-        $files = $partitions[0] ?? [];
-        $directories = $partitions[1] ?? [];
-
-        if ($directories && ($mode !== self::EXPLORE_FILES))
-            array_push($results, ...$directories);
-
-        if ($files && ($mode !== self::EXPLORE_DIRECTORIES))
-            array_push($results, ...$files);
-
-        if ($directories)
-        {
-            foreach ($directories as $directory)
-                array_push($results, ...$this->exploreDirectory($directory, $mode));
-        }
-
-        return $results;
+            ->map(fn ($el) => Path::join($path, $el))
+            ->filter(fn ($el) => $this->isDirectory($el))
+            ->get()
+        ;
     }
 
     /**
-     * Recursively explore a part of the disk
+     * Recursively explore a part of the disk.
+     *
      * @return array List of files/directories
      */
     public function explore(string $path): array
@@ -107,7 +85,8 @@ abstract class DiskDriver
     }
 
     /**
-     * Recursively explore a part of the disk
+     * Recursively explore a part of the disk.
+     *
      * @return array List of sub-files
      */
     public function exploreFiles(string $path): array
@@ -116,7 +95,8 @@ abstract class DiskDriver
     }
 
     /**
-     * Recursively explore a part of the disk
+     * Recursively explore a part of the disk.
+     *
      * @return array List of sub-directories
      */
     public function exploreDirectories(string $path): array
@@ -124,9 +104,37 @@ abstract class DiskDriver
         return $this->exploreDirectory($path, self::EXPLORE_DIRECTORIES);
     }
 
-
     public function getParentPath(string $path): string
     {
-        return Path::join($path, "..");
+        return Path::join($path, '..');
+    }
+
+    protected function exploreDirectory(string $path, int $mode = self::EXPLORE_ALL): array
+    {
+        $results = [];
+
+        $partitions = Bunch::of($this->scanDirectory($path))
+            ->map(fn ($e) => Path::relative($e, $path))
+            ->partitionFilter(fn ($e) => $this->isDirectory($e))
+        ;
+
+        $files = $partitions[0] ?? [];
+        $directories = $partitions[1] ?? [];
+
+        if ($directories && (self::EXPLORE_FILES !== $mode)) {
+            array_push($results, ...$directories);
+        }
+
+        if ($files && (self::EXPLORE_DIRECTORIES !== $mode)) {
+            array_push($results, ...$files);
+        }
+
+        if ($directories) {
+            foreach ($directories as $directory) {
+                array_push($results, ...$this->exploreDirectory($directory, $mode));
+            }
+        }
+
+        return $results;
     }
 }

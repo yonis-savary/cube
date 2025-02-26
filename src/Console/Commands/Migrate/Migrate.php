@@ -11,7 +11,7 @@ class Migrate extends Command
 {
     public function getScope(): string
     {
-        return "migrate";
+        return 'migrate';
     }
 
     public function execute(Args $args): int
@@ -19,8 +19,9 @@ class Migrate extends Command
         $manager = MigrationManager::getInstance();
         $manager->executeAllMigrations();
 
-        if (!$args->has("-s", "--skip-generation"))
+        if (!$args->has('-s', '--skip-generation')) {
             return Generate::call();
+        }
 
         return 0;
     }

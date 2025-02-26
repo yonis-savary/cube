@@ -2,20 +2,18 @@
 
 namespace Cube\Database\Query;
 
-use InvalidArgumentException;
-
 class QueryBase
 {
-    const INSERT = "insert";
-    const SELECT = "select";
-    const UPDATE = "update";
-    const DELETE = "delete";
+    public const INSERT = 'insert';
+    public const SELECT = 'select';
+    public const UPDATE = 'update';
+    public const DELETE = 'delete';
 
-    const ALLOWED_TYPES = [
+    public const ALLOWED_TYPES = [
         self::INSERT,
         self::SELECT,
         self::UPDATE,
-        self::DELETE
+        self::DELETE,
     ];
 
     public readonly string $table;
@@ -24,8 +22,9 @@ class QueryBase
 
     public function __construct(string $type, string $table, string $model)
     {
-        if (!in_array($type, self::ALLOWED_TYPES))
-            throw new InvalidArgumentException("\$type must be in " . join(",", self::ALLOWED_TYPES));
+        if (!in_array($type, self::ALLOWED_TYPES)) {
+            throw new \InvalidArgumentException('$type must be in '.join(',', self::ALLOWED_TYPES));
+        }
 
         $this->type = $type;
         $this->table = $table;

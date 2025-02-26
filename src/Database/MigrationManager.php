@@ -2,12 +2,9 @@
 
 namespace Cube\Database;
 
-use RuntimeException;
-use Throwable;
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
-use Cube\Database\Database;
 use Cube\Database\Migration\Adapters\MySQL;
 use Cube\Database\Migration\Adapters\SQLite;
 use Cube\Database\Migration\Migration;
@@ -20,30 +17,30 @@ abstract class MigrationManager
 {
     use Component;
 
+    public readonly MigrationManagerConfiguration $configuration;
+
     protected Database $database;
     protected Bunch $migrationFiles;
 
-    protected ?Throwable $lastError = null;
+    protected ?\Throwable $lastError = null;
     protected ?string $lastErrorFile = null;
-
-    public readonly MigrationManagerConfiguration $configuration;
 
     public function __construct(
         Database $database,
-        ?MigrationManagerConfiguration $configuration=null
-    )
-    {
+        ?MigrationManagerConfiguration $configuration = null
+    ) {
         $this->database = $database;
 
         $this->configuration ??= $configuration ?? MigrationManagerConfiguration::resolve();
 
-        $this->migrationFiles =
-            Bunch::of(Applications::resolve()->paths)
-            ->map(fn(string $app) => new Storage($app))
-            ->map(fn(Storage $app) => $app->child($this->configuration->directoryName))
-            ->map(fn(Storage $migrationDirectory) => $migrationDirectory->files())
-            ->flat()
-            ->sort(fn($file) => basename($file));
+        $this->migrationFiles
+            = Bunch::of(Applications::resolve()->paths)
+                ->map(fn (string $app) => new Storage($app))
+                ->map(fn (Storage $app) => $app->child($this->configuration->directoryName))
+                ->map(fn (Storage $migrationDirectory) => $migrationDirectory->files())
+                ->flat()
+                ->sort(fn ($file) => basename($file))
+        ;
 
         $this->createMigrationTableIfInexistant();
     }
@@ -53,7 +50,7 @@ abstract class MigrationManager
         return $this->configuration->tableName;
     }
 
-    public function getLastError(): ?Throwable
+    public function getLastError(): ?\Throwable
     {
         return $this->lastError;
     }
@@ -63,86 +60,82 @@ abstract class MigrationManager
         return $this->lastErrorFile;
     }
 
-    public abstract function migrationWasMade(string $name): bool;
+    abstract public function migrationWasMade(string $name): bool;
 
-    public abstract function createMigrationTableIfInexistant();
+    abstract public function createMigrationTableIfInexistant();
 
-    public abstract function markMigrationAsDone(string $name);
+    abstract public function markMigrationAsDone(string $name);
 
-    public abstract function listDoneMigrations(): array;
-
-    protected abstract function startTransaction();
-
-    protected abstract function commitTransaction();
-
-    protected abstract function rollbackTransaction();
+    abstract public function listDoneMigrations(): array;
 
     public function executeMigration(string $file): bool
     {
         $migrationName = basename($file);
 
-        if ($this->migrationWasMade($migrationName))
+        if ($this->migrationWasMade($migrationName)) {
             return true;
+        }
 
-        try
-        {
+        try {
             $this->startTransaction();
 
             /** @var Migration $migration */
             $migration = include $file;
 
             $sqlContent = $migration->install;
-            if (!trim($sqlContent))
-                Logger::getInstance()->warning("Skipping empty migration $file");
-            else
+            if (!trim($sqlContent)) {
+                Logger::getInstance()->warning("Skipping empty migration {$file}");
+            } else {
                 $this->database->exec($sqlContent);
+            }
 
             $this->markMigrationAsDone($migrationName);
             $this->commitTransaction();
+
             return true;
-        }
-        catch (Throwable $thrown)
-        {
+        } catch (\Throwable $thrown) {
             $this->rollbackTransaction();
-            $this->lastError  = $thrown;
+            $this->lastError = $thrown;
             $this->lastErrorFile = $file;
-            Logger::getInstance()->error("Failed migration $file");
+            Logger::getInstance()->error("Failed migration {$file}");
             Logger::getInstance()->logThrowable($thrown);
+
             return false;
         }
     }
 
     public function executeAllMigrations(): bool
     {
-        foreach ($this->migrationFiles->toArray() as $file)
+        foreach ($this->migrationFiles->toArray() as $file) {
             $this->executeMigration($file);
+        }
 
         return true;
     }
 
     public function createMigration(string $name, Storage $directory): string
     {
-        $filename = date("Y_m_d_h_i_s_") . $name .".php";
-        $directory->write($filename, Text::toFile("
+        $filename = date('Y_m_d_h_i_s_').$name.'.php';
+        $directory->write($filename, Text::toFile('
         <?php
 
-        use ".Migration::class.";
+        use '.Migration::class.';
 
         return new Migration(
-            \"-- INSTALL SCRIPT
-        \",
-            \"-- UNINSTALL SCRIPT
-        \");
-        "));
+            "-- INSTALL SCRIPT
+        ",
+            "-- UNINSTALL SCRIPT
+        ");
+        '));
 
         return $directory->path($filename);
     }
 
     public function migrationExists(string $name): bool
     {
-        return $this->migrationFiles->first(
-            fn($file) => basename($file) === $name
-        ) !== null;
+        return null !== $this->migrationFiles->first(
+            fn ($file) => basename($file) === $name
+        );
     }
 
     public static function getDefaultInstance(): static
@@ -150,33 +143,44 @@ abstract class MigrationManager
         $database = Database::getInstance();
         $databaseDriver = $database->getDriver();
 
-        switch (strtolower($databaseDriver))
-        {
-            case "mysql":
+        switch (strtolower($databaseDriver)) {
+            case 'mysql':
                 return new MySQL($database);
+
                 break;
-            case "sqlite":
+
+            case 'sqlite':
                 return new SQLite($database);
+
                 break;
         }
-        throw new RuntimeException("No migration driver found for [$databaseDriver] database");
+
+        throw new \RuntimeException("No migration driver found for [{$databaseDriver}] database");
     }
 
     public function catchUpTo(string $name): array
     {
         $doneMigrations = [];
 
-        foreach ($this->migrationFiles->toArray() as $file)
-        {
+        foreach ($this->migrationFiles->toArray() as $file) {
             $doneMigrations[] = $file;
 
             $thisFileName = basename($file);
-            if (!$this->migrationWasMade($thisFileName))
+            if (!$this->migrationWasMade($thisFileName)) {
                 $this->markMigrationAsDone($thisFileName);
+            }
 
-            if ($file === $name)
+            if ($file === $name) {
                 break;
+            }
         }
+
         return $doneMigrations;
     }
+
+    abstract protected function startTransaction();
+
+    abstract protected function commitTransaction();
+
+    abstract protected function rollbackTransaction();
 }

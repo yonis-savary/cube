@@ -2,26 +2,24 @@
 
 namespace Cube\Env\Storage;
 
-use Throwable;
 use Cube\Data\Bunch;
 use Cube\Logger\Logger;
 use Cube\Utils\Path;
 
 class LocalDisk extends DiskDriver
 {
-    public function write(string $path, string $content, int $flags=0): bool
+    public function write(string $path, string $content, int $flags = 0): bool
     {
         $initialSize = $this->isFile($path) ? filesize($path) : 0;
 
-        try
-        {
+        try {
             file_put_contents($path, $content, $flags);
-            return (filesize($path)-$initialSize) == strlen($content);
-        }
-        catch (Throwable $err)
-        {
-            Logger::getInstance()->warning("Could not write file [$path]");
+
+            return (filesize($path) - $initialSize) == strlen($content);
+        } catch (\Throwable $err) {
+            Logger::getInstance()->warning("Could not write file [{$path}]");
             Logger::getInstance()->warning($err);
+
             return false;
         }
     }
@@ -31,10 +29,12 @@ class LocalDisk extends DiskDriver
         return file_get_contents($path);
     }
 
-    public function makeDirectory(string $path, bool $recursive=true): bool
+    public function makeDirectory(string $path, bool $recursive = true): bool
     {
-        if (!is_dir($path))
+        if (!is_dir($path)) {
             mkdir($path, recursive: $recursive);
+        }
+
         return $this->isDirectory($path);
     }
 
@@ -79,12 +79,13 @@ class LocalDisk extends DiskDriver
     public function scanDirectory(string $path): array
     {
         return Bunch::of(scandir($path))
-            ->filter(fn($e) => !in_array($e, [".", ".."]))
-            ->get();
+            ->filter(fn ($e) => !in_array($e, ['.', '..']))
+            ->get()
+        ;
     }
 
     public function getParentPath(string $path): string
     {
-        return realpath(Path::join($path, ".."));
+        return realpath(Path::join($path, '..'));
     }
 }
