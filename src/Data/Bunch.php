@@ -2,7 +2,11 @@
 
 namespace Cube\Data;
 
+use Cube\Data\Classes\NoValue;
 use Cube\Utils\Utils;
+use InvalidArgumentException;
+
+use function Cube\debug;
 
 /**
  * @template TKey
@@ -169,6 +173,53 @@ class Bunch
     }
 
     /**
+     * @template TDefault
+     * @param TDefault $default Default value used when no value is present
+     * @return TValue|TDefault
+     */
+    public function min(mixed $default=null): mixed
+    {
+        return $this->count()
+            ? min(...$this->data)
+            : $default;
+    }
+
+    /**
+     * @template TDefault
+     * @param TDefault $default Default value used when no value is present
+     * @return TValue|TDefault
+     */
+    public function max(mixed $default=null): mixed
+    {
+        return $this->count()
+            ? max(...$this->data)
+            : $default;
+    }
+
+
+    /**
+     * @template TDefault
+     * @param TDefault $default Default value used when no value is present
+     * @return TValue|TDefault
+     */
+    public function average(mixed $default=null): mixed
+    {
+        $count = $this->count();
+        if (!$count)
+            return $default;
+
+        /** @var array<null|bool|int|float|string|array> $data */
+        $data = $this->data;
+        $sum = $data[0];
+
+        for ($i=1; $i<$count; $i++)
+            $sum += $data[$i];
+
+        return $sum / $count;
+    }
+
+
+    /**
      * @return static
      */
     public function filter(?callable $callback=null): self
@@ -209,17 +260,45 @@ class Bunch
         return $this->withNewData(array_map($callback, $this->data));
     }
 
+    protected function getValueFromCompoundKey($object, string $compoundKey, callable $valueGetter, string $compoundKeySeparator=".")
+    {
+        if (!str_contains($compoundKey, $compoundKeySeparator))
+            return ($valueGetter)($object, $compoundKey);
+
+        list($key, $rest) = explode($compoundKeySeparator, $compoundKey, 2);
+        $subValue = ($valueGetter)($object, $key);
+
+        if ($subValue instanceof NoValue)
+            return $subValue;
+
+        return $this->getValueFromCompoundKey($subValue, $rest, $valueGetter, $compoundKeySeparator);
+    }
+
     /**
      * @param string $key
      * @return Bunch<TKey,TValue[$key]>
      */
-    public function key(string $key): self
+    public function key(string|array $keys, string $compoundKeySeparator="."): self
     {
-        $arrayMode = is_array($this->data[0] ?? false);
+        if (!$this->count())
+            return $this;
 
-        return $arrayMode ?
-            $this->map(fn($element) => $element[$key]):
-            $this->map(fn($element) => $element->$key);
+        $keys = Utils::toArray($keys);
+
+        $arrayMode = is_array($this->data[0] ?? false);
+        $valueGetter = $arrayMode
+            ? fn($object, $key) => $object[$key] ?? new NoValue
+            : fn($object, $key) => $object->$key ?? new NoValue;
+
+        return $this->map(function($element) use (&$keys, $valueGetter, $compoundKeySeparator) {
+            foreach ($keys as $key)
+            {
+                $loopValue = $this->getValueFromCompoundKey($element, $key, $valueGetter, $compoundKeySeparator);
+                if (! ($loopValue instanceof NoValue))
+                    return $loopValue;
+            }
+            throw new InvalidArgumentException("No value found in object for keys " . print_r($keys, true));
+        });
     }
 
     public function flat(): self

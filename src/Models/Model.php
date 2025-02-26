@@ -332,6 +332,13 @@ abstract class Model extends EventDispatcher
     }
 
 
+    public function make(array $data=[]): static
+    {
+        /** @var class-string<static> */
+        $self = get_called_class();
+        return new $self($data);
+    }
+
     public function completeModelDataWithRelations(array $constructData, string $relationAccumulator="")
     {
         /** @var self $self */

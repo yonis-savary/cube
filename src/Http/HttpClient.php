@@ -60,6 +60,11 @@ class HttpClient
         return [];
     }
 
+    public function baseUserAgent(): string
+    {
+        return 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0';
+    }
+
     public function baseURLParameters(): array
     {
         return [];
@@ -69,6 +74,62 @@ class HttpClient
     {
         return [];
     }
+
+    public function get(string $path, array $getParams=[], array $headers=[]): Response
+    {
+        return (new Request("GET", $path, $getParams, [], $headers))->fetch(httpClient: $this);
+    }
+
+    public function post(string $path, array $postParams=[], array $getParams=[], array $uploads=[], array $headers=[]): Response
+    {
+        return (new Request("POST", $path, $getParams, $postParams, $headers, $uploads))->fetch(httpClient: $this);
+    }
+
+    public function put(string $path, array $getParams=[], array $postParams=[], array $headers=[]): Response
+    {
+        return (new Request("PUT", $path, $getParams, $postParams, $headers))->fetch(httpClient: $this);
+    }
+
+    public function patch(string $path, array $getParams=[], array $postParams=[], array $headers=[]): Response
+    {
+        return (new Request("PATCH", $path, $getParams, $postParams, $headers))->fetch(httpClient: $this);
+    }
+
+    public function delete(string $path, array $getParams=[], array $postParams=[], array $headers=[]): Response
+    {
+        return (new Request("DELETE", $path, $getParams, $postParams, $headers))->fetch(httpClient: $this);
+    }
+
+    public function getJson(string $path, mixed $body=[], array $headers=[]): Response
+    {
+        $headers['content-type'] = 'application/json';
+        return (new Request("GET", $path, [], [], $headers, body: json_encode($body) ))->fetch(httpClient: $this);
+    }
+
+    public function postJson(string $path, mixed $body=[], array $headers=[]): Response
+    {
+        $headers['content-type'] = 'application/json';
+        return (new Request("POST", $path, [], [], $headers, body: json_encode($body) ))->fetch(httpClient: $this);
+    }
+
+    public function putJson(string $path, mixed $body=[], array $headers=[]): Response
+    {
+        $headers['content-type'] = 'application/json';
+        return (new Request("PUT", $path, [], [], $headers, body: json_encode($body) ))->fetch(httpClient: $this);
+    }
+
+    public function patchJson(string $path, mixed $body=[], array $headers=[]): Response
+    {
+        $headers['content-type'] = 'application/json';
+        return (new Request("PATCH", $path, [], [], $headers, body: json_encode($body) ))->fetch(httpClient: $this);
+    }
+
+    public function deleteJson(string $path, mixed $body=[], array $headers=[]): Response
+    {
+        $headers['content-type'] = 'application/json';
+        return (new Request("DELETE", $path, [], [], $headers, body: json_encode($body) ))->fetch(httpClient: $this);
+    }
+
 
 
     /**
@@ -231,13 +292,14 @@ class HttpClient
     function fetch(
         ?Logger $logger=null,
         ?int $timeout=null,
-        ?string $userAgent='Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        ?string $userAgent=null,
         bool $supportRedirection=true,
         int $logFlags = self::DEBUG_ESSENTIALS
     ): Response
     {
         $request = $this->request;
         $handle = $this->toCurlHandle($timeout, $userAgent, $logger, $logFlags);
+        $userAgent ??= $this->baseUserAgent();
 
         $logger ??= new NullLogger;
 

@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Data;
 
 use PHPUnit\Framework\TestCase;
 use Cube\Data\Bunch;
+use InvalidArgumentException;
 
 class BunchTest extends TestCase
 {
@@ -244,4 +245,80 @@ class BunchTest extends TestCase
     {
         $this->assertEquals(120, Bunch::range(5)->reduce(fn($acc, $cur) => $acc * $cur, 1));
     }
+
+
+    public function test_key()
+    {
+        $baseData = [
+            ['id' => 1],
+            ['id' => 2],
+            ['id' => 3],
+        ];
+        $this->assertEquals([1,2,3], Bunch::of($baseData)->key('id')->get());
+
+        $compound = [
+            ['a' => ['b' => ['c' => 1]]],
+            ['a' => ['b' => ['c' => 2]]],
+            ['a' => ['b' => ['c' => 3]]],
+        ];
+        $this->assertEquals([1,2,3], Bunch::of($compound)->key("a.b.c")->get());
+
+        $multiples = [
+            ['apiV1' => ['info' => ['name' => 1]]],
+            ['V3Name' => 2],
+            ['_V2' => ['name' => 3]],
+        ];
+        $this->assertEquals([1,2,3], Bunch::of($multiples)->key(["apiV1.info.name","_V2.name","V3Name",])->get());
+
+        $dotsInKey = [
+            ['api.V1' => ['meta.info' => ['name' => 1]]],
+            ['V3.name' => 2],
+            ['V2' => ['name' => 3]],
+        ];
+        $this->assertEquals([1,2,3], Bunch::of($dotsInKey)->key(["api.V1_meta.info_name","V2_name","V3.name",], "_")->get());
+
+
+
+        $baseData = [
+            ['id' => 1],
+            ['serial' => 2],
+            ['id' => 3],
+        ];
+        $this->expectException(InvalidArgumentException::class);
+        $this->assertEquals([1,2,3], Bunch::of($baseData)->key('id')->get());
+
+
+        $baseData = [
+            ['id' => 1],
+            ['serial' => 2],
+            ['id' => 3],
+        ];
+        $this->assertEquals([1,2,3], Bunch::of($baseData)->key(['id', 'serial'])->get());
+
+    }
+
+    public function test_max()
+    {
+        $this->assertEquals(10, Bunch::of([1,5,-5,9,10])->max());
+        $this->assertEquals(null, Bunch::of([])->max());
+        $this->assertEquals(12, Bunch::of([])->max(12));
+        $this->assertEquals(12, Bunch::of([])->max() ?? 12);
+    }
+
+    public function test_min()
+    {
+        $this->assertEquals(-5, Bunch::of([1,5,-5,9,10])->min());
+        $this->assertEquals(null, Bunch::of([])->min());
+        $this->assertEquals(12, Bunch::of([])->min(12));
+        $this->assertEquals(12, Bunch::of([])->min() ?? 12);
+    }
+
+    public function test_average()
+    {
+        $this->assertEquals(50, Bunch::of([0,100])->average());
+        $this->assertEquals(null, Bunch::of([])->average());
+        $this->assertEquals(12, Bunch::of([])->average(12));
+        $this->assertEquals(12, Bunch::of([])->average() ?? 12);
+    }
+
 }
