@@ -5,3 +5,6 @@
 /Storage
 /tests/Storage
 .env
+
+.php-cs-fixer.cache
+.php-cs-fixer.dist.php
