@@ -11,12 +11,12 @@ use Cube\Http\Response;
 class Route
 {
     public const SLUG_FORMATS = [
-        'int' => '\\d+',
-        'float' => '\\d+(?:\\.\\d+)?',
+        'int' => '\d+',
+        'float' => '\d+(?:\.\d+)?',
         'any' => '.+',
-        'date' => '\\d{4}\\-\\d{2}\\-\\d{2}',
-        'time' => '\\d{2}\\:\\d{2}\\:\\d{2}',
-        'datetime' => '\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}\\:\\d{2}\\:\\d{2}',
+        'date' => '\d{4}\-\d{2}\-\d{2}',
+        'time' => '\d{2}\:\d{2}\:\d{2}',
+        'datetime' => '\d{4}\-\d{2}\-\d{2} \d{2}\:\d{2}\:\d{2}',
         'hex' => '[0-9a-fA-F]+',
         'uuid' => '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}',
     ];
@@ -215,14 +215,14 @@ class Route
         $parts = explode('/', $this->getPath());
 
         foreach ($parts as &$part) {
-            if (!preg_match('/^\\{.+\\}$/', $part)) {
+            if (!preg_match('/^\{.+\}$/', $part)) {
                 continue;
             }
 
             $part = substr($part, 1, strlen($part) - 2);
 
             $name = $part;
-            $expression = '[^\\/]+';
+            $expression = '[^\/]+';
 
             if (str_contains($part, ':')) {
                 list($type, $name) = explode(':', $part, 2);
@@ -233,7 +233,7 @@ class Route
             $part = "({$expression})";
         }
 
-        $regex = '/^'.join('\\/', $parts).'$/';
+        $regex = '/^'.join('\/', $parts).'$/';
 
         if (!preg_match($regex, $request->getPath(), $slugs)) {
             return false;

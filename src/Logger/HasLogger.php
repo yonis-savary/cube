@@ -13,7 +13,7 @@ trait HasLogger
         }
 
         $classname = get_called_class();
-        $classname = preg_replace('/.+\\\\/', '', $classname);
+        $classname = preg_replace('/.+\\\/', '', $classname);
         $classname = strtolower($classname);
 
         return $this->logger = new Logger($classname.'.csv');

@@ -14,8 +14,6 @@ use function Cube\measureTimeOf;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 class RouterTest extends TestCase
 {

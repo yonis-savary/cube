@@ -208,7 +208,7 @@ class Autoloader
                     })
                     ->map(fn ($path) => $namespace.Path::toRelative($path, $directory))
                     ->map(fn ($path) => str_replace('/', '\\', $path))
-                    ->map(fn ($path) => preg_replace('/\\..+$/', '', $path))
+                    ->map(fn ($path) => preg_replace('/\..+$/', '', $path))
                     ->get()
                 ;
 
@@ -321,6 +321,46 @@ class Autoloader
         );
     }
 
+    public static function classExists(string $class, bool $autoload = true): bool
+    {
+        if (in_array($class, self::classesList())) {
+            return true;
+        }
+
+        try {
+            return class_exists($class, $autoload);
+        } catch (\Throwable $_) {
+            return false;
+        }
+    }
+
+    public static function classParents(mixed $class, bool $autoload = true): array
+    {
+        try {
+            return class_parents($class, $autoload);
+        } catch (\Throwable $_) {
+            return [];
+        }
+    }
+
+    public static function classImplements(mixed $class, bool $autoload = true): array
+    {
+        try {
+            return class_implements($class, $autoload);
+        } catch (\Throwable $_) {
+            return [];
+        }
+    }
+
+    public static function classUses(mixed $class, bool $autoload = true): array
+    {
+        try {
+            return class_uses($class, $autoload);
+        } catch (\Throwable $_) {
+            return [];
+        }
+    }
+
     protected static function loadApplications()
     {
         $apps = Applications::resolve();
@@ -357,46 +397,6 @@ class Autoloader
                         break;
                 }
             }
-        }
-    }
-
-    protected static function classExists(string $class, bool $autoload = true): bool
-    {
-        if (in_array($class, self::classesList())) {
-            return true;
-        }
-
-        try {
-            return class_exists($class, $autoload);
-        } catch (\Throwable $_) {
-            return false;
-        }
-    }
-
-    protected static function classParents(mixed $class, bool $autoload = true): array
-    {
-        try {
-            return class_parents($class, $autoload);
-        } catch (\Throwable $_) {
-            return [];
-        }
-    }
-
-    protected static function classImplements(mixed $class, bool $autoload = true): array
-    {
-        try {
-            return class_implements($class, $autoload);
-        } catch (\Throwable $_) {
-            return [];
-        }
-    }
-
-    protected static function classUses(mixed $class, bool $autoload = true): array
-    {
-        try {
-            return class_uses($class, $autoload);
-        } catch (\Throwable $_) {
-            return [];
         }
     }
 

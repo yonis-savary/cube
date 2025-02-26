@@ -6,8 +6,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 class ModelGenerationTest extends TestCase
 {

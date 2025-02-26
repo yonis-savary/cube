@@ -10,7 +10,8 @@ $finder = (new PhpCsFixer\Finder())
 return (new PhpCsFixer\Config())
     ->setParallelConfig(new PhpCsFixer\Runner\Parallel\ParallelConfig(4, 20))
     ->setRules([
-        '@PhpCsFixer' => true
+        '@PhpCsFixer' => true,
+        'php_unit_test_class_requires_covers' => false
     ])
     ->setFinder($finder)
 ;

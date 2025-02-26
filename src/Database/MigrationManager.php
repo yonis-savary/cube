@@ -31,7 +31,7 @@ abstract class MigrationManager
     ) {
         $this->database = $database;
 
-        $this->configuration ??= $configuration ?? MigrationManagerConfiguration::resolve();
+        $this->configuration = $configuration ?? MigrationManagerConfiguration::resolve();
 
         $this->migrationFiles
             = Bunch::of(Applications::resolve()->paths)

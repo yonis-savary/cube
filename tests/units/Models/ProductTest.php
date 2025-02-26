@@ -13,8 +13,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 class ProductTest extends TestCase
 {

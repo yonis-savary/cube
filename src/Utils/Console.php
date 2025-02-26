@@ -72,7 +72,7 @@ class Console
         Bunch::of($elements)
             ->filter(fn ($x) => '' !== $x && null !== $x)
         // ->map(fn($x) => preg_replace("/[^ ]+/", "", (string) $x))
-            ->map(fn ($x) => preg_replace('/(?:[@-Z\\-_]|\\[[0-?]*[ -\\/]*[@-~])/', '', $x))
+            ->map(fn ($x) => preg_replace('/(?:[@-Z\-_]|\[[0-?]*[ -\/]*[@-~])/', '', $x))
             ->forEach(fn ($x) => $logger->info($x))
         ;
     }

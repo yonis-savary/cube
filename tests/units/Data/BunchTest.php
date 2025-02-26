@@ -7,8 +7,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 class BunchTest extends TestCase
 {

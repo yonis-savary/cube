@@ -269,6 +269,7 @@ class Request extends HttpMessage
         ?HttpClient $httpClient = null
     ): Response {
         $httpClient ??= new HttpClient($this);
+        $httpClient->setRequest($this);
 
         return $httpClient->fetch(
             $logger,

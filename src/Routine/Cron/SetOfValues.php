@@ -15,7 +15,7 @@ class SetOfValues implements CronValue
 
     public static function accepts(string $value): bool
     {
-        return preg_match('/^(\\d+,)+\\d+$/', $value);
+        return preg_match('/^(\d+,)+\d+$/', $value);
     }
 
     public function matches(int $value): bool

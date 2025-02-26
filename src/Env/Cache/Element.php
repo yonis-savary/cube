@@ -26,7 +26,7 @@ class Element
     {
         $filename = pathinfo($file, PATHINFO_FILENAME);
 
-        if (!preg_match('/^\\d+_\\d+_.+$/', $filename)) {
+        if (!preg_match('/^\d+_\d+_.+$/', $filename)) {
             return null;
         }
 

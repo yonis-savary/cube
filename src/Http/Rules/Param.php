@@ -107,7 +107,7 @@ class Param extends Rule
     public static function date(bool $nullable = true): self
     {
         return (new self($nullable))
-            ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $value ?? ''), '{key} must be a Date (yyyy-mm-dd), got {value}')
+            ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^\d{4}-\d{2}-\d{2}$/', $value ?? ''), '{key} must be a Date (yyyy-mm-dd), got {value}')
         ;
     }
 
@@ -117,7 +117,7 @@ class Param extends Rule
     public static function datetime(bool $nullable = true): self
     {
         return (new self($nullable))
-            ->withValueCondition(fn (string $value) => preg_match('/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$/', $value ?? ''), '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS), got {value}')
+            ->withValueCondition(fn (string $value) => preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value ?? ''), '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS), got {value}')
         ;
     }
 

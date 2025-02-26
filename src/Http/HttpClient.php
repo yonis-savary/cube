@@ -46,6 +46,11 @@ class HttpClient
         $this->request = $request;
     }
 
+    public function setRequest(Request $request)
+    {
+        $this->request = $request;
+    }
+
     public function baseURL(): ?string
     {
         return null;
@@ -73,7 +78,7 @@ class HttpClient
 
     public function get(string $path, array $getParams = [], array $headers = []): Response
     {
-        return (new Request('GET', $path, $getParams, [], $headers))->fetch(httpClient: $this);
+        return (new Request('GET', $path, $getParams, [], $headers))->fetch(httpClient: $this, logger: Logger::getInstance(), logFlags: HttpClient::DEBUG_ALL);
     }
 
     public function post(string $path, array $postParams = [], array $getParams = [], array $uploads = [], array $headers = []): Response
@@ -159,7 +164,7 @@ class HttpClient
         $isJSONRequest = $request->isJSON();
         $thisBody = $request->getBody();
 
-        $getParams = count($thisGET) ? '?'.http_build_query($request->get(), '', '&') : '';
+        $getParams = count($thisGET) ? '?'.http_build_query($thisGET, '', '&') : '';
 
         $path = $request->getPath();
         if ($base = $this->baseURL()) {

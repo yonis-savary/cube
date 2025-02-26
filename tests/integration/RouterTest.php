@@ -9,8 +9,6 @@ use Cube\Web\CubeServer;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 class RouterTest extends CubeTestCase
 {

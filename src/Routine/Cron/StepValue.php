@@ -17,7 +17,7 @@ class StepValue implements CronValue
 
     public static function accepts(string $value): bool
     {
-        return preg_match('/^\\*\\/\\d+$/', $value);
+        return preg_match('/^\*\/\d+$/', $value);
     }
 
     public function matches(int $value): bool

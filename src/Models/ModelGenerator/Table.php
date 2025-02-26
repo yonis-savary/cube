@@ -177,8 +177,8 @@ class Table
             ModelField::FLOAT => 'float',
             ModelField::BOOLEAN => 'bool',
             ModelField::DECIMAL => 'string',
-            ModelField::DATE => '\\DateTime',
-            ModelField::DATETIME => '\\DateTime',
+            ModelField::DATE => '\DateTime',
+            ModelField::DATETIME => '\DateTime',
             ModelField::TIMESTAMP => 'string',
         };
 

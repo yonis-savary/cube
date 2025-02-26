@@ -10,8 +10,6 @@ use Cube\Web\CubeServer;
 
 /**
  * @internal
- *
- * @coversNothing
  */
 class UploadTest extends CubeTestCase
 {
