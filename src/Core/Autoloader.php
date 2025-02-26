@@ -30,24 +30,24 @@ class Autoloader
     protected static ?array $cachedClassesList = null;
     protected static ?string $projectPath = null;
 
-    protected static ClassLoader $loader;
+    protected static ?ClassLoader $loader;
     protected static mixed $classIndex;
     protected static Cache $autoloadCache;
 
 
-    public static function initialize(string $forceProjectPath=null, ?ClassLoader $loader=null)
+    public static function initialize(string $forceProjectPath=null, ?AutoloaderConfiguration $conf=null)
     {
         self::registerErrorHandlers();
         self::resolveProjectPath($forceProjectPath);
 
-        self::$loader = $loader ?? (include Path::relative("vendor/autoload.php"));
+        self::$loader = (spl_autoload_functions())[0][0];
 
         $cubeSrc = (new Storage(__DIR__))->parent();
         $cubeHelpers = $cubeSrc->child("Helpers");
         foreach ($cubeHelpers->files() as $helperFile)
             include_once $helperFile;
 
-        $conf = AutoloaderConfiguration::resolve();
+        $conf ??= AutoloaderConfiguration::resolve();
 
         if ($conf->cached)
         {
@@ -221,7 +221,9 @@ class Autoloader
         /** @var ClassLoader $loader */
         $loader = self::getClassLoader();
 
-        $classes = Bunch::fromKeys($loader->getClassMap());
+        $classMap = $loader->getClassMap();
+        $classes = Bunch::fromKeys($classMap);
+        $classMapFiles = Bunch::fromValues($classMap)->map(fn($path) => realpath($path));
 
         foreach ($loader->getPrefixesPsr4() as $namespace => $directories)
         {
@@ -235,16 +237,19 @@ class Autoloader
 
                 $storage = new Storage($directory);
 
-
                 $files = Bunch::of($storage->exploreFiles())
-                    ->filter(function($file) {
+                    ->filter(function($file) use ($classMapFiles) {
+
+                        if ($classMapFiles->has(realpath($file)))
+                            return false;
+
                         $expectedClassName = pathinfo($file, PATHINFO_FILENAME);
                         $content = file_get_contents($file);
 
                         return
-                            str_contains($content, "class $expectedClassName") ||
-                            str_contains($content, "interface $expectedClassName") ||
-                            str_contains($content, "trait $expectedClassName");
+                            str_contains($content, "class $expectedClassName")
+                            || str_contains($content, "interface $expectedClassName")
+                            || str_contains($content, "trait $expectedClassName");
                     })
                     ->map(fn($path) => $namespace . Path::toRelative($path, $directory) )
                     ->map(fn($path) => str_replace("/", "\\", $path) )
@@ -259,6 +264,33 @@ class Autoloader
         self::$classIndex["list"] = $list = $classes->uniques()->get();
 
         return $list;
+    }
+
+    protected static function classExists(string $class, bool $autoload=true): bool
+    {
+        if (in_array($class, self::classesList()))
+            return true;
+
+        try { return class_exists($class, $autoload); }
+        catch (Throwable $_) { return false; }
+    }
+
+    protected static function classParents(mixed $class, bool $autoload=true): array
+    {
+        try { return class_parents($class, $autoload); }
+        catch (Throwable $_) { return []; }
+    }
+
+    protected static function classImplements(mixed $class, bool $autoload=true): array
+    {
+        try { return class_implements($class, $autoload); }
+        catch (Throwable $_) { return []; }
+    }
+
+    protected static function classUses(mixed $class, bool $autoload=true): array
+    {
+        try { return class_uses($class, $autoload); }
+        catch (Throwable $_) { return []; }
     }
 
     /**
@@ -282,23 +314,23 @@ class Autoloader
 
     public static function extends($class, $parentClass, bool $considerSelfAsExtending=true): bool
     {
-        if (is_string($class) && (!class_exists($class)))
+        if (is_string($class) && (!self::classExists($class)))
             return false;
 
         if ($considerSelfAsExtending && ($parentClass === $class))
             return true;
 
-        if ($parents = class_parents($class))
+        if ($parents = self::classParents($class))
             return in_array($parentClass, $parents);
         return false;
     }
 
     public static function implements($class, $interface): bool
     {
-        if (!class_exists($class))
+        if (!self::classExists($class))
             return false;
 
-        if ($implements = class_implements($class))
+        if ($implements = self::classImplements($class))
             return in_array($interface, $implements);
 
         return false;
@@ -306,10 +338,10 @@ class Autoloader
 
     public static function uses($class, $trait): bool
     {
-        if (!class_exists($class))
+        if (!self::classExists($class))
             return false;
 
-        if ($traits = class_uses($class))
+        if ($traits = self::classUses($class))
             return in_array($trait, $traits);
         return false;
     }

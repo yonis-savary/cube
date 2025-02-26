@@ -22,11 +22,11 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "phpunit/phpunit": "11.5.3",
         "psr/log": "^3.0.2",
         "symfony/process": "7.2.0"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "dev-master"
+        "phpunit/phpunit": "11.5.3",
+        "friendsofphp/php-cs-fixer": "v3.70.0"
     }
 }

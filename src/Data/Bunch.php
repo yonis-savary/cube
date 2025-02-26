@@ -260,6 +260,13 @@ class Bunch
         return $this->withNewData(array_map($callback, $this->data));
     }
 
+    public function diff(array|Bunch $values): self
+    {
+        if ($values instanceof Bunch)
+            $values = $values->get();
+        return $this->withNewData(array_diff($this->data, $values));
+    }
+
     protected function getValueFromCompoundKey($object, string $compoundKey, callable $valueGetter, string $compoundKeySeparator=".")
     {
         if (!str_contains($compoundKey, $compoundKeySeparator))

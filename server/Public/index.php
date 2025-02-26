@@ -5,9 +5,9 @@ use Cube\Http\Request;
 use Cube\Utils\Shell;
 use Cube\Web\Router\Router;
 
-$loader = include_once "../vendor/autoload.php";
+include_once "../vendor/autoload.php";
 
-Autoloader::initialize(loader: $loader);
+Autoloader::initialize();
 
 $request = Request::fromGlobals();
 $request->logSelf();

@@ -10,9 +10,9 @@ use Cube\Utils\Shell;
 
 set_time_limit(0);
 
-$loader = include_once "./vendor/autoload.php";
+include_once "./vendor/autoload.php";
 
-Autoloader::initialize(loader: $loader);
+Autoloader::initialize();
 
 $identifier = $argv[1] ?? "";
 $commands = Shell::findCommand($identifier);
