@@ -6,11 +6,12 @@ use Cube\Core\Component;
 use Cube\Env\Storage\DiskDriver;
 use Cube\Env\Storage\LocalDisk;
 use Cube\Utils\Path;
+use Stringable;
 
 /**
  * Extending DiskDriver ensure we implement every method.
  */
-class Storage extends DiskDriver
+class Storage extends DiskDriver implements Stringable
 {
     use Component;
 
@@ -134,5 +135,14 @@ class Storage extends DiskDriver
         $parentPath = $this->driver->getParentPath($this->getRoot());
 
         return new self($parentPath, $this->driver);
+    }
+
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->getRoot();
     }
 }

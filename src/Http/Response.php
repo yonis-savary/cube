@@ -399,6 +399,11 @@ class Response extends HttpMessage
         return $this->statusCode;
     }
 
+    public function isOk(): bool
+    {
+        return ((int) ($this->statusCode/100)) == 2;
+    }
+
     public function withResponseCallback(callable $callback): self
     {
         $this->displayCallback = $callback;

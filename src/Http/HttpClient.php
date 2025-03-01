@@ -3,10 +3,13 @@
 namespace Cube\Http;
 
 use Cube\Data\Bunch;
+use Cube\Data\DataToObject;
 use Cube\Logger\Logger;
 use Cube\Logger\NullLogger;
 use Cube\Utils\Path;
 use Cube\Utils\Utils;
+use Exception;
+use RuntimeException;
 
 class HttpClient
 {
@@ -352,6 +355,27 @@ class HttpClient
         }
 
         return new Response($resStatus, $resBody, $resHeaders);
+    }
+
+
+    /**
+     * @template TClass of DataToObject
+     * @param class-string<TClass> $dataToObjectClass
+     * @return TClass
+     */
+    public function fetchObject(
+        string $dataToObjectClass,
+        ?Logger $logger = null,
+        ?int $timeout = null,
+        ?string $userAgent = null,
+        bool $supportRedirection = true,
+        int $logFlags = self::DEBUG_ESSENTIALS
+    ) {
+        $response = $this->fetch($logger, $timeout, $userAgent, $supportRedirection, $logFlags);
+        if (!$response->isOk())
+            throw new RuntimeException("Could not create dataToObject instance from data, response code is ". $response->getStatusCode());
+
+        return $dataToObjectClass::fromData($response->getJSON());
     }
 
     public function lastDuration(): int

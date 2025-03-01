@@ -4,6 +4,7 @@ namespace Cube\Utils;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
+use Stringable;
 
 class Path
 {
@@ -84,7 +85,7 @@ class Path
         return self::normalize($path);
     }
 
-    public static function pathToNamespace(string $directory): string
+    public static function pathToNamespace(string|Stringable $directory): string
     {
         $loader = Autoloader::getClassLoader();
 
