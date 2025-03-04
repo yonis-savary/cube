@@ -71,15 +71,13 @@ abstract class DataToObject
             } elseif (Autoloader::extends($type, DataToObject::class)) {
                 // @var class-string<DataToObject> $type
                 $constructorValues[] = $type::fromData($keyValue);
-
-                continue;
+            } else {
+                $constructorValues[] = $keyValue;
             }
-
-            $constructorValues[] = $keyValue;
         }
 
         try {
-            return new $self(...$constructorValues);
+            return new $self(...array_values($constructorValues));
         } catch (\Throwable $err) {
             $logger = Logger::getInstance();
             $logger->error("Could not create item of type {$self} with data {data}", ['data' => $constructorValues]);

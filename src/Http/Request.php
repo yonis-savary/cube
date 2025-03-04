@@ -8,6 +8,7 @@ use Cube\Logger\Logger;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 class Request extends HttpMessage
 {

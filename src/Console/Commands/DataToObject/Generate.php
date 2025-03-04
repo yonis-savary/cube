@@ -25,11 +25,11 @@ class Generate extends Command
         do
         {
             $rootName = readline("Root class name ? ");
-        } while (!preg_match("/^[A-Z][a-z]+$/", $rootName));
+        } while (!preg_match("/^[A-Z][a-zA-Z0-9]+$/", $rootName));
 
 
         $generated = new DataToObjectGenClass($rootName, $sampleData);
-        $generated->generateInto((new Storage($application))->child("Integration")->child($rootName));
+        $generated->generateInto((new Storage($application))->child("Integration/DataToObject")->child($rootName));
 
         return 0;
     }

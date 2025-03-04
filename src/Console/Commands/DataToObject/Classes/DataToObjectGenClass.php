@@ -37,8 +37,11 @@ class DataToObjectGenClass
         return ucfirst($this->attributeName($key));
     }
 
-    public function parseSampleValue(string $key, mixed $value)
+    public function parseSampleValue(string $key, mixed $value, bool $isArray=false)
     {
+        if ($value === null)
+            return "mixed";
+
         if (is_array($value))
         {
             if (!count($value))
@@ -48,7 +51,7 @@ class DataToObjectGenClass
             $sample = $isList ? $value[0]: $value;
 
             if (!is_array($sample))
-                return $this->parseSampleValue($key, $sample);
+                return "array";
 
             return new self($key, $sample, $isList);
         }
@@ -87,16 +90,19 @@ class DataToObjectGenClass
 
 
                 if (! $type instanceof self)
+                {
+                    $type = $type === "mixed" ? $type : "?$type";
                     return "\t\t\t\tpublic $type \$$name";
+                }
 
                 if ($type->isArray)
                 {
                     return
                         "\t\t\t\t#[ArrayOf(".$type->className($type->className)."::class)]\n".
-                        "\t\t\t\tpublic array \$$name";
+                        "\t\t\t\tpublic ?array \$$name";
                 }
 
-                return "\t\t\t\tpublic " . $type->className($type->className) . " \$$name";
+                return "\t\t\t\tpublic ?" . $type->className($type->className) . " \$$name";
 
             })
             ->join(",\n");
@@ -137,6 +143,15 @@ class DataToObjectGenClass
         */
         class $className extends DataToObject
         {
+            public static function keys(): array
+            {
+                return [\n".
+                    Bunch::fromKeys($this->properties)
+                    ->map(fn($name) => "\t\t\t\t\t'" . $this->attributeName($name) . "' => '" . $name . "'")->join(",\n")
+                    ."
+                ];
+            }
+
             public function __construct(\n$fields
             ) {}
         }

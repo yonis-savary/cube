@@ -2,9 +2,11 @@
 
 namespace Cube\Http;
 
+use Cube\Data\DataToObject;
 use Cube\Logger\Logger;
 use Cube\Models\Model;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 class Response extends HttpMessage
 {
@@ -426,6 +428,23 @@ class Response extends HttpMessage
         } else {
             echo $this->getBody();
         }
+    }
+
+    /**
+     * @template TClass of DataToObject
+     * @param class-string<TClass> $dataToObjectClass
+     * @return TClass
+     */
+    public function toObject(string $dataToObjectClass): DataToObject
+    {
+        if (!$this->isOk())
+        {
+            Logger::getInstance()->error("{error}", ['error' => $this->getHeaders()]);
+            Logger::getInstance()->error("{error}", ['error' => $this->getBody()]);
+            throw new RuntimeException("Could not create dataToObject instance from data, response code is ". $this->getStatusCode());
+        }
+
+        return $dataToObjectClass::fromData($this->getJSON());
     }
 
     public function exit(bool $sendHeaders = true)

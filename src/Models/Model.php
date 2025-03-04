@@ -14,11 +14,15 @@ use Cube\Models\Events\SavedModel;
 use Cube\Models\Relations\HasMany;
 use Cube\Models\Relations\HasOne;
 use Cube\Models\Relations\Relation;
+use DateTime;
 use Exception;
+
+use function Cube\debug;
 
 abstract class Model extends EventDispatcher
 {
     public object $data;
+    public object $original;
     public array $references = [];
 
     public function __construct(array $data = [], string $relationAccumulator = '')
@@ -33,11 +37,18 @@ abstract class Model extends EventDispatcher
             }
 
             if (array_key_exists($key, $fields) && isset($data[$key])) {
+                if (is_array($data[$key]))
+                    continue;
+
                 $modelData[$key] = $data[$key];
             }
         }
 
+        foreach ($modelData as $key => $_)
+            unset($data[$key]);
+
         $this->data = empty($modelData) ? new \stdClass() : (object) $modelData;
+        $this->markAsOriginal();
         $this->completeModelDataWithRelations($data, $relationAccumulator);
     }
 
@@ -134,6 +145,17 @@ abstract class Model extends EventDispatcher
         return $self::find($id);
     }
 
+    public function markAsOriginal(bool $relationsToo=false): self
+    {
+        $this->original = clone $this->data;
+        if ($relationsToo)
+        {
+            foreach ($this->references as $name => $model)
+                $model->markAsOriginal(true);
+        }
+        return $this;
+    }
+
     /**
      * @return Query<static>
      */
@@ -220,7 +242,10 @@ abstract class Model extends EventDispatcher
 
         $query->limit(1);
 
-        return $query->fetch($database)[0] ?? null;
+        if ($model = $query->fetch($database)[0] ?? false)
+            return $model->markAsOriginal(true);
+
+        return null;
     }
 
     public static function toValidator(): Validator
@@ -232,6 +257,12 @@ abstract class Model extends EventDispatcher
         $rules = $self::fields();
 
         foreach ($rules as &$field) {
+            if ($field->autoIncrement)
+            {
+                $field = null;
+                continue;
+            }
+
             $field = $field->toRule();
         }
 
@@ -245,7 +276,11 @@ abstract class Model extends EventDispatcher
             }
         }
 
-        return Validator::from($rules);
+        return Validator::from(
+            Bunch::unzip($rules)
+                ->filter(fn($pair) => $pair[1] !== null)
+                ->zip()
+        );
     }
 
     /**
@@ -265,11 +300,19 @@ abstract class Model extends EventDispatcher
         return $self::findWhere([$primaryKey => $primaryKeyValue], $explore, $database);
     }
 
-    public static function findOrCreate(array $data, bool $explore = true, ?Database $database = null): mixed
+    /**
+     * @return static
+     */
+    public static function findOrCreate(array $data, bool $explore = true, ?Database $database = null, array $extrasProperties=[]): self
     {
         $database ??= Database::getInstance();
 
-        return self::findWhere($data, $explore, $database) ?? self::insertArray($data, $database);
+        $model =
+            self::findWhere($data, $explore, $database) ??
+            self::insertArray(array_merge($data, $extrasProperties), $database);
+
+        $model->markAsOriginal(true);
+        return $model;
     }
 
     /**
@@ -524,7 +567,9 @@ abstract class Model extends EventDispatcher
         $self = get_called_class();
 
         $newInstance = $self::find($this->id(), database: $database);
-        $this->data = $newInstance->data;
+        $this->data = clone $newInstance->data;
+        $this->markAsOriginal();
+
         foreach ($this->references as $referenceObject) {
             if (is_array($referenceObject)) {
                 foreach ($referenceObject as $model) {
@@ -597,11 +642,29 @@ abstract class Model extends EventDispatcher
         $self = get_called_class();
         $query = $self::update()->where($primaryKey, $this->{$primaryKey});
 
+        $gotAnyChange = false;
         foreach ($this->data as $key => $value) {
+            if ($value instanceof DateTime)
+            {
+                $type = ($self::fields()[$key]->type ?? ModelField::DATE);
+                $value = $value->format("Y-m-d" . ($type === ModelField::DATE ? ' h:i:s': ''));
+            }
+
+            if (property_exists($this->original, $key))
+            {
+                if ($this->original->$key === $value)
+                    continue;
+            }
+
+            $gotAnyChange = true;
             $query->set($key, $value);
         }
 
-        $query->fetch($database);
+
+        if ($gotAnyChange)
+            $query->fetch($database);
+
+        $this->markAsOriginal();
         $this->dispatch(new SavedModel($this, $database));
     }
 
@@ -614,7 +677,11 @@ abstract class Model extends EventDispatcher
             }
 
             if (isset($this->data->{$name})) {
-                $data[$name] = $this->data->{$name};
+                $value = $this->data->{$name};
+                if ($field->hasDefault && $value === null)
+                    continue;
+
+                $data[$name] = $value;
             }
         }
 

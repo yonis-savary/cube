@@ -390,6 +390,7 @@ class Autoloader
 
                     case 'Requires':
                     case 'Includes':
+                    case 'Helpers':
                     case 'Schedules':
                     case 'Cron':
                         array_push(self::$requireFiles, ...(new Storage($directory))->exploreFiles());

@@ -81,7 +81,7 @@ class HttpClient
 
     public function get(string $path, array $getParams = [], array $headers = []): Response
     {
-        return (new Request('GET', $path, $getParams, [], $headers))->fetch(httpClient: $this, logger: Logger::getInstance(), logFlags: HttpClient::DEBUG_ALL);
+        return (new Request('GET', $path, $getParams, [], $headers))->fetch(httpClient: $this);
     }
 
     public function post(string $path, array $postParams = [], array $getParams = [], array $uploads = [], array $headers = []): Response
@@ -165,6 +165,7 @@ class HttpClient
         $thisUploads = $request->getUploads();
         $headers = array_merge($this->baseHeaders(), $request->getHeaders());
         $isJSONRequest = $request->isJSON();
+        $isFormRequest = $request->isFormEncoded();
         $thisBody = $request->getBody();
 
         $getParams = count($thisGET) ? '?'.http_build_query($thisGET, '', '&') : '';
@@ -251,7 +252,21 @@ class HttpClient
 
             $logger->info('Setting CURLOPT_POSTFIELDS to');
             $logger->info('{fields}', ['fields' => $postClone]);
-            curl_setopt($handle, CURLOPT_POSTFIELDS, $postClone);
+
+            if ($isFormRequest)
+            {
+                curl_setopt($handle, CURLOPT_POSTFIELDS,
+                    Bunch::unzip($postClone)
+                    ->map(fn($pair) => $pair[0] .'='. urlencode($pair[1]))
+                    ->join("&")
+                );
+            }
+            else
+            {
+                curl_setopt($handle, CURLOPT_POSTFIELDS, $postClone);
+            }
+
+
         }
 
         if ($timeout) {
@@ -355,27 +370,6 @@ class HttpClient
         }
 
         return new Response($resStatus, $resBody, $resHeaders);
-    }
-
-
-    /**
-     * @template TClass of DataToObject
-     * @param class-string<TClass> $dataToObjectClass
-     * @return TClass
-     */
-    public function fetchObject(
-        string $dataToObjectClass,
-        ?Logger $logger = null,
-        ?int $timeout = null,
-        ?string $userAgent = null,
-        bool $supportRedirection = true,
-        int $logFlags = self::DEBUG_ESSENTIALS
-    ) {
-        $response = $this->fetch($logger, $timeout, $userAgent, $supportRedirection, $logFlags);
-        if (!$response->isOk())
-            throw new RuntimeException("Could not create dataToObject instance from data, response code is ". $response->getStatusCode());
-
-        return $dataToObjectClass::fromData($response->getJSON());
     }
 
     public function lastDuration(): int

@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Env\Storage;
 use Cube\Logger\HasLogger;
 use Cube\Logger\Logger;
+use Cube\Utils\Console;
 
 abstract class Queue extends Routine
 {
@@ -52,11 +53,13 @@ abstract class Queue extends Routine
         /** @var self $self */
         $self = get_called_class();
 
+
         $storage = $self::getStorage();
         $files = $storage->files();
 
         if (!count($files)) {
-            return;
+            Console::log("No item to process");
+            return ;
         }
 
         $toProcess = Bunch::of($files)->first(fn ($x) => !str_starts_with(basename($x), '#'));

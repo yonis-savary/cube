@@ -12,6 +12,11 @@ abstract class HttpMessage
         return str_contains($this->getHeader('content-type', ''), 'application/json');
     }
 
+    public function isFormEncoded(): bool
+    {
+        return str_contains($this->getHeader('content-type', ''), 'application/x-www-form-urlencoded');
+    }
+
     public function headerName(string $name): string
     {
         return strtolower(trim($name));
