@@ -4,6 +4,7 @@ namespace Cube\Database;
 
 use Cube\Core\Component;
 use Cube\Env\Storage;
+use Cube\Models\Model;
 use PDO;
 
 class Database
@@ -229,6 +230,10 @@ class Database
 
     protected function prepareString(mixed $value, $quote = false): string
     {
+        if ($value instanceof Model) {
+            return $this->prepareString($value->id(), $quote);
+        }
+
         if (is_array($value)) {
             return $this->build(
                 '('.join(',', array_map(fn () => '{}', $value)).')',

@@ -44,8 +44,6 @@ class RouterTest extends TestCase
                 $response = $router->route(new Request('GET', $request));
             });
 
-            /** @var Response $response */
-
             $this->assertLessThan($routingTimeMicro, $time);
 
             $this->assertInstanceOf(Response::class, $response);

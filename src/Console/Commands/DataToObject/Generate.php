@@ -12,24 +12,22 @@ class Generate extends Command
 {
     public function getScope(): string
     {
-        return "dto";
+        return 'dto';
     }
 
     public function execute(Args $args): int
     {
-        $sampleData = readline("Sample data (JSON) ?");
+        $sampleData = readline('Sample data (JSON) ?');
         $sampleData = json_decode($sampleData, true, flags: JSON_THROW_ON_ERROR);
 
         $application = Console::chooseApplication();
 
-        do
-        {
-            $rootName = readline("Root class name ? ");
-        } while (!preg_match("/^[A-Z][a-zA-Z0-9]+$/", $rootName));
-
+        do {
+            $rootName = readline('Root class name ? ');
+        } while (!preg_match('/^[A-Z][a-zA-Z0-9]+$/', $rootName));
 
         $generated = new DataToObjectGenClass($rootName, $sampleData);
-        $generated->generateInto((new Storage($application))->child("Integration/DataToObject")->child($rootName));
+        $generated->generateInto((new Storage($application))->child('Integration/DataToObject')->child($rootName));
 
         return 0;
     }

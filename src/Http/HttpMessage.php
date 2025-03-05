@@ -51,7 +51,7 @@ abstract class HttpMessage
         return $this->body;
     }
 
-    public function getJSON(bool $associative=true): mixed
+    public function getJSON(bool $associative = true): mixed
     {
         return json_decode($this->body, $associative, flags: JSON_THROW_ON_ERROR);
     }

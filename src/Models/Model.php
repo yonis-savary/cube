@@ -14,10 +14,7 @@ use Cube\Models\Events\SavedModel;
 use Cube\Models\Relations\HasMany;
 use Cube\Models\Relations\HasOne;
 use Cube\Models\Relations\Relation;
-use DateTime;
 use Exception;
-
-use function Cube\debug;
 
 abstract class Model extends EventDispatcher
 {
@@ -37,15 +34,17 @@ abstract class Model extends EventDispatcher
             }
 
             if (array_key_exists($key, $fields) && isset($data[$key])) {
-                if (is_array($data[$key]))
+                if (is_array($data[$key])) {
                     continue;
+                }
 
                 $modelData[$key] = $data[$key];
             }
         }
 
-        foreach ($modelData as $key => $_)
+        foreach ($modelData as $key => $_) {
             unset($data[$key]);
+        }
 
         $this->data = empty($modelData) ? new \stdClass() : (object) $modelData;
         $this->markAsOriginal();
@@ -145,14 +144,15 @@ abstract class Model extends EventDispatcher
         return $self::find($id);
     }
 
-    public function markAsOriginal(bool $relationsToo=false): self
+    public function markAsOriginal(bool $relationsToo = false): self
     {
         $this->original = clone $this->data;
-        if ($relationsToo)
-        {
-            foreach ($this->references as $name => $model)
+        if ($relationsToo) {
+            foreach ($this->references as $name => $model) {
                 $model->markAsOriginal(true);
+            }
         }
+
         return $this;
     }
 
@@ -242,8 +242,9 @@ abstract class Model extends EventDispatcher
 
         $query->limit(1);
 
-        if ($model = $query->fetch($database)[0] ?? false)
+        if ($model = $query->fetch($database)[0] ?? false) {
             return $model->markAsOriginal(true);
+        }
 
         return null;
     }
@@ -257,9 +258,9 @@ abstract class Model extends EventDispatcher
         $rules = $self::fields();
 
         foreach ($rules as &$field) {
-            if ($field->autoIncrement)
-            {
+            if ($field->autoIncrement) {
                 $field = null;
+
                 continue;
             }
 
@@ -278,7 +279,7 @@ abstract class Model extends EventDispatcher
 
         return Validator::from(
             Bunch::unzip($rules)
-                ->filter(fn($pair) => $pair[1] !== null)
+                ->filter(fn ($pair) => null !== $pair[1])
                 ->zip()
         );
     }
@@ -303,15 +304,16 @@ abstract class Model extends EventDispatcher
     /**
      * @return static
      */
-    public static function findOrCreate(array $data, bool $explore = true, ?Database $database = null, array $extrasProperties=[]): self
+    public static function findOrCreate(array $data, bool $explore = true, ?Database $database = null, array $extrasProperties = []): self
     {
         $database ??= Database::getInstance();
 
-        $model =
-            self::findWhere($data, $explore, $database) ??
-            self::insertArray(array_merge($data, $extrasProperties), $database);
+        $model
+            = self::findWhere($data, $explore, $database)
+            ?? self::insertArray(array_merge($data, $extrasProperties), $database);
 
         $model->markAsOriginal(true);
+
         return $model;
     }
 
@@ -644,25 +646,24 @@ abstract class Model extends EventDispatcher
 
         $gotAnyChange = false;
         foreach ($this->data as $key => $value) {
-            if ($value instanceof DateTime)
-            {
+            if ($value instanceof \DateTime) {
                 $type = ($self::fields()[$key]->type ?? ModelField::DATE);
-                $value = $value->format("Y-m-d" . ($type === ModelField::DATE ? ' h:i:s': ''));
+                $value = $value->format('Y-m-d'.(ModelField::DATE === $type ? ' h:i:s' : ''));
             }
 
-            if (property_exists($this->original, $key))
-            {
-                if ($this->original->$key === $value)
+            if (property_exists($this->original, $key)) {
+                if ($this->original->{$key} === $value) {
                     continue;
+                }
             }
 
             $gotAnyChange = true;
             $query->set($key, $value);
         }
 
-
-        if ($gotAnyChange)
+        if ($gotAnyChange) {
             $query->fetch($database);
+        }
 
         $this->markAsOriginal();
         $this->dispatch(new SavedModel($this, $database));
@@ -678,8 +679,9 @@ abstract class Model extends EventDispatcher
 
             if (isset($this->data->{$name})) {
                 $value = $this->data->{$name};
-                if ($field->hasDefault && $value === null)
+                if ($field->hasDefault && null === $value) {
                     continue;
+                }
 
                 $data[$name] = $value;
             }

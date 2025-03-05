@@ -20,15 +20,14 @@ class DataToObjectGenClass
         public string $className,
         public array $sampleData,
         public bool $isArray = false
-    )
-    {
+    ) {
         $this->parseSampleData($sampleData);
     }
 
     public function attributeName(string $key)
     {
-        return preg_replace_callback('/(\w)[\-_](\w)/', function($match) {
-            return $match[1] . strtoupper($match[2]);
+        return preg_replace_callback('/(\w)[\-_](\w)/', function ($match) {
+            return $match[1].strtoupper($match[2]);
         }, $key);
     }
 
@@ -37,75 +36,50 @@ class DataToObjectGenClass
         return ucfirst($this->attributeName($key));
     }
 
-    public function parseSampleValue(string $key, mixed $value, bool $isArray=false)
+    public function parseSampleValue(string $key, mixed $value, bool $isArray = false)
     {
-        if ($value === null)
-            return "mixed";
+        if (null === $value) {
+            return 'mixed';
+        }
 
-        if (is_array($value))
-        {
-            if (!count($value))
-                return "array";
+        if (is_array($value)) {
+            if (!count($value)) {
+                return 'array';
+            }
 
             $isList = Utils::isList($value);
-            $sample = $isList ? $value[0]: $value;
+            $sample = $isList ? $value[0] : $value;
 
-            if (!is_array($sample))
-                return "array";
+            if (!is_array($sample)) {
+                return 'array';
+            }
 
             return new self($key, $sample, $isList);
         }
 
-        switch (gettype($value))
-        {
+        switch (gettype($value)) {
             case 'boolean':
-                return "bool";
+                return 'bool';
+
             case 'integer':
-                return "int";
+                return 'int';
+
             case 'double':
-                return "float";
+                return 'float';
         }
 
-        if (preg_match('/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/', $value))
+        if (preg_match('/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/', $value)) {
             return '\Datetime';
+        }
 
-        return "string";
+        return 'string';
     }
 
     public function parseSampleData(array $data)
     {
-        foreach ($data as $key => $value)
-        {
+        foreach ($data as $key => $value) {
             $this->properties[$key] = $this->parseSampleValue($key, $value);
         }
-    }
-
-    protected function generateFields(): string
-    {
-        return Bunch::unzip($this->properties)
-            ->map(function($pair) {
-
-                list($name, $type) = $pair;
-                $name = $this->attributeName($name);
-
-
-                if (! $type instanceof self)
-                {
-                    $type = $type === "mixed" ? $type : "?$type";
-                    return "\t\t\t\tpublic $type \$$name";
-                }
-
-                if ($type->isArray)
-                {
-                    return
-                        "\t\t\t\t#[ArrayOf(".$type->className($type->className)."::class)]\n".
-                        "\t\t\t\tpublic ?array \$$name";
-                }
-
-                return "\t\t\t\tpublic ?" . $type->className($type->className) . " \$$name";
-
-            })
-            ->join(",\n");
     }
 
     public function generateInto(Storage $directory)
@@ -115,53 +89,81 @@ class DataToObjectGenClass
 
         $uses = Bunch::fromValues($this->properties)
             ->onlyInstancesOf(self::class)
-            ->map(fn(self $x) => $this->className($x->className))
-            ->map(fn($x) => "use $namespace\\$x\\$x;")
-            ->join("\n");
+            ->map(fn (self $x) => $this->className($x->className))
+            ->map(fn ($x) => "use {$namespace}\\{$x}\\{$x};")
+            ->join("\n")
+        ;
 
         $phpDoc = Bunch::unzip($this->properties)
-            ->filter(fn($pair) => $pair[1] instanceof self)
-            ->filter(fn($pair) => $pair[1]->isArray)
-            ->map(fn($pair) => " * @property " . $this->className($pair[1]->className). "[] $". $this->attributeName($pair[0]))
-            ->join("\n");
+            ->filter(fn ($pair) => $pair[1] instanceof self)
+            ->filter(fn ($pair) => $pair[1]->isArray)
+            ->map(fn ($pair) => ' * @property '.$this->className($pair[1]->className).'[] $'.$this->attributeName($pair[0]))
+            ->join("\n")
+        ;
 
         $fields = $this->generateFields();
 
-        $directory->write($className . ".php", Text::toFile(
-        "<?php
+        $directory->write($className.'.php', Text::toFile(
+            "<?php
 
-        namespace $namespace;
+        namespace {$namespace};
 
-        use ". DataToObject::class .";
-        use ". ArrayOf::class .";
-        use ". BunchOf::class .";
-        $uses
+        use ".DataToObject::class.';
+        use '.ArrayOf::class.';
+        use '.BunchOf::class.";
+        {$uses}
 
         /**
-         * Generated by ".self::class." on ". date("Y-m-d H:i:s") ."
-        $phpDoc
+         * Generated by ".self::class.' on '.date('Y-m-d H:i:s')."
+        {$phpDoc}
         */
-        class $className extends DataToObject
+        class {$className} extends DataToObject
         {
             public static function keys(): array
             {
-                return [\n".
-                    Bunch::fromKeys($this->properties)
-                    ->map(fn($name) => "\t\t\t\t\t'" . $this->attributeName($name) . "' => '" . $name . "'")->join(",\n")
+                return [\n"
+                    .Bunch::fromKeys($this->properties)
+                        ->map(fn ($name) => "\t\t\t\t\t'".$this->attributeName($name)."' => '".$name."'")->join(",\n")
                     ."
                 ];
             }
 
-            public function __construct(\n$fields
+            public function __construct(\n{$fields}
             ) {}
         }
-        "));
+        "
+        ));
 
         Bunch::fromValues($this->properties)
             ->onlyInstancesOf(self::class)
-            ->forEach(function($type) use ($directory) {
+            ->forEach(function ($type) use ($directory) {
                 $classname = $type->className($type->className);
                 $type->generateInto($directory->child($classname));
-            });
+            })
+        ;
+    }
+
+    protected function generateFields(): string
+    {
+        return Bunch::unzip($this->properties)
+            ->map(function ($pair) {
+                list($name, $type) = $pair;
+                $name = $this->attributeName($name);
+
+                if (!$type instanceof self) {
+                    $type = 'mixed' === $type ? $type : "?{$type}";
+
+                    return "\t\t\t\tpublic {$type} \${$name}";
+                }
+
+                if ($type->isArray) {
+                    return
+                        "\t\t\t\t#[ArrayOf(".$type->className($type->className)."::class)]\n"
+                        ."\t\t\t\tpublic ?array \${$name}";
+                }
+
+                return "\t\t\t\tpublic ?".$type->className($type->className)." \${$name}";
+            })
+            ->join(",\n");
     }
 }

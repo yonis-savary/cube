@@ -15,9 +15,6 @@ use Cube\Utils\Attributes\Generated;
 use Cube\Utils\Console;
 use Cube\Utils\Path;
 use Cube\Utils\Text;
-use Exception;
-use ReflectionClass;
-use RuntimeException;
 
 class Table
 {
@@ -48,44 +45,42 @@ class Table
         return $this;
     }
 
-    /**
-     * @param class-string<Model> $class
-     */
     public function getClassNonGeneratedMethods(string $className): array
     {
-        $class = new ReflectionClass($className);
+        $class = new \ReflectionClass($className);
 
         $file = $class->getFileName();
         $lines = explode("\n", file_get_contents($file));
 
         $methods = [];
 
-        foreach ($class->getMethods() as $method)
-        {
-            if ($method->getFileName() != $file)
+        foreach ($class->getMethods() as $method) {
+            if ($method->getFileName() != $file) {
                 continue;
+            }
 
-            if (count($method->getAttributes(Generated::class)))
+            if (count($method->getAttributes(Generated::class))) {
                 continue;
+            }
 
             $trueStartLine = $method->getStartLine();
-            while (trim($lines[$trueStartLine]) != "")
-            {
-                $trueStartLine--;
-                if ($trueStartLine == 0)
-                    throw new RuntimeException("Could not determine start line of method " . $method->getName() . " in " . $method->getFileName());
+            while ('' != trim($lines[$trueStartLine])) {
+                --$trueStartLine;
+                if (0 == $trueStartLine) {
+                    throw new \RuntimeException('Could not determine start line of method '.$method->getName().' in '.$method->getFileName());
+                }
             }
-            $trueStartLine++;
+            ++$trueStartLine;
 
             $methodContent = array_slice($lines, $trueStartLine, $method->getEndLine() - $trueStartLine);
 
             Console::print(
                 Console::withBlueColor(
-                    "- Recovering non-generated method [" . $method->getName() . "] in " . Path::toRelative($method->getFileName())
+                    '- Recovering non-generated method ['.$method->getName().'] in '.Path::toRelative($method->getFileName())
                 )
             );
 
-            $methods[] = Bunch::of($methodContent)->map(fn($line) => "\t\t$line")->join("\n");
+            $methods[] = Bunch::of($methodContent)->map(fn ($line) => "\t\t{$line}")->join("\n");
         }
 
         return $methods;
@@ -101,9 +96,10 @@ class Table
         $relationsNames = [];
 
         $existingMethod = [];
-        $fullClassname = "$namespace\\$className";
-        if (class_exists($fullClassname))
+        $fullClassname = "{$namespace}\\{$className}";
+        if (class_exists($fullClassname)) {
             $existingMethod = $this->getClassNonGeneratedMethods($fullClassname);
+        }
 
         $fileContent = Text::toFile("
         <?php
@@ -208,20 +204,20 @@ class Table
             #[Generated]
             public static function relations(): array
             {
-                return [' .Bunch::of($relationsNames)
-                    ->map(fn ($x) => "
-                    \"".$x.'",')
-                    ->join("")
+                return ['.Bunch::of($relationsNames)
+                    ->map(fn ($x) => '
+                    "'.$x.'",')
+                    ->join('')
                     .'
                 ];
             }
 
 
-            '. (
-                count($existingMethod)
-                    ? ("\n" . join("\n\n", $existingMethod))
-                    : ""
-            ) .'
+            '.(
+                        count($existingMethod)
+                    ? ("\n".join("\n\n", $existingMethod))
+                    : ''
+                    ).'
         }
         ');
 

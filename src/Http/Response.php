@@ -6,7 +6,6 @@ use Cube\Data\DataToObject;
 use Cube\Logger\Logger;
 use Cube\Models\Model;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 class Response extends HttpMessage
 {
@@ -403,7 +402,7 @@ class Response extends HttpMessage
 
     public function isOk(): bool
     {
-        return ((int) ($this->statusCode/100)) == 2;
+        return ((int) ($this->statusCode / 100)) == 2;
     }
 
     public function withResponseCallback(callable $callback): self
@@ -415,7 +414,8 @@ class Response extends HttpMessage
 
     public function withClientCaching(int $timeToLive): self
     {
-        $this->setHeader("Cache-control", "max-age=$timeToLive");
+        $this->setHeader('Cache-control', "max-age={$timeToLive}");
+
         return $this;
     }
 
@@ -438,16 +438,18 @@ class Response extends HttpMessage
 
     /**
      * @template TClass of DataToObject
+     *
      * @param class-string<TClass> $dataToObjectClass
+     *
      * @return TClass
      */
     public function toObject(string $dataToObjectClass): DataToObject
     {
-        if (!$this->isOk())
-        {
-            Logger::getInstance()->error("{error}", ['error' => $this->getHeaders()]);
-            Logger::getInstance()->error("{error}", ['error' => $this->getBody()]);
-            throw new RuntimeException("Could not create dataToObject instance from data, response code is ". $this->getStatusCode());
+        if (!$this->isOk()) {
+            Logger::getInstance()->error('{error}', ['error' => $this->getHeaders()]);
+            Logger::getInstance()->error('{error}', ['error' => $this->getBody()]);
+
+            throw new \RuntimeException('Could not create dataToObject instance from data, response code is '.$this->getStatusCode());
         }
 
         return $dataToObjectClass::fromData($this->getJSON());

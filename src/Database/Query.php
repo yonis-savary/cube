@@ -89,9 +89,6 @@ class Query
 
     public function where(string $field, mixed $value, string $operator = '=', ?string $table = null): self
     {
-        if ($value instanceof Model)
-            $value = $value->id();
-
         $table ??= $this->getFieldTable($field);
 
         if (is_array($value)) {
@@ -102,12 +99,13 @@ class Query
                 $operator = 'NOT IN';
             }
         }
-        if (is_null($value))
-        {
-            if ("=" === $operator)
-                $operator = "IS";
-            if ("<>" === $operator)
-                $operator = "IS NOT";
+        if (is_null($value)) {
+            if ('=' === $operator) {
+                $operator = 'IS';
+            }
+            if ('<>' === $operator) {
+                $operator = 'IS NOT';
+            }
         }
 
         $this->conditions[] = new FieldCondition($table, $field, $operator, $value);
@@ -125,10 +123,10 @@ class Query
     public function values(array ...$values): self
     {
         foreach ($values as $set) {
-            foreach ($set as &$value)
-            {
-                if ($value instanceof Model)
+            foreach ($set as &$value) {
+                if ($value instanceof Model) {
                     $value = $value->id();
+                }
             }
 
             $this->insertValues[] = new InsertValues($set);

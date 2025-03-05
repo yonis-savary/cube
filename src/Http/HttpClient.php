@@ -3,13 +3,10 @@
 namespace Cube\Http;
 
 use Cube\Data\Bunch;
-use Cube\Data\DataToObject;
 use Cube\Logger\Logger;
 use Cube\Logger\NullLogger;
 use Cube\Utils\Path;
 use Cube\Utils\Utils;
-use Exception;
-use RuntimeException;
 
 class HttpClient
 {
@@ -253,20 +250,17 @@ class HttpClient
             $logger->info('Setting CURLOPT_POSTFIELDS to');
             $logger->info('{fields}', ['fields' => $postClone]);
 
-            if ($isFormRequest)
-            {
-                curl_setopt($handle, CURLOPT_POSTFIELDS,
+            if ($isFormRequest) {
+                curl_setopt(
+                    $handle,
+                    CURLOPT_POSTFIELDS,
                     Bunch::unzip($postClone)
-                    ->map(fn($pair) => $pair[0] .'='. urlencode($pair[1]))
-                    ->join("&")
+                        ->map(fn ($pair) => $pair[0].'='.urlencode($pair[1]))
+                        ->join('&')
                 );
-            }
-            else
-            {
+            } else {
                 curl_setopt($handle, CURLOPT_POSTFIELDS, $postClone);
             }
-
-
         }
 
         if ($timeout) {
