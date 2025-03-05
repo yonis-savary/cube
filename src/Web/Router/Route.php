@@ -3,10 +3,12 @@
 namespace Cube\Web\Router;
 
 use Cube\Core\Autoloader;
-use Cube\Http\Exceptions\InvalidRequestException;
+use Cube\Exceptions\ResponseException;
 use Cube\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Http\Request;
 use Cube\Http\Response;
+use Cube\Models\Model;
+use Cube\Utils\Text;
 
 class Route
 {
@@ -48,12 +50,12 @@ class Route
         $this->extras = $extras;
     }
 
-    public function __invoke(Request $request): mixed
+    public function __invoke(Request $request, mixed ...$params): mixed
     {
         $request->setRoute($this);
 
         foreach ($this->middlewares as $middleware) {
-            $middlewareResponse = $middleware::handle($request);
+            $middlewareResponse = $middleware::handle($request, ...$params);
 
             if ($middlewareResponse instanceof Response) {
                 return $middlewareResponse;
@@ -62,7 +64,7 @@ class Route
             $request = $middlewareResponse;
         }
 
-        return ($this->callback)($request, ...array_values($request->getSlugValues()));
+        return ($this->callback)($request, ...$params);
     }
 
     public static function any(string $path, callable $callback, array $middlewares = [], array $extras = [])
@@ -175,7 +177,7 @@ class Route
         return true;
     }
 
-    public function getAppropriateRequestObject(Request $defaultRequest): Request
+    public function getAppropriateRequestObject(Request $defaultRequest): array
     {
         $callback = $this->callback;
 
@@ -188,25 +190,50 @@ class Route
         $parameters = $reflection->getParameters();
 
         if (!count($parameters)) {
-            return $defaultRequest;
+            return [$defaultRequest];
         }
 
-        $type = $parameters[0]->getType();
-        $requestType = $type ? $type->getName() : Request::class;
+        $routerParameters = [
+            $defaultRequest,
+            ...array_values($defaultRequest->getSlugValues()),
+        ];
 
-        if (!Autoloader::extends($requestType, Request::class)) {
-            throw new \InvalidArgumentException("A controller function first paramerter must be a Request object, got {$requestType}");
+        if (count($parameters) > count($routerParameters)) {
+            throw new \RuntimeException(Text::interpolate(
+                'Bad parameter count, expected at least {e}, got {f}',
+                ['e' => count($parameters), 'f' => print_r($routerParameters, true)]
+            ));
         }
 
-        /** @var Request $requestType */
-        $request = $requestType::fromRequest($defaultRequest);
+        for ($i = 0; $i < count($parameters); ++$i) {
+            $parameter = $parameters[$i];
+            $routerParam = $routerParameters[$i];
 
-        $result = $request->isValid();
-        if (true !== $result) {
-            throw new InvalidRequestException($result, $request);
+            $type = $parameter->getType();
+            $requestType = $type ? $type->getName() : Request::class;
+
+            if (Autoloader::extends($requestType, Request::class)) {
+                /** @var Request $requestType */
+                $request = $requestType::fromRequest($defaultRequest);
+
+                $result = $request->isValid();
+                if (true !== $result) {
+                    throw new ResponseException('Given request is not valid', Response::unprocessableContent(json_encode($result, JSON_THROW_ON_ERROR)));
+                }
+
+                $routerParam = $request;
+            } elseif (Autoloader::extends($requestType, Model::class)) {
+                $key = $routerParam;
+                $routerParam = $requestType::find($key);
+                if (null === $routerParam) {
+                    throw new ResponseException("{$requestType} not found with id ({$key})", Response::notFound('Resource not found'));
+                }
+            }
+
+            $routerParameters[$i] = $routerParam;
         }
 
-        return $request;
+        return $routerParameters;
     }
 
     protected function matchPathRegex(Request $request): string

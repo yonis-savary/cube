@@ -30,9 +30,8 @@ class ProductController extends Controller
         return Response::json($product);
     }
 
-    public static function getProduct(Request $request, int $id)
+    public static function getProduct(Request $request, Product $product)
     {
-        $product = Product::find($id);
         $product->managers()->load();
 
         return $product;

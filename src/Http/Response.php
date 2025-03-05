@@ -413,6 +413,12 @@ class Response extends HttpMessage
         return $this;
     }
 
+    public function withClientCaching(int $timeToLive): self
+    {
+        $this->setHeader("Cache-control", "max-age=$timeToLive");
+        return $this;
+    }
+
     public function display(bool $sendHeaders = true)
     {
         if ($sendHeaders) {

@@ -6,6 +6,7 @@ use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Env\Cache;
+use Cube\Exceptions\ResponseException;
 use Cube\Http\Exceptions\InvalidRequestException;
 use Cube\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Http\Request;
@@ -108,13 +109,13 @@ class Router
     }
 
     /**
-     * @param \Closure(Router,RouterGroup) $callback
+     * @param \Closure(Router,RouterGroup)|Route[] $callbackOrRoutes
      */
     public function group(
         string $prefix="/",
         array $middlewares=[],
         array $extras=[],
-        ?callable $callback=null
+        null|callable|array $routes=null
     ): void
     {
         $subGroup = new RouteGroup($prefix,$middlewares,$extras);
@@ -122,7 +123,14 @@ class Router
         $parentGroup = $this->currentGroup;
         $this->currentGroup = $this->currentGroup->addSubGroup($subGroup);
 
-        ($callback)($this, $this->currentGroup);
+        if (is_callable($routes))
+        {
+            ($routes)($this, $this->currentGroup);
+        }
+        else if (is_array($routes))
+        {
+            $this->addRoutes(...$routes);
+        }
 
         $this->currentGroup = $parentGroup;
     }
@@ -222,8 +230,12 @@ class Router
 
         try
         {
-            $request = $route->getAppropriateRequestObject($request);
-            $response = $route($request);
+
+            $parameters = Autoloader::getDependencies(
+                $route->getCallback(),
+                [$request, ...array_values($request->getSlugValues())]
+            );
+            $response = $route(...$parameters);
 
             if (! $response instanceof Response)
                 $response = $this->adaptControllerReturnToResponse($response);
@@ -231,9 +243,9 @@ class Router
             if ($response === null)
                 return new Response();
         }
-        catch(InvalidRequestException $invalid)
+        catch(ResponseException $responseException)
         {
-            $response = new Response(StatusCode::UNPROCESSABLE_CONTENT, json_encode($invalid->errors, JSON_THROW_ON_ERROR));
+            return $responseException->response;
         }
 
         return $response;

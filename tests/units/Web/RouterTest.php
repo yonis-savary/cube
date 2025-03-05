@@ -44,7 +44,7 @@ class RouterTest extends TestCase
                 $response = $router->route(new Request('GET', $request));
             });
 
-            // @var Response $response
+            /** @var Response $response */
 
             $this->assertLessThan($routingTimeMicro, $time);
 
@@ -62,7 +62,7 @@ class RouterTest extends TestCase
     {
         foreach ($keywords as $keyword) {
             ++$count;
-            $router->group($keyword, callback: function (Router $router, RouteGroup $group) use (&$keywords, &$keyword, &$count) {
+            $router->group($keyword, routes: function (Router $router, RouteGroup $group) use (&$keywords, &$keyword, &$count) {
                 $router->addRoutes(
                     Route::get('/', [self::class, 'getCountResponse'], extras: ['count' => $count])
                 );

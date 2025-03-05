@@ -9,9 +9,11 @@ use Cube\Data\Bunch;
 use Cube\Env\Cache;
 use Cube\Env\Environment;
 use Cube\Env\Storage;
+use Cube\Exceptions\ResponseException;
 use Cube\Http\Request;
 use Cube\Http\Response;
 use Cube\Logger\Logger;
+use Cube\Models\Model;
 use Cube\Utils\Path;
 use Cube\Utils\Shell;
 use ErrorException;
@@ -359,6 +361,82 @@ class Autoloader
         } catch (\Throwable $_) {
             return [];
         }
+    }
+
+    public static function createObject(string $class)
+    {
+        $parameters = self::getDependencies([$class, '__construct'], []);
+
+        return new $class(...$parameters);
+    }
+
+    public static function getDependencies(callable $callback, array $initialValues): array
+    {
+        if (is_array($callback)) {
+            $controller = new \ReflectionClass($callback[0]);
+            $reflection = $controller->getMethod($callback[1]);
+        } else {
+            $reflection = new \ReflectionFunction($callback);
+        }
+        $parameters = $reflection->getParameters();
+
+        if (!count($parameters)) {
+            return $initialValues;
+        }
+
+        $injectedParams = [];
+
+        for ($i = 0; $i < count($parameters); ++$i) {
+            $parameter = $parameters[$i];
+            $type = $parameter->getType();
+            $requestType = $type ? $type->getName() : Request::class;
+
+            if (!isset($initialValues[$i])) {
+                if (class_exists($requestType)) {
+                    $injectedParams[] = self::createObject($requestType);
+                } elseif ($default = $parameter->getDefaultValue()) {
+                    $injectedParams[] = $default;
+                } else {
+                    throw new \InvalidArgumentException('Could not create dependency injection values for callback, no value for '.$parameter->getName().' parameter');
+                }
+
+                continue;
+            }
+
+            $injected = $initialValues[$i];
+
+            if (Autoloader::extends($requestType, Request::class)) {
+                debug('Is request');
+
+                /** @var Request $requestType */
+                $request = $requestType::fromRequest($injected);
+
+                $result = $request->isValid();
+                if (true !== $result) {
+                    throw new ResponseException('Given request is not valid', Response::unprocessableContent(json_encode($result, JSON_THROW_ON_ERROR)));
+                }
+
+                $injected = $request;
+            } elseif (Autoloader::extends($requestType, Model::class)) {
+                debug('Is model');
+                $key = $injected;
+                $injected = $requestType::find($key);
+                if (null === $injected) {
+                    throw new ResponseException("{$requestType} not found with id ({$key})", Response::notFound('Resource not found'));
+                }
+            } elseif (Autoloader::uses($requestType, Component::class)) {
+                $injected = $requestType::getInstance();
+            } elseif (class_exists($requestType)) {
+                debug('Is class');
+                $injected = self::createObject($requestType);
+            }
+
+            $injectedParams[] = $injected;
+        }
+
+        debug(print_r($injectedParams, true));
+
+        return $injectedParams;
     }
 
     protected static function loadApplications()
