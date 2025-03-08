@@ -3,6 +3,7 @@
 namespace Cube\Core;
 
 use Composer\Autoload\ClassLoader;
+use Cube\Configuration\ConfigurationElement;
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Autoloader\AutoloaderConfiguration;
 use Cube\Data\Bunch;
@@ -18,6 +19,7 @@ use Cube\Utils\Path;
 use Cube\Utils\Shell;
 use ErrorException;
 use Exception;
+use ReflectionException;
 
 use function Cube\debug;
 
@@ -363,14 +365,23 @@ class Autoloader
         }
     }
 
-    public static function createObject(string $class)
+    public static function instanciate(string $class, array $args=[])
     {
-        $parameters = self::getDependencies([$class, '__construct'], []);
+        $parameters = [];
+        if (method_exists($class, '__construct'))
+            $parameters = self::getDependencies([$class, '__construct'], $args);
 
         return new $class(...$parameters);
     }
 
-    public static function getDependencies(callable $callback, array $initialValues): array
+    protected static function call(callable|\Closure $callback, array $args=[])
+    {
+        $args = self::getDependencies($callback, $args);
+
+        return ($callback)(...$args);
+    }
+
+    public static function getDependencies(callable|array $callback, array $initialValues): array
     {
         if (is_array($callback)) {
             $controller = new \ReflectionClass($callback[0]);
@@ -392,9 +403,13 @@ class Autoloader
             $requestType = $type ? $type->getName() : Request::class;
 
             if (!isset($initialValues[$i])) {
-                if (class_exists($requestType)) {
-                    $injectedParams[] = self::createObject($requestType);
-                } elseif ($default = $parameter->getDefaultValue()) {
+                if (Autoloader::uses($requestType, Component::class)) {
+                    $injected = $requestType::getInstance();
+                } elseif (Autoloader::extends($requestType, ConfigurationElement::class)) {
+                    $injected = $requestType::resolve();
+                } elseif (class_exists($requestType)) {
+                    $injected = self::instanciate($requestType);
+                } elseif ($parameter->isOptional() && $default = $parameter->getDefaultValue()) {
                     $injectedParams[] = $default;
                 } else {
                     throw new \InvalidArgumentException('Could not create dependency injection values for callback, no value for '.$parameter->getName().' parameter');
@@ -406,8 +421,6 @@ class Autoloader
             $injected = $initialValues[$i];
 
             if (Autoloader::extends($requestType, Request::class)) {
-                debug('Is request');
-
                 /** @var Request $requestType */
                 $request = $requestType::fromRequest($injected);
 
@@ -417,24 +430,17 @@ class Autoloader
                 }
 
                 $injected = $request;
-            } elseif (Autoloader::extends($requestType, Model::class)) {
-                debug('Is model');
+            }
+            elseif (Autoloader::extends($requestType, Model::class)) {
                 $key = $injected;
                 $injected = $requestType::find($key);
                 if (null === $injected) {
                     throw new ResponseException("{$requestType} not found with id ({$key})", Response::notFound('Resource not found'));
                 }
-            } elseif (Autoloader::uses($requestType, Component::class)) {
-                $injected = $requestType::getInstance();
-            } elseif (class_exists($requestType)) {
-                debug('Is class');
-                $injected = self::createObject($requestType);
             }
 
             $injectedParams[] = $injected;
         }
-
-        debug(print_r($injectedParams, true));
 
         return $injectedParams;
     }

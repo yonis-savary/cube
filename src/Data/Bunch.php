@@ -2,6 +2,7 @@
 
 namespace Cube\Data;
 
+use Cube\Core\Autoloader;
 use Cube\Data\Classes\NoValue;
 use Cube\Utils\Utils;
 
@@ -50,6 +51,37 @@ class Bunch
         }
 
         return new self($element);
+    }
+
+
+    /**
+     * @template TClassname
+     * @param class-string<TClassname> $class
+     * @return self<int,TClassname>
+     */
+    public static function fromExtends(string $class, array $constructorArgs=[]): self
+    {
+        return Bunch::of(Autoloader::classesThatExtends($class))->instanciates($constructorArgs);
+    }
+
+    /**
+     * @template TClassname
+     * @param class-string<TClassname> $class
+     * @return self<int,TClassname>
+     */
+    public static function fromImplements(string $implements, array $constructorArgs=[]): self
+    {
+        return Bunch::of(Autoloader::classesThatImplements($implements))->instanciates($constructorArgs);
+    }
+
+    /**
+     * @template TClassname
+     * @param class-string<TClassname> $class
+     * @return self<int,TClassname>
+     */
+    public static function fromUses(string $uses, array $constructorArgs=[]): self
+    {
+        return Bunch::of(Autoloader::classesThatUses($uses))->instanciates($constructorArgs);
     }
 
     /**
@@ -245,9 +277,9 @@ class Bunch
      *
      * @param string|X $class
      *
-     * @return self<X>
+     * @return self<int,X>
      */
-    public function onlyInstancesOf(string $class): self
+    public function onlyInstancesOf(string $class)
     {
         return $this->filter(fn ($x) => $x instanceof $class);
     }
@@ -274,6 +306,11 @@ class Bunch
     public function map(callable $callback): self
     {
         return $this->withNewData(array_map($callback, $this->data));
+    }
+
+    public function instanciates(array $args=[])
+    {
+        return $this->map(fn($class) => Autoloader::instanciate($class, $args));
     }
 
     public function diff(array|Bunch $values): self

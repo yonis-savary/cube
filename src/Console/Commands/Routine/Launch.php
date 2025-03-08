@@ -42,8 +42,7 @@ class Launch extends Command
         $logger->asGlobalInstance(function () {
             Console::print('Processing queues handlers...');
 
-            $toLaunch = Bunch::of(Autoloader::classesThatExtends(Queue::class))
-                ->map(fn ($x) => new $x())
+            $toLaunch = Bunch::fromExtends(Queue::class)
                 ->filter(fn (Queue $queue) => $queue::shouldLaunch())
                 ->get()
             ;

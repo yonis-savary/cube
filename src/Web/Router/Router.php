@@ -71,8 +71,7 @@ class Router
 
     public function loadControllers(): void
     {
-        Bunch::of(Autoloader::classesThatExtends(Controller::class))
-        ->map(fn($class) => new $class)
+        Bunch::fromExtends(Controller::class)
         ->forEach(fn(Controller $class) => $class->routes($this));
     }
 
@@ -115,7 +114,8 @@ class Router
         string $prefix="/",
         array $middlewares=[],
         array $extras=[],
-        null|callable|array $routes=null
+        ?array $routes=null,
+        ?callable $function=null
     ): void
     {
         $subGroup = new RouteGroup($prefix,$middlewares,$extras);
@@ -123,14 +123,11 @@ class Router
         $parentGroup = $this->currentGroup;
         $this->currentGroup = $this->currentGroup->addSubGroup($subGroup);
 
-        if (is_callable($routes))
-        {
-            ($routes)($this, $this->currentGroup);
-        }
-        else if (is_array($routes))
-        {
+        if ($function)
+            ($function)($this, $this->currentGroup);
+
+        if ($routes)
             $this->addRoutes(...$routes);
-        }
 
         $this->currentGroup = $parentGroup;
     }

@@ -12,6 +12,7 @@ use Cube\Models\ModelField;
 use Cube\Models\Relations\HasMany;
 use Cube\Models\Relations\HasOne;
 use Cube\Utils\Text;
+use InvalidArgumentException;
 
 class ToTypes extends Command
 {
@@ -59,6 +60,8 @@ class ToTypes extends Command
             case HasMany::class:
                 return [$relationName, $relationName.'?: Array<'.$this->toPascalCase($relation->toModel::table()).'>'];
         }
+
+        throw new InvalidArgumentException("Unsupported relation type " . $relation::class);
     }
 
     public function toPascalCase(string $string): string

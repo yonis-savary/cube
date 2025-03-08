@@ -2,11 +2,14 @@
 
 namespace Cube\Web;
 
+use Cube\Core\Instanciable;
 use Cube\Http\Request;
 use Cube\Web\Router\Router;
 
 abstract class WebAPI
 {
+    use Instanciable;
+
     public function __construct() {}
 
     public function routes(Router $router): void {}

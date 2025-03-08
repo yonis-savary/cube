@@ -318,8 +318,7 @@ class Query
     {
         $driver = $database->getDriver();
 
-        $builder = Bunch::of(Autoloader::classesThatExtends(QueryBuilder::class))
-            ->map(fn ($class) => new $class())
+        $builder = Bunch::fromExtends(QueryBuilder::class)
             ->first(fn (QueryBuilder $builder) => $builder->supports($driver))
         ;
 

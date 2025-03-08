@@ -134,14 +134,14 @@ class Param extends Rule
     /**
      * Fetch a model from its primary key value.
      */
-    public static function model(string $modelClass, bool $explore = true, ?Database $database = null): self
+    public static function model(string $modelClass, bool $nullable=false, bool $explore = false, ?Database $database = null): self
     {
         if (!Autoloader::extends($modelClass, Model::class)) {
             throw new \InvalidArgumentException('$modelClass must extends Model');
         }
 
         // @var Model $modelClass
-        return (new self())
+        return (new self($nullable))
             ->withValueTransformer(fn ($primaryKey) => $modelClass::find($primaryKey, $explore, $database))
             ->withCondition(
                 fn (?Model $value) => null !== $value,

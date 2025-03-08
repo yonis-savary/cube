@@ -24,8 +24,7 @@ class Help extends Command
     {
         Console::print('Here is the list of the command you can launch', '');
         Console::table(
-            Bunch::of(Autoloader::classesThatExtends(Command::class))
-                ->map(fn ($class) => new $class())
+                Bunch::fromExtends(Command::class)
                 ->map(fn (Command $command) => [Console::withBlueColor($command->getFullIdentifier(), true), $command->getHelp()])
                 ->sort(fn ($x) => $x[0])
                 ->get(),

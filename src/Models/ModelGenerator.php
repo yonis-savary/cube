@@ -20,8 +20,7 @@ class ModelGenerator
     {
         $driver = $database->getDriver();
 
-        $adapter = Bunch::of(Autoloader::classesThatExtends(DatabaseAdapter::class))
-            ->map(fn ($x) => new $x($database))
+        $adapter = Bunch::fromExtends(DatabaseAdapter::class, [$database])
             ->first(fn (DatabaseAdapter $x) => Bunch::of($x->getSupportedDriver())->has($driver))
         ;
 
