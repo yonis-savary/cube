@@ -410,10 +410,12 @@ class Autoloader
                 } elseif (class_exists($requestType)) {
                     $injected = self::instanciate($requestType);
                 } elseif ($parameter->isOptional() && $default = $parameter->getDefaultValue()) {
-                    $injectedParams[] = $default;
+                    $injected = $default;
                 } else {
                     throw new \InvalidArgumentException('Could not create dependency injection values for callback, no value for '.$parameter->getName().' parameter');
                 }
+
+                $injectedParams[] = $injected;
 
                 continue;
             }

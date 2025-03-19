@@ -30,6 +30,9 @@ class Router
     protected ?Cache $cache = null;
     protected bool $routesAreLoaded = false;
 
+    /** @var WebAPI[] $apis */
+    protected array $apis = [];
+
     public static function getDefaultInstance(): static
     {
         return new self();
@@ -49,6 +52,7 @@ class Router
         );
         $this->currentGroup = $this->rootHolder;
         $this->configuration = $config;
+        $this->apis = $this->configuration->apis;
     }
 
     public function loadRoutes()
@@ -88,6 +92,7 @@ class Router
     public function addService(WebAPI $api): void
     {
         $api->routes($this);
+        $this->apis[] = $api;
     }
 
     /**
@@ -159,6 +164,9 @@ class Router
                 fn($acc, $exception) => array_merge($acc, $exception->allowedMethods), []
             );
 
+            if ($request->getMethod() === "OPTIONS")
+                Response::noContent()->withCORSHeaders($allowedMethods)->exit();
+
             throw new InvalidRequestMethodException($request->getMethod(), $allowedMethods);
         }
 
@@ -201,7 +209,7 @@ class Router
         {
             $this->loadRoutes();
 
-            foreach($this->configuration->apis as $api)
+            foreach($this->apis as $api)
             {
                 $serviceResponse = $api->handle($request);
                 if ($serviceResponse instanceof Response)

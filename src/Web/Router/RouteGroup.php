@@ -2,17 +2,15 @@
 
 namespace Cube\Web\Router;
 
+use Cube\Data\Bunch;
 use Cube\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Http\Request;
 use Cube\Utils\Path;
 
 class RouteGroup
 {
-    /** @var Route[] */
-    protected array $routes = [];
-
-    /** @var RouteGroup[] */
-    protected array $groups = [];
+    /** @var array<Route|RouteGroup> */
+    protected array $elements = [];
 
     public function __construct(
         public string $prefix = '/',
@@ -56,7 +54,7 @@ class RouteGroup
     {
         foreach ($routes as $route) {
             $this->applyToRoute($route);
-            $this->routes[] = $route;
+            $this->elements[] = $route;
         }
     }
 
@@ -65,43 +63,51 @@ class RouteGroup
      */
     public function getRoutes(): array
     {
-        $routes = [];
-
-        foreach ($this->groups as $group) {
-            array_push($routes, ...$group->getRoutes());
-        }
-
-        array_push($routes, ...$this->routes);
-
-        return $routes;
+        return Bunch::of($this->elements)
+            ->reduce(function($arr, $cur) {
+                array_push(
+                    $arr,
+                    ...($cur instanceof RouteGroup ?
+                            $cur->getRoutes():
+                            [$cur]
+                    )
+                );
+                return $arr;
+            }, []);
     }
 
     public function &addSubGroup(RouteGroup $paramGroup): RouteGroup
     {
         $addedGroup = $this->mergeWith($paramGroup);
-        $this->groups[] = &$addedGroup;
+        $this->elements[] = &$addedGroup;
 
         return $addedGroup;
     }
 
     public function findMatchingRoute(Request $request, array &$exceptions = []): false|Route
     {
-        foreach ($this->routes as $route) {
-            try {
-                if ($route->match($request)) {
-                    return $route;
+        foreach ($this->elements as $routeOrGroup) {
+            if ($routeOrGroup instanceof RouteGroup)
+            {
+                $group = $routeOrGroup;
+                if (!$group->matches($request)) {
+                    continue;
                 }
-            } catch (InvalidRequestMethodException $newException) {
-                $exceptions[] = $newException;
-            }
-        }
 
-        foreach ($this->groups as $group) {
-            if (!$group->matches($request)) {
-                continue;
+                if ($route = $group->findMatchingRoute($request, $exceptions))
+                    return $route;
             }
-
-            return $group->findMatchingRoute($request, $exceptions);
+            else
+            {
+                $route = $routeOrGroup;
+                try {
+                    if ($route->match($request)) {
+                        return $route;
+                    }
+                } catch (InvalidRequestMethodException $newException) {
+                    $exceptions[] = $newException;
+                }
+            }
         }
 
         return false;

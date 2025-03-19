@@ -20,7 +20,8 @@ class Session
 
         $this->namespace = $namespace;
 
-        $status = session_start();
+        session_start();
+        $status = session_status();
         if (PHP_SESSION_DISABLED === $status) {
             throw new \RuntimeException('Cannot start session as PHP session are disabled');
         }

@@ -14,6 +14,7 @@ use Cube\Database\Query\Join;
 use Cube\Database\Query\Limit;
 use Cube\Database\Query\Order;
 use Cube\Database\Query\QueryBase;
+use Cube\Database\Query\RawCondition;
 use Cube\Database\Query\UpdateField;
 use Cube\Models\DummyModel;
 use Cube\Models\Model;
@@ -110,6 +111,21 @@ class Query
 
         $this->conditions[] = new FieldCondition($table, $field, $operator, $value);
 
+        return $this;
+    }
+
+
+    public function when(mixed $condition, callable|\Closure $callback): self
+    {
+        if ($condition)
+            ($callback)($this);
+
+        return $this;
+    }
+
+    public function whereRaw(string $expression): self
+    {
+        $this->conditions[] = new RawCondition($expression);
         return $this;
     }
 

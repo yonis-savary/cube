@@ -67,7 +67,7 @@ class HasMany implements Relation
         $toModel = $this->toModel;
         $toColumn = $this->toColumn;
 
-        $data = $toModel::select()->where($toColumn, $thisModel->{$fromColumn})->fetch();
+        $data = $toModel::select()->where($toColumn, $thisModel->$fromColumn)->fetch();
         $thisModel->setReference($this->getName(), $data);
     }
 }

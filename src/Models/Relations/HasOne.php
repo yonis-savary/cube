@@ -2,8 +2,10 @@
 
 namespace Cube\Models\Relations;
 
+use Cube\Data\Bunch;
 use Cube\Models\Events\SavedModel;
 use Cube\Models\Model;
+use Cube\Utils\Text;
 
 /**
  * @template TModel of Model
@@ -71,9 +73,7 @@ class HasOne implements Relation
         $toModel = $this->toModel;
         $toColumn = $this->toColumn;
 
-        $thisModel->setReference(
-            $this->getName(),
-            $toModel::findWhere([$toColumn => $thisModel->{$fromColumn}])
-        );
+        $data = $toModel::findWhere([$toColumn => $thisModel->$fromColumn]);
+        $thisModel->setReference($this->getName(), $data);
     }
 }

@@ -5,7 +5,11 @@ namespace Cube\Http;
 use Cube\Data\DataToObject;
 use Cube\Logger\Logger;
 use Cube\Models\Model;
+use Cube\Web\Router\Route;
 use Psr\Log\LoggerInterface;
+
+use function Cube\debug;
+use function Cube\env;
 
 class Response extends HttpMessage
 {
@@ -15,11 +19,11 @@ class Response extends HttpMessage
 
     public function __construct(
         int $statusCode = StatusCode::NO_CONTENT,
-        string $body = '',
+        ?string $body = null,
         array $headers = []
     ) {
         $this->statusCode = $statusCode;
-        $this->setBody($body);
+        $this->setBody($body ?? '');
         $this->setHeaders($headers);
     }
 
@@ -347,13 +351,12 @@ class Response extends HttpMessage
         $response = (new self($code))
             ->withResponseCallback(function () use (&$path) { readfile($path); })
             ->setHeader('Content-Length', filesize($path))
+            ->setHeader('Content-Type', FileMIMETypes::getFileMIMEType($attachmentFile ?? $path))
         ;
 
         if ($attachmentFile) {
             $response->setHeader('Content-Type', 'application/octet-stream');
             $response->setHeader('Content-Disposition', 'attachment; filename='.basename($attachmentFile));
-        } else {
-            $response->setHeader('Content-Type', mime_content_type($path));
         }
 
         return $response;
@@ -419,10 +422,36 @@ class Response extends HttpMessage
         return $this;
     }
 
+    public function withHeaders(array $headers): self
+    {
+        foreach ($headers as $header => $value)
+            $this->setHeader($header, $value);
+
+        return $this;
+    }
+
+    public function withCORSHeaders(?array $allowedMethods=null): self
+    {
+        return $this->withHeaders([
+            'Access-Control-Allow-Origin' => env('CORS_ALLOWED_ORIGINS', '*'),
+            'Access-Control-Allow-Methods' => $allowedMethods ? join(", ", $allowedMethods) : "*",
+            'Access-Control-Allow-Headers' => 'Content-Type, x-requested-with',
+            'Access-Control-Allow-Credentials' => 'true',
+            'Access-Control-Max-Age' => 86400
+        ]);
+    }
+
     public function display(bool $sendHeaders = true)
     {
+        $this->withCORSHeaders();
+
         if ($sendHeaders) {
             http_response_code($this->statusCode);
+
+            if (array_key_exists('cache-control', $this->headers))
+            {
+                header_remove('Pragma');
+            }
 
             foreach ($this->headers as $name => $value) {
                 header("{$name}: {$value}");

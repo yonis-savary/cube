@@ -8,14 +8,17 @@ use Cube\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Http\Request;
 use Cube\Http\Response;
 use Cube\Models\Model;
+use Cube\Utils\Path;
 use Cube\Utils\Text;
+
+use function Cube\error;
 
 class Route
 {
     public const SLUG_FORMATS = [
         'int' => '\d+',
         'float' => '\d+(?:\.\d+)?',
-        'any' => '.+',
+        'any' => '.*',
         'date' => '\d{4}\-\d{2}\-\d{2}',
         'time' => '\d{2}\:\d{2}\:\d{2}',
         'datetime' => '\d{4}\-\d{2}\-\d{2} \d{2}\:\d{2}\:\d{2}',
@@ -101,6 +104,29 @@ class Route
     {
         return new self($path, $callback, ['OPTION'], $middlewares, $extras);
     }
+
+    public static function file(string $path, string $file, array $middlewares = [], array $extras = [])
+    {
+        return new self($path, [self::class, 'serveFile'], ['GET'], $middlewares, array_merge($extras, ['route:file' => $file]));
+    }
+
+    public static function serveFile(Request $request)
+    {
+        $file = $request->getRoute()->getExtras()['route:file'];
+
+        if (!is_file($file))
+            $file = Path::relative($file);
+
+
+        if (!is_file($file))
+        {
+            error("Could not find file to serve $file returning 404 response");
+            return Response::notFound();
+        }
+
+        return Response::file($file);
+    }
+
 
     public function isCachable(): bool
     {
@@ -262,7 +288,10 @@ class Route
 
         $regex = '/^'.join('\/', $parts).'$/';
 
-        if (!preg_match($regex, $request->getPath(), $slugs)) {
+        if (
+            (!preg_match($regex, $request->getPath(), $slugs)) &&
+            (!preg_match($regex, $request->getPath() . "/", $slugs))
+        ) {
             return false;
         }
 

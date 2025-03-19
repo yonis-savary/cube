@@ -14,6 +14,8 @@ use Cube\Models\Events\SavedModel;
 use Cube\Models\Relations\HasMany;
 use Cube\Models\Relations\HasOne;
 use Cube\Models\Relations\Relation;
+use Cube\Utils\Text;
+use Cube\Utils\Utils;
 use Exception;
 
 abstract class Model extends EventDispatcher
@@ -29,10 +31,6 @@ abstract class Model extends EventDispatcher
         $modelData = [];
 
         foreach ($fields as $key => $field) {
-            if ($field->autoIncrement) {
-                continue;
-            }
-
             if (array_key_exists($key, $fields) && isset($data[$key])) {
                 if (is_array($data[$key])) {
                     continue;
@@ -189,11 +187,6 @@ abstract class Model extends EventDispatcher
 
         /** @var class-string<Model> $self */
         $self = get_called_class();
-
-        $validator = $self::toValidator();
-        if (true !== ($errors = $validator->validateArray($data))) {
-            throw new \InvalidArgumentException('Given data does not match mode validator : '.print_r($errors, true));
-        }
 
         $instance = new $self($data);
         $instance->save($database);
@@ -522,6 +515,88 @@ abstract class Model extends EventDispatcher
     public function hasMany(string $toModel, string $toColumn, string $fromColumn): HasMany
     {
         return new HasMany($this::class, $fromColumn, $toModel, $toColumn, $this);
+    }
+
+    protected function getComputedRelationToArray(string $relation)
+    {
+        if (!str_contains($relation, "."))
+            return [$relation];
+
+        $parts = explode(".", $relation);
+
+        $rest = $parts;
+        array_pop($rest);
+
+        return [
+            ...$this->getComputedRelationToArray(join(".", $rest)),
+            $relation
+        ];
+    }
+
+    /**
+     * @param string|string[] $relations
+     */
+    public function load(array|string $relations=[]): self
+    {
+        /** @var string[] $relations */
+        $relations = Utils::toArray($relations);
+
+        $relations = Bunch::of($relations)
+        ->map(fn($rel) => $this->getComputedRelationToArray($rel))
+        ->flat()
+        ->uniques()
+        ->get();
+
+        foreach ($relations as $relation)
+        {
+            if (str_contains($relation, "."))
+                continue;
+
+            $this->{$relation}()->load();
+
+            $childRelations = Bunch::of($relations)
+                ->filter(fn($rel) => str_starts_with($rel, "$relation."))
+                ->map(fn($rel) => Text::dontStartsWith($rel, "$relation."))
+                ->get();
+
+            if (!count($childRelations))
+                continue;
+
+            $relationInstance = &$this->references[$relation];
+
+            if (is_array($relationInstance))
+            {
+                foreach ($relationInstance as $child)
+                    $child->load($childRelations);
+            }
+            else if ($relationInstance)
+            {
+                $relationInstance->load($childRelations);
+            }
+        }
+
+        return $this;
+    }
+
+    public function loadMissing(array $relations=[]): self
+    {
+        foreach ($relations as $relation)
+        {
+            if (str_contains($relation, "."))
+                continue;
+
+            if (!array_key_exists($relation, $this->references))
+                $this->{$relation}()->load();
+
+            $childRelations = Bunch::of($relation)
+                ->diff([$relation])
+                ->map(fn($rel) => Text::dontStartsWith($rel, "$relation\."))
+                ->get();
+
+            $this->references[$relation]->load($childRelations);
+        }
+
+        return $this;
     }
 
     public function onSaved(callable $callback)

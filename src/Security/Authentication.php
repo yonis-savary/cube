@@ -105,7 +105,7 @@ class Authentication
     {
         $session = $this->getSession();
 
-        $userData ??= $this->model::find($userId);
+        $userData ??= $this->model::find($userId)->data;
 
         $session->set($this->getSessionKey(self::SESSION_USER_DATA), $userData);
         $session->set($this->getSessionKey(self::SESSION_USER_ID), $userId);
@@ -131,12 +131,13 @@ class Authentication
     {
         $session = $this->getSession();
         $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA));
+        $model = $this->model;
 
         if (!$this->isLogged()) {
             throw new \RuntimeException('Cannot retrieve data of unauthenticated user');
         }
 
-        return new Model($userArrayData);
+        return new $model($userArrayData);
     }
 
     public function userId(): mixed
