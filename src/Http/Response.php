@@ -459,7 +459,7 @@ class Response extends HttpMessage
         }
 
         if ($callback = $this->displayCallback) {
-            $callback($this->statusCode, $this->body);
+            ($callback)($this->statusCode, $this->body);
         } else {
             echo $this->getBody();
         }

@@ -78,7 +78,7 @@ class StaticServer extends WebAPI
             return Response::file($directory->path($path));
         }
 
-        if ($this->supportsIndex && '/' === $path) {
+        if ($this->supportsIndex && ('/' === $path)) {
             return Response::file($this->indexFile);
         }
 

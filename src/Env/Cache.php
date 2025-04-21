@@ -129,4 +129,14 @@ class Cache
     {
         return $this->storage;
     }
+
+    public function generated(string $key, callable|\Closure $callback, int $timeToLive = self::MONTH, ?int $creationDate = null)
+    {
+        if ($this->has($key))
+            return $this->get($key);
+
+        $value = ($callback)();
+        $this->set($key, $value, $timeToLive, $creationDate);
+        return $value;
+    }
 }

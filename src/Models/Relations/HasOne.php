@@ -65,7 +65,10 @@ class HasOne implements Relation
         return $this->model;
     }
 
-    public function load(): void
+    /**
+     * @return TModel
+     */
+    public function load(): Model
     {
         $thisModel = &$this->model;
         $fromColumn = $this->fromColumn;
@@ -75,5 +78,7 @@ class HasOne implements Relation
 
         $data = $toModel::findWhere([$toColumn => $thisModel->$fromColumn]);
         $thisModel->setReference($this->getName(), $data);
+
+        return $data;
     }
 }

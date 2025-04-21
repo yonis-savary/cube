@@ -39,8 +39,6 @@ class ToTypes extends Command
             ModelField::TIMESTAMP => 'Date',
         };
 
-        echo $field->name.' => '.($field->nullable ? '1' : '0')."\n";
-
         $nullableStr = ($field->nullable && (!$field->autoIncrement)) ? '?' : '';
 
         return [$field->name, $field->name."{$nullableStr}: ".$type];
@@ -79,6 +77,8 @@ class ToTypes extends Command
     public function generateForModel(string $model): string
     {
         $typeName = $this->toPascalCase($model::table());
+
+        echo "Type $typeName\n";
 
         $instance = new $model();
 

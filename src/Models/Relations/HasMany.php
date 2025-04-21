@@ -60,14 +60,19 @@ class HasMany implements Relation
         return $thisModel;
     }
 
-    public function load(): void
+    /**
+     * @return TModel[]
+     */
+    public function load(bool $loadRelations=true): array
     {
         $thisModel = &$this->model;
         $fromColumn = $this->fromColumn;
         $toModel = $this->toModel;
         $toColumn = $this->toColumn;
 
-        $data = $toModel::select()->where($toColumn, $thisModel->$fromColumn)->fetch();
+        $data = $toModel::select($loadRelations)->where($toColumn, $thisModel->$fromColumn)->fetch();
         $thisModel->setReference($this->getName(), $data);
+
+        return $data;
     }
 }

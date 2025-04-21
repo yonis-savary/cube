@@ -107,7 +107,7 @@ class Autoloader
                     $errorMessage .= "\n".$exception->getTraceAsString();
                 }
 
-                $response = (new Response(500, $errorMessage, ['Content-Type' => 'text/html']));
+                $response = (new Response(500, str_replace("\n", "<br>", $errorMessage), ['Content-Type' => 'text/html']));
                 Shell::logRequestAndResponseToStdOut(Request::fromGlobals(), $response);
                 $response->exit();
             } catch (\Throwable $err) {

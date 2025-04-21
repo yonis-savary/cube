@@ -16,6 +16,7 @@ use Cube\Models\Relations\HasOne;
 use Cube\Models\Relations\Relation;
 use Cube\Utils\Text;
 use Cube\Utils\Utils;
+use DateTime;
 use Exception;
 
 abstract class Model extends EventDispatcher
@@ -272,7 +273,7 @@ abstract class Model extends EventDispatcher
 
         return Validator::from(
             Bunch::unzip($rules)
-                ->filter(fn ($pair) => null !== $pair[1])
+                ->filter(fn($pair) => null !== $pair[1])
                 ->zip()
         );
     }
@@ -301,13 +302,13 @@ abstract class Model extends EventDispatcher
     {
         $database ??= Database::getInstance();
 
-        $model
-            = self::findWhere($data, $explore, $database)
-            ?? self::insertArray(array_merge($data, $extrasProperties), $database);
+        if (!$model = self::findWhere($data, $explore, $database))
+            return  self::insertArray(array_merge($data, $extrasProperties), $database);
 
-        $model->markAsOriginal(true);
+        foreach ($extrasProperties as $key => $value)
+            $model->$key = $value;
 
-        return $model;
+        return $model->save();
     }
 
     /**
@@ -404,7 +405,7 @@ abstract class Model extends EventDispatcher
             $relationModel = $relation->toModel;
 
             if ($relation instanceof HasOne) {
-                $accumulatorKey = $relation->fromModel.':'.$relationKey;
+                $accumulatorKey = $relation->fromModel . ':' . $relationKey;
                 if (str_contains($relationAccumulator, $accumulatorKey)) {
                     continue;
                 }
@@ -414,7 +415,7 @@ abstract class Model extends EventDispatcher
                     $relation->bind($oneModel);
                 }
             } elseif ($relation instanceof HasMany) {
-                $accumulatorKey = $relation->fromModel.':'.$relationKey;
+                $accumulatorKey = $relation->fromModel . ':' . $relationKey;
                 if (str_contains($relationAccumulator, $accumulatorKey)) {
                     continue;
                 }
@@ -492,10 +493,15 @@ abstract class Model extends EventDispatcher
         // @var Model $model
         foreach ($this->references as $key => $modelOrCollection) {
             if (is_array($modelOrCollection)) {
-                $array[$key] = Bunch::of($modelOrCollection)->map(fn (Model $model) => $model->toArray())->toArray();
+                $array[$key] = Bunch::of($modelOrCollection)->map(fn(Model $model) => $model->toArray())->toArray();
             } elseif ($modelOrCollection instanceof Model) {
                 $array[$key] = $modelOrCollection->toArray();
             }
+        }
+
+        foreach ($array as &$value) {
+            if ($value instanceof DateTime)
+                $value = $value->format("Y-m-d H:i:s");
         }
 
         return $array;
@@ -536,23 +542,22 @@ abstract class Model extends EventDispatcher
     /**
      * @param string|string[] $relations
      */
-    public function load(array|string $relations=[]): self
+    public function load(string ...$relations): self
     {
         /** @var string[] $relations */
         $relations = Utils::toArray($relations);
 
         $relations = Bunch::of($relations)
-        ->map(fn($rel) => $this->getComputedRelationToArray($rel))
-        ->flat()
-        ->uniques()
-        ->get();
+            ->map(fn($rel) => $this->getComputedRelationToArray($rel))
+            ->flat()
+            ->uniques()
+            ->get();
 
-        foreach ($relations as $relation)
-        {
+        foreach ($relations as $relation) {
             if (str_contains($relation, "."))
                 continue;
 
-            $this->{$relation}()->load();
+            $this->{$relation}()->load(false);
 
             $childRelations = Bunch::of($relations)
                 ->filter(fn($rel) => str_starts_with($rel, "$relation."))
@@ -564,24 +569,20 @@ abstract class Model extends EventDispatcher
 
             $relationInstance = &$this->references[$relation];
 
-            if (is_array($relationInstance))
-            {
+            if (is_array($relationInstance)) {
                 foreach ($relationInstance as $child)
-                    $child->load($childRelations);
-            }
-            else if ($relationInstance)
-            {
-                $relationInstance->load($childRelations);
+                    $child->load(...$childRelations);
+            } else if ($relationInstance) {
+                $relationInstance->load(...$childRelations);
             }
         }
 
         return $this;
     }
 
-    public function loadMissing(array $relations=[]): self
+    public function loadMissing(array $relations = []): self
     {
-        foreach ($relations as $relation)
-        {
+        foreach ($relations as $relation) {
             if (str_contains($relation, "."))
                 continue;
 
@@ -604,13 +605,15 @@ abstract class Model extends EventDispatcher
         $this->on(SavedModel::class, $callback);
     }
 
-    public function save(?Database $database = null)
+    public function save(?Database $database = null): self
     {
         if ($this->existsInDatabase()) {
             $this->saveExisting($database);
         } else {
             $this->saveNew($database);
         }
+
+        return $this;
     }
 
     public function destroy(?Database $database = null): void
@@ -723,7 +726,7 @@ abstract class Model extends EventDispatcher
         foreach ($this->data as $key => $value) {
             if ($value instanceof \DateTime) {
                 $type = ($self::fields()[$key]->type ?? ModelField::DATE);
-                $value = $value->format('Y-m-d'.(ModelField::DATE === $type ? ' h:i:s' : ''));
+                $value = $value->format('Y-m-d' . (ModelField::DATE === $type ? ' h:i:s' : ''));
             }
 
             if (property_exists($this->original, $key)) {
