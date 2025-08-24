@@ -6,9 +6,6 @@ use Cube\Database\Database;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @internal
- */
 class DatabaseTest extends TestCase
 {
     use TestMultipleDrivers;

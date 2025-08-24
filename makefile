@@ -7,5 +7,8 @@ test:
 	@rm -r Storage/Cache || true
 	@vendor/bin/phpunit
 
+workflow-test:
+	@vendor/bin/phpunit
+
 fix:
 	@./vendor/bin/php-cs-fixer fix --allow-risky=yes

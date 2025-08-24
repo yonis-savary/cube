@@ -1,0 +1,77 @@
+name: Cube Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql
+        ports:
+          - 8001:3306
+        env:
+          MYSQL_DATABASE: cubetest
+          MYSQL_ROOT_PASSWORD: root
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      postgres:
+        image: postgres
+        ports:
+          - 8002:5432
+        env:
+          POSTGRES_PASSWORD: root
+
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Wait for MySQL to be up
+        run: |
+          for i in {1..15}; do
+            if mysqladmin ping -h127.0.0.1 -uroot -proot --port=8001 --silent; then
+              break
+            fi
+            echo "($i / 15) Waiting for MySQL..."
+            sleep 5
+          done
+
+      - name: Wait for PostgreSQL to be up
+        run: |
+          for i in {1..15}; do
+            if pg_isready -h 127.0.0.1 -p 8002 -U postgres; then
+              echo "PostgreSQL is up!"
+              exit 0
+            fi
+            echo "($i / 15) Waiting for PostgreSQL..."
+            sleep 5
+          done
+          echo "PostgreSQL did not start in time"
+          exit 1
+        env:
+          PGPASSWORD: root
+
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y make
+
+      - name: Install framework dependencies
+        run: composer install
+
+      - name: Launch worflow tests (with make)
+        run: make workflow-test
