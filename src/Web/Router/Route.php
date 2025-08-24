@@ -3,11 +3,11 @@
 namespace Cube\Web\Router;
 
 use Cube\Core\Autoloader;
-use Cube\Exceptions\ResponseException;
-use Cube\Http\Exceptions\InvalidRequestMethodException;
-use Cube\Http\Request;
-use Cube\Http\Response;
-use Cube\Models\Model;
+use Cube\Core\Exceptions\ResponseException;
+use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
+use Cube\Data\Models\Model;
 use Cube\Utils\Path;
 use Cube\Utils\Text;
 

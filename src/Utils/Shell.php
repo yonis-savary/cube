@@ -5,8 +5,8 @@ namespace Cube\Utils;
 use Cube\Console\Command;
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
-use Cube\Http\Request;
-use Cube\Http\Response;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
 use Symfony\Component\Process\Process;
 
 class Shell

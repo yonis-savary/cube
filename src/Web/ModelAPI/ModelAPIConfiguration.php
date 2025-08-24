@@ -2,7 +2,7 @@
 
 namespace Cube\Web\ModelAPI;
 
-use Cube\Configuration\ConfigurationElement;
+use Cube\Env\Configuration\ConfigurationElement;
 
 class ModelAPIConfiguration extends ConfigurationElement
 {

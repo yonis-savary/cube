@@ -2,7 +2,7 @@
 
 namespace Cube\Tests\Units\Database;
 
-use Cube\Database\Database;
+use Cube\Data\Database\Database;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 

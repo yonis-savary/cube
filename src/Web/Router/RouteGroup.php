@@ -3,8 +3,8 @@
 namespace Cube\Web\Router;
 
 use Cube\Data\Bunch;
-use Cube\Http\Exceptions\InvalidRequestMethodException;
-use Cube\Http\Request;
+use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
+use Cube\Web\Http\Request;
 use Cube\Utils\Path;
 
 class RouteGroup

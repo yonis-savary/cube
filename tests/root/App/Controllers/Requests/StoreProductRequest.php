@@ -2,8 +2,8 @@
 
 namespace App\Controllers\Requests;
 
-use Cube\Http\Request;
-use Cube\Http\Rules\Param;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Rules\Param;
 
 class StoreProductRequest extends Request
 {

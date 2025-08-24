@@ -2,8 +2,8 @@
 
 namespace Cube\Web;
 
-use Cube\Http\Request;
-use Cube\Http\Response;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
 
 interface Middleware
 {

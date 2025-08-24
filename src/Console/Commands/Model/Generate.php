@@ -4,9 +4,9 @@ namespace Cube\Console\Commands\Model;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Database\Database;
+use Cube\Data\Database\Database;
 use Cube\Env\Storage;
-use Cube\Models\ModelGenerator;
+use Cube\Data\Models\ModelGenerator;
 use Cube\Utils\Console;
 
 class Generate extends Command

@@ -1,38 +1,43 @@
 # Cube PHP
 
-Cube is a light back-end framework that provide essential features for web developpement like Routing, Model Manipulation, Caching...
+Cube is a light framework that provide essential features for back-end web developpement. The goal is to provide every essential tools needed to make web applications and APIs.
 
-## Installation
+You can find the framework's documentation in the [`/docs`](./docs/README.md) directory !
+
+## 🧰 Features
+
+- 🌐 Web
+  - Fast Routing
+  - Middleware
+  - Request Validation
+  - Static File Serving
+
+- 🔩 Framework
+  - PHP Configuration (With Caching)
+  - CLI Command Support
+  - Routine (Scheduling / Queueing)
+
+- 🌳 Environment
+  - Cache / Session / Directory manipulation
+  - Logging through `psr/log`
+
+- 💿 Data
+  - Model Manipulation (Supported DBMS : MySQL, SQLite, Postgres, MariaDB)
+  - Automatic Model Generation !
+  - Password Authentication System
+
+## 🔥 Installation
 
 ```bash
-# Create a new project
-composer create-project yonis-savary/cube-project MyProject
+# Install in your repository
+composer require yonis-savary/cube
 
-# Or install in an existing project
-composer require yonis-savary/cube && cp -r vendor/yonis-savary/cube/server/* .
+# Install Server base file such a Public/, .gitignore...
+cp -r vendor/yonis-savary/cube/server/* .
 ```
 
-## Features
 
-- PHP Configuration (With Caching)
-- CLI Command Support
-- Cache / Session / Directory manipulation
-- Logging through `psr/log`
-- Model Manipulation (Supported DBMS : MySQL, SQLite, Postgres, MariaDB)
-- Automatic Model Generation !
-- Routine (Scheduling / Queueing)
-- Authentication
-- Fast Routing
-- Middleware
-- Request Validation
-- Static File Serving
-
-## Documentation
-
-You can read the documentation in the [`/docs`](./docs/README.md) directory !
-
-
-## Developpement 
+## 📈 Developpement
 
 ```sh
 # Testing the framework

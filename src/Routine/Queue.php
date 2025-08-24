@@ -4,8 +4,8 @@ namespace Cube\Routine;
 
 use Cube\Data\Bunch;
 use Cube\Env\Storage;
-use Cube\Logger\HasLogger;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\HasLogger;
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Console;
 
 abstract class Queue extends Routine

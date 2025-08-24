@@ -4,7 +4,7 @@ namespace Cube\Tests\Units\Database;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
-use Cube\Database\Database;
+use Cube\Data\Database\Database;
 
 trait TestMultipleDrivers
 {

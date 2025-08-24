@@ -1,6 +1,6 @@
 <?php
 
-use Cube\Configuration\Configuration;
+use Cube\Env\Configuration;
 use Cube\Core\Autoloader;
 use Cube\Env\Environment;
 

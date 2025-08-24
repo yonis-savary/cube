@@ -3,12 +3,12 @@
 namespace Cube\Test;
 
 use Cube\Core\Autoloader;
-use Cube\Database\Database;
-use Cube\Http\Request;
-use Cube\Http\Upload;
-use Cube\Logger\Logger;
-use Cube\Models\Model;
-use Cube\Web\CubeServer;
+use Cube\Data\Database\Database;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Upload;
+use Cube\Env\Logger\Logger;
+use Cube\Data\Models\Model;
+use Cube\Web\Helpers\CubeServer;
 use PHPUnit\Framework\TestCase;
 
 abstract class CubeTestCase extends TestCase

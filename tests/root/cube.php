@@ -1,10 +1,10 @@
 <?php
 
 use Cube\Core\Autoloader\Applications;
-use Cube\Database\DatabaseConfiguration;
-use Cube\Web\AssetServer;
+use Cube\Data\Database\DatabaseConfiguration;
+use Cube\Web\Helpers\AssetServer;
 use Cube\Web\Router\RouterConfiguration;
-use Cube\Web\StaticServer;
+use Cube\Web\Helpers\StaticServer;
 
 use function Cube\env;
 

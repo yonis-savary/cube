@@ -3,13 +3,13 @@
 namespace Cube\Tests\Integration;
 
 use Cube\Data\Bunch;
-use Cube\Database\Database;
-use Cube\Database\Migration\Migration;
+use Cube\Data\Database\Database;
+use Cube\Data\Database\Migration\Migration;
 use Cube\Env\Storage;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 use Cube\Utils\Shell;
-use Cube\Web\CubeServer;
+use Cube\Web\Helpers\CubeServer;
 
 class Utils
 {
@@ -87,9 +87,9 @@ class Utils
 
             'scripts' => [
                 'post-update-cmd' => [
+                    'cp -r vendor/yonis-savary/cube/server/* .',
                     "cp -r {$integrationBaseFiles}/* .",
                     "cp -r {$integrationBaseFiles}/.env .",
-                    'cp -r vendor/yonis-savary/cube/server/* .',
                 ],
             ],
         ], JSON_PRETTY_PRINT));

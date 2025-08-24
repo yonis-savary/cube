@@ -6,18 +6,15 @@ use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Env\Cache;
-use Cube\Exceptions\ResponseException;
-use Cube\Http\Exceptions\InvalidRequestException;
-use Cube\Http\Exceptions\InvalidRequestMethodException;
-use Cube\Http\Request;
-use Cube\Http\Response;
-use Cube\Http\StatusCode;
-use Cube\Models\Model;
+use Cube\Core\Exceptions\ResponseException;
+use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
+use Cube\Web\Http\StatusCode;
+use Cube\Data\Models\Model;
 use Cube\Web\Controller;
 use Cube\Web\Router\RouterConfiguration;
-use Cube\Web\WebAPI;
-
-use function Cube\debug;
+use Cube\Web\Helpers\WebAPI;
 
 class Router
 {
@@ -75,6 +72,7 @@ class Router
 
     public function loadControllers(): void
     {
+        $a = Bunch::fromExtends(Controller::class);
         Bunch::fromExtends(Controller::class)
         ->forEach(fn(Controller $class) => $class->routes($this));
     }

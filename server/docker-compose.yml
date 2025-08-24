@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+
+  php:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - .:/var/www
+    ports:
+      - "8080:80"
+    working_dir: /var/www
+    depends_on:
+      - db

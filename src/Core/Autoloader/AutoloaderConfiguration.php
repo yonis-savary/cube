@@ -2,7 +2,7 @@
 
 namespace Cube\Core\Autoloader;
 
-use Cube\Configuration\ConfigurationElement;
+use Cube\Env\Configuration\ConfigurationElement;
 
 use function Cube\env;
 

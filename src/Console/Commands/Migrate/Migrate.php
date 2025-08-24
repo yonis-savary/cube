@@ -5,7 +5,7 @@ namespace Cube\Console\Commands\Migrate;
 use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Console\Commands\Model\Generate;
-use Cube\Database\MigrationManager;
+use Cube\Data\Database\MigrationManager;
 
 class Migrate extends Command
 {

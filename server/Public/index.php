@@ -1,7 +1,7 @@
 <?php
 
 use Cube\Core\Autoloader;
-use Cube\Http\Request;
+use Cube\Web\Http\Request;
 use Cube\Utils\Shell;
 use Cube\Web\Router\Router;
 

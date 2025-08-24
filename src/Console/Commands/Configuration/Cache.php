@@ -2,7 +2,7 @@
 
 namespace Cube\Console\Commands\Configuration;
 
-use Cube\Configuration\Configuration;
+use Cube\Env\Configuration;
 use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Utils\Console;
