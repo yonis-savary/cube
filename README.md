@@ -30,3 +30,11 @@ composer require yonis-savary/cube && cp -r vendor/yonis-savary/cube/server/* .
 ## Documentation
 
 You can read the documentation in the [`/docs`](./docs/README.md) directory !
+
+
+## Developpement 
+
+```sh
+# Testing the framework
+make test
+```

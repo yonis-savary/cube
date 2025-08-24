@@ -88,7 +88,7 @@ abstract class ModelAPI extends Controller
             $modelGroup->prefix,
             $modelGroup->middlewares,
             $modelGroup->extras,
-            function (Router $router) use ($self, $modes) {
+            function: function (Router $router) use ($self, $modes) {
                 $router->addRoutes(
                     in_array(self::CREATE, $modes) ? Route::post('/', [$self, 'createItems']) : null,
                     in_array(self::READ, $modes) ? Route::get('/', [$self, 'readItems']) : null,

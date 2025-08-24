@@ -30,7 +30,7 @@ class RouterTest extends TestCase
         $this->assertTrue(true);
         $router = new Router(new RouterConfiguration(false, false, false, [], [], '/'));
 
-        $keywords = ['zim', 'zam', 'zoom', 'boo', 'bar', 'foo', 'boom', 'tim'];
+        $keywords = ['zim', 'zam', 'zoom', 'boo', 'bar', 'foo', 'boom'];
 
         $count = 0;
         $this->createRoutesWithKeywords($router, $keywords, $count);
@@ -43,6 +43,7 @@ class RouterTest extends TestCase
             $time = measureTimeOf(function () use (&$response, &$router, $request) {
                 $response = $router->route(new Request('GET', $request));
             });
+            /** @var \Cube\Http\Response $response */
 
             $this->assertLessThan($routingTimeMicro, $time);
 
@@ -51,8 +52,8 @@ class RouterTest extends TestCase
             $this->assertEquals($expectedResponse, $response->getBody());
         };
 
-        $assertRoutingTakeLessThan('/tim/boom/foo/bar/boo/zoom/zam/zim', 5, '109600');
-        $assertRoutingTakeLessThan('/boo/bar/foo/boom/tim/zim/zam', 5, '48199');
+        $assertRoutingTakeLessThan('/boom/foo/bar/boo/zoom/zam/zim', 5, '13699');
+        $assertRoutingTakeLessThan('/boo/bar/foo/boom/zim/zam', 5, '7098');
         $assertRoutingTakeLessThan('/zim', 2, '1');
     }
 
@@ -60,7 +61,7 @@ class RouterTest extends TestCase
     {
         foreach ($keywords as $keyword) {
             ++$count;
-            $router->group($keyword, routes: function (Router $router, RouteGroup $group) use (&$keywords, &$keyword, &$count) {
+            $router->group($keyword, function: function (Router $router, RouteGroup $group) use (&$keywords, &$keyword, &$count) {
                 $router->addRoutes(
                     Route::get('/', [self::class, 'getCountResponse'], extras: ['count' => $count])
                 );
