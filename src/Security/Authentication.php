@@ -4,9 +4,9 @@ namespace Cube\Security;
 
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
-use Cube\Database\Database;
+use Cube\Data\Database\Database;
 use Cube\Env\Session\HasScopedSession;
-use Cube\Models\Model;
+use Cube\Data\Models\Model;
 use Cube\Security\Authentication\AuthenticationConfiguration;
 use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;

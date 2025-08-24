@@ -2,7 +2,7 @@
 
 namespace Cube;
 
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 
 function debug(mixed ...$values): void
 {

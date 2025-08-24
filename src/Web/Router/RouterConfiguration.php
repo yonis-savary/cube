@@ -2,9 +2,9 @@
 
 namespace Cube\Web\Router;
 
-use Cube\Configuration\ConfigurationElement;
+use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Core\Autoloader;
-use Cube\Web\WebAPI;
+use Cube\Web\Helpers\WebAPI;
 
 class RouterConfiguration extends ConfigurationElement
 {
@@ -14,10 +14,10 @@ class RouterConfiguration extends ConfigurationElement
     public readonly array $apis;
 
     /**
-     * @param bool                        $cached          Do the router should cache routes
-     * @param bool                        $loadControllers Load routes from Controller classes ?
-     * @param bool                        $loadRoutesFiles Load PHP Files inside your app(s) Routes directory ?
-     * @param class-string<WebAPI>|WebAPI $apis            Additionnal services to load (Either classes name or instances)
+     * @param bool                   $cached          Do the router should cache routes
+     * @param bool                   $loadControllers Load routes from Controller classes ?
+     * @param bool                   $loadRoutesFiles Load PHP Files inside your app(s) Routes directory ?
+     * @param class-string<WebAPI>[] $apis            Additionnal services to load (Either classes name or instances)
      */
     public function __construct(
         public readonly bool $cached = false,

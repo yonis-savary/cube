@@ -2,7 +2,7 @@
 
 namespace Cube\Security\Authentication;
 
-use Cube\Configuration\ConfigurationElement;
+use Cube\Env\Configuration\ConfigurationElement;
 
 class AuthenticationConfiguration extends ConfigurationElement
 {

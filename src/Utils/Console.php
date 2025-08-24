@@ -4,7 +4,7 @@ namespace Cube\Utils;
 
 use Cube\Core\Autoloader\Applications;
 use Cube\Data\Bunch;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 
 /**
  * @todo Implement no-ansi mode

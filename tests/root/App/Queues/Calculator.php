@@ -3,7 +3,7 @@
 namespace App\Queues;
 
 use App\Queues\Calculator\Addition;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 use Cube\Routine\Queue;
 
 class Calculator extends Queue

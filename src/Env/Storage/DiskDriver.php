@@ -46,12 +46,12 @@ abstract class DiskDriver
     abstract public function isReadable(string $path): bool;
 
     /**
-     * @return array Array of absolute directories paths inside `$path`
+     * @return string[] Array of absolute directories paths inside `$path`
      */
     abstract public function scanDirectory(string $path): array;
 
     /**
-     * @return array Array of absolute file paths inside `$path`
+     * @return string[] Array of absolute file paths inside `$path`
      */
     public function files(string $path): array
     {
@@ -63,7 +63,7 @@ abstract class DiskDriver
     }
 
     /**
-     * @return array Array of absolute directories paths inside `$path`
+     * @return string[] Array of absolute directories paths inside `$path`
      */
     public function directories(string $path): array
     {
@@ -77,7 +77,7 @@ abstract class DiskDriver
     /**
      * Recursively explore a part of the disk.
      *
-     * @return array List of files/directories
+     * @return string[] List of files/directories
      */
     public function explore(string $path): array
     {
@@ -87,7 +87,7 @@ abstract class DiskDriver
     /**
      * Recursively explore a part of the disk.
      *
-     * @return array List of sub-files
+     * @return string[] List of sub-files
      */
     public function exploreFiles(string $path): array
     {
@@ -97,7 +97,7 @@ abstract class DiskDriver
     /**
      * Recursively explore a part of the disk.
      *
-     * @return array List of sub-directories
+     * @return string[] List of sub-directories
      */
     public function exploreDirectories(string $path): array
     {

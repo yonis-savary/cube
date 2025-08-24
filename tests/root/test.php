@@ -1,9 +1,9 @@
 <?php
 
 use Cube\Core\Autoloader;
-use Cube\Http\Request;
-use Cube\Logger\Logger;
-use Cube\Web\CubeServer;
+use Cube\Web\Http\Request;
+use Cube\Env\Logger\Logger;
+use Cube\Web\Helpers\CubeServer;
 
 set_time_limit(0);
 

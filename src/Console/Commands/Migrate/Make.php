@@ -4,7 +4,7 @@ namespace Cube\Console\Commands\Migrate;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Database\MigrationManager;
+use Cube\Data\Database\MigrationManager;
 use Cube\Env\Storage;
 use Cube\Utils\Console;
 

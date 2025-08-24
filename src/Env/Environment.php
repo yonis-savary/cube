@@ -3,7 +3,7 @@
 namespace Cube\Env;
 
 use Cube\Core\Component;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 
 class Environment

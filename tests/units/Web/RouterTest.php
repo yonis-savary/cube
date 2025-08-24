@@ -2,8 +2,8 @@
 
 namespace Cube\Tests\Units\Web;
 
-use Cube\Http\Request;
-use Cube\Http\Response;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
@@ -43,7 +43,7 @@ class RouterTest extends TestCase
             $time = measureTimeOf(function () use (&$response, &$router, $request) {
                 $response = $router->route(new Request('GET', $request));
             });
-            /** @var \Cube\Http\Response $response */
+            /** @var \Cube\Web\Http\Response $response */
 
             $this->assertLessThan($routingTimeMicro, $time);
 
