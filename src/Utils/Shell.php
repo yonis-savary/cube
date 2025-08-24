@@ -57,29 +57,19 @@ class Shell
         switch (((int) ($status / 100)) * 100) {
             case 100:
                 $lineToLog = Console::withBlueColor($lineToLog);
-
                 break;
-
             case 200:
                 $lineToLog = Console::withGreenColor($lineToLog);
-
                 break;
-
             case 300:
                 $lineToLog = Console::withCyanColor($lineToLog);
-
                 break;
-
             case 400:
                 $lineToLog = Console::withYellowColor($lineToLog);
-
                 break;
-
             case 500:
                 $lineToLog = Console::withRedColor($lineToLog);
-
                 break;
-
             default:
                 break;
         }

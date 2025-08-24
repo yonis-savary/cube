@@ -448,8 +448,7 @@ class Response extends HttpMessage
         if ($sendHeaders) {
             http_response_code($this->statusCode);
 
-            if (array_key_exists('cache-control', $this->headers))
-            {
+            if (array_key_exists('cache-control', $this->headers)){
                 header_remove('Pragma');
             }
 
@@ -484,10 +483,9 @@ class Response extends HttpMessage
         return $dataToObjectClass::fromData($this->getJSON());
     }
 
-    public function exit(bool $sendHeaders = true)
+    public function exit(bool $sendHeaders = true): never
     {
         $this->display($sendHeaders);
-
         exit;
     }
 }

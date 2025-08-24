@@ -22,12 +22,15 @@ use Exception;
 
 class Autoloader
 {
+    protected static array $knownApplications = [];
     protected static array $assetsFiles = [];
     protected static array $requireFiles = [];
     protected static array $routesFiles = [];
 
     protected static ?array $cachedClassesList = null;
     protected static ?string $projectPath = null;
+
+    protected static AutoloaderConfiguration $configuration;
 
     protected static ?ClassLoader $loader;
     protected static mixed $classIndex;
@@ -46,13 +49,18 @@ class Autoloader
             include_once $helperFile;
         }
 
-        $conf ??= AutoloaderConfiguration::resolve();
+        self::$configuration = $conf ?? AutoloaderConfiguration::resolve();
 
-        if ($conf->cached) {
+        if (self::$configuration->cached) {
             $lockFile = Path::relative('composer.lock');
             $cacheIdentifier = is_file($lockFile) ? md5_file($lockFile) : 'default';
             self::$autoloadCache = Cache::getInstance()->child('AutoLoad');
             self::$classIndex = &self::$autoloadCache->getReference($cacheIdentifier, []);
+
+            self::$knownApplications = &self::$autoloadCache->getReference("$cacheIdentifier.apps", []);
+            self::$assetsFiles = &self::$autoloadCache->getReference("$cacheIdentifier.assets", []);
+            self::$requireFiles = &self::$autoloadCache->getReference("$cacheIdentifier.require", []);
+            self::$routesFiles = &self::$autoloadCache->getReference("$cacheIdentifier.routes", []);
         } else {
             self::$classIndex = [];
         }
@@ -106,7 +114,8 @@ class Autoloader
 
                 $errorMessage = 'Internal Server Error';
 
-                if (!str_contains(Environment::getInstance()->get('environment', 'debug'), 'prod')) {
+                $env = Environment::getInstance();
+                if (!str_contains($env->get('environment', 'debug'), 'prod')) {
                     $errorMessage .= "\n\n".$exception->getMessage();
                     $errorMessage .= "\n".$exception->getTraceAsString();
                 }
@@ -114,12 +123,11 @@ class Autoloader
                 $response = (new Response(500, str_replace("\n", "<br>", $errorMessage), ['Content-Type' => 'text/html']));
                 Shell::logRequestAndResponseToStdOut(Request::fromGlobals(), $response);
                 $response->exit();
-            } catch (\Throwable $err) {
-                // In case everything went wrong even logging/events !
+            } catch (\Throwable $_) {
+                // In case everything went wrong (even logging/events) !
 
                 http_response_code(500);
                 echo "Internal Server Error\n";
-                echo $err->getMessage()."\n";
 
                 exit;
             }
@@ -130,7 +138,6 @@ class Autoloader
     {
         if ($forceProjectPath) {
             self::$projectPath = $forceProjectPath;
-
             return;
         }
 
@@ -467,10 +474,11 @@ class Autoloader
     {
         $apps = Applications::resolve();
 
-        foreach ($apps->paths as $app) {
+        $appsToExplore = array_diff($apps->paths, self::$knownApplications);
+
+        foreach ($appsToExplore as $app) {
             if (!is_dir($app)) {
                 Logger::getInstance()->warning('Cannot load {app} directory, target is not a directory', ['app' => $app]);
-
                 continue;
             }
 
@@ -482,12 +490,10 @@ class Autoloader
                     case 'Routes':
                     case 'Router':
                         array_push(self::$routesFiles, ...(new Storage($directory))->exploreFiles());
-
                         break;
 
                     case 'Assets':
                         array_push(self::$assetsFiles, ...(new Storage($directory))->exploreFiles());
-
                         break;
 
                     case 'Requires':
@@ -496,7 +502,6 @@ class Autoloader
                     case 'Schedules':
                     case 'Cron':
                         array_push(self::$requireFiles, ...(new Storage($directory))->exploreFiles());
-
                         break;
                 }
             }

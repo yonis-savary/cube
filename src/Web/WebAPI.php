@@ -2,24 +2,21 @@
 
 namespace Cube\Web;
 
-use Cube\Core\Instanciable;
 use Cube\Http\Request;
+use Cube\Http\Response;
+use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
 
 abstract class WebAPI
 {
-    use Instanciable;
-
-    public function __construct() {}
-
     public function routes(Router $router): void {}
 
     /**
      * A service can directly handle a Request object when a router is looking for a matching route
-     * This method can return either a Response that will be displayed or a Route that will be executed.
+     * This method can return
+     * - a Response that will be displayed
+     * - a Route that will be executed.
+     * - `null` meaning that the API is not concerned
      */
-    public function handle(Request $request): mixed
-    {
-        return $request;
-    }
+    public function handle(Request $request): Response|Route|null { return null; }
 }

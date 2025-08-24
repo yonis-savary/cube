@@ -14,6 +14,7 @@ class Environment
 
     public function __construct(?string $file = null)
     {
+        $this->content = $_ENV;
         if ($file) {
             return $this->mergeWithFile($file);
         }

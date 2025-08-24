@@ -12,13 +12,13 @@ use Cube\Web\Router\Router;
 class AssetServer extends WebAPI
 {
     public function __construct(
-        public readonly string $path = '/assets/{file}'
+        public readonly string $route = '/assets/{file}'
     ) {}
 
     public function routes(Router $router): void
     {
         $router->addRoutes(
-            new Route($this->path, [self::class, 'serveAsset'], ['GET'])
+            new Route($this->route, [self::class, 'serveAsset'], ['GET'])
         );
     }
 
