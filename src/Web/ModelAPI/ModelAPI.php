@@ -75,8 +75,6 @@ abstract class ModelAPI extends Controller
     {
         $table = $this->model::table();
 
-        /** @var self $self */
-        $self = get_called_class();
         $modes = $this->modes;
 
         $modelGroup = $this->group->mergeWith(new RouteGroup(
@@ -88,12 +86,12 @@ abstract class ModelAPI extends Controller
             $modelGroup->prefix,
             $modelGroup->middlewares,
             $modelGroup->extras,
-            function: function (Router $router) use ($self, $modes) {
+            function: function (Router $router) use ($modes) {
                 $router->addRoutes(
-                    in_array(self::CREATE, $modes) ? Route::post('/', [$self, 'createItems']) : null,
-                    in_array(self::READ, $modes) ? Route::get('/', [$self, 'readItems']) : null,
-                    in_array(self::UPDATE, $modes) ? new Route('/', [$self, 'updateItem'], ['PUT', 'PATCH']) : null,
-                    in_array(self::DELETE, $modes) ? Route::delete('/', [$self, 'deleteItem']) : null,
+                    in_array(self::CREATE, $modes) ? Route::post('/', [static::class, 'createItems']) : null,
+                    in_array(self::READ, $modes) ? Route::get('/', [static::class, 'readItems']) : null,
+                    in_array(self::UPDATE, $modes) ? new Route('/', [static::class, 'updateItem'], ['PUT', 'PATCH']) : null,
+                    in_array(self::DELETE, $modes) ? Route::delete('/', [static::class, 'deleteItem']) : null,
                 );
             }
         );
@@ -101,8 +99,7 @@ abstract class ModelAPI extends Controller
 
     public static function createItems(Request $request)
     {
-        /** @var Model $model */
-        $model = (get_called_class())::getModel($request);
+        $model = static::getModel($request);
 
         /** @var Model[] $instances */
         $instances = [];
@@ -131,8 +128,7 @@ abstract class ModelAPI extends Controller
 
     public static function readItems(Request $request)
     {
-        /** @var Model $model */
-        $model = (get_called_class())::getModel($request);
+        $model = static::getModel($request);
         $fields = $model::fields();
 
         $query = $model::select();
@@ -159,8 +155,7 @@ abstract class ModelAPI extends Controller
 
     public static function updateItem(Request $request)
     {
-        /** @var Model $model */
-        $model = (get_called_class())::getModel($request);
+        $model = static::getModel($request);
 
         if (!$primaryKey = $model::primaryKey()) {
             throw new \Exception("{$model} model does not have a primary key");
@@ -189,8 +184,7 @@ abstract class ModelAPI extends Controller
 
     public static function deleteItem(Request $request)
     {
-        /** @var Model $model */
-        $model = (get_called_class())::getModel($request);
+        $model = static::getModel($request);
 
         if (!$primaryKey = $model::primaryKey()) {
             throw new \Exception("{$model} model does not have a primary key");

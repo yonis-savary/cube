@@ -17,6 +17,6 @@ trait HasScopedSession
 
     public function getScope(): string
     {
-        return md5(get_called_class());
+        return md5(static::class);
     }
 }

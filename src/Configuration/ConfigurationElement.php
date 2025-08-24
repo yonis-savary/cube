@@ -9,7 +9,7 @@ abstract class ConfigurationElement
      */
     public static function resolve(?Configuration $configuration = null, ?self $default = null)
     {
-        $class = get_called_class();
+        $class = static::class;
 
         $configuration ??= Configuration::getInstance();
 
@@ -18,6 +18,6 @@ abstract class ConfigurationElement
 
     public function getName(): string
     {
-        return get_called_class();
+        return static::class;
     }
 }

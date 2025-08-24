@@ -13,26 +13,23 @@ abstract class AuthenticationMiddleware implements Middleware
 
     public static function getIdentifier(): string
     {
-        return md5(get_called_class());
+        return md5(static::class);
     }
 
     public static function handle(Request $request): Request|Response
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        $identifier = $self::getIdentifier();
+        $identifier = static::getIdentifier();
 
         $route = $request->getRoute();
         $neededPermissions = $route->getExtras()[$identifier];
 
-        $hasPermission = $self::userHasPermission($neededPermissions);
+        $hasPermission = static::userHasPermission($neededPermissions);
 
         if (true === $hasPermission) {
             return $request;
         }
 
-        return $self::getErrorResponse($hasPermission);
+        return static::getErrorResponse($hasPermission);
     }
 
     abstract public static function getUserPermission(): array;
@@ -41,10 +38,7 @@ abstract class AuthenticationMiddleware implements Middleware
 
     public static function userHasPermission(mixed $permissions): array|true
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        $userPermission = $self::getUserPermission();
+        $userPermission = static::getUserPermission();
 
         $missingPermissions = array_diff($permissions, $userPermission);
 
@@ -55,11 +49,8 @@ abstract class AuthenticationMiddleware implements Middleware
     {
         $router ??= Router::getInstance();
 
-        /** @var self $self */
-        $self = get_called_class();
+        $identifier = static::getIdentifier();
 
-        $identifier = $self::getIdentifier();
-
-        $router->group('/', [$self], [$identifier => $neededPermissions], $callback);
+        $router->group('/', [static::class], [$identifier => $neededPermissions], $callback);
     }
 }

@@ -6,7 +6,7 @@ abstract class Event
 {
     public function getName(): string
     {
-        return get_called_class();
+        return static::class;
     }
 
     public function dispatch(?EventDispatcher $dispatcher = null): self
@@ -20,6 +20,6 @@ abstract class Event
     public static function onTrigger(callable $callback, ?EventDispatcher $dispatcher = null): void
     {
         $dispatcher ??= Events::getInstance();
-        $dispatcher->on(get_called_class(), $callback);
+        $dispatcher->on(static::class, $callback);
     }
 }

@@ -65,9 +65,7 @@ class Request extends HttpMessage
 
     public static function fromRequest(Request $source): self
     {
-        /** @var self $class */
-        $class = get_called_class();
-        $newReq = new $class();
+        $newReq = new static();
 
         $newReq->method = $source->method;
         $newReq->path = $source->path;

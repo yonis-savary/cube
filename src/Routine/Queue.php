@@ -21,10 +21,7 @@ abstract class Queue extends Routine
 
     public static function countToProcess(): int
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        $storage = $self::getStorage();
+        $storage = static::getStorage();
 
         return Bunch::of($storage->files())
             ->filter(fn ($x) => !str_starts_with(basename($x), '#'))
@@ -34,10 +31,7 @@ abstract class Queue extends Routine
 
     public static function flush(bool $deleteLockedToo = false): void
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        $storage = $self::getStorage();
+        $storage = static::getStorage();
 
         $files = Bunch::of($storage->files());
 
@@ -50,10 +44,7 @@ abstract class Queue extends Routine
 
     public static function processNext(): void
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        $storage = $self::getStorage();
+        $storage = static::getStorage();
         $files = $storage->files();
 
         if (!count($files)) {
@@ -69,8 +60,8 @@ abstract class Queue extends Routine
         }
 
         $logger = Logger::getInstance();
-        if (!$locked = $self::lockFile($toProcess)) {
-            $logger->warning($self.": could not lock file {$toProcess}");
+        if (!$locked = static::lockFile($toProcess)) {
+            $logger->warning(static::class.": could not lock file {$toProcess}");
 
             return;
         }
@@ -78,7 +69,7 @@ abstract class Queue extends Routine
         $object = unserialize(file_get_contents($locked));
 
         try {
-            $res = $self::process($object);
+            $res = static::process($object);
         } catch (\Throwable $thrown) {
             $logger->warning("Caught an exception while processing {$locked}");
             $logger->logThrowable($thrown);
@@ -89,21 +80,18 @@ abstract class Queue extends Routine
         unlink($locked);
 
         if (!$res) {
-            $self::processNext();
+            static::processNext();
         }
     }
 
     protected static function getIdentifier(): string
     {
-        return preg_replace('/[^a-z]/', '.', strtolower(get_called_class()));
+        return preg_replace('/[^a-z]/', '.', strtolower(static::class));
     }
 
     protected static function getStorage(): Storage
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        $identifier = $self::getIdentifier();
+        $identifier = static::getIdentifier();
 
         return Storage::getInstance()->child('Queues')->child($identifier);
     }
@@ -128,10 +116,7 @@ abstract class Queue extends Routine
      */
     protected static function pushToQueue($object): void
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        $storage = $self::getStorage();
+        $storage = static::getStorage();
         $identifier = uniqid(time().'-');
 
         $storage->write($identifier, serialize($object));

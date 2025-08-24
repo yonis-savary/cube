@@ -43,7 +43,7 @@ class Router
         $config ??= RouterConfiguration::resolve();
 
         if ($config->cached)
-            $this->cache = Cache::getInstance()->child("Routers")->child(md5(get_called_class()));
+            $this->cache = Cache::getInstance()->child("Routers")->child(md5(static::class));
 
         $this->rootHolder = new RouteGroup(
             $config->commonPrefix,

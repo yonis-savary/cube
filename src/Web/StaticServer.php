@@ -54,7 +54,7 @@ class StaticServer extends WebAPI
         $indexPath = $directory->path($this->indexFile);
 
         $router->addRoutes(
-            Route::get('/{any:any}', [(get_called_class())::class, 'serveIndexFile'], extras: ['file' => $indexPath])
+            Route::get('/{any:any}', [static::class, 'serveIndexFile'], extras: ['file' => $indexPath])
         );
     }
 

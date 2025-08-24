@@ -16,11 +16,8 @@ abstract class DataToObject
 
     public static function bunch(array $collection): Bunch
     {
-        /** @var class-string<static> $self */
-        $self = get_called_class();
-
         return Bunch::of($collection)
-            ->map(fn ($element) => $self::fromData($element))
+            ->map(fn ($element) => static::fromData($element))
         ;
     }
 
@@ -29,20 +26,14 @@ abstract class DataToObject
      */
     public static function array(array $elements): array
     {
-        /** @var class-string<static> $self */
-        $self = get_called_class();
-
-        return $self::bunch($elements)->toArray();
+        return static::bunch($elements)->toArray();
     }
 
     public static function fromData(array $rawData): static
     {
-        /** @var class-string<static> $self */
-        $self = get_called_class();
+        $specialKeys = static::keys();
 
-        $specialKeys = $self::keys();
-
-        $reflectionClass = new \ReflectionClass($self);
+        $reflectionClass = new \ReflectionClass(static::class);
         $constructor = $reflectionClass->getConstructor();
 
         $constructorValues = [];
@@ -77,10 +68,10 @@ abstract class DataToObject
         }
 
         try {
-            return new $self(...array_values($constructorValues));
+            return new static(...array_values($constructorValues));
         } catch (\Throwable $err) {
             $logger = Logger::getInstance();
-            $logger->error("Could not create item of type {$self} with data {data}", ['data' => $constructorValues]);
+            $logger->error("Could not create item of type {class} with data {data}", ['class' => static::class, 'data' => $constructorValues]);
             $logger->logThrowable($err);
 
             throw $err;

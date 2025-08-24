@@ -12,7 +12,7 @@ trait HasLogger
             return $this->logger;
         }
 
-        $classname = get_called_class();
+        $classname = static::class;
         $classname = preg_replace('/.+\\\/', '', $classname);
         $classname = strtolower($classname);
 

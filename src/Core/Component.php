@@ -8,7 +8,7 @@ trait Component
 
     public static function getDefaultInstance(): static
     {
-        return Autoloader::instanciate(get_called_class());
+        return Autoloader::instanciate(static::class);
     }
 
     public static function getInstance(): static

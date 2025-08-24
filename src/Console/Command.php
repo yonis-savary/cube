@@ -8,8 +8,7 @@ abstract class Command
     {
         $args ??= new Args();
 
-        /** @var self $command */
-        $command = new (get_called_class());
+        $command = new static();
 
         return $command->execute($args);
     }
@@ -26,7 +25,7 @@ abstract class Command
 
     public function getName(): string
     {
-        $class = preg_replace('/.+\\\/', '', get_called_class());
+        $class = preg_replace('/.+\\\/', '', static::class);
         $class = preg_replace_callback('/([a-z])([A-Z])/', fn ($m) => $m[1].'-'.$m[2], $class);
 
         return strtolower($class);
@@ -34,7 +33,7 @@ abstract class Command
 
     public function getScope(): string
     {
-        $class = preg_replace('/\\\.+/', '', get_called_class());
+        $class = preg_replace('/\\\.+/', '', static::class);
         $class = preg_replace_callback('/([a-z])([A-Z])/', fn ($m) => $m[1].'-'.$m[2], $class);
 
         return strtolower($class);

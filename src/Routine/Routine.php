@@ -8,9 +8,6 @@ abstract class Routine
 
     public static function shouldLaunch(\DateTime|string $datetime = 'now'): bool
     {
-        /** @var self $self */
-        $self = get_called_class();
-
-        return $self::when()->matches($datetime);
+        return static::when()->matches($datetime);
     }
 }

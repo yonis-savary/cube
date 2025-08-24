@@ -38,7 +38,7 @@ abstract class DatabaseProvider
             return Database::fromPDO($connection);
         } catch (\Throwable $err) {
             $logger = Logger::getInstance();
-            $logger->error('Error in '.get_called_class());
+            $logger->error('Error in '.static::class);
             $logger->logThrowable($err);
 
             throw $err;
