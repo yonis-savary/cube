@@ -140,12 +140,10 @@ abstract class ModelAPI extends Controller
             switch ($field->type) {
                 case ModelField::STRING:
                     self::makeSearchQuery($query, $fieldName, $value);
-
                     break;
 
                 default:
                     $query->where($fieldName, $value);
-
                     break;
             }
         }
@@ -210,13 +208,13 @@ abstract class ModelAPI extends Controller
         return new $modelClass();
     }
 
-    protected static function makeSearchQuery(Query &$query, string $fieldName, mixed $value)
+    protected static function makeSearchQuery(Query &$query, string $fieldName, mixed $value, string $comparisonKeywork="LIKE")
     {
         $database = Database::getInstance();
 
         $conditions = Bunch::fromExplode(' ', (string) $value)
             ->map(fn ($word) => "%{$word}%")
-            ->map(fn ($word) => $database->build("`{$fieldName}` LIKE {}", [$word]))
+            ->map(fn ($word) => $database->build("`{$fieldName}` $comparisonKeywork {}", [$word]))
             ->join(' AND ')
         ;
 

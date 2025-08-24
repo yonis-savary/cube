@@ -14,7 +14,7 @@ class StaticServer extends WebAPI
     protected bool $secure;
 
     protected bool $supportsIndex;
-    protected string $indexFile;
+    protected ?string $indexFile;
 
     public function __construct(
         Storage|string $directory,
@@ -30,14 +30,16 @@ class StaticServer extends WebAPI
 
         $indexFile = null;
         if ($supportsIndex) {
+            $supportsIndex = false;
             foreach (['index.php', 'index.html'] as $possibleFile) {
                 if (!$directory->isFile($possibleFile)) {
                     continue;
                 }
 
                 $indexFile = $directory->path($possibleFile);
+                $supportsIndex = true;
+                break;
             }
-            $supportsIndex &= is_string($indexFile);
         }
 
         $this->indexFile = $indexFile;
@@ -65,7 +67,7 @@ class StaticServer extends WebAPI
         return Response::file($file);
     }
 
-    public function handle(Request $request): mixed
+    public function handle(Request $request): Response|Route|null
     {
         $path = $request->getPath();
         $directory = $this->directory;
@@ -73,7 +75,6 @@ class StaticServer extends WebAPI
         if ($this->secure && $this->isPathDangerous($path)) {
             return null;
         }
-
         if ($directory->isFile($path)) {
             return Response::file($directory->path($path));
         }
