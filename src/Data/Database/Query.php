@@ -114,6 +114,10 @@ class Query
         return $this;
     }
 
+    public function or(): self {
+        $this->conditions[] = "OR";
+        return $this;
+    }
 
     public function when(mixed $condition, callable|\Closure $callback): self
     {
