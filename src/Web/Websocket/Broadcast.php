@@ -3,8 +3,8 @@
 namespace Cube\Web\Websocket;
 
 use Cube\Core\Component;
-use Cube\Http\HttpClient;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
+use Cube\Web\Http\HttpClient;
 
 class Broadcast
 {

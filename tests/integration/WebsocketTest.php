@@ -2,8 +2,8 @@
 
 namespace Cube\Tests\Integration;
 
-use Cube\Http\Request;
-use Cube\Logger\Logger;
+use Cube\Web\Http\Request;
+use Cube\Env\Logger\Logger;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 

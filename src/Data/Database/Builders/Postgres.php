@@ -124,30 +124,50 @@ class Postgres extends MySQL
         );
     }
 
+
     public function getConditions(): string
     {
-        return count($this->query->conditions) ? 'WHERE ('
-            .Bunch::of($this->query->conditions)
-                ->map(function (FieldComparaison|FieldCondition|RawCondition $condition) {
-                    if ($condition instanceof FieldComparaison) {
-                        return $this->getFieldComparaison($condition);
-                    }
-                    if ($condition instanceof FieldCondition) {
-                        return sprintf(
-                            '%s%s %s %s',
-                            $condition->table ? '"'.$condition->table.'".' : '',
-                            $condition->field,
-                            $condition->operator,
-                            $this->getSQLValue($condition->expression),
-                        );
-                    }
-                    if ($condition instanceof RawCondition) {
-                        return $condition->expression;
-                    }
-                })
-                ->join(") \n AND \n (")
-        .')' : '';
+        if (! $count = count($this->query->conditions))
+            return '';
+
+        $conditions = "";
+        for ($i=0; $i < $count; $i++)
+        {
+            $condition = $this->query->conditions[$i];
+            $nextElement = $this->query->conditions[$i+1] ?? 'AND';
+
+            if (!is_string($nextElement)) 
+                $nextElement = 'AND';
+
+            if ($i == $count-1)
+                $nextElement = '';
+
+            if ($condition instanceof FieldComparaison) {
+                $stringCondition = $this->getFieldComparaison($condition);
+            }
+            else if ($condition instanceof FieldCondition) {
+                $stringCondition = sprintf(
+                    '%s%s %s %s',
+                    $condition->table ? '"'.$condition->table.'".' : '',
+                    $condition->field,
+                    $condition->operator,
+                    $this->getSQLValue($condition->expression),
+                );
+            }
+            else if ($condition instanceof RawCondition) {
+                $stringCondition = $condition->expression;
+            }
+            else 
+            {
+                return '';
+            }
+
+            $conditions .= $stringCondition . " $nextElement ";
+        }
+
+        return "WHERE $conditions";
     }
+
 
     public function getUpdateConditions(): string
     {
