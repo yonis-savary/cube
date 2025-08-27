@@ -4,6 +4,7 @@ namespace Cube\Logger;
 
 use Cube\Data\Bunch;
 use Cube\Logger\Events\LoggedMessage;
+use Cube\Utils\Text;
 
 class StdOutLogger extends Logger
 {
@@ -30,7 +31,7 @@ class StdOutLogger extends Logger
             return;
         }
 
-        $message = $this->interpolate($message, $context);
+        $message = Text::interpolate($message, $context);
 
         Bunch::fromExplode("\n", $message)
             ->forEach(function ($line) {
