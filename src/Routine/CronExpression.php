@@ -30,6 +30,11 @@ class CronExpression
         foreach ($values as &$value) {
             $value = $this->transformValueToCronValue($value);
         }
+        /** @var CronValue $min */
+        /** @var CronValue $hour */
+        /** @var CronValue $dayOfTheMonth */
+        /** @var CronValue $month */
+        /** @var CronValue $dayOfTheWeek */
 
         $this->min = $min;
         $this->hour = $hour;

@@ -38,12 +38,13 @@ class HttpClient
     public const DEBUG_ALL = 0b1111_1111;
 
     protected Request $request;
+    protected Logger $logger;
 
     protected float $lastFetchDurationMicro;
 
-    public function __construct(Request $request)
+    public function baseLogger(): Logger
     {
-        $this->request = $request;
+        return new NullLogger();
     }
 
     public function setRequest(Request $request)
@@ -307,7 +308,7 @@ class HttpClient
         $handle = $this->toCurlHandle($timeout, $userAgent, $logger, $logFlags);
         $userAgent ??= $this->baseUserAgent();
 
-        $logger ??= new NullLogger();
+        $logger ??= $this->baseLogger();
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_HEADERS)) {
             $logger->info('{method} {path}', ['method' => $request->getMethod(), 'path' => $request->getPath()]);

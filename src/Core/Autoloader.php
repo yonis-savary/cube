@@ -19,9 +19,6 @@ use Cube\Utils\Path;
 use Cube\Utils\Shell;
 use ErrorException;
 use Exception;
-use ReflectionException;
-
-use function Cube\debug;
 
 class Autoloader
 {
@@ -74,7 +71,14 @@ class Autoloader
          * we transform the error into an `ErrorException`
          */
         set_error_handler(function (int $code, string $message, string $file, int $line) {
-            throw new \ErrorException($message, $code, 1, $file, $line);
+            $exception = new \ErrorException($message, $code, 1, $file, $line);
+            if (($code & E_DEPRECATED) || ($code & E_USER_DEPRECATED)) {
+                $logger = new Logger('warnings.csv');
+                $logger->logThrowable($exception);
+                return true;
+            }
+
+            return false;
         });
 
         /*
@@ -181,13 +185,25 @@ class Autoloader
 
         /** @var ClassLoader $loader */
         $loader = self::getClassLoader();
-
         $classMap = $loader->getClassMap();
+
         $classes = Bunch::fromKeys($classMap);
         $classMapFiles = Bunch::fromValues($classMap)->map(fn ($path) => realpath($path));
 
-        foreach ($loader->getPrefixesPsr4() as $namespace => $directories) {
-            foreach ($directories as $directory) {
+        $vendorDirectory = Path::relative('vendor');
+        $cubeDirectory = Path::relative('vendor/yonis-savary/cube/src');
+        $directoriesToScan = $loader->getPrefixesPsr4();
+
+        foreach ($directoriesToScan as $namespace => $directories) {
+
+            $directories = Bunch::of($directories)->map(realpath(...))->toArray();
+            $safeDirectories = Bunch::of($directories);
+
+            if ($directories[0] !== $cubeDirectory) {
+                $safeDirectories = $safeDirectories->filter(fn($p) => !str_starts_with($p, $vendorDirectory));
+            }
+
+            foreach ($safeDirectories->toArray() as $directory) {
                 if (!is_dir($directory)) {
                     Logger::getInstance()->warning('Could not read PSR4 directory [{dir}]', ['dir' => $directory]);
 

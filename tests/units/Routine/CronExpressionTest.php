@@ -12,8 +12,6 @@ class CronExpressionTest extends TestCase
 {
     public function testMatches()
     {
-        $this->assertTrue(true);
-
         $pointer = new \DateTime('2024-01-01 00:00:00');
         $end = new \DateTime('2024-01-07 23:59:59');
 

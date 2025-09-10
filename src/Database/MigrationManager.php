@@ -6,6 +6,7 @@ use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Database\Migration\Adapters\MySQL;
+use Cube\Database\Migration\Adapters\Postgres;
 use Cube\Database\Migration\Adapters\SQLite;
 use Cube\Database\Migration\Migration;
 use Cube\Database\Migration\MigrationManagerConfiguration;
@@ -146,13 +147,10 @@ abstract class MigrationManager
         switch (strtolower($databaseDriver)) {
             case 'mysql':
                 return new MySQL($database);
-
-                break;
-
+            case 'pgsql':
+                return new Postgres($database);
             case 'sqlite':
                 return new SQLite($database);
-
-                break;
         }
 
         throw new \RuntimeException("No migration driver found for [{$databaseDriver}] database");
