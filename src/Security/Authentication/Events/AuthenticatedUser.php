@@ -3,7 +3,7 @@
 namespace Cube\Security\Authentication\Events;
 
 use Cube\Event\Event;
-use Cube\Models\Model;
+use Cube\Data\Models\Model;
 
 class AuthenticatedUser extends Event
 {

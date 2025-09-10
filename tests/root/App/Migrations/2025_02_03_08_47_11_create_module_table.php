@@ -1,6 +1,6 @@
 <?php
 
-use Cube\Database\Migration\Migration;
+use Cube\Data\Database\Migration\Migration;
 
 return new Migration(
     "CREATE TABLE module (

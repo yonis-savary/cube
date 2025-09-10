@@ -3,7 +3,7 @@
 namespace Cube\Web\Websocket;
 
 use Cube\Core\Component;
-use Cube\Http\StatusCode;
+use Cube\Web\Http\StatusCode;
 use Psr\Http\Message\ServerRequestInterface;
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;

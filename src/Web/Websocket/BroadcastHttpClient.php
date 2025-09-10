@@ -2,8 +2,8 @@
 
 namespace Cube\Web\Websocket;
 
-use Cube\Http\HttpClient;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
+use Cube\Web\Http\HttpClient;
 
 /**
  * This class is a simple HTTPClient using the websocket configuration

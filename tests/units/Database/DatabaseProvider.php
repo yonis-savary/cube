@@ -2,8 +2,8 @@
 
 namespace Cube\Tests\Units\Database;
 
-use Cube\Database\Database;
-use Cube\Logger\Logger;
+use Cube\Data\Database\Database;
+use Cube\Env\Logger\Logger;
 
 abstract class DatabaseProvider
 {

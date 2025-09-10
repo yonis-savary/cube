@@ -2,9 +2,9 @@
 
 namespace Cube\Web\Websocket;
 
-use Cube\Configuration\ConfigurationElement;
-use Cube\Logger\Logger;
-use Cube\Logger\StdOutLogger;
+use Cube\Env\Configuration\ConfigurationElement;
+use Cube\Env\Logger\Logger;
+use Cube\Env\Logger\StdOutLogger;
 
 class WebsocketConfiguration extends ConfigurationElement
 {

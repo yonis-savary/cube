@@ -4,14 +4,14 @@ namespace Cube\Web\ModelAPI;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
-use Cube\Database\Database;
-use Cube\Database\Query;
-use Cube\Database\Query\RawCondition;
-use Cube\Http\Request;
-use Cube\Http\Response;
-use Cube\Http\StatusCode;
-use Cube\Models\Model;
-use Cube\Models\ModelField;
+use Cube\Data\Database\Database;
+use Cube\Data\Database\Query;
+use Cube\Data\Database\Query\RawCondition;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
+use Cube\Web\Http\StatusCode;
+use Cube\Data\Models\Model;
+use Cube\Data\Models\ModelField;
 use Cube\Utils\Utils;
 use Cube\Web\Controller;
 use Cube\Web\Router\Route;
@@ -140,12 +140,10 @@ abstract class ModelAPI extends Controller
             switch ($field->type) {
                 case ModelField::STRING:
                     self::makeSearchQuery($query, $fieldName, $value);
-
                     break;
 
                 default:
                     $query->where($fieldName, $value);
-
                     break;
             }
         }
@@ -210,13 +208,13 @@ abstract class ModelAPI extends Controller
         return new $modelClass();
     }
 
-    protected static function makeSearchQuery(Query &$query, string $fieldName, mixed $value)
+    protected static function makeSearchQuery(Query &$query, string $fieldName, mixed $value, string $comparisonKeywork="LIKE")
     {
         $database = Database::getInstance();
 
         $conditions = Bunch::fromExplode(' ', (string) $value)
             ->map(fn ($word) => "%{$word}%")
-            ->map(fn ($word) => $database->build("`{$fieldName}` LIKE {}", [$word]))
+            ->map(fn ($word) => $database->build("`{$fieldName}` $comparisonKeywork {}", [$word]))
             ->join(' AND ')
         ;
 

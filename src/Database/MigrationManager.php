@@ -11,7 +11,7 @@ use Cube\Database\Migration\Adapters\SQLite;
 use Cube\Database\Migration\Migration;
 use Cube\Database\Migration\MigrationManagerConfiguration;
 use Cube\Env\Storage;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
 
 abstract class MigrationManager

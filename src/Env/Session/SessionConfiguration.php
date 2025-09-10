@@ -2,7 +2,7 @@
 
 namespace Cube\Env\Session;
 
-use Cube\Configuration\ConfigurationElement;
+use Cube\Env\Configuration\ConfigurationElement;
 
 class SessionConfiguration extends ConfigurationElement
 {

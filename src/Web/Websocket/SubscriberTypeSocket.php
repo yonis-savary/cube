@@ -2,7 +2,7 @@
 
 namespace Cube\Web\Websocket;
 
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use SplObjectStorage;

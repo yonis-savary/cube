@@ -7,10 +7,10 @@ use Cube\Console\Command;
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Env\Storage;
-use Cube\Models\Model;
-use Cube\Models\ModelField;
-use Cube\Models\Relations\HasMany;
-use Cube\Models\Relations\HasOne;
+use Cube\Data\Models\Model;
+use Cube\Data\Models\ModelField;
+use Cube\Data\Models\Relations\HasMany;
+use Cube\Data\Models\Relations\HasOne;
 use Cube\Utils\Text;
 use InvalidArgumentException;
 

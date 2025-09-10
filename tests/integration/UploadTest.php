@@ -2,11 +2,11 @@
 
 namespace Cube\Tests\Integration;
 
-use Cube\Database\Database;
+use Cube\Data\Database\Database;
 use Cube\Test\CubeTestCase;
 use Cube\Utils\File;
 use Cube\Utils\Shell;
-use Cube\Web\CubeServer;
+use Cube\Web\Helpers\CubeServer;
 
 /**
  * @internal

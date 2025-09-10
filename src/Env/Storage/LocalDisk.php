@@ -3,7 +3,7 @@
 namespace Cube\Env\Storage;
 
 use Cube\Data\Bunch;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 
 class LocalDisk extends DiskDriver

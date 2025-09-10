@@ -2,8 +2,8 @@
 
 namespace Cube\Tests\Units\Configuration;
 
-use Cube\Configuration\Configuration;
-use Cube\Configuration\GenericElement;
+use Cube\Env\Configuration;
+use Cube\Env\Configuration\GenericElement;
 use PHPUnit\Framework\TestCase;
 
 /**

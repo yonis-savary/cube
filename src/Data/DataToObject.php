@@ -5,7 +5,7 @@ namespace Cube\Data;
 use Cube\Core\Autoloader;
 use Cube\Data\Classes\ArrayOf;
 use Cube\Data\Classes\BunchOf;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 
 abstract class DataToObject
 {

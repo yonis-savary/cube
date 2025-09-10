@@ -3,7 +3,7 @@
 namespace Cube\Env;
 
 use Cube\Core\Component;
-use Cube\Logger\Logger;
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 
 class Environment
@@ -14,6 +14,7 @@ class Environment
 
     public function __construct(?string $file = null)
     {
+        $this->content = $_ENV;
         if ($file) {
             return $this->mergeWithFile($file);
         }

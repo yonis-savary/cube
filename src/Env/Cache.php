@@ -3,7 +3,7 @@
 namespace Cube\Env;
 
 use Cube\Core\Component;
-use Cube\Env\Cache\Element;
+use Cube\Env\Cache\CacheElement;
 
 class Cache
 {
@@ -18,7 +18,7 @@ class Cache
 
     protected Storage $storage;
 
-    /** @var array<string,Element> */
+    /** @var array<string,CacheElement> */
     protected array $index = [];
 
     public function __construct(Storage $storage)
@@ -26,7 +26,7 @@ class Cache
         $this->storage = $storage;
 
         foreach ($storage->files() as $file) {
-            if (!$element = Element::fromFile($file)) {
+            if (!$element = CacheElement::fromFile($file)) {
                 continue;
             }
 
@@ -73,7 +73,7 @@ class Cache
 
         $this->delete($key);
 
-        $element = new Element($key, $value, $timeToLive, $creationDate);
+        $element = new CacheElement($key, $value, $timeToLive, $creationDate);
         $this->index[$key] = $element;
     }
 

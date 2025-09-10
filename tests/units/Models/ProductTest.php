@@ -3,10 +3,10 @@
 namespace Cube\Tests\Units\Models;
 
 use Cube\Data\Bunch;
-use Cube\Database\Database;
-use Cube\Database\Query;
-use Cube\Http\Request;
-use Cube\Http\Rules\Validator;
+use Cube\Data\Database\Database;
+use Cube\Data\Database\Query;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Rules\Validator;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;

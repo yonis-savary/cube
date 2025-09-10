@@ -36,7 +36,7 @@ class Bunch
      * @template TType
      * @template TTypeKey
      *
-     * @param array<TType>|Bunch<TTypeKey,TType>|TType $element
+     * @param TType[]|Bunch<TTypeKey,TType>|TType $element
      *
      * @return self<int,TType>
      */
