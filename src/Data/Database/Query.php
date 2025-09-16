@@ -88,6 +88,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function where(string $field, mixed $value, string $operator = '=', ?string $table = null): self
     {
         $table ??= $this->getFieldTable($field);
@@ -114,11 +117,17 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function or(): self {
         $this->conditions[] = "OR";
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function when(mixed $condition, callable|\Closure $callback): self
     {
         if ($condition)
@@ -127,12 +136,18 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function whereRaw(string $expression): self
     {
         $this->conditions[] = new RawCondition($expression);
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function insertField(array $fields): self
     {
         $this->insertFields = new InsertField($fields);
@@ -140,6 +155,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function values(array ...$values): self
     {
         foreach ($values as $set) {
@@ -155,6 +173,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function selectField(string $field, ?string $table = null, ?string $alias = null, string $model = DummyModel::class, ?ModelField $modelField = null): self
     {
         $table ??= $this->getFieldTable($field);
@@ -164,6 +185,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function selectExpression(string $expression, ?string $alias = null): self
     {
         $this->selectFields[] = new Field(null, null, $expression, $alias);
@@ -171,6 +195,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function join(string $type, string $tableToJoin, ?string $alias = null, ?FieldComparaison $condition = null): self
     {
         $this->joins[] = new Join($type, $tableToJoin, $alias, $condition);
@@ -178,6 +205,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function limit(?int $limit = null, ?int $offset = null): self
     {
         $this->limit = new Limit($limit, $offset);
@@ -185,6 +215,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function order(?string $fieldOrAlias = null, string $type = 'DESC', ?string $table = null): self
     {
         $table ??= $this->getFieldTable($fieldOrAlias);
@@ -193,6 +226,9 @@ class Query
         return $this;
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function set(string $field, mixed $newValue, ?string $table = null): self
     {
         $table ??= $this->getFieldTable($field);
@@ -218,7 +254,7 @@ class Query
     }
 
     /**
-     * @return array<TModel>
+     * @return TModel[]
      */
     public function fetch(?Database $database = null): array
     {
@@ -265,7 +301,14 @@ class Query
     }
 
     /**
-     * @return TModel
+     * @return Bunch<TModel>
+     */
+    public function fetchBunch(?Database $database = null) {
+        return Bunch::of($this->fetch($database));
+    }
+
+    /**
+     * @return TModel|null
      */
     public function first(?Database $database = null): ?Model
     {
@@ -282,6 +325,9 @@ class Query
         return Bunch::of($this->fetch());
     }
 
+    /**
+     * @return self<TModel>
+     */
     public function exploreModel(Model|string $class, string $joinAcc): self
     {
         $fields = Bunch::fromValues($class::fields());
