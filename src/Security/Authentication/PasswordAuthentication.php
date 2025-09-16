@@ -17,14 +17,11 @@ class PasswordAuthentication implements AuthenticationProvider
         public readonly string $model,
         public readonly array|string $loginFields,
         public readonly string $passwordField,
-        public readonly ?string $saltField = null,
-        protected ?Database $database = null
+        public readonly ?string $saltField = null
     ) {
         if (!Autoloader::extends($model, Model::class)) {
             throw new \InvalidArgumentException("{$model} class does not extends Model");
         }
-
-        $this->database ??= Database::getInstance();
     }
 
     public function attempt(string $identifier, ?string $password = null): Model|false

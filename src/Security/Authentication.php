@@ -11,7 +11,6 @@ use Cube\Security\Authentication\AuthenticationConfiguration;
 use Cube\Security\Authentication\AuthenticationProvider;
 use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
-use Cube\Security\Authentication\PasswordAuthentication;
 use Cube\Utils\Path;
 use Cube\Utils\Utils;
 
@@ -24,26 +23,14 @@ class Authentication
     public const SESSION_USER_DATA = 'session-user-data';
     public const SESSION_USER_CLASS = 'session-user-class';
 
+    private AuthenticationProvider $provider;
 
     /**
      * @param class-string<Model> $model
      */
-    public function __construct(
-        private AuthenticationProvider $provider
-    ) {
-    }
-
-    public static function getDefaultInstance(): static
-    {
-        return new self(
-            new PasswordAuthentication(
-                'App\Models\User',
-                ['email'],
-                'password',
-                null,
-                Database::getInstance()
-            )
-        );
+    public function __construct(?AuthenticationConfiguration $configuration=null) {
+        $configuration ??= AuthenticationConfiguration::resolve(null);
+        $this->provider = $configuration->provider;
     }
 
     public function getSessionKey(string $key): string
@@ -51,17 +38,17 @@ class Authentication
         return md5(Path::relative($key));
     }
 
-
     public function attempt(string $login, ?string $userPassword=null): bool
     {
         $this->logout();
 
-        $user = $this->provider->attempt($login, $userPassword);
+        if (!$user = $this->provider->attempt($login, $userPassword)){
+            (new FailedAuthentication())->dispatch();
+            return false;
+        }
 
         $this->login($user);
-
         (new AuthenticatedUser($user, $user->id()))->dispatch();
-
         return true;
     }
 
