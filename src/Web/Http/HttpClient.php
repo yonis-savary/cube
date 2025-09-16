@@ -148,7 +148,8 @@ class HttpClient
     public function toCurlHandle(
         ?int $timeout = null,
         ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
-        ?Logger $logger = null
+        ?Logger $logger = null,
+        ?callable $curlMutator = null
     ): \CurlHandle {
         $request = $this->request;
         $logger ??= new NullLogger();
@@ -284,6 +285,9 @@ class HttpClient
         $logger->info('{headers}', ['headers' => $headersStrings]);
         curl_setopt($handle, CURLOPT_HTTPHEADER, $headersStrings);
 
+        if ($curlMutator)
+            $curlMutator($handle);
+
         return $handle;
     }
 
@@ -302,10 +306,11 @@ class HttpClient
         ?int $timeout = null,
         ?string $userAgent = null,
         bool $supportRedirection = true,
-        int $logFlags = self::DEBUG_ESSENTIALS
+        int $logFlags = self::DEBUG_ESSENTIALS,
+        ?callable $curlMutator = null
     ): Response {
         $request = $this->request;
-        $handle = $this->toCurlHandle($timeout, $userAgent, $logger, $logFlags);
+        $handle = $this->toCurlHandle($timeout, $userAgent, $logger, $curlMutator);
         $userAgent ??= $this->baseUserAgent();
 
         $logger ??= $this->baseLogger();
