@@ -16,6 +16,7 @@ class Response extends HttpMessage
     protected int $statusCode;
 
     protected $displayCallback;
+    protected $corsDefined = false;
 
     public function __construct(
         int $statusCode = StatusCode::NO_CONTENT,
@@ -25,6 +26,7 @@ class Response extends HttpMessage
         $this->statusCode = $statusCode;
         $this->setBody($body ?? '');
         $this->setHeaders($headers);
+        $this->corsDefined = false;
     }
 
     // Generic functions by Http Response Code
@@ -69,9 +71,9 @@ class Response extends HttpMessage
         return new self(StatusCode::NON_AUTHORITATIVE_INFORMATION, $content);
     }
 
-    public static function noContent(mixed $content = null): self
+    public static function noContent(): self
     {
-        return new self(StatusCode::NO_CONTENT, $content);
+        return new self(StatusCode::NO_CONTENT);
     }
 
     public static function resetContent(mixed $content = null): self
@@ -136,12 +138,16 @@ class Response extends HttpMessage
 
     public static function temporaryRedirect(mixed $content = null): self
     {
-        return new self(StatusCode::TEMPORARY_REDIRECT, $content);
+        return (new self(StatusCode::TEMPORARY_REDIRECT, null))->withHeaders([
+            "Location" => $content
+        ]);
     }
 
     public static function permanentRedirect(mixed $content = null): self
     {
-        return new self(StatusCode::PERMANENT_REDIRECT, $content);
+        return (new self(StatusCode::PERMANENT_REDIRECT, null))->withHeaders([
+            "Location" => $content
+        ]);
     }
 
     public static function badRequest(mixed $content = null): self
@@ -432,6 +438,7 @@ class Response extends HttpMessage
 
     public function withCORSHeaders(?array $allowedMethods=null): self
     {
+        $this->corsDefined = true;
         return $this->withHeaders([
             'Access-Control-Allow-Origin' => env('CORS_ALLOWED_ORIGINS', '*'),
             'Access-Control-Allow-Methods' => $allowedMethods ? join(", ", $allowedMethods) : "*",
@@ -443,7 +450,8 @@ class Response extends HttpMessage
 
     public function display(bool $sendHeaders = true)
     {
-        $this->withCORSHeaders();
+        if ($this->corsDefined == false)
+            $this->withCORSHeaders();
 
         if ($sendHeaders) {
             http_response_code($this->statusCode);
