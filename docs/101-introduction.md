@@ -7,9 +7,9 @@ Cube is a simple back-end framework for PHP 8, with some specifities such as :
   - Routing
   - Controllers
   - Middlewares
-  - Model Manipulation
+  - Model Manipulation (Simple SQL ORM)
 - Simple architecture, no magic code
-- Strong-Type Hint / PHPDoc for your IDE
+- Strong-Type Hint / Complete PHPDoc for your IDE
 
 Here is what your code can look like with Cube
 
