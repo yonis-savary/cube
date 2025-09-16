@@ -125,7 +125,7 @@ abstract class MigrationManager
     {
         $files = Bunch::of($this->migrationFiles->toArray())
             ->filter(fn($file) => basename($file))
-            ->filter(fn($migrationName) => $this->migrationWasMade($migrationName))
+            ->filter(fn($migrationName) => !$this->migrationWasMade($migrationName))
             ->toArray();
 
         if (count($files))
