@@ -24,6 +24,11 @@ class Serve extends Command
         }
     }
 
+    public function getScope(): string
+    {
+        return "web";
+    }
+
     public function execute(Args $args): int
     {
         $port = $args->getValues()[0] ?? '8000';
