@@ -5,6 +5,7 @@ namespace Cube\Console\Commands\Migrate;
 use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Console\Commands\Model\Generate;
+use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Data\Database\MigrationManager;
 use Cube\Utils\Console;
 
@@ -19,7 +20,12 @@ class Migrate extends Command
     {
         $manager = MigrationManager::getInstance();
         $manager->setLoggingFunction(fn($m) => print($m . "\n"));
-        $migrated = $manager->executeAllMigrations();
+        try {
+            $migrated = $manager->executeAllMigrations();
+        }
+        catch (FailedMigrationException $err) {
+            $migrated = true;
+        }
 
         if ($migrated && !$args->has('-s', '--skip-generation')) {
             Console::print("");

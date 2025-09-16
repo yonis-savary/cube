@@ -10,6 +10,7 @@ use Cube\Data\Database\Migration\MigrationManagerConfiguration;
 use Cube\Data\Database\Migration\Adapters\MySQL;
 use Cube\Data\Database\Migration\Adapters\SQLite;
 use Cube\Data\Database\Migration\Adapters\Postgres;
+use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Console;
@@ -130,8 +131,11 @@ abstract class MigrationManager
 
         if (count($files))
         {
-            foreach ($files as $file)
-                $this->executeMigration($file);
+            foreach ($files as $file) 
+            {
+                if (!$this->executeMigration($file))
+                    throw new FailedMigrationException($this->lastError, $this->lastErrorFile);
+            }
         }
         else
         {
