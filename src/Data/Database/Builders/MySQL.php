@@ -14,6 +14,7 @@ use Cube\Data\Database\Query\Order;
 use Cube\Data\Database\Query\QueryBase;
 use Cube\Data\Database\Query\RawCondition;
 use Cube\Data\Database\Query\UpdateField;
+use Cube\Utils\Text;
 use Exception;
 
 class MySQL extends QueryBuilder
@@ -141,9 +142,6 @@ class MySQL extends QueryBuilder
             if (!is_string($nextElement)) 
                 $nextElement = 'AND';
 
-            if ($i == $count-1)
-                $nextElement = '';
-
             if ($condition instanceof FieldComparaison) {
                 $stringCondition = $this->getFieldComparaison($condition);
             }
@@ -167,7 +165,11 @@ class MySQL extends QueryBuilder
             $conditions .= $stringCondition . " $nextElement ";
         }
 
-        return "WHERE $conditions";
+        $fullCondition = trim("WHERE $conditions");
+        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'OR'));
+        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'AND'));
+
+        return $fullCondition;
     }
 
     public function getUpdateConditions(): string

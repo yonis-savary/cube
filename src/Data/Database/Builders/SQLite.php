@@ -15,6 +15,7 @@ use Cube\Data\Database\Query\QueryBase;
 use Cube\Data\Database\Query\RawCondition;
 use Cube\Data\Database\Query\UpdateField;
 use Cube\Env\Logger\Logger;
+use Cube\Utils\Text;
 use Exception;
 
 class SQLite extends MySQL
@@ -126,27 +127,49 @@ class SQLite extends MySQL
 
     public function getConditions(): string
     {
-        return count($this->query->conditions) ? 'WHERE ('
-            .Bunch::of($this->query->conditions)
-                ->map(function (FieldComparaison|FieldCondition|RawCondition $condition) {
-                    if ($condition instanceof FieldComparaison) {
-                        return $this->getFieldComparaison($condition);
-                    }
-                    if ($condition instanceof FieldCondition) {
-                        return sprintf(
-                            '%s%s %s %s',
-                            $condition->table ? ''.$condition->table.'.' : '',
-                            $condition->field,
-                            $condition->operator,
-                            $this->getSQLValue($condition->expression),
-                        );
-                    }
-                    if ($condition instanceof RawCondition) {
-                        return $condition->expression;
-                    }
-                })
-                ->join(") \n AND \n (")
-        .')' : '';
+        if (! $count = count($this->query->conditions))
+            return '';
+
+        $conditions = "";
+        for ($i=0; $i < $count; $i++)
+        {
+            $condition = $this->query->conditions[$i];
+            if (is_string($condition))
+                continue;
+
+            $nextElement = $this->query->conditions[$i+1] ?? 'AND';
+
+            if (!is_string($nextElement)) 
+                $nextElement = 'AND';
+
+            if ($condition instanceof FieldComparaison) {
+                $stringCondition = $this->getFieldComparaison($condition);
+            }
+            else if ($condition instanceof FieldCondition) {
+                $stringCondition = sprintf(
+                    '%s%s %s %s',
+                    $condition->table ? '`'.$condition->table.'`.' : '',
+                    $condition->field,
+                    $condition->operator,
+                    $this->getSQLValue($condition->expression),
+                );
+            }
+            else if ($condition instanceof RawCondition) {
+                $stringCondition = $condition->expression;
+            }
+            else
+            {
+                return '';
+            }
+
+            $conditions .= $stringCondition . " $nextElement ";
+        }
+
+        $fullCondition = trim("WHERE $conditions");
+        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'OR'));
+        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'AND'));
+
+        return $fullCondition;
     }
 
     public function getUpdateConditions(): string

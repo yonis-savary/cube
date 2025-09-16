@@ -15,6 +15,7 @@ use Cube\Data\Database\Query\QueryBase;
 use Cube\Data\Database\Query\RawCondition;
 use Cube\Data\Database\Query\UpdateField;
 use Cube\Env\Logger\Logger;
+use Cube\Utils\Text;
 use Exception;
 
 class Postgres extends MySQL
@@ -139,9 +140,6 @@ class Postgres extends MySQL
             if (!is_string($nextElement)) 
                 $nextElement = 'AND';
 
-            if ($i == $count-1)
-                $nextElement = '';
-
             if ($condition instanceof FieldComparaison) {
                 $stringCondition = $this->getFieldComparaison($condition);
             }
@@ -165,7 +163,11 @@ class Postgres extends MySQL
             $conditions .= $stringCondition . " $nextElement ";
         }
 
-        return "WHERE $conditions";
+        $fullCondition = trim("WHERE $conditions");
+        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'OR'));
+        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'AND'));
+
+        return $fullCondition;
     }
 
 
