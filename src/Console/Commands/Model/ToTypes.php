@@ -93,10 +93,10 @@ class ToTypes extends Command
             ->join("\n\t")
         ;
 
-        return Text::toFile("type {$typeName} = {
+        return Text::toFile("export type {$typeName} = {
             {$fields}
         }
-        type {$typeName}s = Array<{$typeName}>
+        export type {$typeName}s = Array<{$typeName}>
         ");
     }
 
@@ -107,7 +107,7 @@ class ToTypes extends Command
             ->join("\n\n")
         ;
 
-        Storage::getInstance()->write('types.d.ts', $models);
+        Storage::getInstance()->write('cube-types.ts', $models);
 
         return 0;
     }
