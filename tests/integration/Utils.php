@@ -29,6 +29,7 @@ class Utils
 
         $migrationsFiles = (new Storage($cubeRoot))->child('tests/root/App/Migrations')->files();
         Bunch::of($migrationsFiles)
+            ->filter(fn (string $file) => !str_contains($file, 'invalid'))
             ->map(fn (string $file) => include $file)
             ->forEach(fn (Migration $migration) => $datbase->exec($migration->install));
 

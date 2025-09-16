@@ -12,6 +12,7 @@ use Cube\Data\Database\Migration\Adapters\SQLite;
 use Cube\Data\Database\Migration\Adapters\Postgres;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
+use Cube\Utils\Console;
 use Cube\Utils\Text;
 
 abstract class MigrationManager
@@ -25,6 +26,8 @@ abstract class MigrationManager
 
     protected ?\Throwable $lastError = null;
     protected ?string $lastErrorFile = null;
+
+    protected $logFunction = null;
 
     public function __construct(
         Database $database,
@@ -44,6 +47,15 @@ abstract class MigrationManager
         ;
 
         $this->createMigrationTableIfInexistant();
+    }
+
+    public function setLoggingFunction(callable $function) {
+        $this->logFunction = $function;
+    }
+
+    protected function log(string $message): void {
+        if ($this->logFunction)
+            ($this->logFunction)($message);
     }
 
     public function getMigrationTableName(): string
@@ -78,8 +90,6 @@ abstract class MigrationManager
         }
 
         try {
-            $this->startTransaction();
-
             /** @var Migration $migration */
             $migration = include $file;
 
@@ -87,14 +97,17 @@ abstract class MigrationManager
             if (!trim($sqlContent)) {
                 Logger::getInstance()->warning("Skipping empty migration {$file}");
             } else {
+                $this->log(Console::withGreenColor("Start migration $file..."));
+                $this->startTransaction();
                 $this->database->exec($sqlContent);
+                $this->markMigrationAsDone($migrationName);
             }
 
-            $this->markMigrationAsDone($migrationName);
             $this->commitTransaction();
 
             return true;
         } catch (\Throwable $thrown) {
+            $this->log(Console::withRedColor("Error with $file ! " . $thrown->getMessage()));
             $this->rollbackTransaction();
             $this->lastError = $thrown;
             $this->lastErrorFile = $file;
@@ -105,10 +118,25 @@ abstract class MigrationManager
         }
     }
 
+    /**
+     * @return bool `true` if one migration was executed, `false` otherwise
+     */
     public function executeAllMigrations(): bool
     {
-        foreach ($this->migrationFiles->toArray() as $file) {
-            $this->executeMigration($file);
+        $files = Bunch::of($this->migrationFiles->toArray())
+            ->filter(fn($file) => basename($file))
+            ->filter(fn($migrationName) => $this->migrationWasMade($migrationName))
+            ->toArray();
+
+        if (count($files))
+        {
+            foreach ($files as $file)
+                $this->executeMigration($file);
+        }
+        else
+        {
+            $this->log(Console::withBlueColor("Nothing to migrate !"));
+            return false;
         }
 
         return true;

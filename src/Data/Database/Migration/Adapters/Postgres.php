@@ -3,7 +3,7 @@
 namespace Cube\Data\Database\Migration\Adapters;
 
 use Cube\Data\Bunch;
-use Cube\Database\MigrationManager;
+use Cube\Data\Database\MigrationManager;
 
 class Postgres extends MigrationManager
 {
