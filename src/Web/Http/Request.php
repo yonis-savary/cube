@@ -22,6 +22,7 @@ class Request extends HttpMessage
     protected ?Route $route = null;
 
     protected array $slugValues = [];
+    protected array $slugObjects = [];
 
     /**
      * @var string
@@ -225,6 +226,21 @@ class Request extends HttpMessage
     public function getSlugValues(): array
     {
         return $this->slugValues;
+    }
+
+    public function setSlugObjects(array $values): void 
+    {
+        $this->slugObjects = $values;
+    }
+
+    public function getSlugObject(string $name, mixed $default=null): mixed 
+    {
+        return $this->slugObjects[$name] ?? $default;
+    }
+
+    public function getSlugObjects(): array 
+    {
+        return $this->slugObjects;
     }
 
     public function getRules(): array

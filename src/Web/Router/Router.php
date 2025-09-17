@@ -238,6 +238,15 @@ class Router
                 $route->getCallback(),
                 [$request, ...array_values($request->getSlugValues())]
             );
+            /** @var Request $request */
+            $request = &$parameters[0];
+
+            $slugObjectsKeys = ["request", ...array_keys($request->getSlugValues())];
+            $request->setSlugObjects(array_combine(
+                $slugObjectsKeys,
+                array_slice($parameters, 0, count($slugObjectsKeys))
+            ));
+
             $response = $route(...$parameters);
 
             if (! $response instanceof Response)

@@ -205,65 +205,6 @@ class Route
         return true;
     }
 
-    public function getAppropriateRequestObject(Request $defaultRequest): array
-    {
-        $callback = $this->callback;
-
-        if (is_array($callback)) {
-            $controller = new \ReflectionClass($callback[0]);
-            $reflection = $controller->getMethod($callback[1]);
-        } else {
-            $reflection = new \ReflectionFunction($callback);
-        }
-        $parameters = $reflection->getParameters();
-
-        if (!count($parameters)) {
-            return [$defaultRequest];
-        }
-
-        $routerParameters = [
-            $defaultRequest,
-            ...array_values($defaultRequest->getSlugValues()),
-        ];
-
-        if (count($parameters) > count($routerParameters)) {
-            throw new \RuntimeException(Text::interpolate(
-                'Bad parameter count, expected at least {e}, got {f}',
-                ['e' => count($parameters), 'f' => print_r($routerParameters, true)]
-            ));
-        }
-
-        for ($i = 0; $i < count($parameters); ++$i) {
-            $parameter = $parameters[$i];
-            $routerParam = $routerParameters[$i];
-
-            $type = $parameter->getType();
-            $requestType = $type ? $type->getName() : Request::class;
-
-            if (Autoloader::extends($requestType, Request::class)) {
-                /** @var Request $requestType */
-                $request = $requestType::fromRequest($defaultRequest);
-
-                $result = $request->isValid();
-                if (true !== $result) {
-                    throw new ResponseException('Given request is not valid', Response::unprocessableContent(json_encode($result, JSON_THROW_ON_ERROR)));
-                }
-
-                $routerParam = $request;
-            } elseif (Autoloader::extends($requestType, Model::class)) {
-                $key = $routerParam;
-                $routerParam = $requestType::find($key);
-                if (null === $routerParam) {
-                    throw new ResponseException("{$requestType} not found with id ({$key})", Response::notFound('Resource not found'));
-                }
-            }
-
-            $routerParameters[$i] = $routerParam;
-        }
-
-        return $routerParameters;
-    }
-
     protected function matchPathRegex(Request $request): string
     {
         $regexMap = [];
