@@ -78,6 +78,7 @@ class Request extends HttpMessage
         $newReq->route = $source->route;
         $newReq->slugValues = $source->slugValues;
         $newReq->headers = $source->headers;
+        $newReq->body = $source->body;
 
         return $newReq;
     }
