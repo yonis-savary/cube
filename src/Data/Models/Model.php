@@ -145,21 +145,22 @@ abstract class Model extends EventDispatcher
         return Query::insert(static::table())->withBaseModel(static::class);
     }
 
-    public static function last(?Database $database = null): self
+    public static function last(?string $key=null, ?Database $database = null): self
     {
-                $database ??= Database::getInstance();
+        $database ??= Database::getInstance();
+        $key ??= static::primaryKey();
 
-        if (!$primary = static::primaryKey()) {
-            throw new \Exception('Use of last() method without primary key is not supported');
+        if (!$key) {
+            throw new \Exception('Use of last() method without primary key (or any given key) is not supported');
         }
 
         return static::select()
-            ->order($primary, 'DESC')
+            ->order($key, 'DESC')
             ->first($database)
         ;
     }
 
-    public static function insertArray(array $data, ?Database $database = null): self
+    public static function insertArray(array $data, ?Database $database = null): static
     {
         $database ??= Database::getInstance();
 
@@ -694,7 +695,7 @@ abstract class Model extends EventDispatcher
             ;
 
             if ($primaryKey = $this->primaryKey()) {
-                $id = static::last($database)->id();
+                $id = static::last(null, $database)->id();
                 $this->data->{$primaryKey} = $id;
                 $this->reload($database);
             }
