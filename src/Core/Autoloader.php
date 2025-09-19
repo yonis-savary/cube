@@ -26,6 +26,7 @@ class Autoloader
     protected static array $assetsFiles = [];
     protected static array $requireFiles = [];
     protected static array $routesFiles = [];
+    protected static array $viewFiles = [];
 
     protected static ?array $cachedClassesList = null;
     protected static ?string $projectPath = null;
@@ -61,6 +62,7 @@ class Autoloader
             self::$assetsFiles = &self::$autoloadCache->getReference("$cacheIdentifier.assets", []);
             self::$requireFiles = &self::$autoloadCache->getReference("$cacheIdentifier.require", []);
             self::$routesFiles = &self::$autoloadCache->getReference("$cacheIdentifier.routes", []);
+            self::$viewFiles = &self::$autoloadCache->getReference("$cacheIdentifier.views", []);
         } else {
             self::$classIndex = [];
         }
@@ -169,6 +171,11 @@ class Autoloader
     public static function getAssetsFiles(): array
     {
         return self::$assetsFiles;
+    }
+
+    public static function getViewFiles(): array 
+    {
+        return self::$viewFiles;
     }
 
     public static function getRequireFiles(): array
@@ -502,6 +509,10 @@ class Autoloader
                     case 'Schedules':
                     case 'Cron':
                         array_push(self::$requireFiles, ...(new Storage($directory))->exploreFiles());
+                        break;
+
+                    case 'Views':
+                        array_push(self::$viewFiles, ...(new Storage($directory))->exploreFiles());
                         break;
                 }
             }
