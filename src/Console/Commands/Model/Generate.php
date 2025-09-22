@@ -7,6 +7,7 @@ use Cube\Console\Command;
 use Cube\Data\Database\Database;
 use Cube\Env\Storage;
 use Cube\Data\Models\ModelGenerator;
+use Cube\Data\Models\ModelGenerator\GeneratedModels;
 use Cube\Utils\Console;
 
 class Generate extends Command
@@ -35,6 +36,8 @@ class Generate extends Command
         foreach ($files as $file) {
             Console::log('Generated '.$file);
         }
+
+        (new GeneratedModels)->dispatch();
 
         return 0;
     }
