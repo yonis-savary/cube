@@ -1,6 +1,7 @@
 {
     "name": "yonis-savary/cube",
     "description": "Simple Web Framework for PHP8+",
+    "keywords": ["php", "web", "framework", "backend"],
     "type": "library",
     "license": "MIT",
     "autoload": {
