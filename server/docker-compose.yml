@@ -1,22 +1,21 @@
 version: "3.9"
 
 services:
-  db:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-    ports:
-      - "3306:3306"
-
-  php:
-    build: .
-    env_file:
-      - .env
+  php-fpm:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile.php
     volumes:
-      - .:/var/www
+      - ./App:/var/www/App # Useful for development
+      - /var/www # Share with nginx
+      - ./Storage:/var/www/Storage # Persistent Storage
+
+  nginx:
+    image: nginx:alpine
     ports:
-      - "8080:80"
-    working_dir: /var/www
+      - "8081:80"
+    volumes:
+      - /var/www # Share with php-fpm
+      - ./Docker/vhost.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - db
+      - php-fpm
