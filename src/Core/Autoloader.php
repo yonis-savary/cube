@@ -31,17 +31,62 @@ class Autoloader
     protected static ?array $cachedClassesList = null;
     protected static ?string $projectPath = null;
 
-    protected static AutoloaderConfiguration $configuration;
-
     protected static ?ClassLoader $loader;
-    protected static mixed $classIndex;
+    protected static mixed $classIndex = [];
     protected static Cache $autoloadCache;
+
+    public static bool $loadedThroughApcu = false;
+
+    public static function tryToLoadThroughApcu(): bool
+    {
+        if (!function_exists('apcu_fetch'))
+            return false;
+
+        $success = false;
+        $autoloadFullDataRaw = apcu_fetch(__DIR__ . ".autoload-data", $success);
+
+        if (!$success)
+            return false;
+
+        $autoloadFullData = unserialize($autoloadFullDataRaw);
+        if (!(is_array($autoloadFullData) && count($autoloadFullData)))
+            return false;
+
+        list(
+            self::$knownApplications,
+            self::$assetsFiles,
+            self::$requireFiles,
+            self::$routesFiles,
+            self::$viewFiles,
+            self::$cachedClassesList,
+            self::$projectPath,
+            self::$classIndex,
+        ) = $autoloadFullData;
+
+        self::$loadedThroughApcu = true;
+        return true;
+    }
+
+    public static function saveToApcu(): void
+    {
+        if (!function_exists('apcu_fetch'))
+            return;
+
+        apcu_store(__DIR__ . ".autoload-data", serialize([
+            self::$knownApplications,
+            self::$assetsFiles,
+            self::$requireFiles,
+            self::$routesFiles,
+            self::$viewFiles,
+            self::$cachedClassesList,
+            self::$projectPath,
+            self::$classIndex,
+        ]));
+    }
 
     public static function initialize(?string $forceProjectPath = null, ?AutoloaderConfiguration $conf = null)
     {
         self::registerErrorHandlers();
-        self::resolveProjectPath($forceProjectPath);
-
         self::$loader = spl_autoload_functions()[0][0];
 
         $cubeSrc = (new Storage(__DIR__))->parent();
@@ -50,9 +95,14 @@ class Autoloader
             include_once $helperFile;
         }
 
-        self::$configuration = $conf ?? AutoloaderConfiguration::resolve();
+        if (self::tryToLoadThroughApcu())
+            return self::includeRequireFiles();
 
-        if (self::$configuration->cached) {
+        self::resolveProjectPath($forceProjectPath);
+
+        $configuration ??= AutoloaderConfiguration::resolve();
+
+        if ($configuration->cached) {
             $lockFile = Path::relative('composer.lock');
             $cacheIdentifier = is_file($lockFile) ? md5_file($lockFile) : 'default';
             self::$autoloadCache = Cache::getInstance()->child('AutoLoad');
@@ -68,7 +118,12 @@ class Autoloader
         }
 
         self::loadApplications();
+        self::includeRequireFiles();
+        self::saveToApcu();
+    }
 
+    public static function includeRequireFiles(): void 
+    {
         foreach (self::$requireFiles as $file) {
             include_once $file;
         }
@@ -251,6 +306,7 @@ class Autoloader
         }
 
         self::$classIndex['list'] = $list = $classes->uniques()->get();
+        self::saveToApcu();
 
         return $list;
     }
@@ -538,6 +594,8 @@ class Autoloader
             });
         }
 
-        return $holder[$identifier] = $classes->get();
+        self::saveToApcu();
+        $holder[$identifier] = $classes->get();
+        return $holder[$identifier];
     }
 }

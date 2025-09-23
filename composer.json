@@ -12,7 +12,8 @@
     "autoload-dev": {
         "psr-4": {
             "Cube\\Tests\\Units\\": "tests/units",
-            "Cube\\Tests\\Integration\\": "tests/integration"
+            "Cube\\Tests\\Integration\\": "tests/integration",
+            "Cube\\Tests\\Apcu\\": "tests/apcu"
         }
     },
     "authors": [

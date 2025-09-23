@@ -1,0 +1,18 @@
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "/vendor/cube"
+        }
+    ],
+
+    "require": {
+        "yonis-savary/cube": "dev-main"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "App\\": "App/"
+        }
+    }
+}

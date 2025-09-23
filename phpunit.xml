@@ -20,6 +20,9 @@
         <testsuite name="Cube Integration Test Suite">
             <directory>tests/integration</directory>
         </testsuite>
+        <testsuite name="Cube Apcu Test Suite">
+            <directory>tests/apcu</directory>
+        </testsuite>
     </testsuites>
 
 </phpunit>

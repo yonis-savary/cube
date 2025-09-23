@@ -1,5 +1,22 @@
 
 services:
+  php-apcu-test:
+    volumes:
+      - /app
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.apcu
+
+  nginx-apcu-test:
+    image: nginx:alpine
+    ports:
+      - "${CUBE_TEST_NGINX_APCU_PORT:-8003}:80"
+    volumes:
+      - /app
+      - ./tests/apcu-nginx-vhost.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php-apcu-test
+
   mysql:
     image: mysql
     restart: always
