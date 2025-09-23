@@ -3,6 +3,7 @@
 namespace Cube\Web\Helpers;
 
 use Cube\Env\Storage;
+use Cube\Utils\Path;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Router\Route;
@@ -22,6 +23,9 @@ class StaticServer extends WebAPI
         bool $supportsIndex = true
     ) {
         if (is_string($directory)) {
+            if (!is_dir($directory))
+                $directory = Path::relative($directory);
+
             $directory = new Storage($directory);
         }
 
