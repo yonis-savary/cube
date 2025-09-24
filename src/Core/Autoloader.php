@@ -37,18 +37,25 @@ class Autoloader
 
     public static bool $loadedThroughApcu = false;
 
+    public static function clearApcuCache(): void 
+    {
+        if (!function_exists('apcu_fetch'))
+            return;
+
+        apcu_delete(__DIR__ . ".autoload-data");
+    }
+
     public static function tryToLoadThroughApcu(): bool
     {
         if (!function_exists('apcu_fetch'))
             return false;
 
         $success = false;
-        $autoloadFullDataRaw = apcu_fetch(__DIR__ . ".autoload-data", $success);
+        $autoloadFullData = apcu_fetch(__DIR__ . ".autoload-data", $success);
 
         if (!$success)
             return false;
 
-        $autoloadFullData = unserialize($autoloadFullDataRaw);
         if (!(is_array($autoloadFullData) && count($autoloadFullData)))
             return false;
 
@@ -72,7 +79,7 @@ class Autoloader
         if (!function_exists('apcu_fetch'))
             return;
 
-        apcu_store(__DIR__ . ".autoload-data", serialize([
+        apcu_store(__DIR__ . ".autoload-data", [
             self::$knownApplications,
             self::$assetsFiles,
             self::$requireFiles,
@@ -81,7 +88,7 @@ class Autoloader
             self::$cachedClassesList,
             self::$projectPath,
             self::$classIndex,
-        ]));
+        ]);
     }
 
     public static function initialize(?string $forceProjectPath = null, ?AutoloaderConfiguration $conf = null)

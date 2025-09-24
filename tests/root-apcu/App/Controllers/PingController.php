@@ -13,8 +13,15 @@ class PingController extends Controller
     public function routes(Router $router): void
     {
         $router->addRoutes(
+            Route::get("/", [self::class, "rootAndDeleteAPCU"]),
             Route::get("/ping", [self::class, "ping"])
         );
+    }
+
+    public static function rootAndDeleteAPCU()
+    {
+        Autoloader::clearApcuCache();
+        return Response::noContent();
     }
 
     public static function ping() {

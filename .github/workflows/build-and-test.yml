@@ -35,6 +35,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set upcompose for APCu tests
+        run: docker compose up -d --build php-apcu-test nginx-apcu-test
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -48,6 +51,18 @@ jobs:
               break
             fi
             echo "($i / 15) Waiting for MySQL..."
+            sleep 5
+          done
+
+      - name: Wait for Nginx to be ready
+        run: |
+          for i in {1..15}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8003/)
+            if [ "$STATUS" != "502" ] && [ "$STATUS" != "000" ]; then
+              echo "Nginx is ready with status $STATUS"
+              break
+            fi
+            echo "($i / 15) Waiting for Nginx... Current status: $STATUS"
             sleep 5
           done
 
