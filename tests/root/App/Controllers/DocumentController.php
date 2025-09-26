@@ -23,10 +23,8 @@ class DocumentController extends Controller
 
     public static function uploadDocument(StoreDocumentRequest $request)
     {
-        $validated = $request->validated();
-
         /** @var Upload $upload */
-        $upload = $validated['to-upload'];
+        $upload = $request->validated('to-upload');
 
         $randomName = uniqid('file-').'.json';
 

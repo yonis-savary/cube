@@ -7,6 +7,7 @@ use Cube\Web\Http\Rules\Validator;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 
 class Request extends HttpMessage
@@ -266,13 +267,20 @@ class Request extends HttpMessage
         return $validator->validateRequest($this);
     }
 
-    public function validated(?Validator $validator = null): array
+    public function validated(?string $key=null, ?Validator $validator = null): mixed
     {
         $validator ??= $this->getValidator();
 
         $validator->validateRequest($this);
 
-        return $validator->getLastValues();
+        $validatedValues = $validator->getLastValues();
+        if (!$key)
+            return $validatedValues;
+
+        if (!array_key_exists($key, $validatedValues))
+            throw new InvalidArgumentException("$key key does not exists in validated values");
+
+        return $validatedValues[$key];
     }
 
     public function fetch(
