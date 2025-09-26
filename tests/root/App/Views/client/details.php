@@ -12,6 +12,7 @@ use function Cube\render;
 <body>
     client details
 
+    <?= \Cube\asset('hello.js') ?>
     <?= render("client/row") ?>
 </body>
 </html>

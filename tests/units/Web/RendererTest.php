@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Web;
 
 use Cube\Env\Storage;
 use Cube\Utils\Path;
+use Cube\Web\Html\AssetsInserter;
 use Cube\Web\Html\Renderer;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -18,6 +19,21 @@ class RendererTest extends TestCase
 
         $views = new Storage($viewPath);
         return new Renderer($views->exploreFiles());
+    }
+
+    protected function setUp(): void
+    {
+        AssetsInserter::setInstance($this->getAssetsInserter());
+    }
+
+    protected function getAssetsInserter(): AssetsInserter
+    {
+        $assetsPath = Path::join(__DIR__, "../../root/App/Assets");
+        if (!is_dir($assetsPath))
+            throw new RuntimeException("Could not find directory : " . $assetsPath);
+
+        $assets = new Storage($assetsPath);
+        return new AssetsInserter($assets->exploreFiles());
     }
 
     public function test_findView()
@@ -65,5 +81,18 @@ class RendererTest extends TestCase
 
         $this->assertStringContainsString("A=5", $html);
         $this->assertStringContainsString("AA=6", $html);
+    }
+
+    public function test_render_assets()
+    {
+        $renderer = $this->getRenderer();
+
+        // Renders a script
+        $html = $renderer->render("client/details");
+        $this->assertStringContainsString("console.log", $html);
+
+        // Renders some css
+        $html = $renderer->render('order/details', ['rows' => []]);
+        $this->assertStringContainsString("color: red", $html);
     }
 }

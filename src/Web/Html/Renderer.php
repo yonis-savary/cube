@@ -5,7 +5,6 @@ namespace Cube\Web\Html;
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
-use Cube\Env\Logger\Logger;
 use Exception;
 use InvalidArgumentException;
 use Throwable;
@@ -14,8 +13,8 @@ class Renderer
 {
     use Component;
 
-    /** @var Bunch<string> $refinedAssetsFiles */
-    protected Bunch $refinedAssetsFiles;
+    /** @var Bunch<string> $viewFiles */
+    protected Bunch $viewFiles;
 
     public static function getDefaultInstance(): static
     {
@@ -24,11 +23,11 @@ class Renderer
 
     public function __construct(array $viewFiles=[])
     {
-        $this->refinedAssetsFiles = Bunch::of($viewFiles);
+        $this->viewFiles = Bunch::of($viewFiles);
     }
 
     public function findView(string $viewName): ?string {
-        return $this->refinedAssetsFiles->first(fn($file) => str_ends_with(preg_replace("~\.[^/]+$~", "", $file), $viewName));
+        return $this->viewFiles->first(fn($file) => str_ends_with(preg_replace("~\.[^/]+$~", "", $file), $viewName));
     }
 
     public function render(string $viewName, array $context=[]): string {
@@ -36,7 +35,6 @@ class Renderer
 
         foreach ($context as $key => $_) {
             if (!preg_match("~^[a-z_][a-z0-9_]*$~i", $key)) {
-                Logger::getInstance()->warning("Cannot set $key variable for context (invalid PHP variable name)");
                 unset($context[$key]);
             }
         }
