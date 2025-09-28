@@ -13,11 +13,11 @@ trait Component
 
     public static function getInstance(): static
     {
-        if (!self::hasInstance()) {
-            self::$instance = self::getDefaultInstance();
+        if (!static::hasInstance()) {
+            static::$instance = static::getDefaultInstance();
         }
 
-        return self::$instance;
+        return static::$instance;
     }
 
     /**
@@ -27,17 +27,17 @@ trait Component
      */
     public static function setInstance($instance): void
     {
-        self::$instance = $instance;
+        static::$instance = $instance;
     }
 
     public static function hasInstance(): bool
     {
-        return !is_null(self::$instance);
+        return !is_null(static::$instance);
     }
 
     public static function removeInstance(): void
     {
-        self::$instance = null;
+        static::$instance = null;
     }
 
     /**
@@ -48,16 +48,16 @@ trait Component
      */
     public static function withInstance($scopedInstance, callable $callback): void
     {
-        $oldInstance = self::getInstance();
+        $oldInstance = static::getInstance();
 
-        self::setInstance($scopedInstance);
+        static::setInstance($scopedInstance);
         $callback($scopedInstance, $oldInstance);
 
-        self::setInstance($oldInstance);
+        static::setInstance($oldInstance);
     }
 
     public function asGlobalInstance(callable $callback): void
     {
-        self::withInstance($this, $callback);
+        static::withInstance($this, $callback);
     }
 }
