@@ -5,7 +5,6 @@ namespace Cube\Queue;
 use Cube\Core\Component;
 use Cube\Env\Logger\HasLogger;
 use Cube\Env\Logger\NullLogger;
-use Psr\Log\LoggerInterface;
 
 abstract class Queue
 {

@@ -5,7 +5,6 @@ namespace Cube\Web\Http;
 use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
-use Cube\Web\Router\Route;
 use Psr\Log\LoggerInterface;
 
 use function Cube\debug;

@@ -3,7 +3,6 @@
 namespace Cube\Security\Authentication;
 
 use Cube\Core\Autoloader;
-use Cube\Data\Database\Database;
 use Cube\Data\Models\Model;
 use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Utils\Utils;

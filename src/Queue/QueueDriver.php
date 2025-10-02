@@ -2,8 +2,6 @@
 
 namespace Cube\Queue;
 
-use Cube\Queue\QueueCallback;
-
 interface QueueDriver
 {
     /**

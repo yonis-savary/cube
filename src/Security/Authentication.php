@@ -2,9 +2,7 @@
 
 namespace Cube\Security;
 
-use Cube\Core\Autoloader;
 use Cube\Core\Component;
-use Cube\Data\Database\Database;
 use Cube\Env\Session\HasScopedSession;
 use Cube\Data\Models\Model;
 use Cube\Security\Authentication\AuthenticationConfiguration;
@@ -12,7 +10,6 @@ use Cube\Security\Authentication\AuthenticationProvider;
 use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Utils\Path;
-use Cube\Utils\Utils;
 
 class Authentication
 {

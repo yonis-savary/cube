@@ -138,6 +138,8 @@ class Autoloader
 
     public static function registerErrorHandlers(): void
     {
+        ini_set('display_errors', 0);
+
         /*
          * To use the same code a the exception handler,
          * we transform the error into an `ErrorException`
