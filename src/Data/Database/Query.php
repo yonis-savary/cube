@@ -126,6 +126,7 @@ class Query
     }
 
     /**
+     * @param \Closure(self<TModel>) $callback
      * @return self<TModel>
      */
     public function when(mixed $condition, callable|\Closure $callback): self
