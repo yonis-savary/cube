@@ -166,7 +166,7 @@ class Table
                     ->map(function (HasOne $relation) use (&$relationsNames) {
                         $fromColumn = $relation->fromColumn;
                         $toModel = $relation->toModel;
-                        $relationName = strtolower(basename($toModel));
+                        $relationName = $relation->getName();
                         $toColumn = $relation->toColumn;
 
                         $relationsNames[] = $relationName;
