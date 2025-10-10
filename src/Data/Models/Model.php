@@ -444,17 +444,17 @@ abstract class Model extends EventDispatcher
     /**
      * @return HasOne<static>
      */
-    public function hasOne(string $fromColumn, string $toModel, string $toColumn): HasOne
+    public function hasOne(string $relationName, string $fromColumn, string $toModel, string $toColumn): HasOne
     {
-        return new HasOne($this::class, $fromColumn, $toModel, $toColumn, $this);
+        return new HasOne($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
 
     /**
      * @return HasMany<static>
      */
-    public function hasMany(string $toModel, string $toColumn, string $fromColumn): HasMany
+    public function hasMany(string $relationName, string $toModel, string $toColumn, string $fromColumn): HasMany
     {
-        return new HasMany($this::class, $fromColumn, $toModel, $toColumn, $this);
+        return new HasMany($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
 
     protected function getComputedRelationToArray(string $relation)

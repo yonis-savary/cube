@@ -113,7 +113,7 @@ abstract class ModelAPI extends Controller
 
             $instances = Utils::isList($body)
                 ? Bunch::of($body)->map(fn (array $row) => $model::fromArray($row))->toArray()
-                : $model::fromArray($body);
+                : [$model::fromArray($body)];
         } else {
             $instances[] = $model::fromRequest($request);
         }

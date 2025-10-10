@@ -116,10 +116,27 @@ class SQLite extends DatabaseAdapter
 
         $dummyModel = new DummyModel();
 
-        $relations = Bunch::of($db->query("PRAGMA foreign_key_list('{$table}')"))
-            ->map(fn ($x) => new HasOne(Table::getClassname($table), $x['from'], Table::getClassname($x['table']), $x['to'], $dummyModel))
-            ->toArray()
-        ;
+        $sqlRelations = $db->query("PRAGMA foreign_key_list('{$table}')");
+
+        $fields = Bunch::of($sqlRelations)->key('from');
+
+        $relations = Bunch::of($sqlRelations)
+            ->map(function ($x) use ($fields, $dummyModel, $table) {
+                $targetModel = Table::getClassname($x['table']);
+                $relationName = strtolower(basename(str_replace('\\', '/', $targetModel)));
+                while ($fields->has($relationName))
+                    $relationName = "_$relationName";
+
+                return new HasOne(
+                    $relationName,
+                    Table::getClassname($table),
+                    $x['from'],
+                    $targetModel,
+                    $x['to'],
+                    $dummyModel
+                );
+            })
+            ->get();
 
         foreach ($relations as $relation) {
             $this->addRelation($relation);

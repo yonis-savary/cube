@@ -33,8 +33,8 @@ class MySQL extends SQLite
         $db = $this->database;
         $dummyModel = new DummyModel();
 
-        $relations = Bunch::of(
-            $db->query(
+
+        $sqlRelations = $db->query(
                 'SELECT TABLE_NAME,
                     COLUMN_NAME,
                     CONSTRAINT_NAME,
@@ -46,17 +46,27 @@ class MySQL extends SQLite
                 AND REFERENCED_COLUMN_NAME IS NOT NULL
             ',
                 [$db->getDatabase(), $table]
-            )
-        )
-            ->map(fn ($x) => new HasOne(
-                Table::getClassname($table),
-                $x['COLUMN_NAME'],
-                Table::getClassname($x['REFERENCED_TABLE_NAME']),
-                $x['REFERENCED_COLUMN_NAME'],
-                $dummyModel
-            ))
-            ->get()
-        ;
+        );
+
+        $fields = Bunch::of($sqlRelations)->key('COLUMN_NAME');
+
+        $relations = Bunch::of($sqlRelations)
+            ->map(function ($x) use ($fields, $dummyModel, $table) {
+                $targetModel = Table::getClassname($x['REFERENCED_TABLE_NAME']);
+                $relationName = strtolower(basename(str_replace('\\', '/', $targetModel)));
+                while ($fields->has($relationName))
+                    $relationName = "_$relationName";
+
+                return new HasOne(
+                    $relationName,
+                    Table::getClassname($table),
+                    $x['COLUMN_NAME'],
+                    $targetModel,
+                    $x['REFERENCED_COLUMN_NAME'],
+                    $dummyModel
+                );
+            })
+            ->get();
 
         foreach ($relations as $relation) {
             $this->addRelation($relation);

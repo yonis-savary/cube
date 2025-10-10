@@ -105,6 +105,44 @@ class Table
             ->map(fn($relation) => $relation->getName())
             ->get();
 
+        $fieldsNames = Bunch::of($this->fields)->key('name');
+
+        $hasOneRelations = Bunch::of($relations)
+            ->onlyInstancesOf(HasOne::class)
+            ->filter(fn (HasOne $relation) => $relation->concern($className))
+            ->filter(fn (HasOne $relation) => $relation->fromModel === $className);
+
+        $hasManyRelations = Bunch::of($relations)
+        ->onlyInstancesOf(HasOne::class)
+        ->filter(fn (HasOne $relation) => $relation->concern($className))
+        ->filter(fn (HasOne $relation) => $relation->fromModel !== $className)
+        ->map(function (HasOne $relation) use (&$relationsNames, $fieldsNames) {
+            $toModel    = $relation->fromModel;
+            $toColumn   = $relation->fromColumn;
+            $fromModel  = $relation->toModel;
+            $fromColumn = $relation->toColumn;
+
+
+            $relationName = Text::endsWith(str_replace(
+                strtolower(basename(str_replace('\\', '/', $fromModel))),
+                '',
+                strtolower(basename(str_replace('\\', '/', $toModel)))
+            ), 's');
+
+            while ($fieldsNames->has($relationName))
+                $relationName = "_$relationName";
+
+            $dummyModel = new DummyModel();
+            $relation = new HasMany($relationName, $fromModel, $fromColumn, $toModel, $toColumn, $dummyModel);
+            $relationName = $relation->getName();
+
+            $relationsNames[] = $relationName;
+
+            return $relation;
+        });
+
+        $mergedRelations = Bunch::of($hasOneRelations)->merge($hasManyRelations);
+
         $fileContent = Text::toFile("
         <?php
 
@@ -123,7 +161,7 @@ class Table
                 ->map(fn (ModelField $field) => $this->getFieldPHPDoc($field))
                 ->join("\n")."\n"
 
-            .$this->getRelationsPHPDoc($className, $relations)
+            .$this->getRelationsPHPDoc($className, $mergedRelations)
         ."
          */
         class {$className} extends Model
@@ -159,48 +197,36 @@ class Table
             }
 
 
-            \n".Bunch::of($relations)
-                    ->onlyInstancesOf(HasOne::class)
-                    ->filter(fn (HasOne $relation) => $relation->concern($className))
-                    ->filter(fn (HasOne $relation) => $relation->fromModel === $className)
-                    ->map(function (HasOne $relation) use (&$relationsNames) {
-                        $fromColumn = $relation->fromColumn;
-                        $toModel = $relation->toModel;
-                        $relationName = $relation->getName();
-                        $toColumn = $relation->toColumn;
+            \n".Bunch::of($hasOneRelations)
+            ->map(function (HasOne $relation) use (&$relationsNames) {
+                $fromColumn = $relation->fromColumn;
+                $toModel = $relation->toModel;
+                $relationName = $relation->getName();
+                $toColumn = $relation->toColumn;
 
-                        $relationsNames[] = $relationName;
+                $relationsNames[] = $relationName;
 
-                        return Text::toFile("
+                return Text::toFile("
                 #[Generated]
                 public function {$relationName}(): HasOne
                 {
-                    return \$this->hasOne('{$fromColumn}', {$toModel}::class, '{$toColumn}');
+                    return \$this->hasOne('$relationName', '{$fromColumn}', {$toModel}::class, '{$toColumn}');
                 }
                 ", 1);
                     })->join("\n\n")."
 
-            \n".Bunch::of($relations)
-                    ->onlyInstancesOf(HasOne::class)
-                    ->filter(fn (HasOne $relation) => $relation->concern($className))
-                    ->filter(fn (HasOne $relation) => $relation->fromModel !== $className)
-                    ->map(function (HasOne $relation) use (&$relationsNames) {
-                        $toModel    = $relation->fromModel;
-                        $toColumn   = $relation->fromColumn;
-                        $fromModel  = $relation->toModel;
-                        $fromColumn = $relation->toColumn;
+            \n".Bunch::of($hasManyRelations)
+            ->map(function (HasMany $relation) {
+                $toModel    = $relation->toModel;
+                $toColumn   = $relation->toColumn;
+                $fromColumn = $relation->fromColumn;
+                $relationName = $relation->getName();
 
-                        $dummyModel = new DummyModel();
-                        $relation = new HasMany($fromModel, $fromColumn, $toModel, $toColumn, $dummyModel);
-                        $relationName = $relation->getName();
-
-                        $relationsNames[] = $relationName;
-
-                        return Text::toFile("
+                return Text::toFile("
                 #[Generated]
                 public function {$relationName}(): HasMany
                 {
-                    return \$this->hasMany({$toModel}::class, '{$toColumn}', '{$fromColumn}');
+                    return \$this->hasMany('$relationName', {$toModel}::class, '{$toColumn}', '{$fromColumn}');
                 }
                 ", 1);
                     })->join("\n\n").'
@@ -216,7 +242,6 @@ class Table
                     .'
                 ];
             }
-
 
             '.(
                         count($existingMethod)
@@ -257,13 +282,11 @@ class Table
     /**
      * @param array<Relation> $relations
      */
-    protected function getRelationsPHPDoc(string $className, array $relations): string
+    protected function getRelationsPHPDoc(string $className, Bunch $relations): string
     {
         return join("\n", [
             ...Bunch::of($relations)
                 ->onlyInstancesOf(HasOne::class)
-                ->filter(fn (HasOne $relation) => $relation->concern($className))
-                ->filter(fn (HasOne $relation) => $relation->fromModel === $className)
                 ->map(function (HasOne $relation) {
                     $toModel = $relation->toModel;
 
@@ -271,17 +294,9 @@ class Table
                 })->toArray(),
 
             ...Bunch::of($relations)
-                ->onlyInstancesOf(HasOne::class)
-                ->filter(fn (HasOne $relation) => $relation->concern($className))
-                ->filter(fn (HasOne $relation) => $relation->fromModel !== $className)
-                ->map(function (HasOne $relation) {
+                ->onlyInstancesOf(HasMany::class)
+                ->map(function (HasMany $relation) {
                     $toModel = $relation->fromModel;
-                    $toColumn = $relation->fromColumn;
-                    $fromModel = $relation->toModel;
-                    $fromColumn = $relation->toColumn;
-
-                    $dummy = new DummyModel();
-                    $relation = new HasMany($fromModel, $fromColumn, $toModel, $toColumn, $dummy);
 
                     return ' * @property '.$toModel.'[] $'.$relation->getName();
                 })->toArray(),

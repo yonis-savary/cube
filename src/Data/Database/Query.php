@@ -19,6 +19,7 @@ use Cube\Data\Database\Query\UpdateField;
 use Cube\Data\Models\DummyModel;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
+use Cube\Data\Models\Relations\HasOne;
 
 /**
  * @template TModel
@@ -339,15 +340,18 @@ class Query
             $this->selectField($fieldName, $joinAcc, $fieldAlias, $class, $field);
         });
 
-        $fields
-            ->filter(fn (ModelField $x) => $x->referenceModel)
-            ->forEach(function (ModelField $field) use (&$joinAcc) {
-                $fieldName = $field->name;
-                $refModel = $field->referenceModel;
-                $refColumn = $field->referenceField;
+        $instance = is_string($class) ? new $class() : $class;
+
+        Bunch::of($class::relations())
+            ->map(fn($rel) => $instance->$rel())
+            ->onlyInstancesOf(HasOne::class)
+            ->forEach(function(HasOne $relation) use ($joinAcc) {
+                $fieldName = $relation->fromColumn;
+                $refModel = $relation->toModel;
+                $refColumn = $relation->toColumn;
 
                 $refTable = $refModel::table();
-                $newAcc = $joinAcc.'&'.$refTable;
+                $newAcc = $joinAcc.'&'.$relation->getName();
                 $this->join(
                     'LEFT',
                     $refTable,
@@ -357,8 +361,7 @@ class Query
 
                 $toExploreQueue[] = [$refModel, $newAcc];
                 $this->exploreModel($refModel, $newAcc);
-            })
-        ;
+            });
 
         return $this;
     }

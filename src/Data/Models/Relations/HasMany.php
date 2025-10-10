@@ -14,6 +14,7 @@ use Cube\Utils\Text;
 class HasMany implements Relation
 {
     public function __construct(
+        public readonly string $relationName,
         public readonly string $fromModel,
         public readonly string $fromColumn,
         public readonly string $toModel,
@@ -33,11 +34,7 @@ class HasMany implements Relation
 
     public function getName(): string
     {
-        return Text::endsWith(str_replace(
-            strtolower(basename(str_replace('\\', '/', $this->fromModel))),
-            '',
-            strtolower(basename(str_replace('\\', '/', $this->toModel)))
-        ), 's');
+        return $this->relationName;
     }
 
     /**

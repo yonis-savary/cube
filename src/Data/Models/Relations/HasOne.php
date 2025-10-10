@@ -20,6 +20,7 @@ class HasOne implements Relation
      * @param TModel $model
      */
     public function __construct(
+        public readonly string $name,
         public readonly string $fromModel,
         public readonly string $fromColumn,
         public readonly string $toModel,
@@ -39,7 +40,7 @@ class HasOne implements Relation
 
     public function getName(): string
     {
-        return strtolower(basename(str_replace('\\', '/', $this->toModel)));
+        return $this->name;
     }
 
     /**

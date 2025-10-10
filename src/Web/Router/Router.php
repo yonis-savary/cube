@@ -233,7 +233,6 @@ class Router
 
         try
         {
-
             $parameters = Autoloader::getDependencies(
                 $route->getCallback(),
                 [$request, ...array_values($request->getSlugValues())]
