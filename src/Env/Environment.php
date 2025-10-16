@@ -41,7 +41,7 @@ class Environment
         }
 
         $fileContent = file_get_contents($file);
-        $safeFileContent = preg_replace("~^#.+~", "", $fileContent); # Support for comments
+        $safeFileContent = preg_replace("~^#.+~m", "", $fileContent); # Support for comments
 
         $content = parse_ini_string($safeFileContent);
         $this->content = array_merge($this->content, $content);
