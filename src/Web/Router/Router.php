@@ -12,6 +12,7 @@ use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
 use Cube\Data\Models\Model;
+use Cube\Utils\Path;
 use Cube\Web\Controller;
 use Cube\Web\Router\RouterConfiguration;
 use Cube\Web\Helpers\WebAPI;
@@ -80,10 +81,10 @@ class Router
     public function loadRoutesFiles(): void
     {
         Bunch::of(Autoloader::getRoutesFiles())
-        ->forEach(function($file) {
+        ->forEach(function(string $file) {
             /** @var Router `$router` variable can be used in routes file */
             $router = $this;
-            include $file;
+            require Path::relative($file);
         });
     }
 
