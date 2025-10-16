@@ -6,6 +6,8 @@ use Cube\Core\Component;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 
+use function Cube\debug;
+
 class Environment
 {
     use Component;
@@ -38,7 +40,10 @@ class Environment
             return $this;
         }
 
-        $content = parse_ini_file($file);
+        $fileContent = file_get_contents($file);
+        $safeFileContent = preg_replace("~^#.+~", "", $fileContent); # Support for comments
+
+        $content = parse_ini_string($safeFileContent);
         $this->content = array_merge($this->content, $content);
 
         return $this;
