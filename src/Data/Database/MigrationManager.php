@@ -2,6 +2,7 @@
 
 namespace Cube\Data\Database;
 
+use Cube\Core\Autoloader;
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
@@ -32,11 +33,10 @@ abstract class MigrationManager
 
     public function __construct(
         Database $database,
-        ?MigrationManagerConfiguration $configuration = null
+        MigrationManagerConfiguration $configuration
     ) {
         $this->database = $database;
-
-        $this->configuration = $configuration ?? MigrationManagerConfiguration::resolve();
+        $this->configuration = $configuration;
 
         $this->migrationFiles
             = Bunch::of(Applications::resolve()->paths)
@@ -176,16 +176,17 @@ abstract class MigrationManager
         $database = Database::getInstance();
         $databaseDriver = $database->getDriver();
 
-        switch (strtolower($databaseDriver)) {
-            case 'mysql':
-                return new MySQL($database);
-            case 'pgsql':
-                return new Postgres($database);
-            case 'sqlite':
-                return new SQLite($database);
-        }
+        $managerClass = match (strtolower($databaseDriver)) {
+            'mysql' => MySQL::class,
+            'pgsql' => Postgres::class,
+            'sqlite' => SQLite::class,
+            default => null
+        };
 
-        throw new \RuntimeException("No migration driver found for [{$databaseDriver}] database");
+        if (!$managerClass)
+            throw new \RuntimeException("No migration driver found for [{$databaseDriver}] database");
+
+        return Autoloader::instanciate($managerClass);
     }
 
     public function catchUpTo(string $name): array

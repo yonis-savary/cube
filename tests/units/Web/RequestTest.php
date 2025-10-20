@@ -11,6 +11,7 @@ use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
+use Cube\Web\Router\RouterConfiguration;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -30,7 +31,7 @@ class RequestTest extends TestCase
     #[ DataProvider('getDatabases') ]
     public function test_parameters_binding(Database $database) {
         Database::withInstance($database, function(){
-            $router = new Router();
+            $router = new Router(new RouterConfiguration());
             $router->addRoutes(
                 Route::get("/{module}", [self::class, "fakeCallback"])
             );
@@ -38,10 +39,6 @@ class RequestTest extends TestCase
             $response = $router->route(
                 new Request("GET", "/1")
             );
-
-            
-
-
 
             $this->assertEquals("product", $response->getJSON());
         });

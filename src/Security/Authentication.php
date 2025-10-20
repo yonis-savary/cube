@@ -25,8 +25,7 @@ class Authentication
     /**
      * @param class-string<Model> $model
      */
-    public function __construct(?AuthenticationConfiguration $configuration=null) {
-        $configuration ??= AuthenticationConfiguration::resolve(null);
+    public function __construct(AuthenticationConfiguration $configuration) {
         $this->provider = $configuration->provider;
     }
 

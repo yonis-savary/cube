@@ -207,9 +207,11 @@ class Route
         $parts = explode('/', $this->getPath());
 
         foreach ($parts as &$part) {
-            if (!preg_match('/^\{.+\}$/', $part)) {
+            if (!$part)
                 continue;
-            }
+
+            if (!preg_match('/^\{.+\}$/', $part))
+                continue;
 
             $part = substr($part, 1, strlen($part) - 2);
 

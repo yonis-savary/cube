@@ -91,7 +91,7 @@ class Autoloader
         ]);
     }
 
-    public static function initialize(?string $forceProjectPath = null, ?AutoloaderConfiguration $conf = null)
+    public static function initialize(?string $forceProjectPath = null, ?AutoloaderConfiguration $configuration = null)
     {
         self::registerErrorHandlers();
         self::$loader = spl_autoload_functions()[0][0];

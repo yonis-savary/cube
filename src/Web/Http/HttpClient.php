@@ -154,136 +154,116 @@ class HttpClient
         $request = $this->request;
         $logger ??= new NullLogger();
 
-        $logger->info('');
-        $logger->info('');
         $logger->info('Building CURL handle');
-
-        $thisGET = array_merge($this->baseURLParameters(), $request->get() ?? []);
-        $thisPOST = array_merge($this->basePostParameters(), $request->post() ?? []);
-        $thisMethod = $request->getMethod();
-        $thisUploads = $request->getUploads();
-        $headers = array_merge($this->baseHeaders(), $request->getHeaders());
-        $isJSONRequest = $request->isJSON();
-        $isFormRequest = $request->isFormEncoded();
-        $thisBody = $request->getBody();
-
-        $getParams = count($thisGET) ? '?'.http_build_query($thisGET, '', '&') : '';
 
         $path = $request->getPath();
         if ($base = $this->baseURL()) {
             $path = Path::join($base, $path);
         }
 
-        $url = trim($path.$getParams);
+        $getParams = array_merge($this->baseURLParameters(), $request->get() ?? []);
+        $urlParams = count($getParams)
+            ? '?'.http_build_query($getParams, '', '&')
+            : '';
+
+        $url = trim($path.$urlParams);
 
         $logger->info("CURL URL [{$url}]");
         $handle = curl_init($url);
+        $options = [];
 
-        switch (strtoupper($thisMethod)) {
+        $method = $request->getMethod();
+        switch (strtoupper($method)) {
             case 'GET':
                 /* GET by default */ ;
-                $logger->info('GET Params string = {params}', ['params' => $getParams]);
-
+                $logger->info('GET Params string = {params}', ['params' => $urlParams]);
                 break;
 
             case 'POST':
                 $logger->info('Using CURLOPT_POST');
-                curl_setopt($handle, CURLOPT_POST, true);
-
+                $options[CURLOPT_POST] = true;
                 break;
 
             case 'HEAD':
                 $logger->info('Using CURLOPT_NOBODY');
-                curl_setopt($handle, CURLOPT_NOBODY, true);
-
+                $options[CURLOPT_NOBODY] = true;
                 break;
 
             case 'PUT':
             case 'PATCH':
                 $logger->info('Using CURLOPT_PUT');
-                curl_setopt($handle, CURLOPT_PUT, true);
-
+                $options[CURLOPT_PUT] = true;
                 break;
 
             default:
-                $logger->info('Setting CURLOPT_CUSTOMREQUEST to {method}', ['method' => $thisMethod]);
-                curl_setopt($handle, CURLOPT_CUSTOMREQUEST, $thisMethod);
-
+                $logger->info('Setting CURLOPT_CUSTOMREQUEST to {method}', ['method' => $method]);
+                $options[CURLOPT_CUSTOMREQUEST] = $method;
                 break;
         }
 
-        curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($handle, CURLOPT_HEADER, true);
+        $options[CURLOPT_RETURNTRANSFER] = true;
+        $options[CURLOPT_HEADER] = true;
 
-        if ($isJSONRequest && $thisBody) {
-            $logger->info('Setting JSON CURLOPT_POSTFIELDS to');
-            $logger->info('{fields}', ['fields' => $thisBody]);
-            curl_setopt($handle, CURLOPT_POSTFIELDS, $thisBody);
-        } elseif (count($thisPOST) || count($thisUploads)) {
+        $postParams = array_merge($this->basePostParameters(), $request->post() ?? []);
+        $uploads = $request->getUploads();
+        $body = $request->getBody();
+
+        if ($request->isJSON() && $body) {
+            $logger->info('Setting JSON CURLOPT_POSTFIELDS to {fields}', ['fields' => $body]);
+            $options[CURLOPT_POSTFIELDS] = $body;
+        }
+        elseif (count($postParams) || count($uploads)) {
             $arrayDetails = [];
-            foreach ($thisPOST as $key => &$values) {
-                if (!is_array($values)) {
+            foreach ($postParams as $key => &$values) {
+                if (!is_array($values))
                     continue;
-                }
 
-                for ($i = 0; $i < count($values); ++$i) {
+                for ($i = 0; $i < count($values); ++$i)
                     $arrayDetails[$key."[{$i}]"] = $values[$i];
-                }
 
-                unset($thisPOST[$key]);
+                unset($postParams[$key]);
             }
-            $thisPOST = array_merge($thisPOST, $arrayDetails);
+            $postParams = array_merge($postParams, $arrayDetails);
 
-            $postClone = $thisPOST;
+            foreach ($uploads as $upload) {
+                $file = $upload->tempName;
 
-            if (count($thisUploads)) {
-                foreach ($thisUploads as $upload) {
-                    $file = $upload->tempName;
-                    $inputName = $upload->inputName;
-
-                    if (function_exists('curl_file_create')) {
-                        $postClone[$inputName] = curl_file_create($file);
-                    } else {
-                        $postClone[$inputName] = '@'.realpath($file);
-                    }
-                }
+                $postParams[$upload->inputName] = function_exists('curl_file_create')
+                    ? curl_file_create($file)
+                    : '@'.realpath($file);
             }
 
             $logger->info('Setting CURLOPT_POSTFIELDS to');
-            $logger->info('{fields}', ['fields' => $postClone]);
+            $logger->info('{fields}', ['fields' => $postParams]);
 
-            if ($isFormRequest) {
-                curl_setopt(
-                    $handle,
-                    CURLOPT_POSTFIELDS,
-                    Bunch::unzip($postClone)
-                        ->map(fn ($pair) => $pair[0].'='.urlencode($pair[1]))
-                        ->join('&')
-                );
-            } else {
-                curl_setopt($handle, CURLOPT_POSTFIELDS, $postClone);
-            }
+            $options[CURLOPT_POSTFIELDS] = $request->isFormEncoded()
+                ? Bunch::unzip($postParams)->map(fn ($pair) => $pair[0].'='.urlencode($pair[1]))->join('&')
+                : $postParams
+            ;
         }
 
         if ($timeout) {
             $logger->info('Setting CURLOPT_CONNECTTIMEOUT, CURLOPT_TIMEOUT to {timeout}', ['timeout' => $timeout]);
-            curl_setopt($handle, CURLOPT_CONNECTTIMEOUT, $timeout);
-            curl_setopt($handle, CURLOPT_TIMEOUT, $timeout);
+            $options[CURLOPT_CONNECTTIMEOUT] = $timeout;
+            $options[CURLOPT_TIMEOUT] = $timeout;
         }
+
+        $headers = array_merge($this->baseHeaders(), $request->getHeaders());
 
         if ($userAgent) {
             $logger->info("Using 'user-agent' : {useragent}", ['useragent' => $userAgent]);
             $headers['user-agent'] = $userAgent;
         }
 
-        $headersStrings = [];
-        foreach ($headers as $key => &$value) {
-            $headersStrings[] = "{$key}: {$value}";
-        }
+        $headersStrings = Bunch::unzip($headers)
+            ->map(fn($pair) => sprintf("%s: %s", ...$pair) )
+            ->toArray();
 
         $logger->info('Setting CURLOPT_HTTPHEADER to');
         $logger->info('{headers}', ['headers' => $headersStrings]);
-        curl_setopt($handle, CURLOPT_HTTPHEADER, $headersStrings);
+        $options[CURLOPT_HTTPHEADER] = $headersStrings;
+
+        curl_setopt_array($handle, $options);
 
         if ($curlMutator)
             $curlMutator($handle);
@@ -341,9 +321,10 @@ class HttpClient
             $logger->info('Got [{status}] with [{size}] bytes of data', ['status' => $resStatus, 'size' => strlen($result)]);
         }
 
-        $resHeaders = substr($result, 0, $headerSize);
-        $resHeaders = $this->parseHeaders($resHeaders);
-        $resHeaders = array_change_key_case($resHeaders, CASE_LOWER);
+        $resHeaders = $this->parseHeaders(
+            substr($result, 0, $headerSize),
+            true
+        );
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_RESPONSE_HEADERS)) {
             $logger->info('Got Headers');
@@ -379,19 +360,19 @@ class HttpClient
 
     /**
      * Parse raw HTTP Headers (string)
-     * to an associative array of data with `HeaderName => HeaderValue`.
+     * to an associative array of data as `HeaderName => HeaderValue`.
      */
-    protected function parseHeaders(string $headers): array
+    protected function parseHeaders(string $headers, bool $lowercaseNames=false): array
     {
-        return Bunch::fromExplode("\n", $headers)
+        $result = Bunch::fromExplode("\n", $headers)
             ->filter(fn ($line) => str_contains($line, ':'))
-            ->map(function ($line) {
-                $line = preg_replace("/\r$/", '', $line);
-                list($headerName, $headerValue) = explode(':', $line, 2);
-
-                return [trim($headerName), trim($headerValue)];
-            })
+            ->map(fn($line) => explode(':', trim($line), 2))
             ->zip()
         ;
+
+        if ($lowercaseNames)
+            $result = array_change_key_case($result, CASE_LOWER);
+
+        return $result;
     }
 }

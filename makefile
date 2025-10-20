@@ -8,7 +8,6 @@ test:
 	@rm -r tests/Storage/Cache || true
 	@rm -r Storage/Cache || true
 	@vendor/bin/phpunit
-	@docker compose down -v
 
 workflow-test:
 	@vendor/bin/phpunit

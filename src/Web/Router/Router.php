@@ -31,15 +31,8 @@ class Router
     /** @var WebAPI[] $apis */
     protected array $apis = [];
 
-    public static function getDefaultInstance(): static
+    public function __construct(RouterConfiguration $config)
     {
-        return new self();
-    }
-
-    public function __construct(?RouterConfiguration $config=null)
-    {
-        $config ??= RouterConfiguration::resolve();
-
         if ($config->cached)
             $this->cache = Cache::getInstance()->child("Routers")->child(md5(static::class));
 

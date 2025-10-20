@@ -11,9 +11,8 @@ class LargeUploadManager
 
     protected LargeUploadManagerConfiguration $configuration;
 
-    public function __construct(?LargeUploadManagerConfiguration $configuration=null)
+    public function __construct(LargeUploadManagerConfiguration $configuration)
     {
-        $configuration ??= LargeUploadManagerConfiguration::resolve();
         $this->configuration = $configuration;
     }
 

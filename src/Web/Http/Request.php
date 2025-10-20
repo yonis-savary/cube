@@ -26,15 +26,15 @@ class Request extends HttpMessage
     protected array $slugObjects = [];
 
     /**
-     * @var string
-     * @var string
-     * @var array
-     * @var array
-     * @var array
-     * @var Upload[]
-     * @var string
-     * @var ?string
-     * @var array
+     * @var string $method
+     * @var string $path
+     * @var array $get
+     * @var array $post
+     * @var array $headers
+     * @var Upload[] $uploads
+     * @var string $body
+     * @var ?string $ip
+     * @var array $cookies
      */
     public function __construct(
         string $method = 'GET',
@@ -230,17 +230,17 @@ class Request extends HttpMessage
         return $this->slugValues;
     }
 
-    public function setSlugObjects(array $values): void 
+    public function setSlugObjects(array $values): void
     {
         $this->slugObjects = $values;
     }
 
-    public function getSlugObject(string $name, mixed $default=null): mixed 
+    public function getSlugObject(string $name, mixed $default=null): mixed
     {
         return $this->slugObjects[$name] ?? $default;
     }
 
-    public function getSlugObjects(): array 
+    public function getSlugObjects(): array
     {
         return $this->slugObjects;
     }
@@ -292,7 +292,7 @@ class Request extends HttpMessage
         ?HttpClient $httpClient = null,
         ?callable $curlMutator = null
     ): Response {
-        $httpClient ??= new HttpClient($this);
+        $httpClient ??= new HttpClient();
         $httpClient->setRequest($this);
 
         return $httpClient->fetch(
@@ -307,7 +307,7 @@ class Request extends HttpMessage
 
     protected static function parseDictionaryValues(array $data): array
     {
-        foreach ($data as $key => &$value) {
+        foreach ($data as &$value) {
             if (!($value instanceof \Stringable || is_string($value))) {
                 continue;
             }
