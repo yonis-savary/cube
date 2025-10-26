@@ -2,6 +2,7 @@
 
 namespace Cube\Data;
 
+use Closure;
 use Cube\Core\Autoloader;
 use Cube\Data\Classes\NoValue;
 use Cube\Utils\Utils;
@@ -525,6 +526,26 @@ class Bunch
         }
 
         return $acc;
+    }
+
+    /**
+     * @template TReturn
+     *
+     * @param \Closure(TValue):TReturn|string|null $keyOrCallback
+     * @param TReturn|TValue                       $start
+     */
+    public function sum(string|Closure|null $keyOrCallback=null): mixed
+    {
+        if (is_string($keyOrCallback))
+            return $this->key($keyOrCallback)->sum();
+
+        if (is_callable($keyOrCallback))
+            return $this->reduce(fn($acc, $cur) => $acc + $keyOrCallback($cur), 0);
+
+        return $this->reduce(function($acc, $x){
+            /** @var mixed $x */
+            return $acc + $x;
+        }, 0);
     }
 
     protected function withNewData(array $data): self

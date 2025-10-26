@@ -246,6 +246,13 @@ class BunchTest extends TestCase
         $this->assertEquals(120, Bunch::range(5)->reduce(fn ($acc, $cur) => $acc * $cur, 1));
     }
 
+    public function testSum()
+    {
+        $this->assertEquals(1+2+3+4+5, Bunch::of([1,2,3,4,5])->sum());
+        $this->assertEquals(2+4+6+8+10, Bunch::of([1,2,3,4,5])->sum(fn($x) => $x*2));
+        $this->assertEquals(1+2+3+4+5, Bunch::of([1,2,3,4,5])->map(fn($x) => ['myKey' => $x])->sum('myKey'));
+    }
+
     public function testKey()
     {
         $baseData = [
