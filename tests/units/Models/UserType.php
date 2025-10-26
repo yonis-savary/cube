@@ -43,7 +43,7 @@ class UserType extends Model
     #[Generated]
     public function users(): HasMany
     {
-        return $this->hasMany('users', UserType::class, 'id', 'type');
+        return $this->hasMany('users', User::class, 'type', 'id');
     }
 
     #[Generated]

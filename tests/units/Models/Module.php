@@ -43,7 +43,7 @@ class Module extends Model
     #[Generated]
     public function users(): HasMany
     {
-        return $this->hasMany('users', Module::class, 'id', 'module');
+        return $this->hasMany('users', ModuleUser::class, 'module', 'id');
     }
 
     #[Generated]

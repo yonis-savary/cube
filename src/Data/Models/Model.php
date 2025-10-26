@@ -318,14 +318,23 @@ abstract class Model extends EventDispatcher
         return new static($validated);
     }
 
-    public static function fromRequest(Request $request): static
+    public static function fromRequest(Request $request, array $forcedAttributes=[], bool $forbidsPrimaryKey=true, array $forbiddenAttributes=[]): static
     {
         $validator = static::toValidator();
         $error = $validator->validateRequest($request);
 
         $validated = $validator->getLastValues();
 
-        return new static($validated);
+        $pk = static::primaryKey();
+        if ($pk && $forbidsPrimaryKey && isset($validated[$pk]))
+            unset($validated[$pk]);
+
+        foreach($forbiddenAttributes as $attribute) {
+            if (isset($validated[$attribute]))
+                unset($validated[$attribute]);
+        }
+
+        return new static(array_merge($validated, $forcedAttributes));
     }
 
     public function make(array $data = []): static

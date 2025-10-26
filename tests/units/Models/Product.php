@@ -47,7 +47,7 @@ class Product extends Model
     #[Generated]
     public function managers(): HasMany
     {
-        return $this->hasMany('managers', Product::class, 'id', 'product');
+        return $this->hasMany('managers', ProductManager::class, 'product', 'id');
     }
 
     #[Generated]
