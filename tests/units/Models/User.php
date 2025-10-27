@@ -14,7 +14,7 @@ use Cube\Utils\Attributes\Generated;
  * @property string $login
  * @property string $password
  * @property int $type
- * @property UserType $usertype
+ * @property UserType $_type
  * @property User[] $modules
  */
 class User extends Model
@@ -46,9 +46,9 @@ class User extends Model
     }
 
     #[Generated]
-    public function usertype(): HasOne
+    public function _type(): HasOne
     {
-        return $this->hasOne('usertype', 'type', UserType::class, 'id');
+        return $this->hasOne('_type', 'type', UserType::class, 'id');
     }
 
     #[Generated]
@@ -62,7 +62,7 @@ class User extends Model
     {
         return [
             "modules",
-            "usertype",
+            "_type",
         ];
     }
 

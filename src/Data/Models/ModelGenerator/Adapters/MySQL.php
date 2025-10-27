@@ -53,7 +53,7 @@ class MySQL extends SQLite
         $relations = Bunch::of($sqlRelations)
             ->map(function ($x) use ($fields, $dummyModel, $table) {
                 $targetModel = Table::getClassname($x['REFERENCED_TABLE_NAME']);
-                $relationName = strtolower(basename(str_replace('\\', '/', $targetModel)));
+                $relationName = strtolower($x['COLUMN_NAME']);
                 while ($fields->has($relationName))
                     $relationName = "_$relationName";
 

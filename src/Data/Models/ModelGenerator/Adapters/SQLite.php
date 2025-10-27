@@ -123,7 +123,7 @@ class SQLite extends DatabaseAdapter
         $relations = Bunch::of($sqlRelations)
             ->map(function ($x) use ($fields, $dummyModel, $table) {
                 $targetModel = Table::getClassname($x['table']);
-                $relationName = strtolower(basename(str_replace('\\', '/', $targetModel)));
+                $relationName = strtolower($x['from']);
                 while ($fields->has($relationName))
                     $relationName = "_$relationName";
 
