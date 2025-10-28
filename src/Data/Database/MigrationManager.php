@@ -2,7 +2,7 @@
 
 namespace Cube\Data\Database;
 
-use Cube\Core\Autoloader;
+use Cube\Core\Injector;
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
@@ -186,7 +186,7 @@ abstract class MigrationManager
         if (!$managerClass)
             throw new \RuntimeException("No migration driver found for [{$databaseDriver}] database");
 
-        return Autoloader::instanciate($managerClass);
+        return Injector::instanciate($managerClass);
     }
 
     public function catchUpTo(string $name): array

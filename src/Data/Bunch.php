@@ -4,6 +4,7 @@ namespace Cube\Data;
 
 use Closure;
 use Cube\Core\Autoloader;
+use Cube\Core\Injector;
 use Cube\Data\Classes\NoValue;
 use Cube\Utils\Utils;
 
@@ -311,7 +312,7 @@ class Bunch
 
     public function instanciates(array $args=[])
     {
-        return $this->map(fn($class) => Autoloader::instanciate($class, $args));
+        return $this->map(fn($class) => Injector::instanciate($class, $args));
     }
 
     public function diff(array|Bunch $values): self

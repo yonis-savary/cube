@@ -7,6 +7,7 @@ use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Env\Cache;
 use Cube\Core\Exceptions\ResponseException;
+use Cube\Core\Injector;
 use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -227,7 +228,7 @@ class Router
 
         try
         {
-            $parameters = Autoloader::getDependencies(
+            $parameters = Injector::getDependencies(
                 $route->getCallback(),
                 [$request, ...array_values($request->getSlugValues())]
             );
