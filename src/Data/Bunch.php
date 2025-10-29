@@ -549,6 +549,13 @@ class Bunch
         }, 0);
     }
 
+    /**
+     * @template TNKey
+     * @template TNValues
+     * 
+     * @param array<TNKey,TNValues> $data
+     * @return self<int,TNValues>
+     */
     protected function withNewData(array $data): self
     {
         $this->data = array_values($data);

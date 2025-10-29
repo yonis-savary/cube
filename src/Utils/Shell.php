@@ -20,7 +20,7 @@ class Shell
         $commands = Bunch::of($commands);
 
         return $commands
-            ->map(fn (string $class) => new $class())
+            ->instanciates()
             ->filter(fn (Command $command) => in_array($identifier, [$command->getFullIdentifier(), $command->getName()]))
             ->get()
         ;

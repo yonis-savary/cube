@@ -9,7 +9,6 @@ use Cube\Security\Authentication\AuthenticationConfiguration;
 use Cube\Security\Authentication\AuthenticationProvider;
 use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
-use Cube\Utils\Path;
 
 class Authentication
 {
@@ -27,11 +26,7 @@ class Authentication
      */
     public function __construct(AuthenticationConfiguration $configuration) {
         $this->provider = $configuration->provider;
-    }
-
-    public function getSessionKey(string $key): string
-    {
-        return md5(Path::relative($key));
+        $this->session();
     }
 
     public function attempt(string $login, ?string $userPassword=null): bool
@@ -50,44 +45,37 @@ class Authentication
 
     public function login(Model $user): void
     {
-        $session = $this->getSession();
-
-        $session->set($this->getSessionKey(self::SESSION_USER_CLASS), $user::class);
-        $session->set($this->getSessionKey(self::SESSION_USER_DATA), $user->toArray());
-        $session->set($this->getSessionKey(self::SESSION_USER_ID), $user->id());
+        $this->session->set(self::SESSION_USER_CLASS, $user::class);
+        $this->session->set(self::SESSION_USER_DATA, $user->toArray());
+        $this->session->set(self::SESSION_USER_ID, $user->id());
     }
 
     public function logout(): void
     {
-        $session = $this->getSession();
-
-        $session->unset($this->getSessionKey(self::SESSION_USER_DATA));
-        $session->unset($this->getSessionKey(self::SESSION_USER_ID));
+        $this->session->unset(self::SESSION_USER_DATA);
+        $this->session->unset(self::SESSION_USER_ID);
     }
 
     public function isLogged(): bool
     {
-        $session = $this->getSession();
-        $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA), false);
-
-        return false != $userArrayData;
+        return false != $this->session->get(self::SESSION_USER_DATA, false);
     }
 
     public function user(): Model
     {
-        $session = $this->getSession();
-        $userArrayData = $session->get($this->getSessionKey(self::SESSION_USER_DATA));
-        $userClass = $session->get($this->getSessionKey(self::SESSION_USER_CLASS));
-
-        if (!$this->isLogged()) {
+        if (! $userArrayData = $this->session->get(self::SESSION_USER_DATA, false)) {
             throw new \RuntimeException('Cannot retrieve data of unauthenticated user');
         }
 
+        $userClass = $this->session->get(self::SESSION_USER_CLASS);
         return new $userClass($userArrayData);
     }
 
+    /**
+     * @return mixed `false` on failure
+     */
     public function userId(): mixed
     {
-        return $this->getSession()->get($this->getSessionKey(self::SESSION_USER_ID), false);
+        return $this->session->get(self::SESSION_USER_ID, false);
     }
 }

@@ -82,15 +82,16 @@ class Cache
         return array_key_exists($key, $this->index);
     }
 
-    public function delete(string $key)
+    public function delete(string $key): void
     {
-        if ($this->has($key)) {
-            $this->index[$key]->destroy();
-            unset($this->index[$key]);
-        }
+        if ($this->has($key))
+            return;
+
+        $this->index[$key]->destroy();
+        unset($this->index[$key]);
     }
 
-    public function save()
+    public function save(): void
     {
         foreach ($this->index as $element) {
             $element->save($this->storage);
@@ -108,7 +109,7 @@ class Cache
     /**
      * Destroy every element of the cache.
      */
-    public function clear()
+    public function clear(): void
     {
         foreach ($this->index as $object) {
             $object->destroy();
@@ -120,7 +121,7 @@ class Cache
     /**
      * Alias of `Cache::clear()`.
      */
-    public function flush()
+    public function flush(): void
     {
         $this->clear();
     }
@@ -130,6 +131,12 @@ class Cache
         return $this->storage;
     }
 
+    /**
+     * @template TReturn
+     *
+     * @param \Closure():TReturn $callback
+     * @return TReturn
+     */
     public function generated(string $key, callable|\Closure $callback, int $timeToLive = self::MONTH, ?int $creationDate = null)
     {
         if ($this->has($key))

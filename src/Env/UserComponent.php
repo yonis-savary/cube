@@ -19,14 +19,13 @@ trait UserComponent
     final public static function getDefaultInstance(): static
     {
         $authentication = self::getAuthentication();
-
         $userPrimaryKey = $authentication->userId();
 
-        if ($userPrimaryKey instanceof \Stringable) {
-            $md5 = md5($userPrimaryKey);
-        } else {
-            $md5 = md5(serialize($userPrimaryKey));
-        }
+        $md5 = md5(
+            $userPrimaryKey instanceof \Stringable
+            ? $userPrimaryKey
+            : serialize($userPrimaryKey)
+        );
 
         return self::getUserInstance($userPrimaryKey, $md5);
     }

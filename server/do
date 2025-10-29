@@ -32,7 +32,7 @@ else if (count($commands) > 1)
     );
     Console::table(
         Bunch::of($commands)
-        ->map(fn($class) => new $class)
+        ->instanciates()
         ->map(fn(Command $command) => [$command->getFullIdentifier(), $command->getHelp()])
         ->get(),
         ["Full Identifier", "Description"],

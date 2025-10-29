@@ -4,11 +4,8 @@ namespace Cube\Console\Commands\Routine;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Core\Autoloader;
-use Cube\Data\Bunch;
 use Cube\Env\Logger\HasLogger;
 use Cube\Env\Logger\Logger;
-use Cube\Routine\Queue;
 use Cube\Routine\Scheduler;
 use Cube\Utils\Console;
 
@@ -31,33 +28,9 @@ class Launch extends Command
         $logger = $this->getLogger();
         $logger->info('Launched routine command on '.date('Y-m-d H:i:s'));
 
-        $this->launchQueues($logger);
         $this->launchScheduler($logger);
 
         return 0;
-    }
-
-    protected function launchQueues(Logger $logger): void
-    {
-        $logger->asGlobalInstance(function () {
-            Console::print('Processing queues handlers...');
-
-            $toLaunch = Bunch::fromExtends(Queue::class)
-                ->filter(fn (Queue $queue) => $queue::shouldLaunch())
-                ->get()
-            ;
-
-            Console::withProgressBar($toLaunch, function (Queue $queue) {
-                $this->info('Launching queue {class}', ['class' => $queue::class]);
-                $count = $queue::batchSize();
-                $trueCount = max($queue::countToProcess(), $count);
-
-                Console::print("- Processing {$trueCount} item for ".$queue::class);
-                for ($i = 0; $i < $count; ++$i) {
-                    $queue::processNext();
-                }
-            });
-        });
     }
 
     protected function launchScheduler(Logger $logger): void

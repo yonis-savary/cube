@@ -2,15 +2,14 @@
 
 namespace Cube\Console;
 
+use Cube\Core\Injector;
+
 abstract class Command
 {
     public static function call(?Args $args = null): int
     {
-        $args ??= new Args();
-
-        $command = new static();
-
-        return $command->execute($args);
+        return Injector::instanciate(static::class)
+            ->execute($args ?? new Args);
     }
 
     public function getHelp(): string

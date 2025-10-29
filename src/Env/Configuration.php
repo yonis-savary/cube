@@ -77,7 +77,7 @@ class Configuration
         return $this;
     }
 
-    public function loadFile(string $fileToLoad)
+    public function loadFile(string $fileToLoad): void
     {
         if (!is_file($fileToLoad)) {
             throw new \RuntimeException($fileToLoad);

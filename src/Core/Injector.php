@@ -14,6 +14,11 @@ use RuntimeException;
 class Injector
 {
 
+    /**
+     * @template TClass
+     * @param class-string<TClass> $class
+     * @return TClass
+     */
     public static function instanciate(string $class, array $args=[])
     {
         $parameters = [];

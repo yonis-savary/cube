@@ -10,7 +10,7 @@ abstract class EventDispatcher
     /**
      * @template TEvent
      *
-     * @param class-string<TEvent>  $eventName
+     * @param class-string<TEvent>|string  $eventName
      * @param \Closure(TEvent):void $callback
      */
     public function on(string $eventName, callable $callback): self

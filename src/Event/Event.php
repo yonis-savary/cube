@@ -16,10 +16,4 @@ abstract class Event
 
         return $this;
     }
-
-    public static function onTrigger(callable $callback, ?EventDispatcher $dispatcher = null): void
-    {
-        $dispatcher ??= Events::getInstance();
-        $dispatcher->on(static::class, $callback);
-    }
 }

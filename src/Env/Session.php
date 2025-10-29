@@ -47,7 +47,7 @@ class Session
         return $key;
     }
 
-    public function set(string $key, mixed $value)
+    public function set(string $key, mixed $value): void
     {
         $key = $this->getNamespacedKey($key);
         $_SESSION[$key] = $value;
@@ -60,14 +60,14 @@ class Session
         return $_SESSION[$key] ?? $default;
     }
 
-    public function has(string $key)
+    public function has(string $key): bool
     {
         $key = $this->getNamespacedKey($key);
 
         return array_key_exists($key, $_SESSION);
     }
 
-    public function unset(string $key)
+    public function unset(string $key): void
     {
         $key = $this->getNamespacedKey($key);
         unset($_SESSION[$key]);
