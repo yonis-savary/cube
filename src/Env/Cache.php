@@ -84,7 +84,7 @@ class Cache
 
     public function delete(string $key): void
     {
-        if ($this->has($key))
+        if (!$this->has($key))
             return;
 
         $this->index[$key]->destroy();
