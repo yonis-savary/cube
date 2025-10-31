@@ -120,12 +120,17 @@ class SQLite extends DatabaseAdapter
 
         $fields = Bunch::of($sqlRelations)->key('from');
 
+        $addedRelationNames = [];
+
         $relations = Bunch::of($sqlRelations)
-            ->map(function ($x) use ($fields, $dummyModel, $table) {
+            ->map(function ($x) use ($fields, $dummyModel, $table, &$addedRelationNames) {
                 $targetModel = Table::getClassname($x['table']);
                 $relationName = strtolower($x['from']);
-                while ($fields->has($relationName))
+
+                while ($fields->has($relationName) || in_array($relationName, $addedRelationNames))
                     $relationName = "_$relationName";
+
+                $addedRelationNames[] = $relationName;
 
                 return new HasOne(
                     $relationName,

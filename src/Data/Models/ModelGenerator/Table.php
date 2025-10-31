@@ -112,16 +112,17 @@ class Table
             ->filter(fn (HasOne $relation) => $relation->concern($className))
             ->filter(fn (HasOne $relation) => $relation->fromModel === $className);
 
+        $addedRelationNames = [];
+
         $hasManyRelations = Bunch::of($relations)
         ->onlyInstancesOf(HasOne::class)
         ->filter(fn (HasOne $relation) => $relation->concern($className))
         ->filter(fn (HasOne $relation) => $relation->fromModel !== $className)
-        ->map(function (HasOne $relation) use (&$relationsNames, $fieldsNames) {
+        ->map(function (HasOne $relation) use (&$relationsNames, $fieldsNames, &$addedRelationNames) {
             $toModel    = $relation->fromModel;
             $toColumn   = $relation->fromColumn;
             $fromModel  = $relation->toModel;
             $fromColumn = $relation->toColumn;
-
 
             $relationName = Text::endsWith(str_replace(
                 strtolower(basename(str_replace('\\', '/', $fromModel))),
@@ -129,8 +130,10 @@ class Table
                 strtolower(basename(str_replace('\\', '/', $toModel)))
             ), 's');
 
-            while ($fieldsNames->has($relationName))
+            while ($fieldsNames->has($relationName) || in_array($relationName, $addedRelationNames))
                 $relationName = "_$relationName";
+
+            $addedRelationNames[] = $relationName;
 
             $dummyModel = new DummyModel();
             $relation = new HasMany($relationName, $fromModel, $fromColumn, $toModel, $toColumn, $dummyModel);
