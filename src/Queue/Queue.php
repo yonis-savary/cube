@@ -36,8 +36,7 @@ abstract class Queue
     {
         $this->driver->next(function(QueueCallback $callback){
             try {
-                ($callback)();
-                return true;
+                return ($callback)() ?? true;
             } catch (\Throwable $thrown) {
                 $this->warning("Caught an exception while processing an item");
                 $this->error($thrown->getMessage() . " " . $thrown->getFile() . "@". $thrown->getLine());
@@ -48,9 +47,11 @@ abstract class Queue
     }
 
     public function loop() {
-        while (true) {
-            if (!$this->process())
-                sleep(5);
-        }
+        $this->logger->asGlobalInstance(function(){
+            while (true) {
+                if (!$this->process())
+                    usleep(1000 * 50);
+            }
+        });
     }
 }

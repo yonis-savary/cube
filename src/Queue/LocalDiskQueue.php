@@ -76,12 +76,12 @@ class LocalDiskQueue implements QueueDriver
 
         $element = unserialize(file_get_contents($locked));
 
-        if (($function)($element)) {
+        if ($callbackReturn = (($function)($element) ?? true)) {
             unlink($locked);
         } else {
             $this->unlockFile($toProcess);
         }
-        return true;
+        return $callbackReturn;
     }
 
     public function flush()
