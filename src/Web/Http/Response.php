@@ -355,7 +355,6 @@ class Response extends HttpMessage
     {
         $response = (new self($code))
             ->withResponseCallback(function () use (&$path) { readfile($path); })
-            ->setHeader('Content-Length', filesize($path))
             ->setHeader('Content-Type', FileMIMETypes::getFileMIMEType($attachmentFile ?? $path))
         ;
 
