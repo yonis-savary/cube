@@ -17,6 +17,7 @@ use Cube\Utils\Path;
 use Cube\Web\Controller;
 use Cube\Web\Router\RouterConfiguration;
 use Cube\Web\Helpers\WebAPI;
+use ReflectionFunction;
 
 class Router
 {
@@ -232,14 +233,20 @@ class Router
                 $route->getCallback(),
                 [$request, ...array_values($request->getSlugValues())]
             );
+
             /** @var Request $request */
             $request = &$parameters[0];
 
-            $slugObjectsKeys = ["request", ...array_keys($request->getSlugValues())];
-            $request->setSlugObjects(array_combine(
-                $slugObjectsKeys,
-                array_slice($parameters, 0, count($slugObjectsKeys))
-            ));
+            $parametersReflections = Injector::resolveClosureParameters($route->getCallback());
+
+            $slugValues = $request->getSlugValues();
+
+            for($i=0; $i<min(count($parametersReflections), count($parameters)); $i++) {
+                $parameterName = $parametersReflections[$i]->getName();
+                $slugValues[$parameterName] = $parameters[$i];
+            }
+
+            $request->setSlugObjects($slugValues);
 
             $response = $route(...$parameters);
 

@@ -31,7 +31,7 @@ class Injector
     /**
      * @return ReflectionParameter[]
      */
-    protected static function resolveClosureParameters(callable|array $callback): array
+    public static function resolveClosureParameters(callable|array $callback): array
     {
         if (is_array($callback)) {
             $controller = new \ReflectionClass($callback[0]);
