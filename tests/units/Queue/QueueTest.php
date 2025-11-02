@@ -17,11 +17,11 @@ class QueueTest extends TestCase
 
     public function test_loop() {
         $dummyQueue = new class extends Queue {
-            public function getLogger(): Logger
-            {
-                return Logger::getInstance();
+            public function getLogger(): Logger {
+                return new NullLogger();
             }
         };
+        $dummyQueue->flush();
 
         $instance = $dummyQueue::getInstance();
 
@@ -29,9 +29,9 @@ class QueueTest extends TestCase
         $instance->push([self::class, "addNumber"], 2);
         $instance->push([self::class, "addNumber"], 5);
 
-        $instance->process();
-        $instance->process();
-        $instance->process();
+        $instance->processNext();
+        $instance->processNext();
+        $instance->processNext();
 
         $this->assertEquals([1,2,5], self::$numbers);
     }

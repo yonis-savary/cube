@@ -4,6 +4,6 @@
 /tests/integration-apps
 /Storage
 /tests/Storage
-.env
+/.env
 
 .php-cs-fixer.cache

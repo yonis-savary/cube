@@ -5,6 +5,7 @@ namespace Cube\Queue;
 use Cube\Data\Bunch;
 use Cube\Env\Logger\Logger;
 use Cube\Env\Storage;
+use Exception;
 
 class LocalDiskQueue implements QueueDriver
 {
@@ -12,19 +13,12 @@ class LocalDiskQueue implements QueueDriver
 
     public function __construct(string $identifier)
     {
-        $this->identifier = $identifier;
-    }
-
-    protected function getIdentifier(): string
-    {
-        return preg_replace('/[^a-z0-9]/i', '.', strtolower($this->identifier));
+        $this->identifier = preg_replace('/[^a-z0-9]/i', '.', strtolower($identifier));
     }
 
     protected function getStorage(): Storage
     {
-        $identifier = $this->getIdentifier();
-
-        return Storage::getInstance()->child('Queues')->child($identifier);
+        return Storage::getInstance()->child('Queues')->child($this->identifier);
     }
 
     protected static function lockFile(string $file): ?string
@@ -55,33 +49,27 @@ class LocalDiskQueue implements QueueDriver
         return $newPath;
     }
 
-    public function next(callable $function)
+    public function next(): QueueCallback
     {
         $storage = $this->getStorage();
         $files = $storage->files();
 
-        if (!count($files))
-            return false;
+        $storage = $this->getStorage();
+        do {
+            $files = $storage->files();
+            $toProcess = Bunch::of($files)->first(fn ($x) => !str_starts_with(basename($x), '#'));
+            if (!$toProcess)
+                sleep(1);
+        } while (!$toProcess);
 
-        $toProcess = Bunch::of($files)->first(fn ($x) => !str_starts_with(basename($x), '#'));
-
-        if (!$toProcess)
-            return false;
-
-        $logger = Logger::getInstance();
         if (!$locked = $this->lockFile($toProcess)) {
-            $logger->warning(static::class.": could not lock file {$toProcess}");
-            return false;
+            throw new Exception(static::class.": could not lock file {$toProcess}");
         }
 
         $element = unserialize(file_get_contents($locked));
+        unlink($locked);
 
-        if ($callbackReturn = (($function)($element) ?? true)) {
-            unlink($locked);
-        } else {
-            $this->unlockFile($toProcess);
-        }
-        return $callbackReturn;
+        return $element;
     }
 
     public function flush()
@@ -91,10 +79,10 @@ class LocalDiskQueue implements QueueDriver
         Bunch::of($storage->files())->forEach(fn ($x) => unlink($x));
     }
 
-    public function push(callable $function, mixed $args)
+    public function push(QueueCallback $callback)
     {
         $storage = $this->getStorage();
         $identifier = uniqid(time().'-');
-        $storage->write($identifier, serialize(new QueueCallback($function, $args)));
+        $storage->write($identifier, serialize($callback));
     }
 }

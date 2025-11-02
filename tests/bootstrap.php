@@ -13,4 +13,6 @@ Configuration::setInstance(new Configuration());
 
 Autoloader::initialize(realpath('.'));
 
-Environment::setInstance(new Environment('./.env'));
+$env = new Environment(null);
+$env->set('QUEUE_REDIS_HOST', 'localhost');
+Environment::setInstance($env);

@@ -7,9 +7,9 @@ interface QueueDriver
     /**
      * return null if no item found
      */
-    public function next(callable $function);
+    public function next(): QueueCallback;
 
     public function flush();
 
-    public function push(callable $function, mixed $args);
+    public function push(QueueCallback $callback);
 }

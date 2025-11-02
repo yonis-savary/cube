@@ -20,7 +20,7 @@ abstract class Queue
 
     public function __construct()
     {
-        $this->driver = $this->getDriver() ?? new LocalDiskQueue(md5(static::class));
+        $this->driver = $this->getDriver() ?? new RedisQueue(static::class);
         $this->logger = $this->getLogger() ?? new NullLogger();
     }
 
@@ -28,28 +28,30 @@ abstract class Queue
         return $this->driver->flush();
     }
 
-    public function push(callable $function, mixed $args) {
-        return $this->driver->push($function, $args);
+    public function push(callable|string $function, mixed $args) {
+        if (is_string($function))
+            $function = [static::class, $function];
+
+        return $this->driver->push(new QueueCallback($function, $args));
     }
 
-    public function process(): void
+    public function processNext(): void
     {
-        $this->driver->next(function(QueueCallback $callback){
-            try {
-                return ($callback)() ?? true;
-            } catch (\Throwable $thrown) {
-                $this->warning("Caught an exception while processing an item");
-                $this->error($thrown->getMessage() . " " . $thrown->getFile() . "@". $thrown->getLine());
+        $callback = $this->driver->next();
+        try {
+            ($callback)() ?? true;
+        } catch (\Throwable $thrown) {
+            $this->warning("Caught an exception while processing an item");
+            $this->error($thrown->getMessage() . " " . $thrown->getFile() . "@". $thrown->getLine());
 
-                return false;
-            }
-        });
+            $this->driver->push($callback);
+        }
     }
 
     public function loop() {
         $this->logger->asGlobalInstance(function(){
             while (true) {
-                if (!$this->process())
+                if (!$this->processNext())
                     usleep(1000 * 50);
             }
         });

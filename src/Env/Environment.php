@@ -53,4 +53,8 @@ class Environment
     {
         return $this->content[$key] ?? $default;
     }
+
+    public function set(string $key, string $value): void {
+        $this->content[$key] = $value;
+    }
 }
