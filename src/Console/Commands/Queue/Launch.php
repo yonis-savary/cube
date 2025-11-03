@@ -5,6 +5,8 @@ namespace Cube\Console\Commands\Queue;
 use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Core\Autoloader;
+use Cube\Env\Logger\NullLogger;
+use Cube\Env\Logger\StdOutLogger;
 use Cube\Queue\Queue;
 use Exception;
 
@@ -25,8 +27,13 @@ class Launch extends Command
         if (!Autoloader::extends($queueClass, Queue::class))
             throw new Exception("$queueClass is not a queue class");
 
-        $instance = new $queueClass();
-        $instance->loop();
+        $logger = $args->has("-l", "--log") 
+            ? new StdOutLogger()
+            : new NullLogger()
+        ;
+
+        $instance = $queueClass::getInstance();
+        $instance->loop($logger);
         return 0;
     }
 }

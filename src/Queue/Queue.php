@@ -4,6 +4,7 @@ namespace Cube\Queue;
 
 use Cube\Core\Component;
 use Cube\Env\Logger\HasLogger;
+use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
 
 abstract class Queue
@@ -48,7 +49,12 @@ abstract class Queue
         }
     }
 
-    public function loop() {
+    public function loop(?Logger $attachedLogger=null) {
+        if ($attachedLogger)
+            $this->logger->attach($attachedLogger);
+
+        $this->logger->info('Starting queue ' . static::class . ' ('.date('Y-m-d h:i:s').')');
+
         $this->logger->asGlobalInstance(function(){
             while (true) {
                 if (!$this->processNext())
