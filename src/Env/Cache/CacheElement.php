@@ -24,7 +24,7 @@ class CacheElement
 
     public static function fromFile(string $file): ?self
     {
-        $filename = pathinfo($file, PATHINFO_FILENAME);
+        $filename = pathinfo($file, PATHINFO_BASENAME);
 
         if (!preg_match('/^\d+_\d+_.+$/', $filename)) {
             return null;
