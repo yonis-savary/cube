@@ -52,6 +52,12 @@ class PasswordAuthentication implements AuthenticationProvider
         return $user;
     }
 
+    public function userById(mixed $id): Model|false 
+    {
+        $model = $this->model;
+        return $model::find($id) ?? false;
+    }
+
     public function saltString(string &$string, Model $user): void
     {
         if ($saltField = $this->saltField) {

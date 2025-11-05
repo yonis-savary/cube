@@ -49,7 +49,7 @@ class RememberMe implements Middleware
             return $request;
         }
 
-        $this->authentication->login($userId);
+        $this->authentication->loginById($userId);
         $userData = $this->authentication->user();
 
         (new RememberedUser(

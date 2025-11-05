@@ -50,6 +50,15 @@ class Authentication
         $this->session->set(self::SESSION_USER_ID, $user->id());
     }
 
+    public function loginById(mixed $id): bool
+    {
+        if (! $user = $this->provider->userById($id))
+            return false;
+
+        $this->login($user);
+        return true;
+    }
+
     public function logout(): void
     {
         $this->session->unset(self::SESSION_USER_DATA);
