@@ -129,7 +129,7 @@ class Autoloader
     public static function includeRequireFiles(): void 
     {
         foreach (self::$requireFiles as $file) {
-            include_once $file;
+            include_once Path::relative($file);
         }
     }
 
