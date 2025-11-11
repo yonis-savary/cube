@@ -81,6 +81,7 @@ class RememberMe implements Middleware
             $this->configuration->cookieName,
             $token,
             time() + $duration,
+            path: $this->configuration->cookiePath,
             secure: $this->configuration->cookieSecure,
             httponly: $this->configuration->cookieHttpOnly
         );
