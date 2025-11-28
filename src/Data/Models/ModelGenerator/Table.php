@@ -299,7 +299,7 @@ class Table
             ...Bunch::of($relations)
                 ->onlyInstancesOf(HasMany::class)
                 ->map(function (HasMany $relation) {
-                    $toModel = $relation->fromModel;
+                    $toModel = $relation->toModel;
 
                     return ' * @property '.$toModel.'[] $'.$relation->getName();
                 })->toArray(),

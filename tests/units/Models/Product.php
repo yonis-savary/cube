@@ -14,7 +14,7 @@ use Cube\Utils\Attributes\Generated;
  * @property string $created_at
  * @property string $name
  * @property string $price_dollar
- * @property Product[] $managers
+ * @property ProductManager[] $managers
  */
 class Product extends Model
 {

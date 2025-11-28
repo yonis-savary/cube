@@ -15,7 +15,7 @@ use Cube\Utils\Attributes\Generated;
  * @property string $password
  * @property int $type
  * @property UserType $_type
- * @property User[] $modules
+ * @property ModuleUser[] $modules
  */
 class User extends Model
 {
