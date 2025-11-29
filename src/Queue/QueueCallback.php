@@ -5,14 +5,16 @@ namespace Cube\Queue;
 class QueueCallback
 {
     protected $function;
+    protected array $args;
 
     public function __construct(
         callable $function,
-        protected mixed $args
+        mixed ...$args
     ){
         // Sorry for that ! Tried to put it in function parameters but ...
         // Property Cube\Queue\QueueCallback::$function cannot have type callable
         $this->function = $function;
+        $this->args = $args;
     }
 
     public function __serialize(): array
@@ -28,6 +30,6 @@ class QueueCallback
 
     public function __invoke()
     {
-        ($this->function)($this->args);
+        ($this->function)(...$this->args);
     }
 }
