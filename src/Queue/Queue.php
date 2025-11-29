@@ -29,7 +29,7 @@ abstract class Queue
         return $this->driver->flush();
     }
 
-    public function push(callable|string $function, mixed $args) {
+    public function push(callable|string $function, mixed ...$args) {
         if (is_string($function))
             $function = [static::class, $function];
 

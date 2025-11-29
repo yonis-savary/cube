@@ -9,7 +9,7 @@ class QueueCallback
 
     public function __construct(
         callable $function,
-        mixed ...$args
+        array $args
     ){
         // Sorry for that ! Tried to put it in function parameters but ...
         // Property Cube\Queue\QueueCallback::$function cannot have type callable
