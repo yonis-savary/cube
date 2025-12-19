@@ -1,6 +1,8 @@
 <?php 
 
-namespace Cube\Queue;
+namespace Cube\Queue\Drivers;
+
+use Cube\Queue\QueueCallback;
 
 interface QueueDriver
 {

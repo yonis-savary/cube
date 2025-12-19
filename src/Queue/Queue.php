@@ -6,6 +6,8 @@ use Cube\Core\Component;
 use Cube\Env\Logger\HasLogger;
 use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
+use Cube\Queue\Drivers\LocalDiskQueueDriver;
+use Cube\Queue\Drivers\QueueDriver;
 
 abstract class Queue
 {
@@ -21,7 +23,7 @@ abstract class Queue
 
     public function __construct()
     {
-        $this->driver = $this->getDriver() ?? new RedisQueue(static::class);
+        $this->driver = $this->getDriver() ?? new LocalDiskQueueDriver(static::class);
         $this->logger = $this->getLogger() ?? new NullLogger();
     }
 

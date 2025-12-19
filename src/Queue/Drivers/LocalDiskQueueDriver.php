@@ -1,13 +1,14 @@
 <?php 
 
-namespace Cube\Queue;
+namespace Cube\Queue\Drivers;
 
 use Cube\Data\Bunch;
 use Cube\Env\Logger\Logger;
 use Cube\Env\Storage;
+use Cube\Queue\QueueCallback;
 use Exception;
 
-class LocalDiskQueue implements QueueDriver
+class LocalDiskQueueDriver implements QueueDriver
 {
     protected string $identifier;
 

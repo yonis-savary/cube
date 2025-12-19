@@ -6,7 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 
-class LocalDisk extends DiskDriver
+class LocalDiskDriver extends StorageDriver
 {
     public function write(string $path, string $content, int $flags = 0): bool
     {

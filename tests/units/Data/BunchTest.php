@@ -3,6 +3,9 @@
 namespace Cube\Tests\Units\Data;
 
 use Cube\Data\Bunch;
+use Cube\Data\Database\Database;
+use Cube\Tests\Units\Database\TestMultipleDrivers;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -10,6 +13,8 @@ use PHPUnit\Framework\TestCase;
  */
 class BunchTest extends TestCase
 {
+    use TestMultipleDrivers;
+
     public function testOf()
     {
         $this->assertEquals([], Bunch::of([])->get());
@@ -321,5 +326,22 @@ class BunchTest extends TestCase
         $this->assertEquals(null, Bunch::of([])->average());
         $this->assertEquals(12, Bunch::of([])->average(12));
         $this->assertEquals(12, Bunch::of([])->average() ?? 12);
+    }
+
+
+    #[ DataProvider('getDatabases') ]
+    public function testFromQuery(Database $database)
+    {
+        $fullData = Bunch::fromQuery("SELECT id, label FROM user_type", database: $database);
+
+        $this->assertCount(3, $fullData->get());
+        $this->assertCount(2, $fullData->at(0));
+
+        $onlyIds = Bunch::fromQuery("SELECT id FROM user_type", database: $database, key: 'id');
+
+        $this->assertEquals(
+            [1,2,3],
+            $onlyIds->sort()->get()
+        );
     }
 }

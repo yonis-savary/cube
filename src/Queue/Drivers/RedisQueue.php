@@ -1,7 +1,8 @@
 <?php
 
-namespace Cube\Queue;
+namespace Cube\Queue\Drivers;
 
+use Cube\Queue\QueueCallback;
 use InvalidArgumentException;
 use Redis;
 use RuntimeException;

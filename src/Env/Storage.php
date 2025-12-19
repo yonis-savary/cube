@@ -3,21 +3,21 @@
 namespace Cube\Env;
 
 use Cube\Core\Component;
-use Cube\Env\Storage\DiskDriver;
-use Cube\Env\Storage\LocalDisk;
+use Cube\Env\Storage\StorageDriver;
+use Cube\Env\Storage\LocalDiskDriver;
 use Cube\Utils\Path;
 
 /**
- * Extending DiskDriver ensure we implement every method.
+ * Extending StorageDriver ensure we implement every method.
  */
-class Storage extends DiskDriver implements \Stringable
+class Storage extends StorageDriver implements \Stringable
 {
     use Component;
 
-    protected DiskDriver $driver;
+    protected StorageDriver $driver;
     protected string $rootPath;
 
-    public function __construct(string $rootPath = '/', DiskDriver $driver = new LocalDisk())
+    public function __construct(string $rootPath = '/', StorageDriver $driver = new LocalDiskDriver())
     {
         $this->driver = $driver;
         $this->rootPath = $rootPath;
@@ -35,7 +35,7 @@ class Storage extends DiskDriver implements \Stringable
 
     public static function getDefaultInstance(): static
     {
-        return new self(Path::relative('Storage'), new LocalDisk());
+        return new self(Path::relative('Storage'), new LocalDiskDriver());
     }
 
     public function getRoot(): string

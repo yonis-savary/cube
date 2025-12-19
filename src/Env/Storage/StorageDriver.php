@@ -5,7 +5,7 @@ namespace Cube\Env\Storage;
 use Cube\Data\Bunch;
 use Cube\Utils\Path;
 
-abstract class DiskDriver
+abstract class StorageDriver
 {
     protected const EXPLORE_ALL = 0;
     protected const EXPLORE_FILES = 1;
