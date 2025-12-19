@@ -107,6 +107,7 @@ class Router
     }
 
     /**
+     * @param array<class-string<Middleware>> $middlewares
      * @param \Closure(Router,RouterGroup)|Route[] $callbackOrRoutes
      */
     public function group(

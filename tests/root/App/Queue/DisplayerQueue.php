@@ -2,15 +2,15 @@
 
 namespace App\Queue;
 
-use Cube\Queue\LocalDiskQueue;
+use Cube\Queue\Drivers\LocalDiskQueueDriver;
+use Cube\Queue\Drivers\QueueDriver;
 use Cube\Queue\Queue;
-use Cube\Queue\QueueDriver;
 
 class DisplayerQueue extends Queue
 {
     public function getDriver(): ?QueueDriver
     {
-        return new LocalDiskQueue(static::class);
+        return new LocalDiskQueueDriver(static::class);
     }
 
     public static function display($args) {

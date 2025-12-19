@@ -6,6 +6,9 @@ use Cube\Data\Bunch;
 use Cube\Web\Http\Rules\Validator;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
+use Cube\Web\Http\Rules\ObjectParam;
+use Cube\Web\Http\Rules\Rule;
+use Cube\Web\Http\Rules\ValidationReturn;
 use Cube\Web\Router\Route;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -183,6 +186,11 @@ class Request extends HttpMessage
         return $this->path;
     }
 
+    public function setPath(string $path): void
+    {
+        $this->path = $path;
+    }
+
     public function getIp(): ?string
     {
         return $this->ip;
@@ -250,37 +258,33 @@ class Request extends HttpMessage
         return [];
     }
 
-    final public function getValidator(): Validator
+    final public function getObjectParam(): ObjectParam
     {
-        $rules = $this->getRules();
-        if ($rules instanceof Validator) {
-            return $rules;
-        }
+        return new ObjectParam($this->getRules(), false);
+    }
 
-        return Validator::from($rules);
+    final public function validate(): ValidationReturn
+    {
+        return $this->getObjectParam()->validate($this->all(), 'request');
     }
 
     public function isValid(): array|true
     {
-        $validator = $this->getValidator();
-
-        return $validator->validateRequest($this);
+        return $this->validate()->isValid();
     }
 
-    public function validated(?string $key=null, ?Validator $validator = null): mixed
+    public function validated(?string $key=null, ?Rule $validator = null): mixed
     {
-        $validator ??= $this->getValidator();
+        $rule ??= $this->getObjectParam();
+        $result = $rule->validate($this->all(), 'request')->getResult();
 
-        $validator->validateRequest($this);
-
-        $validatedValues = $validator->getLastValues();
         if (!$key)
-            return $validatedValues;
+            return $result;
 
-        if (!array_key_exists($key, $validatedValues))
+        if (!array_key_exists($key, $result))
             throw new InvalidArgumentException("$key key does not exists in validated values");
 
-        return $validatedValues[$key];
+        return $result[$key];
     }
 
     public function fetch(
@@ -293,9 +297,9 @@ class Request extends HttpMessage
         ?callable $curlMutator = null
     ): Response {
         $httpClient ??= new HttpClient();
-        $httpClient->setRequest($this);
 
         return $httpClient->fetch(
+            $this,
             $logger,
             $timeout,
             $userAgent,

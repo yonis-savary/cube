@@ -39,6 +39,7 @@ class HttpClient
 
     protected Request $request;
     protected Logger $logger;
+    protected ?HttpMockServer $httpMockServer = null;
 
     protected float $lastFetchDurationMicro;
 
@@ -47,9 +48,9 @@ class HttpClient
         return new NullLogger();
     }
 
-    public function setRequest(Request $request)
+    public function setMockServer(HttpMockServer $mockServer): void 
     {
-        $this->request = $request;
+        $this->httpMockServer = $mockServer;
     }
 
     public function baseURL(): ?string
@@ -146,12 +147,12 @@ class HttpClient
      * @return \CurlHandle Instance containing every request information
      */
     public function toCurlHandle(
+        Request $request,
         ?int $timeout = null,
         ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
         ?Logger $logger = null,
         ?callable $curlMutator = null
     ): \CurlHandle {
-        $request = $this->request;
         $logger ??= new NullLogger();
 
         $logger->info('Building CURL handle');
@@ -282,6 +283,7 @@ class HttpClient
      * @throws \JsonException Possibly when parsing the response body if fetched JSON is incorrect
      */
     public function fetch(
+        Request $request,
         ?Logger $logger = null,
         ?int $timeout = null,
         ?string $userAgent = null,
@@ -289,8 +291,14 @@ class HttpClient
         int $logFlags = self::DEBUG_ESSENTIALS,
         ?callable $curlMutator = null
     ): Response {
-        $request = $this->request;
-        $handle = $this->toCurlHandle($timeout, $userAgent, $logger, $curlMutator);
+        $handle = $this->toCurlHandle($request, $timeout, $userAgent, $logger, $curlMutator);
+
+        if ($this->httpMockServer)
+            return $this->httpMockServer->handle($request);
+
+        if ($registeredMock = MockServers::getInstance()->get(static::class))
+            return $registeredMock->handle($request);
+
         $userAgent ??= $this->baseUserAgent();
 
         $logger ??= $this->baseLogger();
