@@ -3,8 +3,9 @@
 namespace Cube\Data\Database;
 
 use Cube\Core\Component;
+use Cube\Data\Bunch;
+use Cube\Data\Database\Builders\QueryBuilder;
 use Cube\Env\Storage;
-use Cube\Data\Models\Model;
 use PDO;
 
 class Database
@@ -21,25 +22,35 @@ class Database
         protected ?int $port = null,
         protected ?string $user = null,
         protected ?string $password = null,
+        protected ?QueryBuilder $queryBuilder = null,
         ?\PDO $connection = null
     ) {
         if ($connection) {
             $this->driver = $connection->getAttribute(\PDO::ATTR_DRIVER_NAME);
             $this->connection = $connection;
-
-            return;
         }
-
-        if ('sqlite' === $driver) {
+        else if ('sqlite' === $driver) {
             $dsn = $database
                 ? 'sqlite:'.Storage::getInstance()->path($database)
                 : 'sqlite::memory:';
 
             $this->connection = new \PDO($dsn);
             $this->exec('PRAGMA foreign_keys = ON');
-        } else {
+        }
+        else {
             $dsn = "{$driver}:dbname={$database};host={$host};port={$port}";
             $this->connection = new \PDO($dsn, $user, $password);
+        }
+
+        if (!$this->queryBuilder) {
+            $driver = $this->getDriver();
+
+            $this->queryBuilder = Bunch::fromExtends(QueryBuilder::class)
+                ->first(fn($builder) => $builder->supports($driver));
+
+            if (!$this->queryBuilder) {
+                throw new \InvalidArgumentException("Could not find a query builder that supports [{$driver}] database");
+            }
         }
     }
 
@@ -78,6 +89,11 @@ class Database
     public function isConnected(): bool
     {
         return null !== $this->connection;
+    }
+
+    public function getQueryBuilder(): QueryBuilder
+    {
+        return $this->queryBuilder;
     }
 
     /**
@@ -151,7 +167,7 @@ class Database
             '/\{\}/',
             function ($match) use (&$count, $quotedPositions, $context) {
                 $doQuote = !in_array($match[0][1], $quotedPositions);
-                $val = $this->prepareString($context[$count] ?? null, $doQuote);
+                $val = $this->queryBuilder->prepareString($context[$count] ?? null, $doQuote);
                 ++$count;
 
                 return $val;
@@ -228,33 +244,4 @@ class Database
         }
     }
 
-    protected function prepareString(mixed $value, $quote = false): string
-    {
-        if ($value instanceof Model) {
-            return $this->prepareString($value->id(), $quote);
-        }
-
-        if (is_array($value)) {
-            return $this->build(
-                '('.join(',', array_map(fn () => '{}', $value)).')',
-                $value
-            );
-        }
-
-        if (null === $value) {
-            return 'NULL';
-        }
-
-        if (true === $value) {
-            return 'TRUE';
-        }
-
-        if (false === $value) {
-            return 'FALSE';
-        }
-
-        $value = preg_replace('/([\'\\\])/', '$1$1', $value);
-
-        return $quote ? "'{$value}'" : $value;
-    }
 }

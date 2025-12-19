@@ -33,12 +33,13 @@ class ResponseAssert extends Assert
     public function assertResponseCode(int $expectedCode): self
     {
         if ($expectedCode != $this->response->getStatusCode()) {
-            Logger::getInstance()->error('Failed asserting {actuel} response code matches expected {expected}', [
+            $logger = Logger::getInstance();
+            $logger->error('Failed asserting {actuel} response code matches expected {expected}', [
                 'actuel' => $this->response->getStatusCode(),
                 'expected' => $expectedCode,
             ]);
-            Logger::getInstance()->error(print_r($this->response->getHeaders(), true));
-            Logger::getInstance()->error(print_r($this->body(), true));
+            $logger->error(print_r($this->response->getHeaders(), true));
+            $logger->error(print_r($this->body(), true));
         }
 
         self::assertEquals($expectedCode, $this->response->getStatusCode());

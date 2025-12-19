@@ -22,9 +22,9 @@ class MySQL extends QueryBuilder
     protected Database $database;
     protected Query $query;
 
-    public function getSupportedPDODriver(): array|string
+    public function supports(string $pdoDriver): bool
     {
-        return ['mysql'];
+        return $pdoDriver === 'mysql';
     }
 
     public function getTable(string $table): string
@@ -80,15 +80,9 @@ class MySQL extends QueryBuilder
 
     public function getInsertValues(): string
     {
-        return
-            Bunch::of($this->query->insertValues)
-                ->map(
-                    fn (InsertValues $values) => $this->database->build(
-                        '('.Bunch::fill(count($values->values), '{}')->join(', ').')',
-                        $values->values
-                    )
-                )
-                ->join(', ')
+        return Bunch::of($this->query->insertValues)
+            ->map(fn ($values) => $this->prepareString($values->values))
+            ->join(', ')
         ;
     }
 

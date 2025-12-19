@@ -24,6 +24,10 @@ abstract class MigrationManager
     public readonly MigrationManagerConfiguration $configuration;
 
     protected Database $database;
+
+    /**
+     * @var Bunch<int,string> $migrationFiles
+     */
     protected Bunch $migrationFiles;
 
     protected ?\Throwable $lastError = null;
@@ -124,7 +128,7 @@ abstract class MigrationManager
      */
     public function executeAllMigrations(): bool
     {
-        $files = Bunch::of($this->migrationFiles->toArray())
+        $files = $this->migrationFiles
             ->filter(fn($file) => basename($file))
             ->filter(fn($migrationName) => !$this->migrationWasMade($migrationName))
             ->toArray();

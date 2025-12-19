@@ -242,7 +242,7 @@ class Query
     public function build(?Database $database = null): string
     {
         $database ??= Database::getInstance();
-        $builder = $this->getQueryBuilder($database);
+        $builder = $database->getQueryBuilder();
 
         return $builder->build($this, $database);
     }
@@ -250,7 +250,7 @@ class Query
     public function count(): int
     {
         $database ??= Database::getInstance();
-        $builder = $this->getQueryBuilder($database);
+        $builder = $database->getQueryBuilder();
 
         return $builder->count($this, $database);
     }
@@ -382,20 +382,5 @@ class Query
         }
 
         return $existingField->table;
-    }
-
-    protected function getQueryBuilder(Database $database): QueryBuilder
-    {
-        $driver = $database->getDriver();
-
-        $builder = Bunch::fromExtends(QueryBuilder::class)
-            ->first(fn (QueryBuilder $builder) => $builder->supports($driver))
-        ;
-
-        if (!$builder) {
-            throw new \InvalidArgumentException("Could not find a query builder that supports [{$driver}] database");
-        }
-
-        return $builder;
     }
 }

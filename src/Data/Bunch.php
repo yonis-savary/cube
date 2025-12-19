@@ -3,16 +3,18 @@
 namespace Cube\Data;
 
 use Closure;
+use Countable;
 use Cube\Core\Autoloader;
 use Cube\Core\Injector;
 use Cube\Data\Classes\NoValue;
+use Cube\Data\Database\Database;
 use Cube\Utils\Utils;
 
 /**
  * @template TKey
  * @template TValue
  */
-class Bunch
+class Bunch implements Countable
 {
     /** @var array<TKey,TValue> */
     protected array $data;
@@ -188,6 +190,14 @@ class Bunch
     }
 
     /**
+     * @return TValue
+     */
+    public function at(mixed $keyOrIndex): mixed 
+    {
+        return $this->data[$keyOrIndex];
+    }
+
+    /**
      * Alias of `get()`.
      *
      * @return array<TKey,TValue>
@@ -325,7 +335,7 @@ class Bunch
     }
 
     /**
-     * @return Bunch<TKey,TValue[$key]>
+     * @return Bunch<TKey,mixed>
      */
     public function key(array|string $keys, string $compoundKeySeparator = '.'): self
     {
@@ -577,5 +587,23 @@ class Bunch
         }
 
         return $this->getValueFromCompoundKey($subValue, $rest, $valueGetter, $compoundKeySeparator);
+    }
+
+    /**
+     * @return self<int,mixed>
+     */
+    public static function fromQuery(string $query, array $context=[], ?Database $database=null, ?string $key=null): self
+    {
+        $database ??= Database::getInstance();
+
+        $data = static::of($database->query($query, $context, \PDO::FETCH_ASSOC));
+
+        if (!count($data))
+            return $data;
+
+        if ($key)
+            return $data->key($key);
+
+        return $data;
     }
 }

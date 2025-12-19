@@ -23,14 +23,14 @@ class SQLite extends MySQL
     protected Database $database;
     protected Query $query;
 
-    public function getSupportedPDODriver(): array|string
+    public function supports(string $pdoDriver): bool
     {
-        return ['sqlite'];
+        return $pdoDriver === 'sqlite';
     }
 
     public function getTable(string $table): string
     {
-        return "{$table}";
+        return $table;
     }
 
     public function getUpdateTables(): string
@@ -81,15 +81,9 @@ class SQLite extends MySQL
 
     public function getInsertValues(): string
     {
-        return
-            Bunch::of($this->query->insertValues)
-                ->map(
-                    fn (InsertValues $values) => $this->database->build(
-                        '('.Bunch::fill(count($values->values), '{}')->join(', ').')',
-                        $values->values
-                    )
-                )
-                ->join(', ')
+        return Bunch::of($this->query->insertValues)
+            ->map(fn ($values) => $this->prepareString($values->values))
+            ->join(', ')
         ;
     }
 
