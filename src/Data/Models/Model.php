@@ -16,6 +16,7 @@ use Cube\Data\Models\Relations\HasOne;
 use Cube\Data\Models\Relations\Relation;
 use Cube\Utils\Text;
 use Cube\Utils\Utils;
+use Cube\Web\Http\Rules\ObjectParam;
 use DateTime;
 use Exception;
 
@@ -125,6 +126,14 @@ abstract class Model extends EventDispatcher
         return static::find($id);
     }
 
+    public function patch(array $data): void
+    {
+        foreach ($data as $key => $value) {
+            $this->$key = $value;
+        }
+        $this->save();
+    }
+
     public function markAsOriginal(bool $relationsToo = false): self
     {
         $this->original = clone $this->data;
@@ -145,7 +154,7 @@ abstract class Model extends EventDispatcher
         return Query::insert(static::table())->withBaseModel(static::class);
     }
 
-    public static function last(?string $key=null, ?Database $database = null): self
+    public static function last(?string $key=null, ?Database $database = null): static
     {
         $database ??= Database::getInstance();
         $key ??= static::primaryKey();
@@ -206,37 +215,39 @@ abstract class Model extends EventDispatcher
         return null;
     }
 
-    public static function toValidator(): Validator
+    public static function toObjectParam(bool $nullable=false, bool $withRelations=true): ObjectParam
     {
         $instance = new static();
 
-        $rules = static::fields();
+        $fields = static::fields();
+        $rules = [];
 
-        foreach ($rules as &$field) {
+        foreach ($fields as &$field) {
             if ($field->autoIncrement) {
                 $field = null;
-
                 continue;
             }
 
-            $field = $field->toRule();
+            $rules[$field->name] = $field->toRule();
         }
 
-        foreach (static::relations() as $relationName) {
-            /** @var Relation $relation */
-            $relation = $instance->{$relationName}();
-
-            if ($relation instanceof HasMany) {
+        if ($withRelations) {
+            foreach (static::relations() as $relationName) {
+                /** @var Relation $relation */
+                $relation = $instance->{$relationName}();
+    
+                /** @var class-string<static> $toModel */
                 $toModel = $relation->toModel;
-                $rules[$relationName] = Param::array($toModel::toValidator());
+                if ($relation instanceof HasMany) {
+                    $rules[$relationName] = Param::array($toModel::toObjectParam(true, false));
+                }
+                if ($relation instanceof HasOne) {
+                    $rules[$relationName] = $toModel::toObjectParam(true, false);
+                }
             }
         }
 
-        return Validator::from(
-            Bunch::unzip($rules)
-                ->filter(fn($pair) => null !== $pair[1])
-                ->zip()
-        );
+        return Param::object($rules, $nullable);
     }
 
     /**
@@ -278,7 +289,7 @@ abstract class Model extends EventDispatcher
 
     public static function deleteId(mixed $id): ?static
     {
-        if (!$primaryKey = static::primaryKey()) {
+        if (!static::primaryKey()) {
             throw new \InvalidArgumentException('Cannot call deleteId on a model without a primary key');
         }
 
@@ -310,20 +321,14 @@ abstract class Model extends EventDispatcher
 
     public static function fromArray(array $array): static
     {
-        $validator = static::toValidator();
-        $validator->validateArray($array);
-
-        $validated = $validator->getLastValues();
+        $validated = static::toObjectParam()->validate($array)->getResult();
 
         return new static($validated);
     }
 
     public static function fromRequest(Request $request, array $forcedAttributes=[], bool $forbidsPrimaryKey=true, array $forbiddenAttributes=[]): static
     {
-        $validator = static::toValidator();
-        $error = $validator->validateRequest($request);
-
-        $validated = $validator->getLastValues();
+        $validated = static::toObjectParam()->validate($request)->getResult();
 
         $pk = static::primaryKey();
         if ($pk && $forbidsPrimaryKey && isset($validated[$pk]))
@@ -334,16 +339,10 @@ abstract class Model extends EventDispatcher
                 unset($validated[$attribute]);
         }
 
-        return new static(array_merge($validated, $forcedAttributes));
+        return new static(array_merge($validated ?? [], $forcedAttributes));
     }
 
-    public function make(array $data = []): static
-    {
-        /** @var class-string<static> */
-        return new static($data);
-    }
-
-    public function completeModelDataWithRelations(array $constructData, string $relationAccumulator = '')
+    protected function completeModelDataWithRelations(array $constructData, string $relationAccumulator = '')
     {
         foreach (static::relations() as $relationName) {
             /** @var Relation $relation */
@@ -453,7 +452,7 @@ abstract class Model extends EventDispatcher
     /**
      * @return HasOne<static>
      */
-    public function hasOne(string $relationName, string $fromColumn, string $toModel, string $toColumn): HasOne
+    protected function hasOne(string $relationName, string $fromColumn, string $toModel, string $toColumn): HasOne
     {
         return new HasOne($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
@@ -461,7 +460,7 @@ abstract class Model extends EventDispatcher
     /**
      * @return HasMany<static>
      */
-    public function hasMany(string $relationName, string $toModel, string $toColumn, string $fromColumn): HasMany
+    protected function hasMany(string $relationName, string $toModel, string $toColumn, string $fromColumn): HasMany
     {
         return new HasMany($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
@@ -504,7 +503,7 @@ abstract class Model extends EventDispatcher
 
             $childRelations = Bunch::of($relations)
                 ->filter(fn($rel) => str_starts_with($rel, "$relation."))
-                ->map(fn($rel) => Text::dontStartsWith($rel, "$relation."))
+                ->map(fn(string $rel) => Text::dontStartsWith($rel, "$relation."))
                 ->get();
 
             if (!count($childRelations))
