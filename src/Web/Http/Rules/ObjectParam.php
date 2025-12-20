@@ -48,7 +48,7 @@ class ObjectParam extends Rule
         return $return;
     }
 
-    public function withoutParams(array $paramsToDelete): static {
+    public function without(array $paramsToDelete): static {
         foreach ($paramsToDelete as $param) {
             if (array_key_exists($param, $this->rules))
                 unset($this->rules[$param]);
