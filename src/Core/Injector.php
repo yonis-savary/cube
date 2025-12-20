@@ -108,14 +108,14 @@ class Injector
         $requestType = $type ? $type->getName() : Request::class;
 
         if (Autoloader::extends($requestType, Request::class)) {
-            /** @var class-string<Request> $requestType */
+            /** @var Request $request */
             $request = $requestType::fromRequest($injected);
 
-            $result = $request->isValid();
-            if (true !== $result)
+            $result = $request->validate();
+            if (!$result->isValid())
                 throw new ResponseException(
                     'Given request is not valid', 
-                    Response::unprocessableContent(json_encode($result, JSON_THROW_ON_ERROR))
+                    Response::unprocessableContent(json_encode($result->getErrors(), JSON_THROW_ON_ERROR))
                 );
 
             return $request;

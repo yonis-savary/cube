@@ -268,7 +268,7 @@ class Request extends HttpMessage
         return $this->getObjectParam()->validate($this->all(), 'request');
     }
 
-    public function isValid(): array|true
+    public function isValid(): bool
     {
         return $this->validate()->isValid();
     }

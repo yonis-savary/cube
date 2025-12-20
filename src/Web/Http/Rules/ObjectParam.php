@@ -47,4 +47,20 @@ class ObjectParam extends Rule
         }
         return $return;
     }
+
+    public function withoutParams(array $paramsToDelete): static {
+        foreach ($paramsToDelete as $param) {
+            if (array_key_exists($param, $this->rules))
+                unset($this->rules[$param]);
+        }
+        return $this;
+    }
+
+    public function with(array $newRules): static {
+        if (!Utils::isAssoc($newRules))
+            throw new InvalidArgumentException("Given rules must be an associative array as name=>rule");
+
+        $this->rules = array_merge($this->rules, $newRules);
+        return $this;
+    }
 }
