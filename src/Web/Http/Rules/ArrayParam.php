@@ -15,8 +15,7 @@ class ArrayParam extends Rule
     )
     {
         $this->childRule = Param::from($childRule, $nullable);
-        $this->param = new Param($nullable)
-            ->withValueCondition(fn ($array) => Utils::isList($array), '{key} must be a list, got {value}');
+        $this->param = (new Param($nullable))->withValueCondition(fn ($array) => Utils::isList($array), '{key} must be a list, got {value}');
     }
 
     public function validate(mixed $array, ?string $key=null): ValidationReturn {
