@@ -19,7 +19,7 @@ class ObjectParam extends Rule
             throw new InvalidArgumentException('Given array must be an associative array');
 
         $this->rules = $assocRules;
-        $this->param = new Param($nullable)
+        $this->param = (new Param($nullable))
             ->withValueCondition(fn ($array) => Utils::isAssoc($array), '{key} must be an object, got {value}');
     }
 
