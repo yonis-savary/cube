@@ -24,6 +24,12 @@ class ValidationReturn
         return $this;
     }
 
+    public function pushResult(mixed $value): static 
+    {
+        $this->result[] = $value;
+        return $this;
+    }
+
     public function getResult(): mixed 
     {
         return $this->result;

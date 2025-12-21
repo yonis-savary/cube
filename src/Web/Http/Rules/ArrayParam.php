@@ -27,7 +27,9 @@ class ArrayParam extends Rule
 
         for ($key=0; $key<count($array); $key++){
             $valueReturn = $this->childRule->validate($array[$key] ?? null, $key);
-            if (!$valueReturn->isValid())
+            if ($valueReturn->isValid())
+                $return->pushResult($valueReturn->getResult());
+            else
                 $return->addErrorKey($key, $valueReturn->getErrors());
         }
         return $return;
