@@ -3,7 +3,6 @@
 namespace Cube\Web\Http\Rules;
 
 use Cube\Utils\Utils;
-use InvalidArgumentException;
 
 class ArrayParam extends Rule
 {

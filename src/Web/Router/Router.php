@@ -17,7 +17,6 @@ use Cube\Utils\Path;
 use Cube\Web\Controller;
 use Cube\Web\Router\RouterConfiguration;
 use Cube\Web\Helpers\WebAPI;
-use ReflectionFunction;
 
 class Router
 {
@@ -145,7 +144,13 @@ class Router
         return $this->rootHolder->getRoutes();
     }
 
-    public function findMatchingRoute(Request $request): Route|false
+    protected function globalizeResponse(callable $responseGiver, Request $request): Response
+    {
+        $callStack = new RouterCallStack($responseGiver, [], $this->rootHolder->getMiddlewares());
+        return ($callStack)($request);
+    }
+
+    public function findMatchingRoute(Request $request): Route|Response|false
     {
         /** @var InvalidRequestMethodException[] */
         $exceptions = [];
@@ -153,14 +158,15 @@ class Router
         if ($firstRoute = $this->rootHolder->findMatchingRoute($request, $exceptions))
             return $firstRoute;
 
-        if (count($exceptions))
+        $isOptionsRequest = $request->getMethod() === 'OPTIONS';
+        if (count($exceptions) || $isOptionsRequest)
         {
             $allowedMethods = Bunch::of($exceptions)->reduce(
                 fn($acc, $exception) => array_merge($acc, $exception->allowedMethods), []
             );
 
-            if ($request->getMethod() === "OPTIONS")
-                Response::noContent()->withCORSHeaders($allowedMethods)->exit();
+            if ($isOptionsRequest)
+                return Response::noContent()->withCORSHeaders($allowedMethods);
 
             throw new InvalidRequestMethodException($request->getMethod(), $allowedMethods);
         }
@@ -208,7 +214,7 @@ class Router
             {
                 $serviceResponse = $api->handle($request);
                 if ($serviceResponse instanceof Response)
-                    return $serviceResponse;
+                    return $this->globalizeResponse(fn($r) => $api->handle($r), $request);
 
                 if ($serviceResponse instanceof Route)
                 {
@@ -217,14 +223,22 @@ class Router
                 }
             }
 
-            try
+            if (!$route)
             {
-                if ((!$route) && (!$route = $this->findMatchingRoute($request)))
-                    return new Response(StatusCode::NOT_FOUND);
-            }
-            catch(InvalidRequestMethodException $invalid)
-            {
-                return new Response(StatusCode::METHOD_NOT_ALLOWED, $invalid->getMessage());
+                try
+                {
+                    if (!$routeOrResponse = $this->findMatchingRoute($request))
+                        return new Response(StatusCode::NOT_FOUND);
+
+                    if ($routeOrResponse instanceof Response)
+                        return $routeOrResponse;
+
+                    $route = $routeOrResponse;
+                }
+                catch(InvalidRequestMethodException $invalid)
+                {
+                    return new Response(StatusCode::METHOD_NOT_ALLOWED, $invalid->getMessage());
+                }
             }
         }
 

@@ -53,17 +53,9 @@ class Route
     {
         $request->setRoute($this);
 
-        foreach ($this->middlewares as $middleware) {
-            $middlewareResponse = $middleware::handle($request, ...$params);
+        $callStack = new RouterCallStack($this->callback, $params, $this->middlewares);
 
-            if ($middlewareResponse instanceof Response) {
-                return $middlewareResponse;
-            }
-
-            $request = $middlewareResponse;
-        }
-
-        return ($this->callback)($request, ...$params);
+        return $callStack($request);
     }
 
     public static function any(string $path, callable $callback, array $middlewares = [], array $extras = [])

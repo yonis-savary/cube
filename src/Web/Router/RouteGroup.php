@@ -76,6 +76,11 @@ class RouteGroup
             }, []);
     }
 
+    public function getMiddlewares(): array
+    {
+        return $this->middlewares;
+    }
+
     public function &addSubGroup(RouteGroup $paramGroup): RouteGroup
     {
         $addedGroup = $this->mergeWith($paramGroup);

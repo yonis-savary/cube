@@ -2,6 +2,7 @@
 
 namespace Cube\Security;
 
+use Closure;
 use Cube\Core\Component;
 use Cube\Env\Cache;
 use Cube\Env\Storage;
@@ -87,8 +88,9 @@ class RememberMe implements Middleware
         );
     }
 
-    public static function handle(Request $request): Request|Response
+    public static function handle(Request $request, Closure $next): Request|Response
     {
-        return self::getInstance()->handleRequest($request);
+        self::getInstance()->handleRequest($request);
+        return $next($request);
     }
 }

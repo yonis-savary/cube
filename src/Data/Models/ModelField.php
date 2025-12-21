@@ -80,6 +80,11 @@ class ModelField
         return $this;
     }
 
+    public function hasReference(): bool
+    {
+        return $this->referenceModel && $this->referenceField;
+    }
+
     public function isInsertable(): bool
     {
         return true;
@@ -124,9 +129,9 @@ class ModelField
         }
     }
 
-    public function toRule(): Rule
+    public function toRule(?bool $forceNullable=null): Rule
     {
-        $nullable = $this->nullable;
+        $nullable = is_null($forceNullable) ? $this->nullable : $forceNullable;
 
         return match ($this->type) {
             self::STRING => Param::string(false, $nullable),

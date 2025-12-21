@@ -55,8 +55,7 @@ class ModelAPITest extends CubeTestCase
             ],
         ])
             ->assertCreated()
-            ->json()
-        ;
+            ->json();
 
         $this->assertCount(3, $products);
 

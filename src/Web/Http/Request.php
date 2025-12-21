@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Web\Http\Rules\Validator;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
+use Cube\Web\Http\Rules\AnyParam;
 use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\ValidationReturn;
@@ -19,6 +20,9 @@ class Request extends HttpMessage
     protected string $path;
     protected array $get = [];
     protected array $post = [];
+    /**
+     * @var Upload[]
+     */
     protected array $uploads = [];
     protected ?string $ip;
     protected array $cookies = [];
@@ -258,14 +262,33 @@ class Request extends HttpMessage
         return [];
     }
 
-    final public function getObjectParam(): ObjectParam
+    final public function getObjectParam(): Rule
     {
-        return new ObjectParam($this->getRules(), false);
+        $rules = $this->getRules();
+
+        return count($rules)
+            ? new ObjectParam($rules, false)
+            : new AnyParam();
     }
 
-    final public function validate(): ValidationReturn
+    protected function getBodyMergedWithUpload(): array 
     {
-        return $this->getObjectParam()->validate($this->all(), 'request');
+        $uploads = [];
+        foreach ($this->uploads as $upload) {
+            $uploads[$upload->inputName] ??= [];
+            $uploads[$upload->inputName][] = $upload;
+        }
+
+        foreach ($uploads as &$array) {
+            $array = count($array) === 1 ? $array[0]: $array;
+        }
+
+        return array_merge($this->all(), $uploads);
+    }
+
+    public function validate(): ValidationReturn
+    {
+        return $this->getObjectParam()->validate($this->getBodyMergedWithUpload(), 'request');
     }
 
     public function isValid(): bool
@@ -276,7 +299,7 @@ class Request extends HttpMessage
     public function validated(?string $key=null, ?Rule $validator = null): mixed
     {
         $rule ??= $this->getObjectParam();
-        $result = $rule->validate($this->all(), 'request')->getResult();
+        $result = $rule->validate($this->getBodyMergedWithUpload(), 'request')->getResult();
 
         if (!$key)
             return $result;

@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Helpers;
 
+use Closure;
 use Cube\Env\Session\HasScopedSession;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -17,7 +18,7 @@ abstract class AuthenticationMiddleware implements Middleware
         return md5(static::class);
     }
 
-    public static function handle(Request $request): Request|Response
+    public static function handle(Request $request, Closure $next): Request|Response
     {
         $identifier = static::getIdentifier();
 
@@ -27,7 +28,7 @@ abstract class AuthenticationMiddleware implements Middleware
         $hasPermission = static::userHasPermission($neededPermissions);
 
         if (true === $hasPermission) {
-            return $request;
+            return $next($request);
         }
 
         return static::getErrorResponse($hasPermission);

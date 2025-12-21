@@ -5,10 +5,8 @@ namespace Cube\Web\Http;
 use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
+use Cube\Web\Http\Configuration\CORSConfiguration;
 use Psr\Log\LoggerInterface;
-
-use function Cube\debug;
-use function Cube\env;
 
 class Response extends HttpMessage
 {
@@ -434,15 +432,17 @@ class Response extends HttpMessage
         return $this;
     }
 
-    public function withCORSHeaders(?array $allowedMethods=null): self
+    public function withCORSHeaders(?array $allowedMethods=null, ?CORSConfiguration $configuration=null): self
     {
         $this->corsDefined = true;
+
+        $configuration ??= CORSConfiguration::resolve();
         return $this->withHeaders([
-            'Access-Control-Allow-Origin' => env('CORS_ALLOWED_ORIGINS', '*'),
+            'Access-Control-Allow-Origin' => $configuration->allowOrigin,
             'Access-Control-Allow-Methods' => $allowedMethods ? join(", ", $allowedMethods) : "*",
-            'Access-Control-Allow-Headers' => 'Content-Type, x-requested-with',
-            'Access-Control-Allow-Credentials' => 'true',
-            'Access-Control-Max-Age' => 86400
+            'Access-Control-Allow-Headers' => $configuration->allowHeaders,
+            'Access-Control-Allow-Credentials' => $configuration->allowCredentials,
+            'Access-Control-Max-Age' => $configuration->maxAge,
         ]);
     }
 

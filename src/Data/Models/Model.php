@@ -9,7 +9,6 @@ use Cube\Data\Database\Query;
 use Cube\Event\EventDispatcher;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Rules\Param;
-use Cube\Web\Http\Rules\Validator;
 use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
@@ -228,14 +227,18 @@ abstract class Model extends EventDispatcher
                 continue;
             }
 
-            $rules[$field->name] = $field->toRule();
+            $forceNullable = ($field->hasReference() && !$withRelations)
+                ? true
+                : null;
+
+            $rules[$field->name] = $field->toRule($forceNullable);
         }
 
         if ($withRelations) {
             foreach (static::relations() as $relationName) {
                 /** @var Relation $relation */
                 $relation = $instance->{$relationName}();
-    
+
                 /** @var class-string<static> $toModel */
                 $toModel = $relation->toModel;
                 if ($relation instanceof HasMany) {
