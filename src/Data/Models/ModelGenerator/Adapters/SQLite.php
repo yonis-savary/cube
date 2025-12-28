@@ -12,6 +12,7 @@ class SQLite extends DatabaseAdapter
 {
     public const SQLITE_TYPES = [
         'INT' => ModelField::INTEGER,
+        'INT4' => ModelField::INTEGER,
         'INTEGER' => ModelField::INTEGER,
         'TINYINT' => ModelField::INTEGER,
         'SMALLINT' => ModelField::INTEGER,
@@ -43,9 +44,9 @@ class SQLite extends DatabaseAdapter
 
     protected array $tablesWithSequence = [];
 
-    public function getSupportedDriver(): array|string
+    public function supports(string $driver): bool
     {
-        return 'sqlite';
+        return $driver === 'sqlite';
     }
 
     public function process(): void
@@ -106,6 +107,9 @@ class SQLite extends DatabaseAdapter
         if ($desc['pk'] && in_array($table, $this->tablesWithSequence)) {
             $field->autoIncrement();
         }
+        if ($desc['hidden'] == '2') {
+            $field->generated();
+        }
 
         return $field;
     }
@@ -149,7 +153,8 @@ class SQLite extends DatabaseAdapter
 
         $primary = null;
 
-        $fields = Bunch::of($db->query('PRAGMA table_info({})', [$table]))
+        $fields = Bunch::of($db->query('PRAGMA table_xinfo({})', [$table]))
+            ->filter(fn($x) => in_array($x['hidden'], ['0', '2'])) // 0 => visible column, 2 => generated column
             ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); })
             ->get()
         ;

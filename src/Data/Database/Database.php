@@ -68,9 +68,9 @@ class Database
         );
     }
 
-    public static function fromPDO(\PDO $connection): self
+    public static function fromPDO(\PDO $connection, ?string $database=null): self
     {
-        return new self(connection: $connection);
+        return new self(database: $database, connection: $connection);
     }
 
     /**

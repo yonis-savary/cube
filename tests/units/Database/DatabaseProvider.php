@@ -35,7 +35,7 @@ abstract class DatabaseProvider
                 $connection->exec(file_get_contents($file));
             }
 
-            return Database::fromPDO($connection);
+            return Database::fromPDO($connection, $name);
         } catch (\Throwable $err) {
             $logger = Logger::getInstance();
             $logger->error('Error in '.static::class);

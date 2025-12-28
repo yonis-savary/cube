@@ -39,3 +39,10 @@ CREATE TABLE "product_manager" (
     "manager" VARCHAR(200) NOT NULL,
     UNIQUE ("product", "manager")
 );
+
+CREATE TABLE "addition" (
+    "id" SERIAL PRIMARY KEY,
+    "a" FLOAT NOT NULL,
+    "b" FLOAT NOT NULL,
+    "result" FLOAT GENERATED ALWAYS AS (a+b)
+);

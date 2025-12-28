@@ -10,9 +10,9 @@ use Cube\Data\Models\Relations\HasOne;
 
 class MySQL extends SQLite
 {
-    public function getSupportedDriver(): array|string
+    public function supports(string $driver): bool
     {
-        return 'mysql';
+        return $driver === 'mysql';
     }
 
     public function process(): void
@@ -97,6 +97,10 @@ class MySQL extends SQLite
         $field->type($this->getModelFieldType($desc['Type']));
         $field->nullable($nullable);
         $field->hasDefault($nullable || (null !== $desc['Default']));
+
+        if (str_contains(strtolower($desc['Extra']), 'generated')) {
+            $field->generated();
+        }
 
         $tableClassName = Table::getClassname($table);
 

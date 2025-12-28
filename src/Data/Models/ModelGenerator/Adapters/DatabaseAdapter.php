@@ -21,7 +21,7 @@ abstract class DatabaseAdapter
         $this->database = $database;
     }
 
-    abstract public function getSupportedDriver(): array|string;
+    abstract public function supports(string $driver): bool;
 
     abstract public function process(): void;
 

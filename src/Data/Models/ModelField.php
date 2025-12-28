@@ -2,11 +2,14 @@
 
 namespace Cube\Data\Models;
 
+use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
 
 class ModelField
 {
+    public const FLAG_GENERATED = 0b0000_0001;
+
     public const STRING = 'STRING';
     public const INTEGER = 'INTEGER';
     public const FLOAT = 'FLOAT';
@@ -31,10 +34,13 @@ class ModelField
     public bool $nullable = true;
     public bool $hasDefault = true;
 
+    public int $flags = 0;
+
     public null|Model|string $referenceModel = null;
     public ?string $referenceField = null;
 
     public bool $autoIncrement = false;
+    public ?int $maximumLength = null;
 
     public function __construct(
         public readonly string $name
@@ -51,6 +57,17 @@ class ModelField
         return $this;
     }
 
+    public function generated(): self
+    {
+        $this->flags |= self::FLAG_GENERATED;
+        return $this;
+    }
+
+    public function isGenerated(): bool
+    {
+        return Utils::valueHasFlag($this->flags, self::FLAG_GENERATED);
+    }
+
     public function autoIncrement(): self
     {
         $this->autoIncrement = true;
@@ -62,6 +79,12 @@ class ModelField
     {
         $this->nullable = $nullable;
 
+        return $this;
+    }
+
+    public function maximumLength(int $maximumLength): self
+    {
+        $this->maximumLength = $maximumLength;
         return $this;
     }
 
@@ -98,7 +121,10 @@ class ModelField
             .($this->autoIncrement ? '->autoIncrement()' : '')
             .'->nullable('.(($this->nullable && (!$this->autoIncrement)) ? 'true' : 'false').')'
             .'->hasDefault('.($this->hasDefault ? 'true' : 'false').')'
-            .($this->referenceModel ? '->references('.$this->referenceModel."::class,'".$this->referenceField."')" : '');
+            .($this->referenceModel ? '->references('.$this->referenceModel."::class,'".$this->referenceField."')" : '')
+            .($this->isGenerated() ? '->generated()': '')
+            .($this->maximumLength ? '->maximumLength('.$this->maximumLength.')': '')
+        ;
     }
 
     public function parse(mixed $value): mixed

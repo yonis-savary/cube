@@ -39,3 +39,10 @@ CREATE TABLE product_manager (
     manager VARCHAR(200) NOT NULL,
     UNIQUE (product, manager)
 );
+
+CREATE TABLE addition (
+    id INTEGER PRIMARY KEY AUTO_INCREMENT,
+    a FLOAT NOT NULL,
+    b FLOAT NOT NULL,
+    result FLOAT AS (a+b)
+);

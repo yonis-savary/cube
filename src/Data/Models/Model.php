@@ -657,9 +657,14 @@ abstract class Model extends EventDispatcher
 
         $gotAnyChange = false;
         foreach ($this->data as $key => $value) {
+            $field = static::fields()[$key] ?? null;
+
             if ($value instanceof \DateTime) {
-                $type = (static::fields()[$key]->type ?? ModelField::DATE);
+                $type = ($field?->type ?? ModelField::DATE);
                 $value = $value->format('Y-m-d' . (ModelField::DATE === $type ? ' h:i:s' : ''));
+            }
+            if ($field?->isGenerated() ?? false) {
+                continue;
             }
 
             if (property_exists($this->original, $key)) {
@@ -691,6 +696,9 @@ abstract class Model extends EventDispatcher
             if (isset($this->data->{$name})) {
                 $value = $this->data->{$name};
                 if ($field->hasDefault && null === $value) {
+                    continue;
+                }
+                if ($field->isGenerated()) {
                     continue;
                 }
 

@@ -15,17 +15,22 @@ class ModelGenerator
 
     protected Database $database;
 
-    public function processDatabase(Database $database, Storage $destination, ?string $forceNamespace = null): array
+    public function getAdapter(Database $database): DatabaseAdapter
     {
         $driver = $database->getDriver();
-
         $adapter = Bunch::fromExtends(DatabaseAdapter::class, [$database])
-            ->first(fn (DatabaseAdapter $x) => Bunch::of($x->getSupportedDriver())->has($driver))
+            ->first(fn (DatabaseAdapter $x) => $x->supports($driver))
         ;
 
         if (!$adapter) {
             throw new \Exception("Could not find adapter for [{$driver}] database");
         }
+        return $adapter;
+    }
+
+    public function processDatabase(Database $database, Storage $destination, ?string $forceNamespace = null): array
+    {
+        $adapter = $this->getAdapter($database);
 
         // @var DatabaseAdapter $adapter
         $adapter->process();
