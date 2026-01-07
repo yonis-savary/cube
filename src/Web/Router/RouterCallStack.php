@@ -2,11 +2,11 @@
 
 namespace Cube\Web\Router;
 
-use Cube\Core\Injector;
+use Cube\Data\Bunch;
+use Cube\Data\Models\Model;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Middleware;
-use Generator;
 
 class RouterCallStack
 {
@@ -39,6 +39,34 @@ class RouterCallStack
         return $this->middlewares[$this->index++] ?? false;
     }
 
+    protected function adaptSingleValue(mixed &$value): mixed
+    {
+        if ($value instanceof Bunch)
+            $value = $value->toArray();
+
+        if ($value instanceof Model)
+            $value = $value->toArray();
+
+        if (is_array($value))
+            $this->adaptArray($value);
+
+        return $value;
+    }
+
+    protected function adaptArray(mixed &$value): array
+    {
+        foreach ($value as &$row)
+            $row = $this->adaptSingleValue($row);
+
+        return $value;
+    }
+
+    protected function adaptControllerReturnToResponse(mixed $response): Response
+    {
+        $response = $this->adaptSingleValue($response);
+        return Response::json($response);
+    }
+
     public function __invoke(Request $request): mixed
     {
         $middleware = $this->getNextMiddleware();
@@ -46,6 +74,13 @@ class RouterCallStack
         if ($middleware)
             return $middleware::handle($request, fn(Request $request) => ($this)($request));
 
-        return ($this->controllerCallback)($request, ...$this->controllerParams);
+        $response = ($this->controllerCallback)($request, ...$this->controllerParams);
+        if (! $response instanceof Response)
+            $response = $this->adaptControllerReturnToResponse($response);
+
+        if ($response === null)
+            $response = new Response();
+
+        return $response;
     }
 }

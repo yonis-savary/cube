@@ -174,34 +174,6 @@ class Router
         return false;
     }
 
-    protected function adaptSingleValue(mixed &$value): mixed
-    {
-        if ($value instanceof Bunch)
-            $value = $value->toArray();
-
-        if ($value instanceof Model)
-            $value = $value->toArray();
-
-        if (is_array($value))
-            $this->adaptArray($value);
-
-        return $value;
-    }
-
-    protected function adaptArray(mixed &$value): array
-    {
-        foreach ($value as &$row)
-            $row = $this->adaptSingleValue($row);
-
-        return $value;
-    }
-
-    protected function adaptControllerReturnToResponse(mixed $response): Response
-    {
-        $response = $this->adaptSingleValue($response);
-        return Response::json($response);
-    }
-
     public function route(Request $request): Response
     {
         $route = null;
@@ -264,12 +236,6 @@ class Router
             $request->setSlugObjects($slugValues);
 
             $response = $route(...$parameters);
-
-            if (! $response instanceof Response)
-                $response = $this->adaptControllerReturnToResponse($response);
-
-            if ($response === null)
-                return new Response();
         }
         catch(ResponseException $responseException)
         {
