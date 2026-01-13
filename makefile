@@ -1,7 +1,6 @@
 test:
 	@composer install
-	@docker compose build
-	@docker compose up -d
+	@docker compose up -d --build
 	@[ -d 'tests/integration-apps' ] && rm -r tests/integration-apps || true
 	@[ -d 'tests/Storage/Database' ] && rm -r tests/Storage/Database || true
 	@[ -d 'tests/Storage/Cache' ] && rm -r tests/Storage/Cache || true
@@ -13,3 +12,6 @@ workflow-test:
 
 fix:
 	@./vendor/bin/php-cs-fixer fix --allow-risky=yes
+
+rm:
+	@docker compose down --rmi local
