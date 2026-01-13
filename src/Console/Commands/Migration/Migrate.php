@@ -1,6 +1,6 @@
 <?php
 
-namespace Cube\Console\Commands\Migrate;
+namespace Cube\Console\Commands\Migration;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
@@ -14,6 +14,11 @@ class Migrate extends Command
     public function getScope(): string
     {
         return 'migrate';
+    }
+
+    public function getHelp(): string
+    {
+        return "Execute needed migration in your database";
     }
 
     public function execute(Args $args): int

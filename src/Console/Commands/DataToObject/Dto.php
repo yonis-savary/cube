@@ -8,11 +8,16 @@ use Cube\Console\Commands\DataToObject\Classes\DataToObjectGenClass;
 use Cube\Env\Storage;
 use Cube\Utils\Console;
 
-class Generate extends Command
+class Dto extends Command
 {
     public function getScope(): string
     {
-        return 'dto';
+        return 'make';
+    }
+
+    public function getHelp(): string
+    {
+        return "Generate a DTO Class from JSON body";
     }
 
     public function execute(Args $args): int

@@ -29,6 +29,11 @@ class Serve extends Command
         return "web";
     }
 
+    public function getHelp(): string
+    {
+        return "Launch integrated web server to serve your app";
+    }
+
     public function execute(Args $args): int
     {
         $port = $args->getValues()[0] ?? '8000';

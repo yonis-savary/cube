@@ -13,6 +13,11 @@ class Serve extends Command
         return 'websocket';
     }
 
+    public function getHelp(): string
+    {
+        return "Start Websocket server connected to your application";
+    }
+
     public function execute(Args $args): int
     {
         Websocket::getInstance()->serve();
