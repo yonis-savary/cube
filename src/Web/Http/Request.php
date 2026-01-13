@@ -257,7 +257,7 @@ class Request extends HttpMessage
         return $this->slugObjects;
     }
 
-    public function getRules(): array
+    public function getRules(): array|Rule
     {
         return [];
     }
@@ -265,6 +265,8 @@ class Request extends HttpMessage
     final public function getObjectParam(): Rule
     {
         $rules = $this->getRules();
+        if ($rules instanceof Rule)
+            return $rules;
 
         return count($rules)
             ? new ObjectParam($rules, false)

@@ -27,8 +27,9 @@ class ObjectParam extends Rule
         if ($value instanceof Request)
             $value = $value->all();
 
+        $value ??= [];
         $baseReturn = $this->param->validate($value, $key);
-        if (is_null($value) || !$baseReturn->isValid())
+        if (!$baseReturn->isValid())
             return $baseReturn;
 
         $return = new ValidationReturn([]);

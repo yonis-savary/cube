@@ -12,7 +12,7 @@ class Param extends Rule
 {
     protected mixed $value;
 
-    public static function from(Rule|array $rule, bool $nullable=false): ObjectParam|Param
+    public static function from(Rule|array $rule, bool $nullable=false): ObjectParam|ArrayParam|Param
     {
         if ($rule instanceof Rule)
             return $rule;
@@ -34,7 +34,7 @@ class Param extends Rule
     {
         return (new self($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be an integer, got {value}')
-            ->withValueTransformer(fn ($value) => (int) $value)
+            ->withValueTransformer(fn ($value) => is_numeric($value) ? (int) $value : $value)
         ;
     }
 
@@ -45,7 +45,7 @@ class Param extends Rule
     {
         return (new self($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be a float, got {value}')
-            ->withValueTransformer(fn ($value) => (float) $value)
+            ->withValueTransformer(fn ($value) => is_numeric($value) ? (float) $value : $value)
         ;
     }
 
@@ -86,7 +86,7 @@ class Param extends Rule
     public static function boolean(bool $nullable = true): static
     {
         return (new self($nullable))
-            ->withTransformer(fn (string $value) => is_bool($value) ? $value : in_array((string) $value, ['on', 'true', 'yes', '1']))
+            ->withValueTransformer(fn ($value) => is_bool($value) ? $value : in_array(strtolower((string) $value), ['on', 'true', 'yes', '1']))
         ;
     }
 
@@ -96,7 +96,7 @@ class Param extends Rule
     public static function url(bool $nullable = true): static
     {
         return (new self($nullable))
-            ->withValueCondition(fn ($value) => false !== filter_var($value, FILTER_VALIDATE_URL), '{key} must be an URL, got {value}')
+            ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^(.+?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)$/', $value ?? ''), '{key} must be an URL, got {value}');
         ;
     }
 
@@ -106,18 +106,47 @@ class Param extends Rule
     public static function date(bool $nullable = true): static
     {
         return (new self($nullable))
-            ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^\d{4}-\d{2}-\d{2}$/', $value ?? ''), '{key} must be a Date (yyyy-mm-dd), got [{value}]')
+            ->withValueCondition(function (?string $value){
+                if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value ?? '', $matches))
+                    return false;
+
+                list($_, $__, $m, $d) = $matches;
+                return
+                    (01 <= $m && $m <= 12) &&
+                    (01 <= $d && $d <= 31);
+            }, '{key} must be a Date (yyyy-mm-dd, mm=01-12, d=01-31), got [{value}]')
         ;
     }
 
     /**
      * Accept any date with YYYY-MM-DD HH:mm:ss format.
+     * @param bool $addTimeToDate If `true`, will add `00:00:00` if timestamp is missing
      */
-    public static function datetime(bool $nullable = true): static
+    public static function datetime(bool $nullable = true, bool $addTimeIfMissing=false): static
     {
-        return (new self($nullable))
-            ->withValueCondition(fn (string $value) => (bool) preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $value ?? ''), '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS), got [{value}]')
-        ;
+        $rule = (new self($nullable));
+
+        if ($addTimeIfMissing)
+            $rule->withTransformer(function($value) {
+                if (preg_match('/(\d{2}):(\d{2}):(\d{2})$/', $value ?? ''))
+                    return $value;
+
+                return $value . " 00:00:00";
+            });
+
+        return $rule->withValueCondition(function (?string $value){
+            if (!preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $value ?? '', $matches))
+                return false;
+
+            list($_, $__, $m, $d, $h, $mm, $s) = $matches;
+            return
+                (01 <= $m && $m <= 12) &&
+                (01 <= $d && $d <= 31) &&
+                (00 <= $h && $h<= 23) &&
+                (00 <= $mm && $mm <= 59) &&
+                (00 <= $s && $s <= 59);
+        }, 
+        '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS, mm=01-12, d=01-31, HH=00-23, MM=00-59, SS=00-59), got [{value}]');
     }
 
     /**
@@ -126,7 +155,10 @@ class Param extends Rule
     public static function uuid(bool $nullable = true): static
     {
         return (new self($nullable))
-            ->withValueCondition(fn (string $value) => preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $value ?? ''), '{key} must be an UUID, got [{value}]')
+            ->withValueCondition(
+                fn($value)=> (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower($value ?? '')),
+                '{key} must be an UUID, got [{value}]'
+            )
         ;
     }
 

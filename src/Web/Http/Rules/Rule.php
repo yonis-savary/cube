@@ -11,7 +11,7 @@ abstract class Rule
      * Add a condition to the Validator, if the callback return `true`, it is considered as valid,
      * otherwise the errorMessage will be displayed to the user.
      */
-    public function withCondition(callable $callback, callable|string $errorMessage): static
+    protected function withCondition(callable $callback, callable|string $errorMessage): static
     {
         $this->steps[] = new ValidationStep(ValidationStep::TYPE_CHECKER, $callback, $errorMessage);
 
@@ -21,14 +21,14 @@ abstract class Rule
     /**
      * Add a transform step that can be used to edit the value between conditions and/or other transformers.
      */
-    public function withTransformer(callable $callback): static
+    protected function withTransformer(callable $callback): static
     {
         $this->steps[] = new ValidationStep(ValidationStep::TYPE_TRANSFORMER, $callback);
 
         return $this;
     }
 
-    public function withValueCondition(callable $callback, callable|string $errorMessage): static
+    protected function withValueCondition(callable $callback, callable|string $errorMessage): static
     {
         $wrappedCallback = function ($value) use ($callback) {
             if (null === $value) {
@@ -42,7 +42,7 @@ abstract class Rule
     }
 
 
-    public function withValueTransformer(callable $callback): static
+    protected function withValueTransformer(callable $callback): static
     {
         $wrappedCallback = function ($value) use ($callback) {
             if (null === $value) {
@@ -53,6 +53,14 @@ abstract class Rule
         };
 
         return $this->withTransformer($wrappedCallback);
+    }
+
+    /**
+     * Given value to replace any incoming `null` value
+     */
+    public function default(mixed $defaultValue) {
+        array_unshift($this->steps, new ValidationStep(ValidationStep::TYPE_TRANSFORMER, fn() => $defaultValue));
+        return $this;
     }
 
     public function validate(mixed $currentValue, ?string $key=null): ValidationReturn

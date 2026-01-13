@@ -32,7 +32,7 @@ class ValidationStep
             if (true !== $stepResult) {
                 $errorMessage = is_callable($this->errorMessage) 
                     ? ($this->errorMessage)($value)
-                    : Text::interpolate($this->errorMessage, ['key' => $key, 'value' => print_r($value, true)]);
+                    : Text::interpolate($this->errorMessage, ['key' => $key ?? 'value', 'value' => print_r($value, true)]);
 
                 $return->addError($errorMessage);
             }
