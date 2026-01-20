@@ -33,4 +33,11 @@ class PolicyTest extends CubeTestCase
         $this->get('/user/999')->assertNotFound();
     }
 
+    public function testModuleUserPolicy()
+    {
+        $this->get('/module-user/1')->assertUnauthorized();
+        $this->get('/module-user/2')->assertOk();
+        $this->get('/module-user/999')->assertNotFound();
+    }
+
 }
