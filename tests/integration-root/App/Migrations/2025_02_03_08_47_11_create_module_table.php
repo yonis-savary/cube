@@ -17,11 +17,12 @@ return new class extends Migration
         $database->exec("INSERT INTO module (label) VALUES ('product'), ('order'), ('crm'), ('admin');");
 
         $plan->create('module_user', [
+            ModelField::id(),
             ModelField::integer('user')->notNull()->references('user', 'id'),
             ModelField::integer('module')->notNull()->references('module', 'id'),
         ]);
 
-        $database->exec("INSERT INTO module_user (user, module) VALUES (1, 4);");
+        $database->exec("INSERT INTO module_user (user, module) VALUES (1, 4), (2, 1);");
     }
 
     public function down(Plan $plan, Database $database)

@@ -267,9 +267,8 @@ abstract class Model extends EventDispatcher
     public static function find(mixed $primaryKeyValue, array $with = [], ?Database $database = null): ?static
     {
         $database ??= Database::getInstance();
-        if (!$primaryKey = static::primaryKey()) {
-            throw new \RuntimeException( static::class . " model does not have a primary key, cannot use the exists method");
-        }
+        if (!$primaryKey = static::primaryKey())
+            throw new \RuntimeException( static::class . " model does not have a primary key, cannot use the find() method");
 
         return static::findWhere([$primaryKey => $primaryKeyValue], $with, $database);
     }
