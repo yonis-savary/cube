@@ -10,11 +10,15 @@ return new Migration(
     INSERT INTO module (label) VALUES ('product'), ('order'), ('crm'), ('admin');
 
     CREATE TABLE module_user (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user INTEGER NOT NULL REFERENCES user(id),
         module INTEGER NOT NULL,
         FOREIGN KEY (module) REFERENCES module(id)
     );
-    INSERT INTO module_user (user, module) VALUES (1, 4);
+    INSERT INTO module_user (user, module) VALUES
+        (1, 4),
+        (2, 1)
+    ;
 ",
     'DROP TABLE module_user;
     DROP TABLE module;
