@@ -5,6 +5,7 @@ namespace Cube\Data\Models;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
+use Exception;
 
 class ModelField
 {
@@ -32,9 +33,12 @@ class ModelField
 
     public string $type = self::STRING;
     public bool $nullable = true;
-    public bool $hasDefault = true;
+    public bool $hasDefault = false;
+    public mixed $default = null;
 
     public int $flags = 0;
+
+    public bool $isPrimaryKey = false;
 
     public null|Model|string $referenceModel = null;
     public ?string $referenceField = null;
@@ -42,9 +46,63 @@ class ModelField
     public bool $autoIncrement = false;
     public ?int $maximumLength = null;
 
+    public ?int $decimalMaximumDigits = null;
+    public ?int $decimalDigitsToTheRight = null;
+
+    public ?bool $isUnique = null;
+
+    public static function string(string $name, ?int $maximumLength=null) {
+        return (new self($name))->type(self::STRING)->maximumLength($maximumLength);
+    }
+
+    public static function id(string $name="id") {
+        return static::integer($name)->autoIncrement()->primaryKey();
+    }
+
+    public static function integer(string $name) {
+        return (new self($name))->type(self::INTEGER);
+    }
+
+    public static function float(string $name) {
+        return (new self($name))->type(self::FLOAT);
+    }
+
+    public static function boolean(string $name) {
+        return (new self($name))->type(self::BOOLEAN);
+    }
+
+    public static function decimal(string $name, ?int $maxiumDigits=null, ?int $precisionToTheRight=null) {
+        return (new self($name))->type(self::DECIMAL)->precision($maxiumDigits, $precisionToTheRight);
+    }
+
+    public static function date(string $name) {
+        return (new self($name))->type(self::DATE);
+    }
+
+    public static function datetime(string $name) {
+        return (new self($name))->type(self::DATETIME);
+    }
+
+    public static function timestamp(string $name) {
+        return (new self($name))->type(self::TIMESTAMP);
+    }
+
     public function __construct(
         public readonly string $name
     ) {}
+
+    public function primaryKey(bool $isPrimaryKey = true): self
+    {
+        $this->isPrimaryKey = $isPrimaryKey;
+        $this->nullable(false);
+        return $this;
+    }
+
+    public function unique(): self
+    {
+        $this->isUnique = true;
+        return $this;
+    }
 
     public function type(string $type): self
     {
@@ -54,6 +112,20 @@ class ModelField
 
         $this->type = $type;
 
+        return $this;
+    }
+
+    /**
+     * @param int $m Maximum number of digit
+     * @param int $d Digits to the right of the decimal point
+     */
+    public function precision(int $m=10, int $d=5): self
+    {
+        if ($d > $m)
+            throw new Exception("Decimal precision to the right (d) cannot exceed the maximum number of digit (m)");
+
+        $this->decimalMaximumDigits = $m;
+        $this->decimalDigitsToTheRight = $d;
         return $this;
     }
 
@@ -82,9 +154,16 @@ class ModelField
         return $this;
     }
 
-    public function maximumLength(int $maximumLength): self
+    public function maximumLength(?int $maximumLength=null): self
     {
         $this->maximumLength = $maximumLength;
+        return $this;
+    }
+
+    public function default(mixed $defaultValue): self 
+    {
+        $this->default = $defaultValue;
+
         return $this;
     }
 
@@ -95,9 +174,9 @@ class ModelField
         return $this;
     }
 
-    public function references(string $model, string $field): self
+    public function references(string $modelOrTable, string $field): self
     {
-        $this->referenceModel = $model;
+        $this->referenceModel = $modelOrTable;
         $this->referenceField = $field;
 
         return $this;

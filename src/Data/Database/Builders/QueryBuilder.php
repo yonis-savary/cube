@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
 use Cube\Data\Models\Model;
+use Throwable;
 
 abstract class QueryBuilder
 {
@@ -45,4 +46,13 @@ abstract class QueryBuilder
 
         return $quote ? "'{$value}'" : $value;
     }
+
+    /**
+     * @param \Closure(Database) $callback
+     */
+    abstract public function transaction(callable $callback, Database $database): true|Throwable;
+
+    abstract public function hasTable(string $table, Database $database): bool;
+
+    abstract public function hasField(string $table, string $field, Database $database): bool;
 }

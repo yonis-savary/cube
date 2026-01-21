@@ -2,20 +2,19 @@
 
 namespace Cube\Data\Database;
 
-use Cube\Core\Injector;
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
-use Cube\Data\Database\Migration\Adapters\MySQL;
-use Cube\Data\Database\Migration\Adapters\SQLite;
-use Cube\Data\Database\Migration\Adapters\Postgres;
 use Cube\Data\Database\Migration\FailedMigrationException;
+use Cube\Data\Database\Migration\Plan;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Console;
 use Cube\Utils\Text;
+use RuntimeException;
+use Throwable;
 
 abstract class MigrationManager
 {
@@ -86,41 +85,45 @@ abstract class MigrationManager
 
     abstract public function listDoneMigrations(): array;
 
+    abstract public function supports(string $driver): bool;
+
     public function executeMigration(string $file): bool
     {
         $migrationName = basename($file);
+        $databaseDriver = $this->database->getDriver();
+
+        $plan = Bunch::fromExtends(Plan::class, [$this->database])
+            ->first(fn($p) => $p->support($databaseDriver));
+
+        if (!$plan)
+            throw new RuntimeException("Could not find any Plan class for database of type $databaseDriver");
 
         if ($this->migrationWasMade($migrationName)) {
             return true;
         }
 
-        try {
+        $error = $this->database->transaction(function(){
+
             /** @var Migration $migration */
             $migration = include $file;
-
-            $sqlContent = $migration->install;
             if (!trim($sqlContent)) {
                 Logger::getInstance()->warning("Skipping empty migration {$file}");
             } else {
-                $this->log(Console::withGreenColor("Start migration $file..."));
-                $this->startTransaction();
-                $this->database->exec($sqlContent);
+                $migration->up($plan, $this->database);
                 $this->markMigrationAsDone($migrationName);
             }
+        });
 
-            $this->commitTransaction();
-
-            return true;
-        } catch (\Throwable $thrown) {
-            $this->log(Console::withRedColor("Error with $file ! " . $thrown->getMessage()));
-            $this->rollbackTransaction();
-            $this->lastError = $thrown;
+        if ($error instanceof Throwable) {
+            $this->log(Console::withRedColor("Error with $file ! " . $error->getMessage()));
+            $this->lastError = $error;
             $this->lastErrorFile = $file;
             Logger::getInstance()->error("Failed migration {$file}");
-            Logger::getInstance()->logThrowable($thrown);
-
+            Logger::getInstance()->logThrowable($error);
             return false;
         }
+
+        return true;
     }
 
     /**
@@ -156,13 +159,20 @@ abstract class MigrationManager
         $directory->write($filename, Text::toFile('
         <?php
 
+        use '.Database::class.';
         use '.Migration::class.';
+        use '.Plan::class.';
 
-        return new Migration(
-            "-- INSTALL SCRIPT
-        ",
-            "-- UNINSTALL SCRIPT
-        ");
+        return new class extends Migration
+        {
+            public function up(Plan $plan, Database $database) {
+
+            }
+
+            public function down(Plan $plan, Database $database) {
+
+            }
+        }
         '));
 
         return $directory->path($filename);
@@ -180,17 +190,13 @@ abstract class MigrationManager
         $database = Database::getInstance();
         $databaseDriver = $database->getDriver();
 
-        $managerClass = match (strtolower($databaseDriver)) {
-            'mysql' => MySQL::class,
-            'pgsql' => Postgres::class,
-            'sqlite' => SQLite::class,
-            default => null
-        };
+        $manager = Bunch::fromExtends(MigrationManager::class)
+            ->first(fn($manager) => $manager->supports($databaseDriver));
 
-        if (!$managerClass)
+        if (!$manager)
             throw new \RuntimeException("No migration driver found for [{$databaseDriver}] database");
 
-        return Injector::instanciate($managerClass);
+        return $manager;
     }
 
     public function catchUpTo(string $name): array
@@ -212,10 +218,4 @@ abstract class MigrationManager
 
         return $doneMigrations;
     }
-
-    abstract protected function startTransaction();
-
-    abstract protected function commitTransaction();
-
-    abstract protected function rollbackTransaction();
 }

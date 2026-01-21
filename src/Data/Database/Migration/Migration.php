@@ -2,12 +2,10 @@
 
 namespace Cube\Data\Database\Migration;
 
-class Migration
-{
-    public readonly mixed $mustInstallChecker;
+use Cube\Data\Database\Database;
 
-    public function __construct(
-        public readonly ?string $install = null,
-        public readonly ?string $uninstall = null
-    ) {}
+abstract class Migration
+{
+    abstract public function up(Plan $plan, Database $database);
+    abstract public function down(Plan $plan, Database $database);
 }

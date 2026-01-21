@@ -17,6 +17,7 @@ use Cube\Data\Database\Query\UpdateField;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
 use Exception;
+use Throwable;
 
 class Postgres extends MySQL
 {
@@ -307,5 +308,43 @@ class Postgres extends MySQL
             $this->getConditions(),
             $this->getOrders()
         );
+    }
+
+    public function transaction(callable $callback, Database $database): true|Throwable
+    {
+        try
+        {
+            $database->exec('BEGIN');
+            $callback($database);
+            $database->exec('COMMIT');
+            return true;
+        }
+        catch (Throwable $thrown)
+        {
+            $database->exec('ROLLBACK');
+            return $thrown;
+        }
+    }
+
+    public function hasTable(string $table, Database $database): bool
+    {
+        try {
+            $database->query('SELECT 1 FROM "{}" LIMIT 1', [$table]);
+
+            return true;
+        } catch (\PDOException) {
+            return false;
+        }
+    }
+
+    public function hasField(string $table, string $field, Database $database): bool
+    {
+        try {
+            $database->query('SELECT "{}" FROM "{}" LIMIT 1', [$field, $table]);
+
+            return true;
+        } catch (\PDOException) {
+            return false;
+        }
     }
 }

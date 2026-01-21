@@ -7,6 +7,11 @@ use Cube\Data\Database\MigrationManager;
 
 class SQLite extends MigrationManager
 {
+    public function supports(string $driver): bool
+    {
+        return strtolower($driver) === 'sqlite';
+    }
+
     public function migrationWasMade(string $name): bool
     {
         return 0 != count($this->database->query(
@@ -48,20 +53,5 @@ class SQLite extends MigrationManager
         ->map(fn ($x) => $x['name'])
         ->toArray()
         ;
-    }
-
-    protected function startTransaction()
-    {
-        $this->database->exec('BEGIN TRANSACTION');
-    }
-
-    protected function commitTransaction()
-    {
-        $this->database->exec('COMMIT');
-    }
-
-    protected function rollbackTransaction()
-    {
-        $this->database->exec('ROLLBACK');
     }
 }

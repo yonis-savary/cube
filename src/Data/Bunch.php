@@ -478,6 +478,7 @@ class Bunch implements Countable
 
     /**
      * @param \Closure(TValue) $callback
+     * @return ?TValue
      */
     public function first(callable $callback): mixed
     {

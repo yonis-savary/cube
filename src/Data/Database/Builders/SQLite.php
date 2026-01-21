@@ -8,7 +8,6 @@ use Cube\Data\Database\Query;
 use Cube\Data\Database\Query\Field;
 use Cube\Data\Database\Query\FieldComparaison;
 use Cube\Data\Database\Query\FieldCondition;
-use Cube\Data\Database\Query\InsertValues;
 use Cube\Data\Database\Query\Join;
 use Cube\Data\Database\Query\Order;
 use Cube\Data\Database\Query\QueryBase;
@@ -17,6 +16,7 @@ use Cube\Data\Database\Query\UpdateField;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
 use Exception;
+use Throwable;
 
 class SQLite extends MySQL
 {
@@ -298,5 +298,21 @@ class SQLite extends MySQL
             $this->getConditions(),
             $this->getOrders()
         );
+    }
+
+    public function transaction(callable $callback, Database $database): true|Throwable
+    {
+        try
+        {
+            $database->exec('BEGIN TRANSACTION');
+            $callback($database);
+            $database->exec('COMMIT');
+            return true;
+        }
+        catch (Throwable $thrown)
+        {
+            $database->exec('ROLLBACK');
+            return $thrown;
+        }
     }
 }

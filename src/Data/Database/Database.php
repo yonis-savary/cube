@@ -7,6 +7,7 @@ use Cube\Data\Bunch;
 use Cube\Data\Database\Builders\QueryBuilder;
 use Cube\Env\Storage;
 use PDO;
+use Throwable;
 
 class Database
 {
@@ -216,13 +217,7 @@ class Database
      */
     public function hasTable(string $table): bool
     {
-        try {
-            $this->query('SELECT 1 FROM `{}` LIMIT 1', [$table]);
-
-            return true;
-        } catch (\PDOException) {
-            return false;
-        }
+        return $this->queryBuilder->hasTable($table, $this);
     }
 
     public function missingTable(string $table): bool
@@ -235,13 +230,14 @@ class Database
      */
     public function hasField(string $table, string $field): bool
     {
-        try {
-            $this->query('SELECT `{}` FROM `{}` LIMIT 1', [$field, $table]);
-
-            return true;
-        } catch (\PDOException) {
-            return false;
-        }
+        return $this->queryBuilder->hasField($table, $field, $this);
     }
 
+    /**
+     * @param \Closure(Database) $callback
+     */
+    public function transaction(callable $callback): true|Throwable
+    {
+        return $this->queryBuilder->transaction($callback, $this);
+    }
 }
