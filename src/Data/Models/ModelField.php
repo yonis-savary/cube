@@ -94,7 +94,7 @@ class ModelField
     public function primaryKey(bool $isPrimaryKey = true): self
     {
         $this->isPrimaryKey = $isPrimaryKey;
-        $this->nullable(false);
+        $this->notNull();
         return $this;
     }
 
@@ -154,6 +154,11 @@ class ModelField
         return $this;
     }
 
+    public function notNull(): self
+    {
+        return $this->nullable(false);
+    }
+
     public function maximumLength(?int $maximumLength=null): self
     {
         $this->maximumLength = $maximumLength;
@@ -198,7 +203,7 @@ class ModelField
             "(new ModelField('".$this->name."'))"
             ."->type('".$this->type."')"
             .($this->autoIncrement ? '->autoIncrement()' : '')
-            .'->nullable('.(($this->nullable && (!$this->autoIncrement)) ? 'true' : 'false').')'
+            .(($this->nullable && !$this->autoIncrement) ? '->nullable()' : '->notNull()' )
             .'->hasDefault('.($this->hasDefault ? 'true' : 'false').')'
             .($this->referenceModel ? '->references('.$this->referenceModel."::class,'".$this->referenceField."')" : '')
             .($this->isGenerated() ? '->generated()': '')

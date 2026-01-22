@@ -39,7 +39,7 @@ abstract class ModelAPI extends Controller
     {
         $modelClass = $this->getModelClass();
         if (!Autoloader::extends($modelClass, Model::class)) {
-            throw new \InvalidArgumentException('$modelClass must extends Model class');
+            throw new \InvalidArgumentException('$modelClass must extends Model class, got ' . $modelClass);
         }
 
         $this->model = new $modelClass();

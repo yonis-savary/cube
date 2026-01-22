@@ -25,14 +25,9 @@ class Migrate extends Command
     {
         $manager = MigrationManager::getInstance();
         $manager->setLoggingFunction(fn($m) => print($m . "\n"));
-        try {
-            $migrated = $manager->executeAllMigrations();
-        }
-        catch (FailedMigrationException $err) {
-            $migrated = true;
-        }
+        $manager->executeAllMigrations();
 
-        if ($migrated && !$args->has('-s', '--skip-generation')) {
+        if (!$args->has('-s', '--skip-generation')) {
             Console::print("");
             return Generate::call();
         }

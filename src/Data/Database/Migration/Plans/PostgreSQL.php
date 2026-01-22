@@ -2,6 +2,7 @@
 
 namespace Cube\Data\Database\Migration\Plans;
 
+use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Models\ModelField;
 use RuntimeException;
@@ -13,7 +14,7 @@ class PostgreSQL extends Plan
         return strtolower($driver) === 'pgsql';
     }
 
-    public function create(string $table, array $fields=[]) {
+    public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
         if (!count($fields))
             $fields = [ModelField::id()];
 
@@ -21,7 +22,8 @@ class PostgreSQL extends Plan
         $fieldName = $firstColumn->name;
         $fieldDescription = $this->getModelFieldSQLQuery($firstColumn);
 
-        $this->database->exec("CREATE TABLE \"$table\" ( \"$fieldName\" $fieldDescription )");
+        $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";
+        $this->database->exec("CREATE TABLE \"$table\" ( \"$fieldName\" $fieldDescription $additionnalSQL )");
 
         if ($firstColumn->hasReference())
             $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField);
@@ -46,10 +48,10 @@ class PostgreSQL extends Plan
                 ModelField::TIMESTAMP => "TIMESTAMP",
             };
 
-        if (!$field->nullable) 
+        if (!$field->nullable && (!$field->isPrimaryKey)) 
             $query .= " NOT NULL";
 
-        if ($field->isUnique)
+        if ($field->isUnique && (!$field->isPrimaryKey))
             $query .= " UNIQUE";
 
         if ($field->hasDefault)
@@ -106,12 +108,12 @@ class PostgreSQL extends Plan
         ]);
     }
 
-    public function addUniqueIndex(string $table, string $field) {
-        if (!$this->database->hasField($table, $field))
-            throw new RuntimeException("Given database does not contains the $table($field) column");
+    public function addUniqueIndex(string $table, string|array $fields) {
+        $fields = Bunch::of($fields);
+        $fieldsExpression = $fields->map(fn($x) => '"'.$x.'"')->join(",");
 
-        $indexName = strtolower("idx_".$table."_$field");
-        $this->database->query("CREATE UNIQUE INDEX $indexName ON \"{}\"(\"{}\")", [$table, $field]);
+        $indexName = strtolower("idx_".$table."_" . $fields->join("_"));
+        $this->database->query("CREATE UNIQUE INDEX $indexName ON \"{}\"($fieldsExpression)", [$table]);
     }
 
     public function renameField(string $table, string $oldFieldName, string $newFieldName) {

@@ -17,7 +17,7 @@ abstract class Plan
      * Create a new table
      * @param ModelField[] $fields
      */
-    abstract public function create(string $table, array $fields=[]);
+    abstract public function create(string $table, array $fields=[], ?string $additionnalSQL=null);
 
     /**
      * Edit existing table
@@ -34,7 +34,10 @@ abstract class Plan
 
     abstract public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey);
 
-    abstract public function addUniqueIndex(string $table, string $field);
+    /**
+     * @param string[]|string $fields
+     */
+    abstract public function addUniqueIndex(string $table, string|array $fields);
 
     abstract public function renameField(string $table, string $oldFieldName, string $newFieldName);
 

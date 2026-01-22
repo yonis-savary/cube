@@ -1,22 +1,31 @@
 <?php
 
+use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Migration;
+use Cube\Data\Database\Migration\Plan;
+use Cube\Data\Models\ModelField;
 
-return new Migration(
-    'CREATE TABLE product (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        name VARCHAR(200) NOT NULL UNIQUE,
-        price_dollar DECIMAL(10,5) NULL
-    );
+return new class extends Migration
+{
+    public function up(Plan $plan, Database $database)
+    {
+        $plan->create('product', [
+            ModelField::id(),
+            ModelField::timestamp('created_at'), // TODO : CURRENT_TIMESTAMP
+            ModelField::string('name', 200)->notNull()->unique(),
+            ModelField::decimal('price_dollar', 10, 5)->nullable()
+        ]);
 
-    CREATE TABLE product_manager (
-        product INTEGER NOT NULL REFERENCES product(id),
-        manager VARCHAR(200) NOT NULL,
-        UNIQUE (product, manager)
-    );
-',
-    'DROP TABLE product_manager;
-    DROP TABLE product;
-'
-);
+        $plan->create('product_manager', [
+            ModelField::integer('product')->notNull()->references('product', 'id'),
+            ModelField::string('manager', 200)->notNull()
+        ], 'UNIQUE (product, manager)');
+    }
+
+    public function down(Plan $plan, Database $database)
+    {
+        $plan->dropTable('product_manager');
+        $plan->dropTable('product');
+    }
+};
+

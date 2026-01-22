@@ -8,17 +8,26 @@ use Cube\Web\Http\Request;
 use Cube\Web\Http\Upload;
 use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
+use Cube\Tests\Integration\Utils;
+use Cube\Utils\Shell;
 use Cube\Web\Helpers\CubeServer;
 use PHPUnit\Framework\TestCase;
 
-abstract class CubeTestCase extends TestCase
+use function Cube\debug;
+
+abstract class CubeIntegrationTestCase extends TestCase
 {
     protected Database $database;
     protected ?CubeServer $server = null;
 
-    public static function setUpBeforeClass(): void
+    protected function setUp(): void
     {
-        TestContext::getInstance()->createEmptyApplicationDatabase();
+        $this->refreshDatabase();
+    }
+
+    public function getDatabase(): Database
+    {
+        return Utils::getIntegrationDatabase();
     }
 
     /**
@@ -36,64 +45,76 @@ abstract class CubeTestCase extends TestCase
         );
     }
 
+    public function getServer(): CubeServer
+    {
+        $server = Utils::getDummyServer();
+
+        Shell::executeInDirectory('php do clear-database', $server->getPublicStorage()->parent()->getRoot());
+
+        return $server;
+    }
+
+
     public function get(string $path, array $getParams = [], array $headers = []): ResponseAssert
     {
-        return $this->assertResponseOf(new Request('GET', $path, $getParams, [], $headers));
+        return $this->assertResponseOf(new Request('GET', $this->path($path), $getParams, [], $headers));
     }
 
     public function post(string $path, array $postParams = [], array $getParams = [], array $uploads = [], array $headers = []): ResponseAssert
     {
-        return $this->assertResponseOf(new Request('POST', $path, $getParams, $postParams, $headers, $uploads));
+
+        debug("FETCHING " . $this->path($path));
+        return $this->assertResponseOf(new Request('POST', $this->path($path), $getParams, $postParams, $headers, $uploads));
     }
 
     public function put(string $path, array $getParams = [], array $postParams = [], array $headers = []): ResponseAssert
     {
-        return $this->assertResponseOf(new Request('PUT', $path, $getParams, $postParams, $headers));
+        return $this->assertResponseOf(new Request('PUT', $this->path($path), $getParams, $postParams, $headers));
     }
 
     public function patch(string $path, array $getParams = [], array $postParams = [], array $headers = []): ResponseAssert
     {
-        return $this->assertResponseOf(new Request('PATCH', $path, $getParams, $postParams, $headers));
+        return $this->assertResponseOf(new Request('PATCH', $this->path($path), $getParams, $postParams, $headers));
     }
 
     public function delete(string $path, array $getParams = [], array $postParams = [], array $headers = []): ResponseAssert
     {
-        return $this->assertResponseOf(new Request('DELETE', $path, $getParams, $postParams, $headers));
+        return $this->assertResponseOf(new Request('DELETE', $this->path($path), $getParams, $postParams, $headers));
     }
 
     public function getJson(string $path, mixed $body = [], array $headers = []): ResponseAssert
     {
         $headers['content-type'] = 'application/json';
 
-        return $this->assertResponseOf(new Request('GET', $path, [], [], $headers, body: json_encode($body)));
+        return $this->assertResponseOf(new Request('GET', $this->path($path), [], [], $headers, body: json_encode($body)));
     }
 
     public function postJson(string $path, mixed $body = [], array $headers = []): ResponseAssert
     {
         $headers['content-type'] = 'application/json';
 
-        return $this->assertResponseOf(new Request('POST', $path, [], [], $headers, body: json_encode($body)));
+        return $this->assertResponseOf(new Request('POST', $this->path($path), [], [], $headers, body: json_encode($body)));
     }
 
     public function putJson(string $path, mixed $body = [], array $headers = []): ResponseAssert
     {
         $headers['content-type'] = 'application/json';
 
-        return $this->assertResponseOf(new Request('PUT', $path, [], [], $headers, body: json_encode($body)));
+        return $this->assertResponseOf(new Request('PUT', $this->path($path), [], [], $headers, body: json_encode($body)));
     }
 
     public function patchJson(string $path, mixed $body = [], array $headers = []): ResponseAssert
     {
         $headers['content-type'] = 'application/json';
 
-        return $this->assertResponseOf(new Request('PATCH', $path, [], [], $headers, body: json_encode($body)));
+        return $this->assertResponseOf(new Request('PATCH', $this->path($path), [], [], $headers, body: json_encode($body)));
     }
 
     public function deleteJson(string $path, mixed $body = [], array $headers = []): ResponseAssert
     {
         $headers['content-type'] = 'application/json';
 
-        return $this->assertResponseOf(new Request('DELETE', $path, [], [], $headers, body: json_encode($body)));
+        return $this->assertResponseOf(new Request('DELETE', $this->path($path), [], [], $headers, body: json_encode($body)));
     }
 
     public function makeFakeUpload(
@@ -141,9 +162,27 @@ abstract class CubeTestCase extends TestCase
 
     protected function assertResponseOf(Request $request): ResponseAssert
     {
-        $router = TestContext::getInstance()->getRouter();
-        $response = $router->route($request);
+        return new ResponseAssert($request->fetch(
+            Logger::getInstance()
+        ));
+    }
 
-        return new ResponseAssert($response);
+    protected function path(string $path): string
+    {
+        return $this->safeGetServer()->path($path);
+    }
+
+    private function refreshDatabase(): void
+    {
+        $this->database = $this->getDatabase();
+    }
+
+    private function safeGetServer(): CubeServer
+    {
+        if (!$this->server) {
+            $this->server = $this->getServer();
+        }
+
+        return $this->server;
     }
 }

@@ -11,6 +11,7 @@
     },
     "autoload-dev": {
         "psr-4": {
+            "TestApplication\\": "tests/TestApplication",
             "Cube\\Tests\\Units\\": "tests/units",
             "Cube\\Tests\\Integration\\": "tests/integration",
             "Cube\\Tests\\Apcu\\": "tests/apcu"

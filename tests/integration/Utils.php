@@ -5,6 +5,8 @@ namespace Cube\Tests\Integration;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Migration;
+use Cube\Data\Database\Migration\MigrationManagerConfiguration;
+use Cube\Data\Database\Migration\Plans\SQLite;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
@@ -25,15 +27,16 @@ class Utils
     {
         $cubeRoot = Path::normalize(__DIR__.'/../..');
 
-        $datbase = new Database();
+        $database = new Database();
+        $plan = new SQLite($database, new MigrationManagerConfiguration());
 
         $migrationsFiles = (new Storage($cubeRoot))->child('tests/root/App/Migrations')->files();
         Bunch::of($migrationsFiles)
             ->filter(fn (string $file) => !str_contains($file, 'invalid'))
             ->map(fn (string $file) => include $file)
-            ->forEach(fn (Migration $migration) => $datbase->exec($migration->install));
+            ->forEach(fn (Migration $migration) => $migration->up($plan, $database));
 
-        return $datbase;
+        return $database;
     }
 
     public static function getDummyServer(): CubeServer

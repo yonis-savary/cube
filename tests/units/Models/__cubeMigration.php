@@ -36,8 +36,8 @@ class __cubeMigration extends Model
     public static function fields(): array
     {
         return [
-            'id' => (new ModelField('id'))->type('INTEGER')->autoIncrement()->nullable(false)->hasDefault(true),
-            'name' => (new ModelField('name'))->type('STRING')->nullable(false)->hasDefault(false),
+            'id' => (new ModelField('id'))->type('INTEGER')->autoIncrement()->notNull()->hasDefault(true),
+            'name' => (new ModelField('name'))->type('STRING')->notNull()->hasDefault(false),
             'created_at' => (new ModelField('created_at'))->type('TIMESTAMP')->nullable(true)->hasDefault(true)
         ];
     }

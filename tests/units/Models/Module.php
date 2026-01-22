@@ -35,8 +35,8 @@ class Module extends Model
     public static function fields(): array
     {
         return [
-            'id' => (new ModelField('id'))->type('INTEGER')->autoIncrement()->nullable(false)->hasDefault(true),
-            'label' => (new ModelField('label'))->type('STRING')->nullable(false)->hasDefault(false)
+            'id' => (new ModelField('id'))->type('INTEGER')->autoIncrement()->notNull()->hasDefault(true),
+            'label' => (new ModelField('label'))->type('STRING')->notNull()->hasDefault(false)
         ];
     }
 

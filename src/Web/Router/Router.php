@@ -67,7 +67,6 @@ class Router
 
     public function loadControllers(): void
     {
-        $a = Bunch::fromExtends(Controller::class);
         Bunch::fromExtends(Controller::class)
         ->forEach(fn(Controller $class) => $class->routes($this));
     }
@@ -107,7 +106,8 @@ class Router
 
     /**
      * @param array<class-string<Middleware>> $middlewares
-     * @param \Closure(Router,RouterGroup)|Route[] $callbackOrRoutes
+     * @param Route[]|null $routes
+     * @param \Closure(Router,RouterGroup) $function
      */
     public function group(
         string $prefix="/",

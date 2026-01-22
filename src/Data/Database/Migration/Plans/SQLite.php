@@ -2,9 +2,9 @@
 
 namespace Cube\Data\Database\Migration\Plans;
 
+use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Models\ModelField;
-use Cube\Env\Logger\Logger;
 use RuntimeException;
 
 class SQLite extends Plan
@@ -14,22 +14,25 @@ class SQLite extends Plan
         return strtolower($driver) === 'sqlite';
     }
 
-    public function create(string $table, array $fields=[]) {
+    public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
         if (!count($fields))
             $fields = [ModelField::id()];
 
-        $firstColumn = array_shift($fields);
-        $fieldName = $firstColumn->name;
-        $fieldDescription = $this->getModelFieldSQLQuery($firstColumn);
-
-        $this->database->exec("CREATE TABLE `$table` ( `$fieldName` $fieldDescription )");
-
-        if ($firstColumn->hasReference())
-            $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField);
+        $fieldsExpressions = new Bunch();
+        $relationsAndIndex = new Bunch();
 
         foreach ($fields as $field) {
-            $this->addColumn($table, $field);
+
+            $fieldQuery = $field->name . " ". $this->getModelFieldSQLQuery($field);
+
+            $fieldsExpressions->push($fieldQuery);
+            if ($field->hasReference()) {
+                $relationsAndIndex->push("FOREIGN KEY (".$field->name.") REFERENCES ". $field->referenceModel ."(". $field->referenceField .")");
+            }
         }
+
+        $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";
+        $this->database->exec("CREATE TABLE `$table` ( ". $fieldsExpressions->merge($relationsAndIndex)->join(",") ." $additionnalSQL )");
     }
 
     protected function getModelFieldSQLQuery(ModelField $field): string 
@@ -51,8 +54,11 @@ class SQLite extends Plan
         if ($field->autoIncrement)
             $query .= " AUTOINCREMENT";
 
-        if (!$field->nullable)
+        if (!$field->nullable && (!$field->isPrimaryKey))
             $query .= " NOT NULL";
+
+        if ($field->isUnique && (!$field->isPrimaryKey))
+            $query .= " UNIQUE";
 
         if ($field->hasDefault)
             $query .= " DEFAULT " . $this->database->build("{}", [$field->default]);
@@ -68,17 +74,12 @@ class SQLite extends Plan
 
         $this->database->exec($query);
 
-        if ($field->isUnique)
-            $this->addUniqueIndex($table, $field->name);
-
-        if ($field->hasReference())
-            $this->addForeignKey($table, $field->name, $field->referenceModel, $field->referenceField);
+        if ($field->isUnique || $field->hasReference())
+            throw new RuntimeException("SQLite does not support constraints on already existing fields");
     }
 
     public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey) {
-        $this->database->query("ALTER TABLE `{}` ADD CONSTRAINT FOREIGN KEY (`{}`) REFERENCES `{}`(`{}`)", [
-            $table, $field, $foreignTable, $foreignKey
-        ]);
+        throw new RuntimeException("SQLite does not support constraints on already existing fields");
     }
 
     public function dropTable(string $table) {
@@ -99,9 +100,8 @@ class SQLite extends Plan
         ]);
     }
 
-    public function addUniqueIndex(string $table, string $field) {
-        $indexName = strtolower("idx_".$table."_$field");
-        $this->database->query("CREATE UNIQUE INDEX $indexName ON `{}`(`{}`)", [$table, $field]);
+    public function addUniqueIndex(string $table, string|array $fields) {
+        throw new RuntimeException("SQLite does not support constraints on already existing fields");
     }
 
     public function renameField(string $table, string $oldFieldName, string $newFieldName) {

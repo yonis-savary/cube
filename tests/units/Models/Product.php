@@ -39,7 +39,7 @@ class Product extends Model
         return [
             'id' => (new ModelField('id'))->type('INTEGER')->nullable(true)->hasDefault(true),
             'created_at' => (new ModelField('created_at'))->type('TIMESTAMP')->nullable(true)->hasDefault(true),
-            'name' => (new ModelField('name'))->type('STRING')->nullable(false)->hasDefault(false),
+            'name' => (new ModelField('name'))->type('STRING')->notNull()->hasDefault(false),
             'price_dollar' => (new ModelField('price_dollar'))->type('DECIMAL')->nullable(true)->hasDefault(true)
         ];
     }

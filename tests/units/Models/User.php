@@ -38,10 +38,10 @@ class User extends Model
     public static function fields(): array
     {
         return [
-            'id' => (new ModelField('id'))->type('INTEGER')->autoIncrement()->nullable(false)->hasDefault(true),
-            'login' => (new ModelField('login'))->type('STRING')->nullable(false)->hasDefault(false),
-            'password' => (new ModelField('password'))->type('STRING')->nullable(false)->hasDefault(false),
-            'type' => (new ModelField('type'))->type('INTEGER')->nullable(false)->hasDefault(false)->references(UserType::class,'id')
+            'id' => (new ModelField('id'))->type('INTEGER')->autoIncrement()->notNull()->hasDefault(true),
+            'login' => (new ModelField('login'))->type('STRING')->notNull()->hasDefault(false),
+            'password' => (new ModelField('password'))->type('STRING')->notNull()->hasDefault(false),
+            'type' => (new ModelField('type'))->type('INTEGER')->notNull()->hasDefault(false)->references(UserType::class,'id')
         ];
     }
 

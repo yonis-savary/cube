@@ -29,8 +29,8 @@ class ProductManager extends Model
     public static function fields(): array
     {
         return [
-            'product' => (new ModelField('product'))->type('INTEGER')->nullable(false)->hasDefault(false)->references(Product::class,'id'),
-            'manager' => (new ModelField('manager'))->type('STRING')->nullable(false)->hasDefault(false)
+            'product' => (new ModelField('product'))->type('INTEGER')->notNull()->hasDefault(false)->references(Product::class,'id'),
+            'manager' => (new ModelField('manager'))->type('STRING')->notNull()->hasDefault(false)
         ];
     }
 

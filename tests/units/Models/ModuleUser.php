@@ -30,8 +30,8 @@ class ModuleUser extends Model
     public static function fields(): array
     {
         return [
-            'user' => (new ModelField('user'))->type('INTEGER')->nullable(false)->hasDefault(false)->references(User::class,'id'),
-            'module' => (new ModelField('module'))->type('INTEGER')->nullable(false)->hasDefault(false)->references(Module::class,'id')
+            'user' => (new ModelField('user'))->type('INTEGER')->notNull()->hasDefault(false)->references(User::class,'id'),
+            'module' => (new ModelField('module'))->type('INTEGER')->notNull()->hasDefault(false)->references(Module::class,'id')
         ];
     }
 

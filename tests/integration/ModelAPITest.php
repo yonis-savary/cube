@@ -2,30 +2,13 @@
 
 namespace Cube\Tests\Integration;
 
-use Cube\Data\Database\Database;
-use Cube\Test\CubeTestCase;
-use Cube\Utils\Shell;
-use Cube\Web\Helpers\CubeServer;
+use Cube\Test\CubeIntegrationTestCase;
 
 /**
  * @internal
  */
-class ModelAPITest extends CubeTestCase
+class ModelAPITest extends CubeIntegrationTestCase
 {
-    public function getServer(): CubeServer
-    {
-        $server = Utils::getDummyServer();
-
-        Shell::executeInDirectory('php do clear-database', $server->getPublicStorage()->parent()->getRoot());
-
-        return $server;
-    }
-
-    public function getDatabase(): Database
-    {
-        return Utils::getIntegrationDatabase();
-    }
-
     public function testCreate()
     {
         $product = $this->post('/auto-api/product', [

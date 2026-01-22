@@ -15,8 +15,6 @@ use Cube\Web\Router\RouterConfiguration;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-use function Cube\debug;
-
 class RequestTest extends TestCase
 {
     use TestMultipleDrivers;

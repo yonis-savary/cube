@@ -49,8 +49,6 @@ abstract class MigrationManager
                 ->flat()
                 ->sort(fn ($file) => basename($file))
         ;
-
-        $this->createMigrationTableIfInexistant();
     }
 
     public function setLoggingFunction(callable $function) {
@@ -89,6 +87,8 @@ abstract class MigrationManager
 
     public function executeMigration(string $file): bool
     {
+        $this->createMigrationTableIfInexistant();
+
         $migrationName = basename($file);
         $databaseDriver = $this->database->getDriver();
 
@@ -102,16 +102,12 @@ abstract class MigrationManager
             return true;
         }
 
-        $error = $this->database->transaction(function(){
+        $error = $this->database->transaction(function() use ($file, $plan, $migrationName) {
 
             /** @var Migration $migration */
             $migration = include $file;
-            if (!trim($sqlContent)) {
-                Logger::getInstance()->warning("Skipping empty migration {$file}");
-            } else {
-                $migration->up($plan, $this->database);
-                $this->markMigrationAsDone($migrationName);
-            }
+            $migration->up($plan, $this->database);
+            $this->markMigrationAsDone($migrationName);
         });
 
         if ($error instanceof Throwable) {
@@ -121,6 +117,8 @@ abstract class MigrationManager
             Logger::getInstance()->error("Failed migration {$file}");
             Logger::getInstance()->logThrowable($error);
             return false;
+        } else {
+            $this->log(Console::withGreenColor("Migration: $file applied"));
         }
 
         return true;
@@ -129,8 +127,10 @@ abstract class MigrationManager
     /**
      * @return bool `true` if one migration was executed, `false` otherwise
      */
-    public function executeAllMigrations(): bool
+    public function executeAllMigrations()
     {
+        $this->createMigrationTableIfInexistant();
+
         $files = $this->migrationFiles
             ->filter(fn($file) => basename($file))
             ->filter(fn($migrationName) => !$this->migrationWasMade($migrationName))
@@ -147,10 +147,7 @@ abstract class MigrationManager
         else
         {
             $this->log(Console::withBlueColor("Nothing to migrate !"));
-            return false;
         }
-
-        return true;
     }
 
     public function createMigration(string $name, Storage $directory): string
