@@ -1,7 +1,7 @@
 /vendor/
 /composer.lock
 /.phpunit.result.cache
-/tests/integration-apps
+/tests/integration/apps
 /Storage
 /tests/Storage
 /.env

@@ -34,10 +34,10 @@ class Shell
         return $proc;
     }
 
-    public static function executeInDirectory(string $command, string $directory): Process
+    public static function executeInDirectory(string $command, string $directory, ?callable $outputCallback=null): Process
     {
         $proc = Process::fromShellCommandline($command, $directory);
-        $proc->run();
+        $proc->run($outputCallback);
 
         return $proc;
     }

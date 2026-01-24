@@ -1,14 +1,14 @@
 <?php
 
-namespace Cube\Tests\Integration;
+namespace Tests\Integration;
 
-use Cube\Test\CubeIntegrationTestCase;
+use Cube\Test\CubeTestCase;
 use Cube\Utils\File;
 
 /**
  * @internal
  */
-class UploadTest extends CubeIntegrationTestCase
+class UploadTest extends CubeTestCase
 {
     public function testUpload()
     {

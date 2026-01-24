@@ -31,8 +31,9 @@ class Database
             $this->connection = $connection;
         }
         else if ('sqlite' === $driver) {
+            $this->database = Storage::getInstance()->path($database);
             $dsn = $database
-                ? 'sqlite:'.Storage::getInstance()->path($database)
+                ? 'sqlite:'.$this->database
                 : 'sqlite::memory:';
 
             $this->connection = new \PDO($dsn);

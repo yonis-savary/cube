@@ -14,7 +14,7 @@ RUN echo "apc.enable_cli=1" > /usr/local/etc/php/conf.d/apcu.ini \
 
 WORKDIR /app
 COPY . /vendor/cube
-COPY ./tests/root-apcu .
+COPY ./tests/apcu-root .
 
 RUN composer install \
     && cp -r /vendor/cube/server/Public/ . \

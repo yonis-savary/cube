@@ -79,6 +79,7 @@ class StaticServer extends WebAPI
         if ($this->secure && $this->isPathDangerous($path)) {
             return null;
         }
+
         if ($directory->isFile($path)) {
             return Response::file($directory->path($path));
         }

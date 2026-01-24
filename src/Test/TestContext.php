@@ -2,14 +2,16 @@
 
 namespace Cube\Test;
 
-use Cube\Console\Commands\Make\Migration;
 use Cube\Core\Component;
 use Cube\Data\Database\Database;
+use Cube\Data\Database\Migration\Adapters\SQLite;
+use Cube\Data\Database\Migration\MigrationManagerConfiguration;
 use Cube\Data\Database\MigrationManager;
 use Cube\Env\Configuration;
 use Cube\Env\Storage;
 use Cube\Web\Router\Router;
-use RuntimeException;
+
+use function Cube\debug;
 
 class TestContext
 {
@@ -18,6 +20,7 @@ class TestContext
     protected Storage $storage;
     protected Router $router;
     protected Database $database;
+    protected Database $emptyApplicationDatabase;
     protected Configuration $configuration;
     protected MigrationManager $migrationManager;
 
@@ -25,13 +28,13 @@ class TestContext
         ?Storage $storage=null,
         ?Router $router=null,
         ?Database $database=null,
-        ?Configuration $configuration=null,
-        ?MigrationManager $migrationManager=null
+        ?Configuration $configuration=null
     )
     {
         $this->storage = $storage ?? Storage::getInstance();
         $this->router = $router ?? Router::getInstance();
         $this->database = $database ?? Database::getInstance();
+
         $this->configuration = $configuration ?? Configuration::getInstance();
 
         $this->replaceGlobalInstances();
@@ -48,12 +51,30 @@ class TestContext
         $this->migrationManager = MigrationManager::getInstance();
     }
 
-    public function createEmptyApplicationDatabase()
+    public function createEmptyApplicationDatabase(): Database
     {
-        Database::setInstance(new Database('sqlite', uniqid('app-db-')));
+        $database = new Database('sqlite', uniqid('app-db-'));
 
-        $migrationManager = MigrationManager::getInstance();
-        $migrationManager->executeAllMigrations();
+        $database->asGlobalInstance(function() use ($database) {
+            $config = MigrationManagerConfiguration::resolve(Configuration::getInstance());
+            $migrationManager= new SQLite($database, $config);
+            $migrationManager->setLoggingFunction(fn($buffer) => debug($buffer));
+            $migrationManager->executeAllMigrations();
+        });
+
+        $this->emptyApplicationDatabase = $database;
+
+        return $database;
+    }
+
+    public function useNewEmptyApplicationDatabase() {
+        $path = $this->emptyApplicationDatabase->getDatabase();
+        $newDatabasePath = Storage::getInstance()->path(uniqid('testdb', true));
+        copy($path, $newDatabasePath);
+
+        $newDatabase = new Database('sqlite', $newDatabasePath);
+        $this->database = $newDatabase;
+        Database::setInstance($this->database);
     }
 
     public function getStorage(): Storage {

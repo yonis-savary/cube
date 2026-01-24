@@ -432,6 +432,17 @@ class Response extends HttpMessage
         return $this;
     }
 
+    public function getBody(): string
+    {
+        if ($callback = $this->displayCallback) {
+            ob_start();
+            ($callback)($this->statusCode, $this->body);
+            return ob_get_clean();
+        } else {
+            return parent::getBody();
+        }
+    }
+
     public function withCORSHeaders(?array $allowedMethods=null, ?CORSConfiguration $configuration=null): self
     {
         $this->corsDefined = true;
@@ -463,11 +474,7 @@ class Response extends HttpMessage
             }
         }
 
-        if ($callback = $this->displayCallback) {
-            ($callback)($this->statusCode, $this->body);
-        } else {
-            echo $this->getBody();
-        }
+        echo $this->getBody();
     }
 
     /**

@@ -20,35 +20,7 @@ class Utils
 
     public static function getIntegrationAppStorage(): Storage
     {
-        return new Storage(Path::normalize(__DIR__.'/../integration-apps'));
-    }
-
-    public static function getIntegrationDatabase(): Database
-    {
-        $cubeRoot = Path::normalize(__DIR__.'/../..');
-
-        $database = new Database();
-        $plan = new SQLite($database, new MigrationManagerConfiguration());
-
-        $migrationsFiles = (new Storage($cubeRoot))->child('tests/root/App/Migrations')->files();
-        Bunch::of($migrationsFiles)
-            ->filter(fn (string $file) => !str_contains($file, 'invalid'))
-            ->map(fn (string $file) => include $file)
-            ->forEach(fn (Migration $migration) => $migration->up($plan, $database));
-
-        return $database;
-    }
-
-    public static function getDummyServer(): CubeServer
-    {
-        if (self::$server) {
-            return self::$server;
-        }
-
-        $installation = self::getDummyApplicationStorage();
-        self::$server = new CubeServer(null, $installation->path('Public'), Logger::getInstance());
-
-        return self::$server;
+        return new Storage(Path::normalize(__DIR__.'/../integration/apps'));
     }
 
     public static function getDummyApplicationStorage(): Storage
@@ -64,9 +36,9 @@ class Utils
         $storage = $integrationApp->child(uniqid('App'));
         $storage->makeDirectory('Storage');
 
-        $cubeRoot = Path::normalize(__DIR__.'/../..');
+        $cubeRoot = realpath(Path::normalize(__DIR__.'/../..'));
 
-        $integrationBaseFiles = (new Storage($cubeRoot))->child('tests/root')->getRoot();
+        $integrationBaseFiles = (new Storage($cubeRoot))->child('tests/integration-root')->getRoot();
 
         $logger->info('Made integration app at {path}', ['path' => Path::toRelative($integrationBaseFiles)]);
 
@@ -74,10 +46,14 @@ class Utils
             'autoload' => [
                 'psr-4' => [
                     'App\\' => 'App',
+                    'Tests\\' => 'Tests',
                 ],
             ],
             'require' => [
                 'yonis-savary/cube' => 'dev-main',
+            ],
+            'require-dev' => [
+                'phpunit/phpunit' => '11.5.3',
             ],
             'repositories' => [
                 [
@@ -110,23 +86,5 @@ class Utils
         }
 
         return self::$storage = $storage;
-    }
-
-    public static function removeApplicationStorage(Storage $app): void
-    {
-        $integrationAppHolder = self::getIntegrationAppStorage();
-        if (!str_starts_with($app->getRoot(), $integrationAppHolder->getRoot())) {
-            return;
-        }
-
-        foreach (array_reverse($app->exploreFiles()) as $file) {
-            unlink($file);
-        }
-
-        foreach (array_reverse($app->exploreDirectories()) as $directory) {
-            rmdir($directory);
-        }
-
-        rmdir($app->getRoot());
     }
 }

@@ -13,19 +13,9 @@ chdir("..");
 
 include './vendor/autoload.php';
 
-Configuration::setInstance(new Configuration(
-    new Applications(Path::join(__DIR__, 'TestApplication'))
-));
-
 Autoloader::initialize(realpath('.'));
 
 $env = new Environment(null);
 $env->set('QUEUE_REDIS_HOST', 'localhost');
-
-TestContext::setInstance(
-    new TestContext(
-        Storage::getInstance()->child('Tests-'. date("Ymd-his") )
-    )
-);
 
 Environment::setInstance($env);

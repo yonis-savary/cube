@@ -1,7 +1,8 @@
-<?php 
+<?php
 
-namespace Cube\Tests\Integration;
+namespace Tests\Integration;
 
+use Cube\Core\Autoloader;
 use Cube\Web\Http\Request;
 use Cube\Env\Logger\Logger;
 use PHPUnit\Framework\TestCase;
@@ -16,8 +17,7 @@ class WebsocketTest extends TestCase
     {
         $this->logger = new Logger('websocket-server.csv');
 
-        $serverStorage = Utils::getDummyApplicationStorage();
-        $this->process = new Process(['php','do','websocket:serve'], $serverStorage->getRoot());
+        $this->process = new Process(['php','do','websocket:serve'], Autoloader::getProjectPath());
         $this->process->start(fn() => $this->log());
         $this->assertTrue($this->process->isRunning());
 

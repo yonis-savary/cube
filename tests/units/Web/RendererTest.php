@@ -13,7 +13,7 @@ class RendererTest extends TestCase
 {
     protected function getRenderer(): Renderer
     {
-        $viewPath = Path::join(__DIR__, "../../root/App/Views");
+        $viewPath = Path::join(__DIR__, "../../integration-root/App/Views");
         if (!is_dir($viewPath))
             throw new RuntimeException("Could not find directory : " . $viewPath);
 
@@ -28,7 +28,7 @@ class RendererTest extends TestCase
 
     protected function getAssetsInserter(): AssetsInserter
     {
-        $assetsPath = Path::join(__DIR__, "../../root/App/Assets");
+        $assetsPath = Path::join(__DIR__, "../../integration-root/App/Assets");
         if (!is_dir($assetsPath))
             throw new RuntimeException("Could not find directory : " . $assetsPath);
 

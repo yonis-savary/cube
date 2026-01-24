@@ -1,13 +1,13 @@
 <?php
 
-namespace Cube\Tests\Integration;
+namespace Tests\Integration;
 
-use Cube\Test\CubeIntegrationTestCase;
+use Cube\Test\CubeTestCase;
 
 /**
  * @internal
  */
-class StaticServerTest extends CubeIntegrationTestCase
+class StaticServerTest extends CubeTestCase
 {
     public function testServesFiles()
     {

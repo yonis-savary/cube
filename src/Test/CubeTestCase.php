@@ -16,9 +16,9 @@ abstract class CubeTestCase extends TestCase
     protected Database $database;
     protected ?CubeServer $server = null;
 
-    public static function setUpBeforeClass(): void
+    protected function setUp(): void
     {
-        TestContext::getInstance()->createEmptyApplicationDatabase();
+        TestContext::getInstance()->useNewEmptyApplicationDatabase();
     }
 
     /**
