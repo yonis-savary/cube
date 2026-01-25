@@ -86,6 +86,23 @@ class Table
         return $methods;
     }
 
+    public function getClassCustomTraits(string $className): array
+    {
+        if (!$uses = class_uses($className))
+            return [];
+
+        foreach ($uses as $use) {
+
+            Console::print(
+                Console::withBlueColor(
+                    '- Recovering trait usage ['.$use.'] for class '.$className
+                )
+            );
+        }
+
+        return $uses;
+    }
+
     /**
      * @param Relation[] $relations
      */
@@ -95,10 +112,12 @@ class Table
 
         $relationsNames = [];
 
-        $existingMethod = [];
+        $existingMethods = [];
+        $classUses = [];
         $fullClassname = "{$namespace}\\{$className}";
         if (class_exists($fullClassname)) {
-            $existingMethod = $this->getClassNonGeneratedMethods($fullClassname);
+            $existingMethods = $this->getClassNonGeneratedMethods($fullClassname);
+            $classUses = $this->getClassCustomTraits($fullClassname);
         }
 
         $relationProps = Bunch::of($relations)
@@ -185,6 +204,12 @@ class Table
          */
         class {$className} extends Model
         {
+            ".
+            Bunch::fromValues($classUses)
+            ->map(fn($x) => "use \\$x;")
+            ->join("\n")
+            ."
+
             #[Generated]
             public static function table(): string
             {
@@ -263,8 +288,8 @@ class Table
             }
 
             '.(
-                        count($existingMethod)
-                    ? ("\n".join("\n\n", $existingMethod))
+                        count($existingMethods)
+                    ? ("\n".join("\n\n", $existingMethods))
                     : ''
                     ).'
         }

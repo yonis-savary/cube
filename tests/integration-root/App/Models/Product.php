@@ -18,6 +18,8 @@ use Cube\Utils\Attributes\Generated;
  */
 class Product extends Model
 {
+    use ModelTrait;
+
     #[Generated]
     public static function table(): string
     {
@@ -58,4 +60,7 @@ class Product extends Model
         ];
     }
 
+    public function getPriceWithTax(float $taxRate=0.2): float {
+        return $this->price_dollar * (1 + $taxRate);
+    }
 }
