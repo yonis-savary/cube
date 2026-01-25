@@ -20,7 +20,7 @@ class Utils
 
     public static function getIntegrationAppStorage(): Storage
     {
-        return new Storage(Path::normalize(__DIR__.'/../integration/apps'));
+        return new Storage(Path::normalize(__DIR__.'/../integration-apps'));
     }
 
     public static function getDummyApplicationStorage(): Storage
