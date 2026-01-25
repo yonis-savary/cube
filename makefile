@@ -5,9 +5,7 @@ cleanup:
 	@[ -d 'Storage/Cache' ] && rm -r Storage/Cache || true
 
 test:
-	@composer install
-	@docker compose up -d --build
-	@vendor/bin/phpunit
+	@make --no-print-directory test-dirty
 	@make --no-print-directory cleanup
 
 test-dirty:
