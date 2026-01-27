@@ -16,6 +16,8 @@ class Database
     protected \PDO $connection;
     protected \PDOStatement $lastStatement;
 
+    protected bool $dryRunMode = false;
+
     public function __construct(
         protected string $driver = 'sqlite',
         protected ?string $database = null,
@@ -190,6 +192,9 @@ class Database
     {
         $queryWithContext = $this->build($query, $context);
 
+        if ($this->dryRunMode)
+            return [];
+
         $statement = $this->connection->query($queryWithContext);
         $this->lastStatement = $statement;
 
@@ -209,6 +214,8 @@ class Database
     public function exec(string $query, array $context = []): int
     {
         $queryWithContext = $this->build($query, $context);
+        if ($this->dryRunMode)
+            return 0;
 
         return $this->connection->exec($queryWithContext);
     }
@@ -237,8 +244,17 @@ class Database
     /**
      * @param \Closure(Database) $callback
      */
-    public function transaction(callable $callback): true|Throwable
+    public function transaction(callable $callback): ?Throwable
     {
         return $this->queryBuilder->transaction($callback, $this);
+    }
+
+    public function dryRun(callable $callback, bool $enableDryRun=true): mixed
+    {
+        $original = $this->dryRunMode;
+        $this->dryRunMode = $enableDryRun;
+        $return = ($callback)();
+        $this->dryRunMode = $original;
+        return $return;
     }
 }

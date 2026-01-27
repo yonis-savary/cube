@@ -59,7 +59,7 @@ abstract class Model extends EventDispatcher
 
     abstract public static function table(): string;
 
-    /** @return ModelField[] */
+    /** @return array<string,ModelField> */
     abstract public static function fields(): array;
 
     /** @return string[] */

@@ -102,13 +102,11 @@ abstract class MigrationManager
             return true;
         }
 
-        $error = $this->database->transaction(function() use ($file, $plan, $migrationName) {
-
-            /** @var Migration $migration */
-            $migration = include $file;
-            $migration->up($plan, $this->database);
+        /** @var Migration $migration */
+        $migration = include $file;
+        $error = $migration->execute($plan, $this->database);
+        if (!$error)
             $this->markMigrationAsDone($migrationName);
-        });
 
         if ($error instanceof Throwable) {
             $this->log(Console::withRedColor("Error with $file ! " . $error->getMessage()));

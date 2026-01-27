@@ -2,13 +2,19 @@
 
 namespace Cube\Tests\Units\Web;
 
+use Cube\Data\Database\Database;
+use Cube\Tests\Units\Database\TestMultipleDrivers;
+use Cube\Tests\Units\Models\Product;
 use Cube\Web\Http\Rules\AnyParam;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ValidationTest extends TestCase
 {
+    use TestMultipleDrivers;
+
     protected function testRule(Rule $rule, mixed $value, bool $shouldPass=true, mixed $expectedFinalValue=null) {
         $results = $rule->validate($value);
         $expectedFinalValue ??= $value;
@@ -22,7 +28,7 @@ class ValidationTest extends TestCase
 
     public function testAnyParamValidation() {
 
-        $rule = new AnyParam();
+        $rule = new AnyParam(true);
 
         $this->testRule($rule, null, true);
         $this->testRule($rule, 0, true);
@@ -32,7 +38,7 @@ class ValidationTest extends TestCase
     }
 
     public function testIntegerValidation() {
-        $rule = Param::integer();
+        $rule = Param::integer(true);
 
         $this->testRule($rule, null);
         $this->testRule($rule, 5);
@@ -67,7 +73,7 @@ class ValidationTest extends TestCase
 
 
     public function testFloatValidation() {
-        $rule = Param::float();
+        $rule = Param::float(true);
 
         $this->testRule($rule, null);
         $this->testRule($rule, 5.2);
@@ -111,12 +117,12 @@ class ValidationTest extends TestCase
     }
 
     public function testArrayValidation() {
-        $rule = Param::array(Param::integer()->isBetween(0, 5)); // 0-5 / nullable
+        $rule = Param::array(Param::integer(true)->isBetween(0, 5), true); // 0-5 / nullable
         $this->testRule($rule, null);
         $this->testRule($rule, [0,1,2,4,5,null]);
         $this->testRule($rule, [0,1,2,4,-5], false);
 
-        $rule = Param::array(Param::integer()->isBetween(0, 5), false);
+        $rule = Param::array(Param::integer(true)->isBetween(0, 5), false);
         $this->testRule($rule, null, false);
         $this->testRule($rule, [0,1,2,4,5,null]);
         $this->testRule($rule, [0,1,2,4,5]);
@@ -172,7 +178,7 @@ class ValidationTest extends TestCase
 
         $rule = Param::object([
             "age" => Param::integer(false)->isBetween(0, 120),
-            "option" => Param::boolean()
+            "option" => Param::boolean(true)
         ]);
 
         $this->testRule($rule, ['age' => 5, 'option' => true]);
@@ -294,5 +300,40 @@ class ValidationTest extends TestCase
         $this->testRule($rule, '7a710a76-dd80-432a-8672-fb390030164c');
         $this->testRule($rule, 'c91a4830-23ef-498a-a559-cff6cc19a727');
         $this->testRule($rule, 'c91a4830-23ef-498a-a559-trytocheat00', false);
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testModelValidation(Database $database) {
+        $database->asGlobalInstance(function(){
+            $newData = [
+                ['name' => 'Desk'],
+                ['name' => 'Mouse'],
+                ['name' => 'Keyboard'],
+            ];
+            foreach($newData as $row) {
+                Product::insertArray($row);
+            }
+    
+            $rule = Param::model(Product::class, 'name');
+    
+            $results = $rule->validate('Desk');
+            $this->assertTrue($results->isValid());
+            $product = $results->getResult();
+            $this->assertInstanceOf(Product::class, $product);
+            $this->assertEquals('Desk', $product->name);
+    
+            $results = $rule->validate('Inexistant Object');
+            $this->assertFalse($results->isValid());
+
+            $rule = Param::model(Product::class, 'id', true);
+            $results = $rule->validate($product->id);
+            $this->assertTrue($results->isValid());
+            $productFromId = $results->getResult();
+            $this->assertEquals($productFromId->id, $product->id);
+
+            $results = $rule->validate(null);
+            $this->assertTrue($results->isValid());
+            $this->assertNull($results->getResult());
+        });
     }
 }

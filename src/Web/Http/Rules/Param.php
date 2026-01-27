@@ -6,7 +6,9 @@ use Cube\Core\Autoloader;
 use Cube\Data\Database\Database;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Data\Models\Model;
+use Cube\Data\Models\ModelField;
 use Cube\Utils\Text;
+use InvalidArgumentException;
 
 class Param extends Rule
 {
@@ -20,7 +22,7 @@ class Param extends Rule
         return static::object($rule, $nullable);
     }
 
-    public function __construct(bool $nullable = true)
+    public function __construct(bool $nullable = false)
     {
         if (!$nullable) {
             $this->withCondition(fn (mixed $value) => null !== $value, '{key} cannot be null');
@@ -30,7 +32,7 @@ class Param extends Rule
     /**
      * Convert a number/string into an integer.
      */
-    public static function integer(bool $nullable = true): static
+    public static function integer(bool $nullable = false): static
     {
         return (new self($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be an integer, got {value}')
@@ -41,7 +43,7 @@ class Param extends Rule
     /**
      * Convert a number/string into a float.
      */
-    public static function float(bool $nullable = true): static
+    public static function float(bool $nullable = false): static
     {
         return (new self($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be a float, got {value}')
@@ -49,7 +51,7 @@ class Param extends Rule
         ;
     }
 
-    public static function string(bool $trim = true, bool $nullable = true): static
+    public static function string(bool $trim = true, bool $nullable = false): static
     {
         $object = new self($nullable);
 
@@ -60,12 +62,12 @@ class Param extends Rule
         return $object;
     }
 
-    public static function array(Rule|array $childRule, bool $nullable = true): ArrayParam
+    public static function array(Rule|array $childRule, bool $nullable = false): ArrayParam
     {
         return new ArrayParam($childRule, $nullable);
     }
 
-    public static function object(array $rules=[], bool $nullable = true): ObjectParam
+    public static function object(array $rules=[], bool $nullable = false): ObjectParam
     {
         return new ObjectParam($rules, $nullable);
     }
@@ -73,7 +75,7 @@ class Param extends Rule
     /**
      * Accept any email through filter_var().
      */
-    public static function email(bool $nullable = true): static
+    public static function email(bool $nullable = false): static
     {
         return (new self($nullable))
             ->withValueCondition(fn ($value) => false !== filter_var($value, FILTER_VALIDATE_EMAIL), '{key} must be an email, got {value}')
@@ -83,7 +85,7 @@ class Param extends Rule
     /**
      * Accept any boolean (`"on"`, `"true"`, `"yes"`, `"1"`, `true` are considered `true`, any other value is `false`).
      */
-    public static function boolean(bool $nullable = true): static
+    public static function boolean(bool $nullable = false): static
     {
         return (new self($nullable))
             ->withValueTransformer(fn ($value) => is_bool($value) ? $value : in_array(strtolower((string) $value), ['on', 'true', 'yes', '1']))
@@ -93,7 +95,7 @@ class Param extends Rule
     /**
      * Accept any url through filter_var().
      */
-    public static function url(bool $nullable = true): static
+    public static function url(bool $nullable = false): static
     {
         return (new self($nullable))
             ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^(.+?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)$/', $value ?? ''), '{key} must be an URL, got {value}');
@@ -103,7 +105,7 @@ class Param extends Rule
     /**
      * Accept any date with YYYY-MM-DD format.
      */
-    public static function date(bool $nullable = true): static
+    public static function date(bool $nullable = false): static
     {
         return (new self($nullable))
             ->withValueCondition(function (?string $value){
@@ -122,7 +124,7 @@ class Param extends Rule
      * Accept any date with YYYY-MM-DD HH:mm:ss format.
      * @param bool $addTimeToDate If `true`, will add `00:00:00` if timestamp is missing
      */
-    public static function datetime(bool $nullable = true, bool $addTimeIfMissing=false): static
+    public static function datetime(bool $nullable = false, bool $addTimeIfMissing=false): static
     {
         $rule = (new self($nullable));
 
@@ -152,12 +154,45 @@ class Param extends Rule
     /**
      * Accept any uuid value as xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (8,4,4,4,12) with x any hexadecimal value.
      */
-    public static function uuid(bool $nullable = true): static
+    public static function uuid(bool $nullable = false): static
     {
         return (new self($nullable))
             ->withValueCondition(
                 fn($value)=> (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower($value ?? '')),
                 '{key} must be an UUID, got [{value}]'
+            )
+        ;
+    }
+
+
+    /**
+     * @param class-string<Model> $modelClass
+     */
+    public static function model(
+        string $modelClass,
+        ?string $column=null,
+        bool $nullable = false,
+        bool $explore=true,
+        ?Database $database=null
+    ): static
+    {
+        $column ??= $modelClass::primaryKey();
+        if (!$column) {
+            throw new InvalidArgumentException('No $column given nor primary key in model');
+        }
+
+        /** @var ModelField|false $modelField */
+        $modelField = $modelClass::fields()[$column] ?? false;
+        if (!$modelField) {
+            throw new InvalidArgumentException("Column $column not found");
+        }
+
+        $database ??= Database::getInstance();
+        return $modelField->toRule($nullable)
+            ->withValueTransformer(fn ($primaryKey) => $modelClass::findWhere([$column => $primaryKey], $explore, $database))
+            ->withCondition(
+                fn (?Model $value) => (null !== $value) || $nullable,
+                Text::interpolate('{key} must be a valid {column} in table {table}, got {value}', ['table' => $modelClass::table(), 'column' => $column])
             )
         ;
     }
@@ -189,13 +224,13 @@ class Param extends Rule
     /**
      * Check if the value exists in a table as primary key.
      */
-    public function exists(string $modelClass, ?string $key=null, bool $nullable=false, bool $explore = false, ?Database $database = null)
+    public function exists(string $modelClass, bool $nullable=false, bool $explore = false, ?Database $database = null)
     {
         if (!Autoloader::extends($modelClass, Model::class)) {
             throw new \InvalidArgumentException('$modelClass must extends Model');
         }
 
-        // @var Model $modelClass
+        /** @var class-string<Model> $modelClass */
         return (new self($nullable))
             ->withValueTransformer(fn ($primaryKey) => $modelClass::find($primaryKey, $explore, $database))
             ->withCondition(

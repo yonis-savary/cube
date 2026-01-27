@@ -50,7 +50,7 @@ abstract class QueryBuilder
     /**
      * @param \Closure(Database) $callback
      */
-    abstract public function transaction(callable $callback, Database $database): true|Throwable;
+    abstract public function transaction(callable $callback, Database $database): ?Throwable;
 
     abstract public function hasTable(string $table, Database $database): bool;
 

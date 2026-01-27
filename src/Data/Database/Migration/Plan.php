@@ -30,7 +30,7 @@ abstract class Plan
 
     abstract public function alterColumn(string $table, string $column, ModelField $newProperties);
 
-    abstract public function addColumn(string $table, ModelField $ModelField);
+    abstract public function addColumn(string $table, ModelField $modelField);
 
     abstract public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey);
 

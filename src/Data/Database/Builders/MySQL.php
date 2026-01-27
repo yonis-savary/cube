@@ -307,14 +307,14 @@ class MySQL extends QueryBuilder
         );
     }
 
-    public function transaction(callable $callback, Database $database): true|Throwable
+    public function transaction(callable $callback, Database $database): ?Throwable
     {
         try
         {
             $database->exec('START TRANSACTION');
             $callback($database);
             $database->exec('COMMIT');
-            return true;
+            return null;
         }
         catch (Throwable $thrown)
         {
@@ -325,23 +325,36 @@ class MySQL extends QueryBuilder
 
     public function hasTable(string $table, Database $database): bool
     {
-        try {
-            $database->query("SELECT 1 FROM `{}` LIMIT 1", [$table]);
-
-            return true;
-        } catch (\PDOException) {
-            return false;
-        }
+        /**
+         * SQL (MySQL/Postgres) Specifics: our hasTable is based on a try-catch behavior
+         * The exception we wait for cannot be raised if we don't fetch for results (if dryrun mode is enabled)
+         * So we disable it just to test
+         */
+        return $database->dryRun(function() use ($database, $table) {
+            try {
+                $database->query("SELECT 1 FROM `{}` LIMIT 1", [$table]);
+                return true;
+            } catch (\PDOException) {
+                return false;
+            }
+        }, false);
     }
 
     public function hasField(string $table, string $field, Database $database): bool
     {
-        try {
-            $database->query("SELECT `{}` FROM `{}` LIMIT 1", [$field, $table]);
+        /**
+         * SQL (MySQL/Postgres) Specifics: our hasTable is based on a try-catch behavior
+         * The exception we wait for cannot be raised if we don't fetch for results (if dryrun mode is enabled)
+         * So we disable it just to test
+         */
+        return $database->dryRun(function() use ($database, $table, $field) {
+            try {
+                $database->query("SELECT `{}` FROM `{}` LIMIT 1", [$field, $table]);
 
-            return true;
-        } catch (\PDOException) {
-            return false;
-        }
+                return true;
+            } catch (\PDOException) {
+                return false;
+            }
+        }, false);
     }
 }

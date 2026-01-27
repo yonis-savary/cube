@@ -88,7 +88,7 @@ class ModelField
     }
 
     public function __construct(
-        public readonly string $name
+        public string $name
     ) {}
 
     public function primaryKey(bool $isPrimaryKey = true): self

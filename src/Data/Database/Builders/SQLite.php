@@ -300,14 +300,14 @@ class SQLite extends MySQL
         );
     }
 
-    public function transaction(callable $callback, Database $database): true|Throwable
+    public function transaction(callable $callback, Database $database): ?Throwable
     {
         try
         {
             $database->exec('BEGIN TRANSACTION');
             $callback($database);
             $database->exec('COMMIT');
-            return true;
+            return null;
         }
         catch (Throwable $thrown)
         {
