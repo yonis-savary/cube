@@ -143,11 +143,11 @@ class Table
             $fromModel  = $relation->toModel;
             $fromColumn = $relation->toColumn;
 
-            $relationName = Text::endsWith(str_replace(
-                strtolower(basename(str_replace('\\', '/', $fromModel))),
+            $relationName = lcfirst(Text::endsWith(str_replace(
+                basename(str_replace('\\', '/', $fromModel)),
                 '',
-                strtolower(basename(str_replace('\\', '/', $toModel)))
-            ), 's');
+                basename(str_replace('\\', '/', $toModel))
+            ), 's'));
 
             while ($fieldsNames->has($relationName) || in_array($relationName, $addedRelationNames))
                 $relationName = "_$relationName";
