@@ -480,8 +480,12 @@ class Bunch implements Countable
      * @param \Closure(TValue) $callback
      * @return ?TValue
      */
-    public function first(callable $callback): mixed
+    public function first(?callable $callback=null): mixed
     {
+        if ($callback === null) {
+            return $this->data[0] ?? null;
+        }
+
         foreach ($this->data as $element) {
             if (true === $callback($element)) {
                 return $element;
@@ -498,6 +502,43 @@ class Bunch implements Countable
     {
         $dataCount = count($this->data);
         for ($i = 0; $i < $dataCount; ++$i) {
+            $element = $this->data[$i];
+            if (true === $callback($element)) {
+                return $i;
+            }
+        }
+
+        return -1;
+    }
+
+
+    /**
+     * @param \Closure(TValue) $callback
+     * @return ?TValue
+     */
+    public function last(?callable $callback=null): mixed
+    {
+        if ($callback === null && count($this->data)) {
+            return array_last($this->data);
+        }
+
+        $data = array_reverse($this->data);
+        foreach ($data as $element) {
+            if (true === $callback($element)) {
+                return $element;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param \Closure(TValue):bool $callback
+     */
+    public function lastIndex(callable $callback): int
+    {
+        $dataCount = count($this->data);
+        for ($i = $dataCount-1; $i >= 0; --$i) {
             $element = $this->data[$i];
             if (true === $callback($element)) {
                 return $i;

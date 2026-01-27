@@ -227,8 +227,19 @@ class BunchTest extends TestCase
         $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
         $elements = Bunch::of($elements);
 
-        $this->assertEquals(['A' => 3], $elements->first(fn ($x) => 3 == $x['A']));
+        $this->assertEquals(['A' => 3], $elements->first());
+        $this->assertEquals(['A' => 5], $elements->first(fn ($x) => 4 < $x['A']));
         $this->assertNull($elements->first(fn ($x) => 4787 === $x['A']));
+    }
+
+    public function testLast()
+    {
+        $elements = [['A' => -1], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
+        $elements = Bunch::of($elements);
+
+        $this->assertEquals(['A' => 0], $elements->last());
+        $this->assertEquals(['A' => -3], $elements->last(fn ($x) => 0 > $x['A']));
+        $this->assertNull($elements->last(fn ($x) => 4787 === $x['A']));
     }
 
     public function testHas()

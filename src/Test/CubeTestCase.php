@@ -6,11 +6,23 @@ use Cube\Core\Autoloader;
 use Cube\Data\Database\Database;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Upload;
-use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
 use Cube\Web\Helpers\CubeServer;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * This test class allows you to interact with your application
+ * through methods such as :
+ * - `this->makeFakeUpload`
+ * - `this->makeFakeUploadFromContent`
+ * - `this->get`
+ * - `this->getJson`
+ * - `this->post`
+ * - ...
+ *
+ * Using this test class will reset the global database
+ * for each test method, making every test independent
+ */
 abstract class CubeTestCase extends TestCase
 {
     protected Database $database;

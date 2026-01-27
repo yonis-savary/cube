@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Integration;
 
+use Cube\Data\Bunch;
 use Cube\Utils\Shell;
 use PHPUnit\Framework\TestCase;
 
@@ -20,6 +21,11 @@ class IntegrationApplicationTest extends TestCase
         $this->assertFileExists($storage->path('App/Models/ModuleUser.php'));
 
         $proc = Shell::executeInDirectory('php do test', $storage->getRoot());
-        $this->assertEquals(0, $proc->getExitCode(), $proc->getOutput());
+        $output = $proc->getOutput() . $proc->getErrorOutput();
+
+        $this->assertEquals(0, $proc->getExitCode(), $output);
+
+        $lastLine = Bunch::fromExplode("\n", $output)->filter()->last();
+        $this->assertMatchesRegularExpression("~^OK~", $lastLine, $output);
     }
 }
