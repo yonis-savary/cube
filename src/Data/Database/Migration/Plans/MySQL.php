@@ -107,8 +107,12 @@ class MySQL extends Plan
         if (!$this->database->hasField($table, $field))
             throw new RuntimeException("Given database does not contains the $table($field) column");
 
-        $this->database->query("ALTER TABLE `{}` ALTER COLUMN `{}` " . $this->getModelFieldSQLQuery($newProperties), [
-            $table, $field
+        if ($field !== $newProperties->name) {
+            $this->renameField($table, $field, $newProperties->name);
+        }
+
+        $this->database->query("ALTER TABLE `{}` MODIFY `{}` " . $this->getModelFieldSQLQuery($newProperties), [
+            $table, $newProperties->name
         ]);
     }
 

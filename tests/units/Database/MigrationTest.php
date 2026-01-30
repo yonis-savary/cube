@@ -7,6 +7,7 @@ use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Migration\Plans\Exceptions\DryRunPlanException;
+use Cube\Data\Database\Migration\Plans\Exceptions\UnsupportedByDBMSException;
 use Cube\Data\Models\ModelField;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -168,5 +169,42 @@ class MigrationTest extends TestCase
 
         $this->assertInstanceOf(DryRunPlanException::class, $thrown);
         $this->assertFalse($database->hasTable("should_not_be_created"));
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testAlterTable(Database $database) 
+    {
+        $firstMigration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create("order_detail", [
+                    ModelField::id(),
+                    ModelField::decimal('unit_price', 10, 5),
+                    ModelField::integer('quantity')
+                ]);
+            }
+        };
+
+        $secondMigration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->alterColumn(
+                    'order_detail',
+                    'quantity',
+                    ModelField::float('quantity')->notNull()->default(1)
+                );
+            }
+        };
+
+        $plan = $this->getDatabasePlan($database);
+
+        $error = $firstMigration->execute($plan, $database);
+        $this->assertNull($error);
+
+        $error = $secondMigration->execute($plan, $database);
+        if ($database->getDriver() === 'sqlite')
+            $this->assertInstanceOf(UnsupportedByDBMSException::class, $error);
+        else
+            $this->assertNull($error);
     }
 }

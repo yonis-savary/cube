@@ -8,17 +8,8 @@ use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Migration\Plans\Exceptions\DryRunPlanException;
 use Cube\Data\Models\ModelField;
 
-use function Cube\debug;
-
 class DryRunPlan extends Plan
 {
-    /**
-     * @var array<string,ModelField[]>
-     */
-    protected $planTables = [];
-    protected $renamedTables = [];
-    protected $renamedFields = [];
-
     public function __construct(
         protected Database $database
     ){}
@@ -32,14 +23,15 @@ class DryRunPlan extends Plan
      * @param ModelField[] $fields
      */
     public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
-        $this->planTables[$table] = $fields;
+        $this->tableDiffAddTable($table, $fields);
     }
 
     /**
      * Edit existing table
      */
     public function dropTable(string $table) {
-        if ($this->database->hasTable($table) || array_key_exists($table, $this->planTables)) {
+        if ($this->database->hasTable($table) || $this->tableDiffHasTable($table)) {
+            $this->tableDiffDropTable($table);
             return true;
         }
 
@@ -51,17 +43,11 @@ class DryRunPlan extends Plan
     }
 
     protected function columnExists(string $table, string $column) {
-        if ($this->database->hasField($table, $column)) {
-            return true;
-        }
+        return $this->database->hasField($table, $column) || $this->tableDiffHasField($table, $column);
+    }
 
-        if ($fields = $this->planTables[$table] ?? false) {
-            $matchingColumn = Bunch::of($fields)->first(fn($x) => $x->name === $column);
-            if ($matchingColumn)
-                return true;
-        }
-
-        return false;
+    protected function tableExists(string $table) {
+        return $this->database->hasTable($table) || $this->tableDiffHasTable($table);
     }
 
     public function dropColumn(string $table, string $column) {
@@ -73,12 +59,16 @@ class DryRunPlan extends Plan
     {
         if (!$this->columnExists($table, $column))
             throw new DryRunPlanException("Cannot find $table.$column column");
+
+        $this->editTableField($table, $column, $newProperties);
     }
 
     public function addColumn(string $table, ModelField $modelField) {
         $column = $modelField->name;
         if ($this->columnExists($table, $column))
             throw new DryRunPlanException("$table.$column already exists");
+
+        $this->addTableDiffField($table, $modelField);
     }
 
     public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey) {
@@ -106,31 +96,17 @@ class DryRunPlan extends Plan
             throw new DryRunPlanException("$table.$oldFieldName does not exists");
         }
 
-        if ($fields = $this->planTables[$table] ?? false) {
-            foreach ($fields as $field) {
-                if ($field->name === $oldFieldName)
-                    $field->name = $newFieldName;
-            }
-        } else {
-            $this->planTables[$table] = [new ModelField($newFieldName)];
-        }
+        $this->renameTableDiffField($table, $oldFieldName, $newFieldName);
     }
 
     public function renameTable(string $oldTableName, string $newTableName) 
     {
-        $oldTableExists = $this->database->hasTable($oldTableName) || array_key_exists($oldTableName, $this->planTables);
-        if (!$oldTableExists)
+        if (!$this->tableExists($oldTableName))
             throw new DryRunPlanException("Table $oldTableName not found");
 
-        $newTableAlreadyExists = array_key_exists($newTableName, $this->planTables) || $this->database->hasTable($newTableName);
-        if ($newTableAlreadyExists)
+        if ($this->tableExists($newTableName))
             throw new DryRunPlanException("Table $newTableName already exists");
 
-        if (array_key_exists($oldTableName, $this->planTables)) {
-            $this->planTables[$newTableName] = $this->planTables[$oldTableName];
-            unset($this->planTables[$oldTableName]);
-        } else {
-            $this->planTables[$newTableName] = [];
-        }
+        $this->renameTableDiffTable($oldTableName, $newTableName);
     }
 }

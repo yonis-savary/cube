@@ -103,9 +103,35 @@ class PostgreSQL extends Plan
         if (!$this->database->hasField($table, $field))
             throw new RuntimeException("Given database does not contains the $table($field) column");
 
-        $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" " . $this->getModelFieldSQLQuery($newProperties), [
-            $table, $field
-        ]);
+        if ($field !== $newProperties->name) {
+            $this->renameField($table, $field, $newProperties->name);
+        }
+
+        $typeQuery = ($newProperties->isPrimaryKey && $newProperties->autoIncrement)
+            ? "SERIAL"
+            : "TYPE " . match($newProperties->type) {
+                ModelField::STRING    => ($m = $newProperties->maximumLength) ? "VARCHAR($m)": "TEXT",
+                ModelField::INTEGER   => "INTEGER",
+                ModelField::FLOAT     => "FLOAT",
+                ModelField::BOOLEAN   => "BOOLEAN",
+                ModelField::DECIMAL   => "DECIMAL(".($field->decimalMaximumDigits ?? 10).",".($field->decimalDigitsToTheRight ?? 5).")",
+                ModelField::DATE      => "DATE",
+                ModelField::DATETIME  => "DATETIME",
+                ModelField::TIMESTAMP => "TIMESTAMP",
+            };
+
+        $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" " . $typeQuery, [$table, $newProperties->name]);
+
+        if (!$newProperties->nullable && (!$newProperties->isPrimaryKey))
+            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" SET NOT NULL", [$table, $newProperties->name]);
+        else
+            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" DROP NOT NULL", [$table, $newProperties->name]);
+
+        if ($newProperties->isUnique && (!$newProperties->isPrimaryKey))
+            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" ", [$table, $newProperties->name]);
+
+        if ($newProperties->hasDefault)
+            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" SET DEFAULT {}", [$table, $newProperties->name, $newProperties->default]);
     }
 
     public function addUniqueIndex(string $table, string|array $fields) {

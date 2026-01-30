@@ -4,7 +4,9 @@ namespace Cube\Data\Database\Migration\Plans;
 
 use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Plan;
+use Cube\Data\Database\Migration\Plans\Exceptions\UnsupportedByDBMSException;
 use Cube\Data\Models\ModelField;
+use Cube\Web\Html\AssetsInserter\UnsupportedAssetTypeException;
 use RuntimeException;
 
 class SQLite extends Plan
@@ -95,7 +97,9 @@ class SQLite extends Plan
     }
 
     public function alterColumn(string $table, string $field, ModelField $newProperties) {
-        $this->database->query("ALTER TABLE `{}` ALTER COLUMN `{}` " . $this->getModelFieldSQLQuery($newProperties), [
+        throw new UnsupportedByDBMSException("Column edition is not supported by SQLite, please rebuild your $table table");
+
+        $this->database->query("ALTER TABLE `{}` MODIFY `{}` " . $this->getModelFieldSQLQuery($newProperties), [
             $table, $field
         ]);
     }

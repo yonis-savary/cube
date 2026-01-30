@@ -277,6 +277,7 @@ class Bunch implements Countable
     }
 
     /**
+     * @param \Closure(TValue):bool $callback
      * @return static
      */
     public function filter(?callable $callback = null): self
