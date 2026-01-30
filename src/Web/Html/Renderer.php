@@ -5,6 +5,7 @@ namespace Cube\Web\Html;
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
+use Cube\Utils\Path;
 use Exception;
 use InvalidArgumentException;
 use Throwable;
@@ -43,6 +44,8 @@ class Renderer
             $path = $this->findView($viewName);
             if (!$path)
                 throw new InvalidArgumentException("View [$viewName] not found");
+
+            $path = Path::relative($path);
 
             if (!ob_start())
                 throw new Exception('Could not start a new output buffering');

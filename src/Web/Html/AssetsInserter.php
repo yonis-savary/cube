@@ -5,10 +5,9 @@ namespace Cube\Web\Html;
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
+use Cube\Utils\Path;
 use Cube\Web\Html\AssetsInserter\UnsupportedAssetTypeException;
 use InvalidArgumentException;
-
-use function Cube\debug;
 
 class AssetsInserter
 {
@@ -35,6 +34,7 @@ class AssetsInserter
         if (!$path)
             throw new InvalidArgumentException("Asset not found [$assetName]");
 
+        $path = Path::relative($path);
         $extension = pathinfo($path, PATHINFO_EXTENSION);
 
         $fileContent = file_get_contents($path);
