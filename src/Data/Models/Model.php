@@ -25,8 +25,11 @@ abstract class Model extends EventDispatcher
     public object $original;
     public array $references = [];
 
-    public function __construct(array $data = [], string $relationAccumulator = '')
+    public function __construct(array|Model $data = [], string $relationAccumulator = '')
     {
+        if ($data instanceof Model)
+            $data = $data->toArray();
+
         $fields = $this->fields();
 
         $modelData = [];
@@ -239,18 +242,24 @@ abstract class Model extends EventDispatcher
                 /** @var Relation $relation */
                 $relation = $instance->{$relationName}();
 
-                /** @var class-string<static> $toModel */
+                /** @var class-string<Model> $toModel */
                 $toModel = $relation->toModel;
+
+                /** @var ObjectParam $baseRule */
+                $baseRule = $toModel::toObjectParam(true, false);
+                $baseRule->optionnal($relation->toColumn);
+
                 if ($relation instanceof HasMany) {
-                    $rules[$relationName] = Param::array($toModel::toObjectParam(true, false));
+                    $rules[$relationName] = Param::array($baseRule, true);
                 }
                 if ($relation instanceof HasOne) {
-                    $rules[$relationName] = $toModel::toObjectParam(true, false);
+                    $rules[$relationName] = $baseRule;
                 }
             }
         }
 
-        return Param::object($rules, $nullable);
+        return Param::object($rules, $nullable)
+            ->withTransformer(fn($data) => $data ? new static($data): null);
     }
 
     /**
@@ -331,18 +340,20 @@ abstract class Model extends EventDispatcher
 
     public static function fromRequest(Request $request, array $forcedAttributes=[], bool $forbidsPrimaryKey=true, array $forbiddenAttributes=[]): static
     {
-        $validated = static::toObjectParam()->validate($request)->getResult();
-
         $pk = static::primaryKey();
-        if ($pk && $forbidsPrimaryKey && isset($validated[$pk]))
-            unset($validated[$pk]);
+        $rule = static::toObjectParam();
+        if ($pk && $forbidsPrimaryKey)
+            $rule->without($pk);
 
-        foreach($forbiddenAttributes as $attribute) {
-            if (isset($validated[$attribute]))
-                unset($validated[$attribute]);
+        if (count($forbiddenAttributes))
+            $rule->without($forbiddenAttributes);
+
+        if ($model = $rule->validate($request)->getResult()) {
+            foreach ($forcedAttributes as $key => $value)
+                $model->$key = $value;
         }
 
-        return new static(array_merge($validated ?? [], $forcedAttributes));
+        return $model;
     }
 
     protected function completeModelDataWithRelations(array $constructData, string $relationAccumulator = '')
@@ -505,7 +516,7 @@ abstract class Model extends EventDispatcher
             $this->{$relation}()->load(false);
 
             $childRelations = Bunch::of($relations)
-                ->filter(fn($rel) => str_starts_with($rel, "$relation."))
+                ->filter(fn(string $rel) => str_starts_with($rel, "$relation."))
                 ->map(fn(string $rel) => Text::dontStartsWith($rel, "$relation."))
                 ->get();
 

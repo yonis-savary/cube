@@ -303,7 +303,7 @@ class ValidationTest extends TestCase
     }
 
     #[ DataProvider('getDatabases') ]
-    public function testModelValidation(Database $database) {
+    public function testModelKeyValidation(Database $database) {
         $database->asGlobalInstance(function(){
             $newData = [
                 ['name' => 'Desk'],
@@ -335,5 +335,47 @@ class ValidationTest extends TestCase
             $this->assertTrue($results->isValid());
             $this->assertNull($results->getResult());
         });
+    }
+
+    public function testNullableEdition() 
+    {
+        // Optionnal at first
+        $rule = Param::array(Param::integer(), true);
+
+        // then made mandatory
+        $rule->nullable(false);
+
+        $results = $rule->validate(null);
+        $this->assertFalse($results->isValid());
+
+        $results = $rule->validate([1,2,3]);
+        $this->assertTrue($results->isValid());
+    }
+
+    public function testModelValidation()
+    {
+        $rule = Product::toObjectParam();
+
+        $results = $rule->validate([]);
+        $this->assertFalse($results->isValid());
+
+        $results = $rule->validate(['name' => 'Painting']);
+        $this->assertTrue($results->isValid());
+
+        $rule = Product::toObjectParam(false, true)
+            ->mandatory('managers');
+
+        $result = $rule->validate(['name' => 'Painting']);
+        $this->assertFalse($result->isValid()); // Manager is now mandatory
+
+        $result = $rule->validate(['name' => 'Painting', 'managers' => [['manager' => 'Bob'], ['manager' => 'Homer']]]);
+        $this->assertTrue($result->isValid());
+
+        /** @var Product $model */
+        $model = $results->getResult();
+
+        $this->assertInstanceOf(Product::class, $model);
+        $this->assertEquals('Painting', $model->name);
+
     }
 }

@@ -24,10 +24,10 @@ class Param extends Rule
 
     public function __construct(bool $nullable = false)
     {
-        if (!$nullable) {
-            $this->withCondition(fn (mixed $value) => null !== $value, '{key} cannot be null');
-        }
+        $this->nullable = $nullable;
+        $this->withCondition(fn(mixed $value) => $this->nullable || (null !== $value), '{key} cannot be null');
     }
+
 
     /**
      * Convert a number/string into an integer.

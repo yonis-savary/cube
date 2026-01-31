@@ -37,8 +37,9 @@ class ArrayParam extends Rule
 
     public function validate(mixed $array, ?string $key=null): ValidationReturn {
         $baseReturn = $this->param->validate($array, $key);
-        if (is_null($array) || !$baseReturn->isValid())
+        if (is_null($array) || !$baseReturn->isValid()) {
             return $baseReturn;
+        }
 
         $return = new ValidationReturn([]);
 
@@ -50,5 +51,11 @@ class ArrayParam extends Rule
                 $return->addErrorKey($key, $valueReturn->getErrors());
         }
         return $return;
+    }
+
+    public function nullable(bool $nullable): Rule
+    {
+        $this->param->nullable($nullable);
+        return $this;
     }
 }

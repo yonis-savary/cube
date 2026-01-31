@@ -7,11 +7,13 @@ abstract class Rule
     /** @var ValidationStep[] */
     protected array $steps = [];
 
+    protected bool $nullable = false;
+
     /**
      * Add a condition to the Validator, if the callback return `true`, it is considered as valid,
      * otherwise the errorMessage will be displayed to the user.
      */
-    protected function withCondition(callable $callback, callable|string $errorMessage): static
+    public function withCondition(callable $callback, callable|string $errorMessage): static
     {
         $this->steps[] = new ValidationStep(ValidationStep::TYPE_CHECKER, $callback, $errorMessage);
 
@@ -21,14 +23,14 @@ abstract class Rule
     /**
      * Add a transform step that can be used to edit the value between conditions and/or other transformers.
      */
-    protected function withTransformer(callable $callback): static
+    public function withTransformer(callable $callback): static
     {
         $this->steps[] = new ValidationStep(ValidationStep::TYPE_TRANSFORMER, $callback);
 
         return $this;
     }
 
-    protected function withValueCondition(callable $callback, callable|string $errorMessage): static
+    public function withValueCondition(callable $callback, callable|string $errorMessage): static
     {
         $wrappedCallback = function ($value) use ($callback) {
             if (null === $value) {
@@ -71,5 +73,23 @@ abstract class Rule
         }
 
         return $return->setResult($currentValue);
+    }
+
+    public function nullable(bool $nullable): self
+    {
+        $this->nullable = $nullable;
+        return $this;
+    }
+
+    protected function transform(ValidationReturn $return) : ValidationReturn {
+        $pointer = $return->getResult();
+
+        foreach ($this->steps as $step) {
+            if ($step->type === ValidationStep::TYPE_TRANSFORMER)
+                $step($pointer, $return);
+        }
+        $return->setResult($pointer);
+
+        return $return;
     }
 }

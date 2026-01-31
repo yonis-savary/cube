@@ -249,9 +249,9 @@ class ModelField
             self::FLOAT => Param::float($nullable),
             self::BOOLEAN => Param::boolean(),
             self::DECIMAL => Param::string(true, $nullable),
-            self::DATE => Param::date(),
-            self::DATETIME => Param::datetime(),
-            self::TIMESTAMP => Param::datetime(),
+            self::DATE => Param::date($nullable),
+            self::DATETIME => Param::datetime($nullable),
+            self::TIMESTAMP => Param::datetime($nullable),
             default => Param::string(true, $nullable),
         };
     }

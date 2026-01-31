@@ -7,6 +7,11 @@ namespace Cube\Utils;
  */
 class Utils
 {
+    /**
+     * @template TValue
+     * @param TValue|TValue[] $value
+     * @return TValue[]
+     */
     public static function toArray(mixed $value): array
     {
         $needsTransform = !(is_array($value) && self::isList($value));

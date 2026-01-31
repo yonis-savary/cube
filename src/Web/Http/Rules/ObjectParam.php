@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Http\Rules;
 
+use Cube\Data\Bunch;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Request;
 use InvalidArgumentException;
@@ -46,14 +47,30 @@ class ObjectParam extends Rule
                 $return->addErrorKey($ruleKey, $valueReturn->getErrors());
 
         }
-        return $return;
+        return $this->transform($return);
     }
 
-    public function without(array $paramsToDelete): static {
-        foreach ($paramsToDelete as $param) {
+    public function without(array|string $paramsToDelete): static {
+        foreach (Utils::toArray($paramsToDelete) as $param) {
             if (array_key_exists($param, $this->rules))
                 unset($this->rules[$param]);
         }
+        return $this;
+    }
+
+    public function optionnal(string|array $keys): static {
+        Bunch::of($keys)
+        ->filter(fn($key) => array_key_exists($key, $this->rules))
+        ->forEach(fn($key) => $this->rules[$key]->nullable(true));
+
+        return $this;
+    }
+
+    public function mandatory(string|array $keys): static {
+        Bunch::of($keys)
+        ->filter(fn($key) => array_key_exists($key, $this->rules))
+        ->forEach(fn($key) => $this->rules[$key]->nullable(false));
+
         return $this;
     }
 
@@ -62,6 +79,12 @@ class ObjectParam extends Rule
             throw new InvalidArgumentException("Given rules must be an associative array as name=>rule");
 
         $this->rules = array_merge($this->rules, $newRules);
+        return $this;
+    }
+
+    public function nullable(bool $nullable): Rule
+    {
+        $this->param->nullable($nullable);
         return $this;
     }
 }
