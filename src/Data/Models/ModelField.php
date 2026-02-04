@@ -168,6 +168,7 @@ class ModelField
     public function default(mixed $defaultValue): self 
     {
         $this->default = $defaultValue;
+        $this->hasDefault = true;
 
         return $this;
     }
