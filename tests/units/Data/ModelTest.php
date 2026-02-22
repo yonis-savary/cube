@@ -233,6 +233,29 @@ class ModelTest extends TestCase
             $this->assertEquals(2, Product::select()->count());
         });
     }
+
+
+    #[ DataProvider('getDatabases') ]
+    public function testLoadMissing(Database $database) 
+    {
+        $database->asGlobalInstance(function() {
+            Product::insertArray([
+                'name' => 'Nice painting',
+                'price_dollar' => 50,
+                'managers' => [
+                    ['manager' => 'Bob'],
+                    ['manager' => 'Jack'],
+                ]
+            ]);
+
+            $product = Product::findWhere(['name' => 'Nice painting']);
+            $this->assertInstanceOf(Product::class, $product);
+
+            $product->loadMissing('managers');
+            $this->assertCount(2, $product->managers);
+        });
+    }
+
     /*
 
     #[ DataProvider('getDatabases') ]
@@ -253,8 +276,6 @@ class ModelTest extends TestCase
     public function testToArray(Database $database) {}
     #[ DataProvider('getDatabases') ]
     public function testLoad(Database $database) {}
-    #[ DataProvider('getDatabases') ]
-    public function testLoadMissing(Database $database) {}
     #[ DataProvider('getDatabases') ]
     public function testOnSaved(Database $database) {}
     #[ DataProvider('getDatabases') ]

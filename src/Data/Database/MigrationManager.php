@@ -167,7 +167,7 @@ abstract class MigrationManager
             public function down(Plan $plan, Database $database) {
 
             }
-        }
+        };
         '));
 
         return $directory->path($filename);

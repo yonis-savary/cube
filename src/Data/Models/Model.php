@@ -23,6 +23,8 @@ abstract class Model extends EventDispatcher
 {
     public object $data;
     public object $original;
+
+    /** @var Array<string,Model|Model[]> */
     public array $references = [];
 
     public function __construct(array|Model $data = [], string $relationAccumulator = '')
@@ -536,7 +538,7 @@ abstract class Model extends EventDispatcher
         return $this;
     }
 
-    public function loadMissing(array $relations = []): self
+    public function loadMissing(string ...$relations): self
     {
         foreach ($relations as $relation) {
             if (str_contains($relation, "."))
@@ -550,7 +552,14 @@ abstract class Model extends EventDispatcher
                 ->map(fn($rel) => Text::dontStartsWith($rel, "$relation\."))
                 ->get();
 
-            $this->references[$relation]->load($childRelations);
+            $relationInstance = &$this->references[$relation];
+
+            if (is_array($relationInstance)) {
+                foreach ($relationInstance as $child)
+                    $child->loadMissing(...$childRelations);
+            } else if ($relationInstance) {
+                $relationInstance->loadMissing(...$childRelations);
+            }
         }
 
         return $this;
