@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Migration\Plans\Exceptions\DryRunPlanException;
+use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 
 class DryRunPlan extends Plan
@@ -67,6 +68,27 @@ class DryRunPlan extends Plan
         $column = $modelField->name;
         if ($this->columnExists($table, $column))
             throw new DryRunPlanException("$table.$column already exists");
+
+        $referenceModel = $modelField->referenceModel;
+        $referenceField = $modelField->referenceField;
+        $referenceException = new DryRunPlanException("$table.$column foreign key: $referenceModel.$referenceField does not exists");;
+        if ($referenceModel) {
+            if ($this->tableDiffHasTable($referenceModel))
+            {
+                if (!$this->tableDiffHasField($referenceModel, $referenceField))
+                    throw $referenceException;
+            }
+            else if (class_exists($referenceModel))
+            {
+                /** @var class-string<Model> $referenceModel */
+                if (array_key_exists($referenceField, $referenceModel::fields()))
+                    throw $referenceException;
+            }
+            else
+            {
+                throw $referenceException;
+            }
+        }
 
         $this->addTableDiffField($table, $modelField);
     }
