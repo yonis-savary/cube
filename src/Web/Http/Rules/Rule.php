@@ -4,6 +4,18 @@ namespace Cube\Web\Http\Rules;
 
 abstract class Rule
 {
+    const META_TYPE = 'type';
+    const META_MIN = 'min-value';
+    const META_MAX = 'max-value';
+    const META_MODEL = 'model';
+    const META_ENUM = 'enum-value';
+
+    /**
+     * As Param can be quite generic, this metadata map can hold
+     * some additional informations on the parameter such as its type
+     */
+    protected array $metadata = [];
+
     /** @var ValidationStep[] */
     protected array $steps = [];
 
@@ -81,6 +93,11 @@ abstract class Rule
         return $this;
     }
 
+    public function isNullable(): bool
+    {
+        return $this->nullable;
+    }
+
     protected function transform(ValidationReturn $return) : ValidationReturn {
         $pointer = $return->getResult();
 
@@ -92,4 +109,16 @@ abstract class Rule
 
         return $return;
     }
+
+    public function withMetadata(array $metadata): static
+    {
+        $this->metadata = array_merge($this->metadata, $metadata);
+        return $this;
+    }
+
+    public function getMetadata(): array 
+    {
+        return $this->metadata;
+    }
+
 }

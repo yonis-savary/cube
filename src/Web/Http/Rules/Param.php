@@ -28,7 +28,6 @@ class Param extends Rule
         $this->withCondition(fn(mixed $value) => $this->nullable || (null !== $value), '{key} cannot be null');
     }
 
-
     /**
      * Convert a number/string into an integer.
      */
@@ -37,6 +36,7 @@ class Param extends Rule
         return (new self($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be an integer, got {value}')
             ->withValueTransformer(fn ($value) => is_numeric($value) ? (int) $value : $value)
+            ->withMetadata([self::META_TYPE => 'integer'])
         ;
     }
 
@@ -48,6 +48,7 @@ class Param extends Rule
         return (new self($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be a float, got {value}')
             ->withValueTransformer(fn ($value) => is_numeric($value) ? (float) $value : $value)
+            ->withMetadata([self::META_TYPE => 'float'])
         ;
     }
 
@@ -59,7 +60,7 @@ class Param extends Rule
             $object->withValueTransformer(fn ($x) => trim($x));
         }
 
-        return $object;
+        return $object->withMetadata([self::META_TYPE => 'string']);
     }
 
     public static function array(Rule|array $childRule, bool $nullable = false): ArrayParam
@@ -79,6 +80,7 @@ class Param extends Rule
     {
         return (new self($nullable))
             ->withValueCondition(fn ($value) => false !== filter_var($value, FILTER_VALIDATE_EMAIL), '{key} must be an email, got {value}')
+            ->withMetadata([self::META_TYPE => 'email'])
         ;
     }
 
@@ -89,6 +91,7 @@ class Param extends Rule
     {
         return (new self($nullable))
             ->withValueTransformer(fn ($value) => is_bool($value) ? $value : in_array(strtolower((string) $value), ['on', 'true', 'yes', '1']))
+            ->withMetadata([self::META_TYPE => 'boolean'])
         ;
     }
 
@@ -98,7 +101,8 @@ class Param extends Rule
     public static function url(bool $nullable = false): static
     {
         return (new self($nullable))
-            ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^(.+?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)$/', $value ?? ''), '{key} must be an URL, got {value}');
+            ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^(.+?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)$/', $value ?? ''), '{key} must be an URL, got {value}')
+            ->withMetadata([self::META_TYPE => 'string'])
         ;
     }
 
@@ -117,6 +121,7 @@ class Param extends Rule
                     (01 <= $m && $m <= 12) &&
                     (01 <= $d && $d <= 31);
             }, '{key} must be a Date (yyyy-mm-dd, mm=01-12, d=01-31), got [{value}]')
+            ->withMetadata([self::META_TYPE => 'date'])
         ;
     }
 
@@ -148,7 +153,10 @@ class Param extends Rule
                 (00 <= $mm && $mm <= 59) &&
                 (00 <= $s && $s <= 59);
         }, 
-        '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS, mm=01-12, d=01-31, HH=00-23, MM=00-59, SS=00-59), got [{value}]');
+        '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS, mm=01-12, d=01-31, HH=00-23, MM=00-59, SS=00-59), got [{value}]'
+        )
+            ->withMetadata([self::META_TYPE => 'date-time'])
+        ;
     }
 
     /**
@@ -161,6 +169,7 @@ class Param extends Rule
                 fn($value)=> (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower($value ?? '')),
                 '{key} must be an UUID, got [{value}]'
             )
+            ->withMetadata([self::META_TYPE => 'uuid'])
         ;
     }
 
@@ -194,6 +203,7 @@ class Param extends Rule
                 fn (?Model $value) => (null !== $value) || $nullable,
                 Text::interpolate('{key} must be a valid {column} in table {table}, got {value}', ['table' => $modelClass::table(), 'column' => $column])
             )
+            ->withMetadata([self::META_TYPE => 'model', self::META_MODEL => $modelClass])
         ;
     }
 
@@ -205,7 +215,8 @@ class Param extends Rule
         return $this->withValueCondition(
             fn ($value) => in_array($value, $array),
             Text::interpolate('{key} must be in values {array}, got {value}', ['array' => join(',', $array)])
-        );
+        )
+        ->withMetadata([self::META_TYPE => 'string', self::META_ENUM => $array]);
     }
 
     /**
@@ -216,9 +227,11 @@ class Param extends Rule
      */
     public function isBetween($min, $max, bool $canBeEqual = true): static
     {
-        return $canBeEqual
+        return ($canBeEqual
             ? $this->withValueCondition(fn ($value) => $min <= $value && $value <= $max, "{key} must be between {$min} and {$max} (can be equal), got {value}")
-            : $this->withValueCondition(fn ($value) => $min < $value && $value < $max, "{key} must be between {$min} and {$max} (cannot be equal), got {value}");
+            : $this->withValueCondition(fn ($value) => $min < $value && $value < $max, "{key} must be between {$min} and {$max} (cannot be equal), got {value}")
+        )
+        ->withMetadata([self::META_MIN => $min, self::META_MAX => $max]);
     }
 
     /**
