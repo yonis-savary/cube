@@ -7,6 +7,9 @@ use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Utils\Path;
+use InvalidArgumentException;
+use ReflectionClass;
+use ReflectionMethod;
 
 use function Cube\error;
 
@@ -250,5 +253,16 @@ class Route
 
             return $value;
         }, $originalPath);
+    }
+
+    public function getReflectionMethod(): ReflectionMethod
+    {
+        $callback = $this->getCallback();
+        if (!is_array($callback))
+            throw new InvalidArgumentException("Given route must be a array-typed callback route");
+
+        [$controllerName, $methodName] = $this->getCallback();
+        $controller = new ReflectionClass($controllerName);
+        return $controller->getMethod($methodName);
     }
 }

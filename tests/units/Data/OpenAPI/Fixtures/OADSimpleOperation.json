@@ -1,0 +1,23 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/simple-route": {
+            "get": {
+                "summary": "simpleRoute",
+                "description": "SampleController.simpleRoute",
+                "operationId": "simpleRoute"
+            }
+        },
+        "\/simple-endpoint": {
+            "get": {
+                "summary": "Call simple endpoint",
+                "description": "Some Simple Description !",
+                "operationId": "callSimpleEndpoint"
+            }
+        }
+    }
+}
