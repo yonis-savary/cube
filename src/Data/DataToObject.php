@@ -49,7 +49,7 @@ abstract class DataToObject
             }
 
             $keyValue = $rawData[$parameterName];
-            $type = self::getFirstParameterType($parameter->getType());
+            $type = static::getFirstParameterType($parameter->getType());
 
             if ($collectionType = $parameter->getAttributes(ArrayOf::class)[0] ?? null) {
                 /** @var class-string<DataToObject> */
@@ -85,7 +85,7 @@ abstract class DataToObject
         }
 
         if ($type instanceof \ReflectionUnionType) {
-            return self::getFirstParameterType($type->getTypes()[0]);
+            return static::getFirstParameterType($type->getTypes()[0]);
         }
 
         if ($type instanceof \ReflectionIntersectionType) {

@@ -11,7 +11,7 @@ class PostgresProvider extends DatabaseProvider
 {
     public function getConnection(?string $dbName = null): \PDO
     {
-        $port = env('CUBE_TEST_POSTGRES_PORT', 8002);
+        $port = env('CUBE_TEST_POSTGRES_PORT', 9902);
 
         $dsn = "pgsql:host=127.0.0.1;port={$port}";
         if ($dbName) {

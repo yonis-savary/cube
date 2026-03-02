@@ -11,7 +11,7 @@ class MySQLProvider extends DatabaseProvider
 {
     public function getConnection(?string $dbName = null): \PDO
     {
-        $port = env('CUBE_TEST_MYSQL_PORT', 8001);
+        $port = env('CUBE_TEST_MYSQL_PORT', 9901);
 
         $dsn = "mysql:host=127.0.0.1;port={$port}";
         if ($dbName) {

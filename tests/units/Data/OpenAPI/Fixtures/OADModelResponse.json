@@ -1,0 +1,96 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/products": {
+            "get": {
+                "summary": "endpointReturningAListOfProducts",
+                "description": "SampleController.endpointReturningAListOfProducts",
+                "operationId": "endpointReturningAListOfProducts",
+                "responses": {
+                    "200": {
+                        "description": null,
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/Product"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/product\/{product}": {
+            "get": {
+                "summary": "endpointReturningAProduct",
+                "description": "SampleController.endpointReturningAProduct",
+                "operationId": "endpointReturningAProduct",
+                "parameters": [
+                    {
+                        "name": "product",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": null,
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/Product"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Product": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "price_dollar": {
+                        "type": "string"
+                    },
+                    "managers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "product": {
+                                    "type": "integer"
+                                },
+                                "manager": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

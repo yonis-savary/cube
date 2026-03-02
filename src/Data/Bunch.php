@@ -363,6 +363,36 @@ class Bunch implements Countable
         });
     }
 
+    /**
+     * @param \Closure(TValue)|Array<\Closure(TValue)> $callbacks
+     * @return array<mixed>
+     */
+    public function groupBy(callable|array $callbacks): array
+    {
+        if (!is_array($callbacks)) {
+            $callbacks = [$callbacks];
+        }
+
+        $mainCallback = array_shift($callbacks);
+        $nextCallbacks = $callbacks;
+
+        $grouped = [];
+
+        foreach ($this->data as $row) {
+            $groupId = $mainCallback($row);
+            $grouped[$groupId] ??= [];
+            $grouped[$groupId][] = $row;
+        }
+
+        if (count($nextCallbacks)) {
+            foreach ($grouped as &$group) {
+                $group = Bunch::of($group)->groupBy($nextCallbacks);
+            }
+        }
+
+        return $grouped;
+    }
+
     public function flat(): self
     {
         $data = [];

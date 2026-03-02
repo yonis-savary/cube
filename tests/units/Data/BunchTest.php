@@ -355,4 +355,36 @@ class BunchTest extends TestCase
             $onlyIds->sort()->get()
         );
     }
+
+
+    public function testGroupBy() {
+        $sampleData = Bunch::of([
+            ['type' => 'it', 'label' => 'Keyboard'],
+            ['type' => 'it', 'label' => 'Mouse'],
+            ['type' => 'it', 'label' => 'Power Supply'],
+            ['type' => 'it', 'label' => 'Screen'],
+            ['type' => 'it', 'label' => 'Speakers'],
+            ['type' => 'car', 'label' => 'Engine'],
+            ['type' => 'car', 'label' => 'Pistons'],
+            ['type' => 'car', 'label' => 'Wheels'],
+            ['type' => 'car', 'label' => 'Transmission'],
+        ]);
+
+        $typedGroups = $sampleData->groupBy(fn($row) => $row['type']);
+        $this->assertCount(2, $typedGroups);
+        $this->assertCount(5, $typedGroups['it']);
+        $this->assertCount(4, $typedGroups['car']);
+
+        $alphaTypedGroups = $sampleData->groupBy([
+            fn($row) => $row['type'],
+            fn($row) => substr($row['label'], 0, 1)
+        ]);
+
+        $this->assertCount(2, $alphaTypedGroups);
+        $this->assertCount(4, $alphaTypedGroups['it']);
+        $this->assertCount(1, $alphaTypedGroups['it']['K']);
+        $this->assertCount(1, $alphaTypedGroups['it']['M']);
+        $this->assertCount(1, $alphaTypedGroups['it']['P']);
+        $this->assertCount(2, $alphaTypedGroups['it']['S']);
+    }
 }

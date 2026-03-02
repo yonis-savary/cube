@@ -1,0 +1,44 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/simple-route\/{firstSlug}": {
+            "get": {
+                "summary": "simpleSlugEndpoint",
+                "description": "SampleController.simpleSlugEndpoint",
+                "operationId": "simpleSlugEndpoint",
+                "parameters": [
+                    {
+                        "name": "firstSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "float"
+                        }
+                    }
+                ]
+            }
+        },
+        "\/user-route\/{user}": {
+            "get": {
+                "summary": "modelSlugEndpoint",
+                "description": "SampleController.modelSlugEndpoint",
+                "operationId": "modelSlugEndpoint",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

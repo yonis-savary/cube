@@ -10,7 +10,7 @@ use function Cube\env;
 class ApcuTest extends TestCase
 {
     public function test_appLoadWithApcu() {
-        $port = env('CUBE_TEST_NGINX_APCU_PORT', 8003);
+        $port = env('CUBE_TEST_NGINX_APCU_PORT', 9903);
 
         $request = new Request("GET", "localhost:$port/ping");
 

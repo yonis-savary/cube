@@ -257,6 +257,9 @@ class Request extends HttpMessage
         return $this->slugObjects;
     }
 
+    /**
+     * @return Rule|Rule[]
+     */
     public function getRules(): array|Rule
     {
         return [];

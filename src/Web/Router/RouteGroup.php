@@ -76,6 +76,11 @@ class RouteGroup
             }, []);
     }
 
+    public function getElements()
+    {
+        return $this->elements;
+    }
+
     public function getMiddlewares(): array
     {
         return $this->middlewares;

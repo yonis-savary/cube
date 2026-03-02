@@ -24,6 +24,11 @@ class ObjectParam extends Rule
             ->withValueCondition(fn ($array) => Utils::isAssoc($array), '{key} must be an object, got {value}');
     }
 
+    public function getRules()
+    {
+        return $this->rules;
+    }
+
     public function validate(mixed $value, ?string $key=null): ValidationReturn {
         if ($value instanceof Request)
             $value = $value->all();

@@ -144,6 +144,19 @@ class Router
         return $this->rootHolder->getRoutes();
     }
 
+    public function getRootHolder(): RouteGroup
+    {
+        return $this->rootHolder;
+    }
+
+    /**
+     * @return WebAPI[]
+     */
+    public function getApis(): array
+    {
+        return $this->apis;
+    }
+
     protected function globalizeResponse(callable $responseGiver, Request $request): Response
     {
         $callStack = new RouterCallStack($responseGiver, [], $this->rootHolder->getMiddlewares());
