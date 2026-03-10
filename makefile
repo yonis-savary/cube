@@ -7,8 +7,10 @@ cleanup:
 	@[ -d 'Storage/Cache' ] && rm -r Storage/Cache || true
 
 test:
-	@make --no-print-directory test-dirty
-	@make --no-print-directory cleanup
+	@make --no-print-directory test-dirty; \
+	status=$$?; \
+	make --no-print-directory cleanup; \
+	exit $$status
 
 test-dirty:
 	@composer install

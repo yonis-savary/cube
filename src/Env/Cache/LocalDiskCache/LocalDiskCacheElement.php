@@ -1,12 +1,12 @@
 <?php
 
-namespace Cube\Env\Cache;
+namespace Cube\Env\Cache\LocalDiskCache;
 
-use Cube\Env\Cache;
+use Cube\Env\Cache\CacheDriverInterface;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 
-class CacheElement
+class LocalDiskCacheElement
 {
     protected ?string $contentHash = null;
 
@@ -38,7 +38,7 @@ class CacheElement
         $now = time();
         $expireDate = $creationDate + $timeToLive;
 
-        if ((Cache::PERMANENT != $timeToLive) && ($expireDate < $now)) {
+        if ((CacheDriverInterface::PERMANENT != $timeToLive) && ($expireDate < $now)) {
             unlink($file);
 
             return null;

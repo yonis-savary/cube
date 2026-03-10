@@ -4,6 +4,8 @@ namespace Cube\Env;
 
 use Cube\Core\Component;
 use Cube\Env\Cache;
+use Cube\Env\Cache\CacheConfiguration;
+use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
 use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Env\Configuration\GenericElement;
 use Cube\Env\Configuration\Import;
@@ -45,7 +47,11 @@ class Configuration
 
     public static function getDefaultConfigurationCache(): Cache
     {
-        return Cache::getInstance()->child('Configurations');
+        return new Cache(
+            new CacheConfiguration(
+                new LocalDiskCache(Storage::getInstance()->child("cube/configuration"))
+            )
+        );
     }
 
     public function identify(string $newIdentifier): self
@@ -136,16 +142,13 @@ class Configuration
         return true;
     }
 
-    public function putToCache(?Cache $cache = null): Storage
+    public function putToCache(?Cache $cache = null): void
     {
         if (!$this->identifier) {
             throw new \InvalidArgumentException('Please use Configuration->identify() before putting it to cache');
         }
 
         $cache ??= self::getDefaultConfigurationCache();
-
         $cache->set($this->identifier, [$this->generics, $this->classElements], Cache::PERMANENT);
-
-        return $cache->getStorage();
     }
 }

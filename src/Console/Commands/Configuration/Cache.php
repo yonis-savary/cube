@@ -24,10 +24,9 @@ class Cache extends Command
     {
         try {
             $config = Configuration::getInstance();
-            $storage = $config->putToCache();
+            $config->putToCache();
 
-            $directory = Path::toRelative($storage->getRoot());
-            Console::log(Console::withGreenColor("Cache file written to [{$directory}]"));
+            Console::log(Console::withGreenColor("Cache file written to storage directory"));
 
             return 0;
         } catch (\Throwable $e) {

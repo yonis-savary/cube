@@ -109,14 +109,14 @@ class Autoloader
         if ($configuration->cached) {
             $lockFile = Path::relative('composer.lock');
             $cacheIdentifier = is_file($lockFile) ? md5_file($lockFile) : 'default';
-            self::$autoloadCache = Cache::getInstance()->child('AutoLoad');
+            self::$autoloadCache = Cache::getInstance();
             self::$classIndex = &self::$autoloadCache->getReference($cacheIdentifier, []);
 
-            self::$knownApplications = &self::$autoloadCache->getReference("$cacheIdentifier.apps", []);
-            self::$assetsFiles = &self::$autoloadCache->getReference("$cacheIdentifier.assets", []);
-            self::$requireFiles = &self::$autoloadCache->getReference("$cacheIdentifier.require", []);
-            self::$routesFiles = &self::$autoloadCache->getReference("$cacheIdentifier.routes", []);
-            self::$viewFiles = &self::$autoloadCache->getReference("$cacheIdentifier.views", []);
+            self::$knownApplications = &self::$autoloadCache->getReference("cube:$cacheIdentifier:apps", []);
+            self::$assetsFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:assets", []);
+            self::$requireFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:require", []);
+            self::$routesFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:routes", []);
+            self::$viewFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:views", []);
         } else {
             self::$classIndex = [];
         }
