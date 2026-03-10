@@ -28,7 +28,7 @@ class RememberMe implements Middleware
     public static function getDefaultInstance(): static
     {
         return new self(
-            Storage::getInstance()->child('Cube')->child('RememberMe')->toCache(),
+            Cache::getInstance(),
             Authentication::getInstance(),
             UserRegisterConfiguration::resolve()
         );
@@ -73,7 +73,7 @@ class RememberMe implements Middleware
             $userId = $user->id();
         }
 
-        $token = uniqid('user', true);
+        $token = uniqid('rememberuser', true);
         $duration = $this->configuration->cookieDuration;
 
         $this->cache->set($token, $userId, $duration);

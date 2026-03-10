@@ -132,11 +132,6 @@ class Storage extends StorageDriver implements \Stringable
         return new self($this->path($path), $this->driver);
     }
 
-    public function toCache(): Cache
-    {
-        return new Cache($this);
-    }
-
     public function parent(): self
     {
         $parentPath = $this->driver->getParentPath($this->getRoot());
