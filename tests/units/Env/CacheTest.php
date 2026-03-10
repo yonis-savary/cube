@@ -37,6 +37,29 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
+    public function testGetOrSet(Cache $cache) {
+
+        $executionCount = 0;
+
+        $this->assertFalse($cache->has('some-key'));
+        $result = $cache->getOrSet("some-key", function() use (&$executionCount) {
+            $executionCount++;
+            return 1+2;
+        });
+
+        $this->assertEquals(3, $result);
+        $this->assertEquals(1, $executionCount);
+        $this->assertEquals(3, $cache->get('some-key'));
+
+        $result = $cache->getOrSet("some-key", function() use (&$executionCount) {
+            $executionCount++;
+            return 10+20;
+        });
+
+        $this->assertEquals(3, $result); // should not set it again
+    }
+
+    #[DataProvider('getCaches')]
     public function testDelete(Cache $cache) {
         $cache->set('some-key', 'hello!');
         $this->assertEquals('hello!', $cache->get('some-key'));

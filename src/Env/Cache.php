@@ -45,7 +45,18 @@ class Cache
      * @param mixed $value Can be any value (shall be serialized), can be a callback (then its return value is registered)
      * @return mixed set value
      */
-    public function set(string $key, mixed $value, int $timeToLive = CacheDriverInterface::MONTH, ?int $creationDate = null): mixed {
+    public function getOrSet(string $key, mixed $value, mixed $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
+        if ($this->has($key))
+            return $this->get($key);
+
+        return $this->set($key, $value, $timeToLive, $creationDate);
+    }
+
+    /**
+     * @param mixed $value Can be any value (shall be serialized), can be a callback (then its return value is registered)
+     * @return mixed set value
+     */
+    public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
         if (is_callable($value))
             $value = ($value)();
 
