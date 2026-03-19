@@ -26,7 +26,7 @@ class QueueTest extends TestCase
             public $numbers = [];
             protected QueueDriver $outerDriver;
 
-            public function getDriver(): QueueDriver        { return $this->outerDriver; }
+            protected function getDriver(): QueueDriver        { return $this->outerDriver; }
             public function getLogger(): Logger              { return new NullLogger(); }
             public function __invoke(int ...$numbers)        { array_push($this->numbers, ...$numbers); }
             public function __construct(QueueDriver $driver) { $this->outerDriver = $driver; }

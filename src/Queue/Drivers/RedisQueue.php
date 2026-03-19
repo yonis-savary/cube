@@ -25,6 +25,7 @@ class RedisQueue extends BasicQueueDriver
         $this->host = $host;
         $this->port = $port;
         $this->connection = new Redis();
+        $this->reconnect();
     }
 
     protected function reconnect() {
@@ -47,7 +48,7 @@ class RedisQueue extends BasicQueueDriver
         while (true) {
             try
             {
-                $result = $this->connection->blPop($this->identifier, 0);
+                $result = $this->connection->blPop($this->identifier, 30);
                 if ($result)
                     return unserialize($result[1]);
             }
