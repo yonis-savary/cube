@@ -3,20 +3,11 @@
 namespace Cube\Queue\Drivers;
 
 use Cube\Data\Bunch;
-use Cube\Env\Logger\Logger;
 use Cube\Env\Storage;
-use Cube\Queue\QueueCallback;
 use Exception;
 
-class LocalDiskQueueDriver implements QueueDriver
+class LocalDiskQueueDriver extends BasicQueueDriver
 {
-    protected string $identifier;
-
-    public function __construct(string $identifier)
-    {
-        $this->identifier = preg_replace('/[^a-z0-9]/i', '.', strtolower($identifier));
-    }
-
     protected function getStorage(): Storage
     {
         return Storage::getInstance()->child('Queues')->child($this->identifier);
@@ -50,12 +41,11 @@ class LocalDiskQueueDriver implements QueueDriver
         return $newPath;
     }
 
-    public function next(): QueueCallback
+    public function next(): array
     {
-        $storage = $this->getStorage();
+        $storage = $this->getStorage($this->identifier);
         $files = $storage->files();
 
-        $storage = $this->getStorage();
         do {
             $files = $storage->files();
             $toProcess = Bunch::of($files)->first(fn ($x) => !str_starts_with(basename($x), '#'));
@@ -75,15 +65,15 @@ class LocalDiskQueueDriver implements QueueDriver
 
     public function flush()
     {
-        $storage = $this->getStorage();
+        $storage = $this->getStorage($this->identifier);
 
         Bunch::of($storage->files())->forEach(fn ($x) => unlink($x));
     }
 
-    public function push(QueueCallback $callback)
+    public function push(array $args)
     {
         $storage = $this->getStorage();
-        $identifier = uniqid(time().'-');
-        $storage->write($identifier, serialize($callback));
+        $uniqueName = uniqid(time().'-');
+        $storage->write($uniqueName, serialize($args));
     }
 }

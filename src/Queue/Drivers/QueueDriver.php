@@ -2,16 +2,13 @@
 
 namespace Cube\Queue\Drivers;
 
-use Cube\Queue\QueueCallback;
-
 interface QueueDriver
 {
-    /**
-     * return null if no item found
-     */
-    public function next(): QueueCallback;
+    public function setIdentifier(string $identifier);
+
+    public function next(): array;
 
     public function flush();
 
-    public function push(QueueCallback $callback);
+    public function push(array $args);
 }
