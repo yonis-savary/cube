@@ -10,8 +10,8 @@ class AddNumbersToDisplay extends Command
 {
     public function execute(Args $args): int
     {
-        for ($i=0; $i<100; $i++) {
-            DisplayerQueue::addToDisplay($i);
+        for ($i=0; $i<30; $i++) {
+            DisplayerQueue::queue($i);
         }
         return 0;
     }
