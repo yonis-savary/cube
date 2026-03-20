@@ -2,12 +2,19 @@
 
 namespace App\Queue;
 
+use Cube\Queue\Drivers\LocalDiskQueueDriver;
+use Cube\Queue\Drivers\QueueDriver;
 use Cube\Queue\Queue;
 
 class DisplayerQueue extends Queue
 {
-    public function __invoke($args)
+    protected function getDriver(): QueueDriver
     {
-        $this->logger->info(print_r($args, true));
+        return new LocalDiskQueueDriver();
+    }
+
+    public function __invoke(mixed $toDisplay)
+    {
+        $this->logger->info("DISPLAY : ". print_r($toDisplay, true));
     }
 }

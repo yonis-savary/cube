@@ -47,7 +47,7 @@ class IntegrationApplicationTest extends TestCase
         $this->assertFileExists($logsFile);
 
         $logs = file_get_contents($logsFile);
-        $this->assertStringContainsString("[0] => 0", $logs);
-        $this->assertStringContainsString("[0] => 29", $logs);
+        $this->assertStringContainsString("DISPLAY : 0", $logs);
+        $this->assertStringContainsString("DISPLAY : 29", $logs);
     }
 }
