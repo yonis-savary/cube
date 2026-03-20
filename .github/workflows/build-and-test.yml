@@ -64,17 +64,6 @@ jobs:
             sleep 5
           done
 
-      - name: Wait for Redis to be up
-        run: |
-          for i in {1..15}; do
-            if redis-cli -h 127.0.0.1 -p 6379 ping | grep -q PONG; then
-              echo "Redis is up!"
-              break
-            fi
-            echo "($i / 15) Waiting for Redis..."
-            sleep 5
-          done
-
       - name: Wait for Nginx to be ready
         run: |
           for i in {1..15}; do
