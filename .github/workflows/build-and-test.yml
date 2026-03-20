@@ -29,6 +29,16 @@ jobs:
           - 8002:5432
         env:
           POSTGRES_PASSWORD: root
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
 
 
     steps:
@@ -51,6 +61,17 @@ jobs:
               break
             fi
             echo "($i / 15) Waiting for MySQL..."
+            sleep 5
+          done
+
+      - name: Wait for Redis to be up
+        run: |
+          for i in {1..15}; do
+            if redis-cli -h 127.0.0.1 -p 6379 ping | grep -q PONG; then
+              echo "Redis is up!"
+              break
+            fi
+            echo "($i / 15) Waiting for Redis..."
             sleep 5
           done
 
