@@ -53,7 +53,7 @@ class Utils
                 'yonis-savary/cube' => 'dev-main',
             ],
             'require-dev' => [
-                'phpunit/phpunit' => '11.5.3',
+                'phpunit/phpunit' => '13.0.5',
             ],
             'repositories' => [
                 [
