@@ -41,8 +41,9 @@ abstract class Channel implements ChannelInterface
     }
 
     public function emit(array $data, array $routeParams=[]) {
+        $data["__class"] = static::class;
         $this->broadcast->emit(
-            $this->path(array_merge($this->routeParams, $routeParams)),
+            $this->path($routeParams),
             $data
         );
     }

@@ -30,7 +30,6 @@ class Broadcast extends HttpClient
 
     public function emit(string $event, $data){
         $event = trim($event, "/");
-        $data["__class"] = get_called_class();
         $this->postJsonAsync($event, $data);
     }
 }
