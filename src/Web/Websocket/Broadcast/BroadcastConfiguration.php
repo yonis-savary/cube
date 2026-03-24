@@ -7,37 +7,21 @@ use Cube\Web\Websocket\Servers\WebsocketConfiguration;
 
 class BroadcastConfiguration extends ConfigurationElement
 {
-    public string $httpHost;
-    public int $httpPort;
-    public string $socketHost;
-    public int $socketPort;
-
     /**
      * By default http part of WebsocketConfiguration shall be used
      */
     public function __construct(
-        ?string $httpHost = null,
-        ?int $httpPort = null,
-        ?string $socketHost = null,
-        ?int $socketPort = null
-    ){
-        if (!$httpHost || !$httpPort) {
-            $websocketConfig = WebsocketConfiguration::resolve();
-            $httpHost ??= $websocketConfig->httpHost;
-            $httpPort ??= $websocketConfig->httpPort;
-            $socketHost ??= $websocketConfig->websocketHost;
-            $socketPort ??= $websocketConfig->websocketPort;
-        }
-        $this->httpHost = $httpHost;
-        $this->httpPort = $httpPort;
-        $this->socketHost = $socketHost;
-        $this->socketPort = $socketPort;
-    }
+        protected ?string $httpHost = null,
+        protected ?int $httpPort = null,
+        protected ?string $socketHost = null,
+        protected ?int $socketPort = null
+    ){}
 
     public function getHttpOrigin(): string
     {
-        $host = $this->httpHost;
-        $port = $this->httpPort;
+        $websocketConfig = WebsocketConfiguration::resolve();
+        $host = $this->httpHost ?? $websocketConfig->httpHost;
+        $port = $this->httpPort ?? $websocketConfig->httpPort;
         if (!str_contains($host, "://"))
             $host = "http://$host";
 
@@ -46,8 +30,9 @@ class BroadcastConfiguration extends ConfigurationElement
 
     public function getWebsocketOrigin(): string
     {
-        $host = $this->socketHost;
-        $port = $this->socketPort;
+        $websocketConfig = WebsocketConfiguration::resolve();
+        $host = $this->socketHost ?? $websocketConfig->websocketHost;
+        $port = $this->socketPort ?? $websocketConfig->websocketPort;
         if (!str_contains($host, "://"))
             $host = "ws://$host";
 
