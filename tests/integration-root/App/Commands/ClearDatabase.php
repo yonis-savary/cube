@@ -6,6 +6,7 @@ use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Core\Autoloader;
 use Cube\Env\Storage;
+use Cube\Utils\Path;
 use Cube\Utils\Shell;
 
 class ClearDatabase extends Command
@@ -19,7 +20,7 @@ class ClearDatabase extends Command
     {
         Storage::getInstance()->unlink('valid.sqlite');
 
-        Shell::executeInDirectory('php do migrate', Autoloader::getProjectPath());
+        Shell::executeInDirectory('php do migrate', Path::getProjectPath());
 
         return 0;
     }

@@ -6,6 +6,7 @@ use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Core\Autoloader;
 use Cube\Utils\Console;
+use Cube\Utils\Path;
 
 class Generate extends Command
 {
@@ -21,7 +22,7 @@ class Generate extends Command
 
     public function execute(Args $args): int
     {
-        $projectRoot = Autoloader::getProjectPath();
+        $projectRoot = Path::getProjectPath();
         Console::log(
             '',
             'Here is a command you can put in your Crontab :',

@@ -5,6 +5,7 @@ namespace Tests\Integration;
 use Cube\Core\Autoloader;
 use Cube\Web\Http\Request;
 use Cube\Env\Logger\Logger;
+use Cube\Utils\Path;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
@@ -17,7 +18,7 @@ class WebsocketTest extends TestCase
     {
         $this->logger = new Logger('websocket-server.csv');
 
-        $this->process = new Process(['php','do','websocket:serve'], Autoloader::getProjectPath());
+        $this->process = new Process(['php','do','websocket:serve'], Path::getProjectPath());
         $this->process->start(fn() => $this->log());
         $this->assertTrue($this->process->isRunning());
 

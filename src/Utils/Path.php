@@ -7,6 +7,8 @@ use Cube\Data\Bunch;
 
 class Path
 {
+    protected static ?string $projectPath = null;
+
     /**
      * Normalize a path, making sure:
      * - use only slash '/', no backslashes '\'
@@ -55,7 +57,7 @@ class Path
     {
         $path = self::normalize($path);
 
-        $reference ??= Autoloader::getProjectPath();
+        $reference ??= self::getProjectPath();
         $reference = self::normalize($reference);
 
         if (!str_starts_with($path, $reference)) {
@@ -75,7 +77,7 @@ class Path
     {
         $path = self::normalize($path);
 
-        $reference ??= Autoloader::getProjectPath();
+        $reference ??= self::getProjectPath();
         $reference = self::normalize($reference);
 
         $path = Text::dontStartsWith($path, $reference);
@@ -101,5 +103,32 @@ class Path
         $fallback = preg_replace_callback('/[a-z]\/[a-z]/', fn ($m) => $m[1].strtoupper($m[2]), $fallback);
 
         return str_replace('/', '\\', $fallback);
+    }
+
+    public static function resolveProjectPath(?string $forceProjectPath = null): void
+    {
+        if ($forceProjectPath) {
+            self::$projectPath = $forceProjectPath;
+            return;
+        }
+
+        try {
+            while (!is_dir('./vendor/yonis-savary/cube')) {
+                chdir('..');
+            }
+
+            self::$projectPath = getcwd();
+        } catch (\Throwable $_) {
+            throw new \Exception('Could not resolve project root path');
+        }
+    }
+
+    public static function getProjectPath(): string
+    {
+        if (is_null(self::$projectPath)) {
+            self::resolveProjectPath();
+        }
+
+        return self::$projectPath;
     }
 }

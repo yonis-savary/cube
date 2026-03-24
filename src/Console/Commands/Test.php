@@ -20,7 +20,7 @@ class Test extends Command
     {
         $bin = Path::relative('vendor/bin/phpunit');
         if (file_exists($bin)) {
-            Shell::executeInDirectory($bin, Autoloader::getProjectPath(), function ($type, $buffer) {
+            Shell::executeInDirectory($bin, Path::getProjectPath(), function ($type, $buffer) {
                 echo $buffer;
             });
             return 0;

@@ -17,6 +17,14 @@ abstract class Command
         return 'Please write a help section for this command';
     }
 
+    /**
+     * @return string|string[]
+     */
+    public function getManual(): string|array {
+        return $this->getFullIdentifier() . " - No manual given";
+    }
+
+
     final public function getFullIdentifier(): string
     {
         return $this->getScope().':'.$this->getName();

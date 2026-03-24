@@ -67,6 +67,8 @@ class Autoloader
             self::$classIndex,
         ) = $autoloadFullData;
 
+        Path::resolveProjectPath(self::$projectPath);
+
         self::$loadedThroughApcu = true;
         return true;
     }
@@ -83,7 +85,7 @@ class Autoloader
             self::$routesFiles,
             self::$viewFiles,
             self::$cachedClassesList,
-            self::$projectPath,
+            Path::getProjectPath(),
             self::$classIndex,
         ]);
     }
@@ -102,7 +104,7 @@ class Autoloader
         if (self::tryToLoadThroughApcu())
             return self::includeRequireFiles();
 
-        self::resolveProjectPath($forceProjectPath);
+        Path::resolveProjectPath($forceProjectPath);
 
         $configuration ??= AutoloaderConfiguration::resolve();
 
@@ -195,32 +197,6 @@ class Autoloader
         });
     }
 
-    public static function resolveProjectPath(?string $forceProjectPath = null): void
-    {
-        if ($forceProjectPath) {
-            self::$projectPath = $forceProjectPath;
-            return;
-        }
-
-        try {
-            while (!is_dir('./vendor/yonis-savary/cube')) {
-                chdir('..');
-            }
-
-            self::$projectPath = getcwd();
-        } catch (\Throwable $_) {
-            throw new \Exception('Could not resolve project root path');
-        }
-    }
-
-    public static function getProjectPath(): string
-    {
-        if (is_null(self::$projectPath)) {
-            self::resolveProjectPath();
-        }
-
-        return self::$projectPath;
-    }
 
     public static function getRoutesFiles(): array
     {

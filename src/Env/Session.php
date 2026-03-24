@@ -5,6 +5,7 @@ namespace Cube\Env;
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Env\Session\SessionConfiguration;
+use Cube\Utils\Path;
 
 class Session
 {
@@ -26,7 +27,7 @@ class Session
         }
 
         if (PHP_SESSION_ACTIVE !== $status) {
-            session_name(md5(Autoloader::getProjectPath()));
+            session_name(md5(Path::getProjectPath()));
             session_start();
         }
     }
