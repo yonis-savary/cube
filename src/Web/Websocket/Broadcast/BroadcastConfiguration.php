@@ -11,10 +11,10 @@ class BroadcastConfiguration extends ConfigurationElement
      * By default http part of WebsocketConfiguration shall be used
      */
     public function __construct(
-        protected ?string $httpHost = null,
-        protected ?int $httpPort = null,
         protected ?string $socketHost = null,
-        protected ?int $socketPort = null
+        protected ?int $socketPort = null,
+        protected ?string $httpHost = null,
+        protected ?int $httpPort = null
     ){}
 
     public function getHttpOrigin(): string

@@ -337,18 +337,14 @@ class Request extends HttpMessage
     public function fetchAsync(
         ?Logger $logger = null,
         ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
-        int $logFlags = HttpClient::DEBUG_ESSENTIALS,
         ?HttpClient $httpClient = null,
-        ?callable $curlMutator = null
-    ): void {
+    ): bool {
         $httpClient ??= new HttpClient();
 
-        $httpClient->fetchAsync(
+        return $httpClient->fetchAsync(
             $this,
             $logger,
-            $userAgent,
-            $logFlags,
-            $curlMutator
+            $userAgent
         );
     }
 

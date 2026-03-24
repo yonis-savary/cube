@@ -40,9 +40,9 @@ abstract class Channel implements ChannelInterface
         return $this->cachedPath ?? $this->getDummyRoute()->buildPath($routeParams);
     }
 
-    public function emit(array $data, array $routeParams=[]) {
+    public function emit(array $data, array $routeParams=[]): bool {
         $data["__class"] = static::class;
-        $this->broadcast->emit(
+        return $this->broadcast->emit(
             $this->path($routeParams),
             $data
         );

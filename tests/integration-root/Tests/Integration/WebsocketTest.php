@@ -3,6 +3,7 @@
 namespace Tests\Integration;
 
 use App\Channels\ProductChannel;
+use Cube\Core\Injector;
 use Cube\Web\Http\Request;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
@@ -59,5 +60,13 @@ class WebsocketTest extends TestCase
         $response = $request->fetch();
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals("OK", $response->getBody());
+    }
+
+    public function testEmitFromChannel() {
+        $this->assertTrue($this->process->isRunning());
+        $channel = Injector::instanciate(ProductChannel::class);
+
+        $channel->lockParams([1]);
+        $this->assertTrue($channel->emit(["some" => 'value']));
     }
 }

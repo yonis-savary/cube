@@ -133,61 +133,74 @@ class HttpClient
         return (new Request('DELETE', $path, [], [], $headers, body: json_encode($body)))->fetch(httpClient: $this);
     }
 
-    public function getAsync(string $path, array $getParams = [], array $headers = []): void
+    public function getAsync(string $path, array $getParams = [], array $headers = []): bool
     {
-        (new Request('GET', $path, $getParams, [], $headers))->fetchAsync(httpClient: $this);
+        return (new Request('GET', $path, $getParams, [], $headers))->fetchAsync(httpClient: $this);
     }
 
-    public function postAsync(string $path, array $postParams = [], array $getParams = [], array $uploads = [], array $headers = []): void
+    public function postAsync(string $path, array $postParams = [], array $getParams = [], array $uploads = [], array $headers = []): bool
     {
-        (new Request('POST', $path, $getParams, $postParams, $headers, $uploads))->fetchAsync(httpClient: $this);
+        return (new Request('POST', $path, $getParams, $postParams, $headers, $uploads))->fetchAsync(httpClient: $this);
     }
 
-    public function putAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): void
+    public function putAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): bool
     {
-        (new Request('PUT', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
+        return (new Request('PUT', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
     }
 
-    public function patchAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): void
+    public function patchAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): bool
     {
-        (new Request('PATCH', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
+        return (new Request('PATCH', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
     }
 
-    public function deleteAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): void
+    public function deleteAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): bool
     {
-        (new Request('DELETE', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
+        return (new Request('DELETE', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
     }
 
-    public function getJsonAsync(string $path, mixed $body = [], array $headers = []): void
-    {
-        $headers['content-type'] = 'application/json';
-        (new Request('GET', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
-    }
-
-    public function postJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    public function getJsonAsync(string $path, mixed $body = [], array $headers = []): bool
     {
         $headers['content-type'] = 'application/json';
-        (new Request('POST', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+        return (new Request('GET', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
     }
 
-    public function putJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    public function postJsonAsync(string $path, mixed $body = [], array $headers = []): bool
     {
         $headers['content-type'] = 'application/json';
-        (new Request('PUT', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+        return (new Request('POST', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
     }
 
-    public function patchJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    public function putJsonAsync(string $path, mixed $body = [], array $headers = []): bool
     {
         $headers['content-type'] = 'application/json';
-        (new Request('PATCH', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+        return (new Request('PUT', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
     }
 
-    public function deleteJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    public function patchJsonAsync(string $path, mixed $body = [], array $headers = []): bool
     {
         $headers['content-type'] = 'application/json';
-        (new Request('DELETE', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+        return (new Request('PATCH', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
     }
 
+    public function deleteJsonAsync(string $path, mixed $body = [], array $headers = []): bool
+    {
+        $headers['content-type'] = 'application/json';
+        return (new Request('DELETE', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+    }
+
+    
+
+    protected function path(Request $request): string {
+        $path = $request->getPath();
+        if (!$base = $this->baseURL())
+            return $path;
+
+        if (!str_starts_with($base, "http"))
+            return Path::join($base, $path);
+
+        [$protocol, $rest] = explode("://", $base);
+        return "$protocol://" . Path::join($rest, $path);
+    }
 
     /**
      * Build a cURL handle for the Request object.
@@ -208,10 +221,7 @@ class HttpClient
 
         $logger->info('Building CURL handle');
 
-        $path = $request->getPath();
-        if ($base = $this->baseURL()) {
-            $path = Path::join($base, $path);
-        }
+        $path = $this->path($request);
 
         $getParams = array_merge($this->baseURLParameters(), $request->get() ?? []);
         $urlParams = count($getParams)
@@ -422,39 +432,62 @@ class HttpClient
     public function fetchAsync(
         Request $request,
         ?Logger $logger = null,
-        ?string $userAgent = null,
-        int $logFlags = self::DEBUG_ESSENTIALS,
-        ?callable $curlMutator = null
-    ): void {
-        $handle = $this->toCurlHandle($request, null, $userAgent, $logger, $curlMutator);
+        ?string $userAgent = null
+    ): bool {
 
         if ($this->httpMockServer) {
             $this->httpMockServer->handle($request);
-            return;
+            return true;
         }
 
         if (MockServers::getInstance()->get(static::class))
-            return;
+            return true;
 
-        $userAgent ??= $this->baseUserAgent();
         $logger ??= $this->baseLogger();
 
-        if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_HEADERS)) {
-            $logger->info('{method} {path}', ['method' => $request->getMethod(), 'path' => $request->getPath()]);
-            $logger->info('{headers}', ['headers' => $request->getHeaders()]);
+        $path = $this->path($request);
+
+        $getParams = array_merge($this->baseURLParameters(), $request->get() ?? []);
+        $urlParams = count($getParams)
+            ? '?'.http_build_query($getParams, '', '&')
+            : '';
+
+        $url = trim($path.$urlParams);
+
+        $postParams = array_merge($this->basePostParameters(), $request->post() ?? []);
+
+        $uploads = $request->getUploads();
+        if (count($uploads))
+            $logger->warning("HttpClient.fetchAsync does not supports uploads");
+
+        $body = $request->getBody();
+        $body = json_encode($body ? $body : $postParams, JSON_THROW_ON_ERROR);
+
+        $headers = $request->getHeaders();
+        if ($userAgent)
+            $headers['User-Agent'] = $userAgent;
+
+        $parsed = parse_url($url);
+
+        $host = $parsed['host'];
+        $port = $parsed['port'];
+        $path = $parsed['path'] ?? '/';
+
+        $headersString = Bunch::unzip($headers)->map(fn($pair) => join(": ", $pair))->toArray();
+
+        $fp = ($port === 443)
+            ? fsockopen("ssl://$host", $port, $errno, $errstr, 1)
+            : fsockopen($host, $port, $errno, $errstr, 1);
+
+        if ($fp) {
+            fwrite($fp, implode("\r\n", $headersString) . "\r\n\r\n");
+            fwrite($fp, $body);
+            fclose($fp);
+            return true;
+        } else {
+            $logger->error("Could not open socket for $url");
+            return false;
         }
-
-        if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_BODY)) {
-            $logger->info("GET\n{get}", ['get' => $request->get()]);
-            $logger->info("POST\n{post}", ['post' => $request->post()]);
-            $logger->info("BODY\n{body}", ['body' => $request->getBody()]);
-        }
-
-        curl_setopt($handle, CURLOPT_HEADER, 0);
-        curl_setopt($handle, CURLOPT_RETURNTRANSFER, false);
-        curl_setopt($handle, CURLOPT_CONNECTTIMEOUT, 1);
-
-        curl_exec($handle);
     }
 
     public function lastDuration(): int

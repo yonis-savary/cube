@@ -21,15 +21,15 @@ class Broadcast extends HttpClient
 
     public function baseLogger(): Logger
     {
-        return new Logger('broadcast-client');
+        return new Logger('broadcast-client.csv');
     }
 
     public function baseURL(): string {
         return $this->configuration->getHttpOrigin();
     }
 
-    public function emit(string $event, $data){
+    public function emit(string $event, $data): bool {
         $event = trim($event, "/");
-        $this->postJsonAsync($event, $data);
+        return $this->postJsonAsync($event, $data);
     }
 }
