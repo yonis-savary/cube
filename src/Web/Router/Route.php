@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Router;
 
+use Cube\Data\Models\Model;
 use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -237,5 +238,17 @@ class Route
         $request->setSlugValues($namedSlugs);
 
         return true;
+    }
+
+    public function buildPath(array $routeParams=[]): string {
+        $originalPath = $this->getPath();
+
+        return preg_replace_callback("~\{[^\\/]+?\}~", function() use (&$routeParams) {
+            $value = array_shift($routeParams) ?? '';
+            if ($value instanceof Model)
+                $value = $value->id();
+
+            return $value;
+        }, $originalPath);
     }
 }

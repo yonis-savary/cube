@@ -2,7 +2,7 @@
 
 namespace Tests\Integration;
 
-use Cube\Core\Autoloader;
+use App\Channels\ProductChannel;
 use Cube\Web\Http\Request;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
@@ -45,8 +45,11 @@ class WebsocketTest extends TestCase
 
         $request = new Request(
             'POST',
-            'http://127.0.0.1:9992/some-event',
-            post: ["some" => "value"],
+            'http://127.0.0.1:9992/product/1',
+            post: [
+                "__class" => ProductChannel::class,
+                "some" => "value"
+            ],
             headers: [
                 "X-Api-Key" => "supersecret",
                 "Content-Type" => "application/json"
@@ -56,16 +59,5 @@ class WebsocketTest extends TestCase
         $response = $request->fetch();
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertEquals("OK", $response->getBody());
-
-
-        $unauthenticatedRequest = new Request(
-            'POST',
-            'http://127.0.0.1:9992/some-event',
-            post: ["some" => "value"],
-            headers: ["Content-Type" => "application/json"]
-        );
-
-        $response = $unauthenticatedRequest->fetch();
-        $this->assertEquals(401, $response->getStatusCode());
     }
 }

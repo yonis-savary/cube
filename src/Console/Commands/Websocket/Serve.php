@@ -4,7 +4,9 @@ namespace Cube\Console\Commands\Websocket;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Web\Websocket\Websocket;
+use Cube\Env\Logger\NullLogger;
+use Cube\Env\Logger\StdOutLogger;
+use Cube\Web\Websocket\Servers\Websocket;
 
 class Serve extends Command
 {
@@ -20,7 +22,11 @@ class Serve extends Command
 
     public function execute(Args $args): int
     {
-        Websocket::getInstance()->serve();
+        $logger = $args->has("-l", "--log")
+            ? new StdOutLogger()
+            : new NullLogger()
+        ;
+        $logger->asGlobalInstance(fn() => Websocket::getInstance()->serve());
         return 0;
     }
 }

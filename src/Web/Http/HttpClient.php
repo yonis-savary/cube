@@ -106,37 +106,88 @@ class HttpClient
     public function getJson(string $path, mixed $body = [], array $headers = []): Response
     {
         $headers['content-type'] = 'application/json';
-
         return (new Request('GET', $path, [], [], $headers, body: json_encode($body)))->fetch(httpClient: $this);
     }
 
     public function postJson(string $path, mixed $body = [], array $headers = []): Response
     {
         $headers['content-type'] = 'application/json';
-
         return (new Request('POST', $path, [], [], $headers, body: json_encode($body)))->fetch(httpClient: $this);
     }
 
     public function putJson(string $path, mixed $body = [], array $headers = []): Response
     {
         $headers['content-type'] = 'application/json';
-
         return (new Request('PUT', $path, [], [], $headers, body: json_encode($body)))->fetch(httpClient: $this);
     }
 
     public function patchJson(string $path, mixed $body = [], array $headers = []): Response
     {
         $headers['content-type'] = 'application/json';
-
         return (new Request('PATCH', $path, [], [], $headers, body: json_encode($body)))->fetch(httpClient: $this);
     }
 
     public function deleteJson(string $path, mixed $body = [], array $headers = []): Response
     {
         $headers['content-type'] = 'application/json';
-
         return (new Request('DELETE', $path, [], [], $headers, body: json_encode($body)))->fetch(httpClient: $this);
     }
+
+    public function getAsync(string $path, array $getParams = [], array $headers = []): void
+    {
+        (new Request('GET', $path, $getParams, [], $headers))->fetchAsync(httpClient: $this);
+    }
+
+    public function postAsync(string $path, array $postParams = [], array $getParams = [], array $uploads = [], array $headers = []): void
+    {
+        (new Request('POST', $path, $getParams, $postParams, $headers, $uploads))->fetchAsync(httpClient: $this);
+    }
+
+    public function putAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): void
+    {
+        (new Request('PUT', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
+    }
+
+    public function patchAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): void
+    {
+        (new Request('PATCH', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
+    }
+
+    public function deleteAsync(string $path, array $getParams = [], array $postParams = [], array $headers = []): void
+    {
+        (new Request('DELETE', $path, $getParams, $postParams, $headers))->fetchAsync(httpClient: $this);
+    }
+
+    public function getJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    {
+        $headers['content-type'] = 'application/json';
+        (new Request('GET', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+    }
+
+    public function postJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    {
+        $headers['content-type'] = 'application/json';
+        (new Request('POST', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+    }
+
+    public function putJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    {
+        $headers['content-type'] = 'application/json';
+        (new Request('PUT', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+    }
+
+    public function patchJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    {
+        $headers['content-type'] = 'application/json';
+        (new Request('PATCH', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+    }
+
+    public function deleteJsonAsync(string $path, mixed $body = [], array $headers = []): void
+    {
+        $headers['content-type'] = 'application/json';
+        (new Request('DELETE', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
+    }
+
 
     /**
      * Build a cURL handle for the Request object.
@@ -209,9 +260,9 @@ class HttpClient
         $uploads = $request->getUploads();
         $body = $request->getBody();
 
-        if ($request->isJSON() && $body) {
+        if ($request->isJSON() && ($body || count($postParams))) {
             $logger->info('Setting JSON CURLOPT_POSTFIELDS to {fields}', ['fields' => $body]);
-            $options[CURLOPT_POSTFIELDS] = $body;
+            $options[CURLOPT_POSTFIELDS] = $body ? $body : json_encode($postParams, JSON_THROW_ON_ERROR);
         }
         elseif (count($postParams) || count($uploads)) {
             $arrayDetails = [];
@@ -323,7 +374,6 @@ class HttpClient
 
         $headerSize = curl_getinfo($handle, CURLINFO_HEADER_SIZE);
         $resStatus = curl_getinfo($handle, CURLINFO_HTTP_CODE);
-        curl_close($handle);
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_RESPONSE_HEADERS)) {
             $logger->info('Got [{status}] with [{size}] bytes of data', ['status' => $resStatus, 'size' => strlen($result)]);
@@ -359,6 +409,52 @@ class HttpClient
         }
 
         return new Response($resStatus, $resBody, $resHeaders);
+    }
+
+    /**
+     * Send a Request target with Curl and don't wait for a response !
+     *
+     * @param Logger $logger             Optional Logger that can be used to log info about the request/response
+     * @param string $userAgent          User-agent to use with curl
+     *
+     * @throws \JsonException Possibly when parsing the response body if fetched JSON is incorrect
+     */
+    public function fetchAsync(
+        Request $request,
+        ?Logger $logger = null,
+        ?string $userAgent = null,
+        int $logFlags = self::DEBUG_ESSENTIALS,
+        ?callable $curlMutator = null
+    ): void {
+        $handle = $this->toCurlHandle($request, null, $userAgent, $logger, $curlMutator);
+
+        if ($this->httpMockServer) {
+            $this->httpMockServer->handle($request);
+            return;
+        }
+
+        if (MockServers::getInstance()->get(static::class))
+            return;
+
+        $userAgent ??= $this->baseUserAgent();
+        $logger ??= $this->baseLogger();
+
+        if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_HEADERS)) {
+            $logger->info('{method} {path}', ['method' => $request->getMethod(), 'path' => $request->getPath()]);
+            $logger->info('{headers}', ['headers' => $request->getHeaders()]);
+        }
+
+        if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_BODY)) {
+            $logger->info("GET\n{get}", ['get' => $request->get()]);
+            $logger->info("POST\n{post}", ['post' => $request->post()]);
+            $logger->info("BODY\n{body}", ['body' => $request->getBody()]);
+        }
+
+        curl_setopt($handle, CURLOPT_HEADER, 0);
+        curl_setopt($handle, CURLOPT_RETURNTRANSFER, false);
+        curl_setopt($handle, CURLOPT_CONNECTTIMEOUT, 1);
+
+        curl_exec($handle);
     }
 
     public function lastDuration(): int
