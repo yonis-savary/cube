@@ -92,7 +92,7 @@ class WebsocketRouter implements MessageComponentInterface
 
         if (!($channel = $this->channels[$class] ?? false)) {
             $this->logger->error("Recieved Invalid message : invalid __class");
-            return $response->withBody(new BufferedBody("invalid __class"))->withStatus(StatusCode::UNPROCESSABLE_CONTENT);
+            return $response->withBody(new BufferedBody("invalid __class : $class"))->withStatus(StatusCode::UNPROCESSABLE_CONTENT);
         }
 
         $this->logger->info('Dispatch {path}', ['path' => $path]);
