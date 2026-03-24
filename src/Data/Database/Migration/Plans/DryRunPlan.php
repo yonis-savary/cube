@@ -73,9 +73,9 @@ class DryRunPlan extends Plan
         $referenceField = $modelField->referenceField;
         $referenceException = new DryRunPlanException("$table.$column foreign key: $referenceModel.$referenceField does not exists");;
         if ($referenceModel) {
-            if ($this->tableDiffHasTable($referenceModel))
+            if ($this->tableExists($referenceModel))
             {
-                if (!$this->tableDiffHasField($referenceModel, $referenceField))
+                if (!$this->columnExists($referenceModel, $referenceField))
                     throw $referenceException;
             }
             else if (class_exists($referenceModel))
