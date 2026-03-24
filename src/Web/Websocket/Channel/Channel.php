@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Websocket\Channel;
 
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -24,7 +25,8 @@ abstract class Channel implements ChannelInterface
     protected ?string $cachedPath = null;
 
     public function __construct(
-        protected Broadcast $broadcast
+        protected Broadcast $broadcast,
+        protected Logger $logger
     )
     {}
 
@@ -61,14 +63,19 @@ abstract class Channel implements ChannelInterface
 
     public function subscribe(string $path, ConnectionInterface $connection) {
         $resourceId = $connection->resourceId;
+        $this->logger->info( preg_replace("~.+\\\\~", "", static::class) . " new subscriber $resourceId ($path)");
         $this->subscribers[$resourceId] = new ChannelSubscriber($path, $connection);
     }
 
     public function dispatch(string $path, array $data=[]) {
+        $dispatchedCount = 0;
         foreach ($this->subscribers as $id => $subscriber) {
-            if ($subscriber->path === $path)
-                $subscriber->connection->send($data);
+            if ($subscriber->path === $path) {
+                $subscriber->connection->send(json_encode($data, JSON_THROW_ON_ERROR));
+                $dispatchedCount++;
+            }
         }
+        $this->logger->info( preg_replace("~.+\\\\~", "", static::class) . " : dispatching event to $dispatchedCount subscribers ($path)");
     }
 
     public function unsubscribe(ConnectionInterface $connection): bool {

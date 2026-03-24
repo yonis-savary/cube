@@ -14,8 +14,6 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\HttpBodyStream;
 use React\Http\Message\Response as ReactResponse;
 
-use function Cube\debug;
-
 /**
  * This class is a Ratcher socket used to make socket communication through a subscription design pattern
  */
@@ -34,7 +32,7 @@ class WebsocketRouter implements MessageComponentInterface
         $this->channels = Bunch::fromExtends(Channel::class)->zip(fn(Channel $instance) => [$instance::class, $instance]);
 
         foreach ($this->channels as $class => $instance) {
-            $this->logger->info(" - Registering channel $class...");
+            $this->logger->info("Registering channel $class...");
         }
     }
 
@@ -95,6 +93,7 @@ class WebsocketRouter implements MessageComponentInterface
             return $response->withBody(new BufferedBody("invalid __class : $class"))->withStatus(StatusCode::UNPROCESSABLE_CONTENT);
         }
 
+        unset($body['__class']);
         $this->logger->info('Dispatch {path}', ['path' => $path]);
         $channel->dispatch($path, $body);
         return $response;
@@ -106,15 +105,6 @@ class WebsocketRouter implements MessageComponentInterface
         return function (ServerRequestInterface $request) {
             $method = $request->getMethod();
             $path = $request->getUri()->getPath();
-
-
-            debug(
-                "GOT REQUEST",
-                $method,
-                $path,
-                join(";", $request->getHeader("Content-Type")),
-                $request->getBody()
-            );
 
             $logger = Logger::getInstance();
             $logger->info("{method} {path}", ['method' => $method, 'path' => $path]);

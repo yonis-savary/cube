@@ -461,11 +461,12 @@ class HttpClient
             $logger->warning("HttpClient.fetchAsync does not supports uploads");
 
         $body = $request->getBody();
-        $body = json_encode($body ? $body : $postParams, JSON_THROW_ON_ERROR);
+        $body = $body ? $body : json_encode($postParams, JSON_THROW_ON_ERROR);
 
         $headers = $request->getHeaders();
         if ($userAgent)
             $headers['User-Agent'] = $userAgent;
+
 
         $parsed = parse_url($url);
 
@@ -473,7 +474,11 @@ class HttpClient
         $port = $parsed['port'];
         $path = $parsed['path'] ?? '/';
 
+        $headers["Connection"] = "close";
+        $headers["Host"] = "$host:$port";
+        $headers["Content-Length"] = strlen($body);
         $headersString = Bunch::unzip($headers)->map(fn($pair) => join(": ", $pair))->toArray();
+        array_unshift($headersString, strtoupper($request->getMethod()) . " " . $path . " HTTP/1.1");
 
         $fp = ($port === 443)
             ? fsockopen("ssl://$host", $port, $errno, $errstr, 1)
@@ -482,6 +487,7 @@ class HttpClient
         if ($fp) {
             fwrite($fp, implode("\r\n", $headersString) . "\r\n\r\n");
             fwrite($fp, $body);
+            fflush($fp);
             fclose($fp);
             return true;
         } else {
