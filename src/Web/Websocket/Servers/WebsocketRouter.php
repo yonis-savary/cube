@@ -42,7 +42,14 @@ class WebsocketRouter implements MessageComponentInterface
         $this->logger->info("New connection : {id} ({path})", ['id' => $connection->resourceId, "path" => $path]);
 
         foreach ($this->channels as $channel) {
-            if ($channel->match($path)) {
+            if ($slugValues = $channel->match($path)) {
+                if ($errorMessage = $channel->authorize($slugValues)) {
+                    $this->logger->info("Connection refused by channel to path [$path] => $errorMessage");
+                    $connection->send(['error' => $errorMessage]);
+                    $connection->close();
+                    return;
+                }
+
                 $channel->subscribe($path, $connection);
                 return;
             }

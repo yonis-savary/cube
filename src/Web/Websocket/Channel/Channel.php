@@ -24,18 +24,38 @@ abstract class Channel implements ChannelInterface
 
     protected ?string $cachedPath = null;
 
-    public function __construct(
-        protected Broadcast $broadcast,
-        protected Logger $logger
-    )
-    {}
+    protected ?Logger $logger = null;
 
     protected function getDummyRoute():Route {
         return new Route($this->getRoute(), fn() => null);
     }
 
-    public function match(string $requestPath): bool {
-        return $this->getDummyRoute()->match(new Request("GET", $requestPath));
+    protected function log(string $message): void
+    {
+        $this->logger ??= Logger::getInstance();
+        $this->logger->info(preg_replace("~.+\\\\~", "", static::class) . " " . $message);
+    }
+
+    /**
+     * This method act as a middleware called
+     * before a connection subscribes to the channel
+     *
+     * @return ?string null => the subscription is authorized, string => error returned to the client through the socket
+     */
+    public function authorize(array $slugs=[]): ?string {
+        return null;
+    }
+
+    /**
+     * @return ?array Slug values if matching, null otherwise
+     */
+    public function match(string $requestPath): ?array {
+        $request = new Request("GET", $requestPath);
+        $match = $this->getDummyRoute()->match($request);
+
+        return $match
+            ? $request->getSlugValues()
+            : null;
     }
 
     public function path(array $routeParams=[]): string {
@@ -44,7 +64,7 @@ abstract class Channel implements ChannelInterface
 
     public function emit(array $data, array $routeParams=[]): bool {
         $data["__class"] = static::class;
-        return $this->broadcast->emit(
+        return Broadcast::getInstance()->emit(
             $this->path($routeParams),
             $data
         );
@@ -63,19 +83,19 @@ abstract class Channel implements ChannelInterface
 
     public function subscribe(string $path, ConnectionInterface $connection) {
         $resourceId = $connection->resourceId;
-        $this->logger->info( preg_replace("~.+\\\\~", "", static::class) . " new subscriber $resourceId ($path)");
+        $this->log("new subscriber $resourceId ($path)");
         $this->subscribers[$resourceId] = new ChannelSubscriber($path, $connection);
     }
 
     public function dispatch(string $path, array $data=[]) {
         $dispatchedCount = 0;
-        foreach ($this->subscribers as $id => $subscriber) {
+        foreach ($this->subscribers as $_ => $subscriber) {
             if ($subscriber->path === $path) {
                 $subscriber->connection->send(json_encode($data, JSON_THROW_ON_ERROR));
                 $dispatchedCount++;
             }
         }
-        $this->logger->info( preg_replace("~.+\\\\~", "", static::class) . " : dispatching event to $dispatchedCount subscribers ($path)");
+        $this->log("dispatched event to $dispatchedCount subscribers ($path)");
     }
 
     public function unsubscribe(ConnectionInterface $connection): bool {
