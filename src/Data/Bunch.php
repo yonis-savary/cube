@@ -164,7 +164,7 @@ class Bunch implements Countable
     {
         $clone = Bunch::of($this);
         if ($mapFunction) {
-            $clone->map($mapFunction);
+            $clone = $clone->map($mapFunction);
         }
 
         return array_combine(
@@ -611,9 +611,7 @@ class Bunch implements Countable
      */
     protected function withNewData(array $data): self
     {
-        $this->data = array_values($data);
-
-        return $this;
+        return new static(array_values($data));
     }
 
     protected function getValueFromCompoundKey($object, string $compoundKey, callable $valueGetter, string $compoundKeySeparator = '.')
