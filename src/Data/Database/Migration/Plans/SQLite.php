@@ -80,7 +80,7 @@ class SQLite extends Plan
             throw new RuntimeException("SQLite does not support constraints on already existing fields");
     }
 
-    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey) {
+    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
         throw new RuntimeException("SQLite does not support constraints on already existing fields");
     }
 

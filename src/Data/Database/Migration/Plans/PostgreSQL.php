@@ -26,7 +26,7 @@ class PostgreSQL extends Plan
         $this->database->exec("CREATE TABLE \"$table\" ( \"$fieldName\" $fieldDescription $additionnalSQL )");
 
         if ($firstColumn->hasReference())
-            $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField);
+            $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField, $firstColumn->onDeleteBehavior);
 
         foreach ($fields as $field) {
             $this->addColumn($table, $field);
@@ -44,7 +44,7 @@ class PostgreSQL extends Plan
                 ModelField::BOOLEAN   => "BOOLEAN",
                 ModelField::DECIMAL   => "DECIMAL(".($field->decimalMaximumDigits ?? 10).",".($field->decimalDigitsToTheRight ?? 5).")",
                 ModelField::DATE      => "DATE",
-                ModelField::DATETIME  => "DATETIME",
+                ModelField::DATETIME  => "TIMESTAMP",
                 ModelField::TIMESTAMP => "TIMESTAMP",
             };
 
@@ -56,6 +56,9 @@ class PostgreSQL extends Plan
 
         if ($field->hasDefault)
             $query .= " DEFAULT " . $this->database->build("{}", [$field->default]);
+
+        if ($field->isPrimaryKey)
+            $query .= " PRIMARY KEY";
 
         return $query;
     }
@@ -69,11 +72,16 @@ class PostgreSQL extends Plan
         $this->database->exec($query);
 
         if ($field->hasReference())
-            $this->addForeignKey($table, $field->name, $field->referenceModel, $field->referenceField);
+            $this->addForeignKey($table, $field->name, $field->referenceModel, $field->referenceField, $field->onDeleteBehavior);
     }
 
-    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey) {
-        $this->database->query("ALTER TABLE \"{}\" ADD CONSTRAINT FOREIGN KEY (\"{}\") REFERENCES \"{}\"(\"{}\")", [
+    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
+        $deleteBehavior = match ($deleteBehavior) {
+            ModelField::ON_DELETE_CASCADE => "ON DELETE CASCADE",
+            ModelField::ON_DELETE_SET_NULL => "ON DELETE SET NULL",
+            default => "",
+        };
+        $this->database->query('ALTER TABLE "{}" ADD FOREIGN KEY ("{}") REFERENCES "{}"("{}") '. $deleteBehavior, [
             $table, $field, $foreignTable, $foreignKey
         ]);
     }
@@ -89,14 +97,14 @@ class PostgreSQL extends Plan
         if (!$this->database->hasTable($table))
             throw new RuntimeException("Given database does not contains the $table table");
 
-        $this->database->query("ALTER TABLE \"{}\" DROP CONSTRAINT {}", [$table, $constraintName]);
+        $this->database->query('ALTER TABLE "{}" DROP CONSTRAINT {}', [$table, $constraintName]);
     }
 
     public function dropColumn(string $table, string $field) {
         if (!$this->database->hasField($table, $field))
             throw new RuntimeException("Given database does not contains the $table($field) column");
 
-        $this->database->query("ALTER TABLE \"{}\" DROP COLUMN \"{}\"", [$table, $field]);
+        $this->database->query('ALTER TABLE "{}" DROP COLUMN "{}"', [$table, $field]);
     }
 
     public function alterColumn(string $table, string $field, ModelField $newProperties) {
@@ -120,18 +128,18 @@ class PostgreSQL extends Plan
                 ModelField::TIMESTAMP => "TIMESTAMP",
             };
 
-        $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" " . $typeQuery, [$table, $newProperties->name]);
+        $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" ' . $typeQuery, [$table, $newProperties->name]);
 
         if (!$newProperties->nullable && (!$newProperties->isPrimaryKey))
-            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" SET NOT NULL", [$table, $newProperties->name]);
+            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" SET NOT NULL', [$table, $newProperties->name]);
         else
-            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" DROP NOT NULL", [$table, $newProperties->name]);
+            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" DROP NOT NULL', [$table, $newProperties->name]);
 
         if ($newProperties->isUnique && (!$newProperties->isPrimaryKey))
-            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" ", [$table, $newProperties->name]);
+            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" ', [$table, $newProperties->name]);
 
         if ($newProperties->hasDefault)
-            $this->database->query("ALTER TABLE \"{}\" ALTER COLUMN \"{}\" SET DEFAULT {}", [$table, $newProperties->name, $newProperties->default]);
+            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" SET DEFAULT {}', [$table, $newProperties->name, $newProperties->default]);
     }
 
     public function addUniqueIndex(string $table, string|array $fields) {

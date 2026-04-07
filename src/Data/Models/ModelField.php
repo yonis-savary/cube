@@ -20,6 +20,9 @@ class ModelField
     public const DATETIME = 'DATETIME';
     public const TIMESTAMP = 'TIMESTAMP';
 
+    public const ON_DELETE_CASCADE = 'cascade';
+    public const ON_DELETE_SET_NULL = 'set_null';
+
     public const ALLOWED_TYPES = [
         self::STRING,
         self::INTEGER,
@@ -42,6 +45,7 @@ class ModelField
 
     public null|Model|string $referenceModel = null;
     public ?string $referenceField = null;
+    public ?string $onDeleteBehavior = null;
 
     public bool $autoIncrement = false;
     public ?int $maximumLength = null;
@@ -185,6 +189,18 @@ class ModelField
         $this->referenceModel = $modelOrTable;
         $this->referenceField = $field;
 
+        return $this;
+    }
+
+    public function onDeleteCascade(): self
+    {
+        $this->onDeleteBehavior = self::ON_DELETE_CASCADE;
+        return $this;
+    }
+
+    public function onDeleteSetNull(): self
+    {
+        $this->onDeleteBehavior = self::ON_DELETE_SET_NULL;
         return $this;
     }
 

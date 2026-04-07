@@ -93,7 +93,7 @@ class DryRunPlan extends Plan
         $this->addTableDiffField($table, $modelField);
     }
 
-    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey) {
+    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
         if (!$this->columnExists($table, $field))
             throw new DryRunPlanException("$table.$field does not exists");
 

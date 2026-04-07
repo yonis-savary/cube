@@ -41,17 +41,30 @@ class MigrationTest extends TestCase
                     ModelField::string("bio"),
                     ModelField::timestamp("last_login")
                 ]);
+                $plan->create('user_log', [
+                    ModelField::id(),
+                    ModelField::integer('user_id')->references('my_users', 'id')->notNull()->onDeleteCascade(),
+                    ModelField::datetime('log_datetime'),
+                ]);
             }
         };
 
         $plan = $this->getDatabasePlan($database);
-        $migration->execute($plan, $database);
+        $thrown = $migration->execute($plan, $database);
+        
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
 
         $this->assertTrue($database->hasTable("my_users"));
+        $this->assertTrue($database->hasField("my_users", "id"));
         $this->assertTrue($database->hasField("my_users", "username"));
         $this->assertTrue($database->hasField("my_users", "password"));
         $this->assertTrue($database->hasField("my_users", "bio"));
         $this->assertTrue($database->hasField("my_users", "last_login"));
+
+        $this->assertTrue($database->hasTable("user_log"));
+        $this->assertTrue($database->hasField("user_log", "id"));
+        $this->assertTrue($database->hasField("user_log", "user_id"));
+        $this->assertTrue($database->hasField("user_log", "log_datetime"));
     }
 
     #[ DataProvider('getDatabases') ]

@@ -26,7 +26,7 @@ class MySQL extends Plan
         $this->database->exec("CREATE TABLE `$table` ( `$fieldName` $fieldDescription $additionnalSQL )");
 
         if ($firstColumn->hasReference())
-            $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField);
+            $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField, $firstColumn->onDeleteBehavior);
 
         foreach ($fields as $field) {
             $this->addColumn($table, $field);
@@ -73,11 +73,16 @@ class MySQL extends Plan
         $this->database->exec($query);
 
         if ($field->hasReference())
-            $this->addForeignKey($table, $field->name, $field->referenceModel, $field->referenceField);
+            $this->addForeignKey($table, $field->name, $field->referenceModel, $field->referenceField, $field->onDeleteBehavior);
     }
 
-    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey) {
-        $this->database->query("ALTER TABLE `{}` ADD CONSTRAINT FOREIGN KEY (`{}`) REFERENCES `{}`(`{}`)", [
+    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
+        $deleteBehavior = match ($deleteBehavior) {
+            ModelField::ON_DELETE_CASCADE => "ON DELETE CASCADE",
+            ModelField::ON_DELETE_SET_NULL => "ON DELETE SET NULL",
+            default => "",
+        };
+        $this->database->query("ALTER TABLE `{}` ADD CONSTRAINT FOREIGN KEY (`{}`) REFERENCES `{}`(`{}`) $deleteBehavior", [
             $table, $field, $foreignTable, $foreignKey
         ]);
     }
