@@ -19,18 +19,30 @@ class Cache
     public const MONTH = CacheDriverInterface::MONTH;
 
     protected CacheDriverInterface $driver;
+    protected CacheConfiguration $configuration;
+    protected ?string $prefixKey = null;
 
-    public function __construct(CacheConfiguration $configuration)
+    public function __construct(CacheConfiguration $configuration, ?string $prefixKey = null)
     {
+        $this->configuration = $configuration;
         $this->driver = $configuration->driver;
         $this->driver->initialize();
     }
 
+    public function key(string $key): string {
+        if (!$this->prefixKey)
+            return $key;
+
+        return $this->prefixKey . '-' . $key;
+    }
+
     public function get(string $key, mixed $default=null): mixed {
+        $key = $this->key($key);
         return $this->driver->get($key) ?? $default;
     }
 
     public function &getReference(string $key, mixed $default): mixed {
+        $key = $this->key($key);
         if (!$this->has($key))
             $this->set($key, $default);
 
@@ -38,6 +50,7 @@ class Cache
     }
 
     public function try(string $key): mixed {
+        $key = $this->key($key);
         return $this->get($key, false);
     }
 
@@ -46,6 +59,7 @@ class Cache
      * @return mixed set value
      */
     public function getOrSet(string $key, mixed $value, mixed $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
+        $key = $this->key($key);
         if ($this->has($key))
             return $this->get($key);
 
@@ -57,6 +71,7 @@ class Cache
      * @return mixed set value
      */
     public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
+        $key = $this->key($key);
         if (is_callable($value))
             $value = ($value)();
 
@@ -65,14 +80,24 @@ class Cache
     }
 
     public function has(string $key): bool {
+        $key = $this->key($key);
         return $this->driver->has($key);
     }
 
     public function delete(string $key): void {
+        $key = $this->key($key);
         $this->driver->delete($key);
     }
 
     public function clear(): void {
         $this->driver->clear();
+    }
+
+    public function child(string $subkey): self {
+        $subkey = $this->prefixKey
+            ? $this->prefixKey . '-' . $subkey
+            : $subkey;
+
+        return new static($this->configuration, $subkey);
     }
 }
