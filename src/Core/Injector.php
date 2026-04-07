@@ -97,8 +97,8 @@ class Injector
         if (class_exists($requestType))
             return Injector::instanciate($requestType);
 
-        if ($parameter->isOptional() && $default = $parameter->getDefaultValue())
-            return $default;
+        if ($parameter->isOptional() && $parameter->isDefaultValueAvailable())
+            return $parameter->getDefaultValue();
 
         throw new \InvalidArgumentException('Could not create dependency injection values for callback, no value for '.$parameter->getName().' parameter');
     }

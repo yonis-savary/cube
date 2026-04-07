@@ -27,6 +27,7 @@ class Cache
         $this->configuration = $configuration;
         $this->driver = $configuration->driver;
         $this->driver->initialize();
+        $this->prefixKey = $prefixKey;
     }
 
     public function key(string $key): string {

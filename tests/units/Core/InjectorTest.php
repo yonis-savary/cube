@@ -6,6 +6,7 @@ use Cube\Core\Injector;
 use Cube\Data\Bunch;
 use Cube\Tests\Units\Core\Classes\Bird;
 use Cube\Tests\Units\Core\Classes\Common;
+use Cube\Tests\Units\Core\Classes\DefaultParamClass;
 use Cube\Tests\Units\Core\Classes\Dragon;
 use Cube\Tests\Units\Core\Classes\StrangeGroup;
 use Cube\Tests\Units\Core\Classes\StrangeGroupVariadic;
@@ -63,5 +64,10 @@ class InjectorTest extends TestCase
 
         $strangeGroupVariadic = Injector::instanciate(StrangeGroupVariadic::class);
         $this->assertInstanceOf(StrangeGroupVariadic::class, $strangeGroupVariadic);
+    }
+
+    public function test_injector_can_handle_optionnal_parameters() {
+        $paramClass = Injector::instanciate(DefaultParamClass::class, ['some-name']);
+        $this->assertInstanceOf(DefaultParamClass::class, $paramClass);
     }
 }
