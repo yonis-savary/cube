@@ -4,8 +4,9 @@ use Cube\Core\Autoloader\Applications;
 use Cube\Data\Database\DatabaseConfiguration;
 use Cube\Web\Helpers\AssetServer;
 use Cube\Web\Router\RouterConfiguration;
-use Cube\Web\Websocket\WebsocketConfiguration;
 use Cube\Web\Helpers\StaticServer;
+use Cube\Web\Websocket\Broadcast\BroadcastConfiguration;
+use Cube\Web\Websocket\Servers\WebsocketConfiguration;
 
 use function Cube\env;
 
@@ -24,10 +25,12 @@ return [
     ),
 
     new WebsocketConfiguration(
-        '127.0.0.1:9991',
-        '127.0.0.1:9992',
-        'supersecret',
-        'X-Api-Key',
-        false
+        "127.0.0.1", 9991,
+        "127.0.0.1", 9992,
     ),
+
+    new BroadcastConfiguration(
+        "127.0.0.1", 9991,
+        "127.0.0.1", 9992,
+    )
 ];

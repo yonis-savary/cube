@@ -334,6 +334,20 @@ class Request extends HttpMessage
         );
     }
 
+    public function fetchAsync(
+        ?Logger $logger = null,
+        ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        ?HttpClient $httpClient = null,
+    ): bool {
+        $httpClient ??= new HttpClient();
+
+        return $httpClient->fetchAsync(
+            $this,
+            $logger,
+            $userAgent
+        );
+    }
+
     protected static function parseDictionaryValues(array $data): array
     {
         foreach ($data as &$value) {

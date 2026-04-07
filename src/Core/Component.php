@@ -11,7 +11,10 @@ trait Component
         return Injector::instanciate(static::class);
     }
 
-    public static function getInstance(): static
+    /**
+     * @return static
+     */
+    public static function getInstance(): mixed
     {
         if (!static::hasInstance()) {
             static::$instance = static::getDefaultInstance();

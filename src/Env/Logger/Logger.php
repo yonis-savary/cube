@@ -48,7 +48,7 @@ class Logger extends EventDispatcher implements LoggerInterface
         }
     }
 
-    public static function getDefaultInstance(): static
+    public static function getDefaultInstance(): LoggerInterface
     {
         return new self('cube.csv');
     }
