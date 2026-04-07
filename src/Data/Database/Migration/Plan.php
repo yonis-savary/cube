@@ -57,8 +57,8 @@ abstract class Plan
         $this->allowExperimentalFeatures = true;
     }
 
-    public function tableDiffAddTable(string $table, array $fields) {
-        $this->tableDiff[$table] = $fields;
+    public function tableDiffAddTable(string $table) {
+        $this->tableDiff[$table] = [];
     }
 
     public function tableDiffDropTable(string $table) {
@@ -82,18 +82,18 @@ abstract class Plan
         $table[] = $attributes;
     }
 
-    public function tableDiffHasTable(string $table): bool 
+    public function tableDiffHasTable(string $table): bool
     {
         return array_key_exists($table, $this->tableDiff);
     }
 
-    public function tableDiffHasField(string $table, string $field): bool 
+    public function tableDiffHasField(string $table, string $targetField): bool
     {
         if (!$this->tableDiffHasTable($table))
             return false;
 
         foreach ($this->tableDiff[$table] as $field) {
-            if ($field->name === $field)
+            if ($field->name === $targetField)
                 return true;
         }
         return false;
@@ -104,7 +104,7 @@ abstract class Plan
         $this->tableDiff[$table][] = $attributes;
     }
 
-    public function renameTableDiffTable(string $table, string $newName) 
+    public function renameTableDiffTable(string $table, string $newName)
     {
         if ($this->tableDiffHasTable($table)) {
             $this->tableDiff[$newName] = $this->tableDiff[$table];

@@ -24,7 +24,10 @@ class DryRunPlan extends Plan
      * @param ModelField[] $fields
      */
     public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
-        $this->tableDiffAddTable($table, $fields);
+        $this->tableDiffAddTable($table);
+        foreach ($fields as $field) {
+            $this->addColumn($table, $field);
+        }
     }
 
     /**
@@ -109,7 +112,7 @@ class DryRunPlan extends Plan
 
         foreach ($fields as $field) {
             if (!$this->columnExists($table, $field))
-                throw new DryRunPlanException("$table.$field does not exists");
+                throw new DryRunPlanException("Unique Key : $table.$field does not exists");
         }
     }
 

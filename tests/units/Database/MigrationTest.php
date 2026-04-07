@@ -215,9 +215,54 @@ class MigrationTest extends TestCase
         $this->assertNull($error);
 
         $error = $secondMigration->execute($plan, $database);
-        if ($database->getDriver() === 'sqlite')
-            $this->assertInstanceOf(UnsupportedByDBMSException::class, $error);
-        else
-            $this->assertNull($error);
+        $this->assertNull($error);
     }
+
+
+
+
+
+    #[ DataProvider('getDatabases') ]
+    public function testUniqueKeyConstraint(Database $database)
+    {
+        $migration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create('app_user', [
+                    ModelField::id(),
+                    ModelField::string('email', 200)->notNull()->unique(),
+                    ModelField::string('password_hash', 100)->notNull(),
+                    ModelField::boolean('active')->default(true),
+                ]);
+
+                $plan->create('agency', [
+                    ModelField::id(),
+                    ModelField::string('name', 100),
+                    ModelField::boolean('active')->default(true),
+                ]);
+
+                $plan->create('user_agency', [
+                    ModelField::integer('app_user')->references('app_user', 'id'),
+                    ModelField::integer('agency')->references('agency', 'id'),
+                ]);
+                $plan->addUniqueIndex('user_agency', ['app_user', 'agency']);
+            }
+        };
+
+        $plan = $this->getDatabasePlan($database);
+        $thrown = $migration->execute($plan, $database);
+
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+
+        $this->assertTrue($database->hasTable("agency"));
+        $this->assertTrue($database->hasField("agency", "id"));
+        $this->assertTrue($database->hasField("agency", "name"));
+        $this->assertTrue($database->hasField("agency", "active"));
+
+        $this->assertTrue($database->hasTable("user_agency"));
+        $this->assertTrue($database->hasField("user_agency", "app_user"));
+        $this->assertTrue($database->hasField("user_agency", "agency"));
+
+    }
+
 }

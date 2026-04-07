@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Migration\Plans\Exceptions\UnsupportedByDBMSException;
 use Cube\Data\Models\ModelField;
+use Cube\Env\Logger\Logger;
 use Cube\Web\Html\AssetsInserter\UnsupportedAssetTypeException;
 use RuntimeException;
 
@@ -81,7 +82,9 @@ class SQLite extends Plan
     }
 
     public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
-        throw new RuntimeException("SQLite does not support constraints on already existing fields");
+        Logger::getInstance()->warning(
+            "SQLite does not support constraints on already existing fields, trying to constraint $table.$field to $foreignTable.$foreignKey"
+        );
     }
 
     public function dropTable(string $table) {
@@ -97,15 +100,16 @@ class SQLite extends Plan
     }
 
     public function alterColumn(string $table, string $field, ModelField $newProperties) {
-        throw new UnsupportedByDBMSException("Column edition is not supported by SQLite, please rebuild your $table table");
-
-        $this->database->query("ALTER TABLE `{}` MODIFY `{}` " . $this->getModelFieldSQLQuery($newProperties), [
-            $table, $field
-        ]);
+        Logger::getInstance()->warning(
+            "Column edition is not supported by SQLite, please rebuild your $table table"
+        );
     }
 
     public function addUniqueIndex(string $table, string|array $fields) {
-        throw new RuntimeException("SQLite does not support constraints on already existing fields");
+        $fields = Bunch::of($fields)->join(', ');
+        Logger::getInstance()->warning(
+            "SQLite does not support constraints on already existing fields, trying to make unique key on $table ($fields)"
+        );
     }
 
     public function renameField(string $table, string $oldFieldName, string $newFieldName) {

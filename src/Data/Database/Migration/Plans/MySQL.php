@@ -123,11 +123,10 @@ class MySQL extends Plan
 
     public function addUniqueIndex(string $table, string|array $fields) {
         $fields = Bunch::of($fields);
-        $fieldsExpression = $fields->map(fn($x) => '"'.$x.'"')->join(",");
+        $fieldsExpression = $fields->join(",");
 
         $indexName = strtolower("idx_".$table."_" . $fields->join("_"));
-        $this->database->query("CREATE UNIQUE INDEX $indexName ON \"{}\"($fieldsExpression)", [$table]);
-
+        $this->database->query("CREATE UNIQUE INDEX $indexName ON `{}`($fieldsExpression)", [$table]);
     }
 
     public function renameField(string $table, string $oldFieldName, string $newFieldName) {
