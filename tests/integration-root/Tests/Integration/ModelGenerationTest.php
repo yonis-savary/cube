@@ -4,6 +4,7 @@ namespace Tests\Integration;
 
 use App\Models\ModelTrait;
 use App\Models\Product;
+use App\Models\User;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,5 +19,9 @@ class ModelGenerationTest extends TestCase
 
     public function testTraitUseAreKept() {
         $this->assertContains(ModelTrait::class, class_uses(Product::class));
+    }
+
+    public function testRelationPluralForm() {
+        $this->assertContains('agencies', User::relations());
     }
 }

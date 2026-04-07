@@ -149,6 +149,9 @@ class Table
                 basename(str_replace('\\', '/', $toModel))
             ), 's'));
 
+            if (str_ends_with($relationName, 'ys'))
+                $relationName = preg_replace('/ys$/', 'ies', $relationName);
+
             while ($fieldsNames->has($relationName) || in_array($relationName, $addedRelationNames))
                 $relationName = "_$relationName";
 

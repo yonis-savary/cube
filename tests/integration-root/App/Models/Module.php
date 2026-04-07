@@ -16,6 +16,7 @@ use Cube\Utils\Attributes\Generated;
  */
 class Module extends Model
 {
+
     #[Generated]
     public static function table(): string
     {

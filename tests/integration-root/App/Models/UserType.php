@@ -16,6 +16,7 @@ use Cube\Utils\Attributes\Generated;
  */
 class UserType extends Model
 {
+
     #[Generated]
     public static function table(): string
     {

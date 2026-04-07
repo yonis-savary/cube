@@ -16,9 +16,11 @@ use Cube\Utils\Attributes\Generated;
  * @property int $type
  * @property UserType $_type
  * @property ModuleUser[] $modules
+ * @property AgencyUser[] $agencies
  */
 class User extends Model
 {
+
     #[Generated]
     public static function table(): string
     {
@@ -58,10 +60,17 @@ class User extends Model
     }
 
     #[Generated]
+    public function agencies(): HasMany
+    {
+        return $this->hasMany('agencies', AgencyUser::class, 'user_id', 'id');
+    }
+
+    #[Generated]
     public static function relations(): array
     {
         return [
             "modules",
+            "agencies",
             "_type",
         ];
     }
