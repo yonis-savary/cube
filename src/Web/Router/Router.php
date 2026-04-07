@@ -90,12 +90,12 @@ class Router
     /**
      * @param Route|\Closure(Router)|null ...$routes
      */
-    public function addRoutes(Route|callable |null ...$routes): void
+    public function addRoutes(Route|callable|null ...$routes): void
     {
         foreach ($routes as $route)
         {
             if ($route === null)
-                return;
+                continue;
 
             if ($route instanceof Route)
                 $this->currentGroup->addRoutes($route);

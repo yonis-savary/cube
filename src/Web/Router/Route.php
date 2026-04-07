@@ -34,7 +34,7 @@ class Route
 
     public function __construct(
         string $path,
-        callable $callback,
+        callable|array $callback,
         array $methods = [],
         array $middlewares = [],
         array $extras = []
@@ -59,37 +59,37 @@ class Route
         return $callStack($request);
     }
 
-    public static function any(string $path, callable $callback, array $middlewares = [], array $extras = [])
+    public static function any(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, [], $middlewares, $extras);
     }
 
-    public static function get(string $path, callable $callback, array $middlewares = [], array $extras = [])
+    public static function get(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['GET'], $middlewares, $extras);
     }
 
-    public static function post(string $path, callable $callback, array $middlewares = [], array $extras = [])
+    public static function post(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['POST'], $middlewares, $extras);
     }
 
-    public static function put(string $path, callable $callback, array $middlewares = [], array $extras = [])
+    public static function put(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['PUT'], $middlewares, $extras);
     }
 
-    public static function patch(string $path, callable $callback, array $middlewares = [], array $extras = [])
+    public static function patch(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['PATCH'], $middlewares, $extras);
     }
 
-    public static function delete(string $path, callable $callback, array $middlewares = [], array $extras = [])
+    public static function delete(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['DELETE'], $middlewares, $extras);
     }
 
-    public static function option(string $path, callable $callback, array $middlewares = [], array $extras = [])
+    public static function option(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['OPTION'], $middlewares, $extras);
     }
@@ -122,7 +122,7 @@ class Route
         return is_array($this->callback);
     }
 
-    public function getCallback(): callable
+    public function getCallback(): callable|array
     {
         return $this->callback;
     }

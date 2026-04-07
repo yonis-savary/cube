@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Router;
 
+use Cube\Core\Injector;
 use Cube\Data\Bunch;
 use Cube\Data\Models\Model;
 use Cube\Web\Http\Request;
@@ -21,7 +22,7 @@ class RouterCallStack
     protected int $index = 0;
 
     public function __construct(
-        callable $controllerCallback,
+        callable|array $controllerCallback,
         mixed $controllerParams=[],
         array $middlewares = [],
     )
@@ -67,6 +68,16 @@ class RouterCallStack
         return Response::json($response);
     }
 
+    protected function callControllerCallback(Request $request): mixed {
+        if (is_callable($this->controllerCallback))
+            return ($this->controllerCallback)($request, ...$this->controllerParams);
+
+        list($controllerClass, $method) = $this->controllerCallback;
+
+        $controller = Injector::instanciate($controllerClass);
+        return $controller->$method($request, ...$this->controllerParams);
+    }
+
     public function __invoke(Request $request): mixed
     {
         $middleware = $this->getNextMiddleware();
@@ -74,7 +85,7 @@ class RouterCallStack
         if ($middleware)
             return $middleware::handle($request, fn(Request $request) => ($this)($request));
 
-        $response = ($this->controllerCallback)($request, ...$this->controllerParams);
+        $response = $this->callControllerCallback($request);
         if (! $response instanceof Response)
             $response = $this->adaptControllerReturnToResponse($response);
 

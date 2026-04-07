@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Utils\Path;
+use InvalidArgumentException;
 
 class RouteGroup
 {
@@ -25,6 +26,18 @@ class RouteGroup
             array_merge($this->middlewares, $group->middlewares),
             array_merge($this->extras, $group->extras),
         );
+    }
+
+    protected function assertRouteIsCallable(Route $route) {
+        $callback = $route->getCallback();
+        if (is_callable($callback))
+            return true;
+
+        list($controller, $method) = $callback;
+        if (!class_exists($controller))
+            throw new InvalidArgumentException("Class $controller does not exists");
+        if (!method_exists($controller, $method))
+            throw new InvalidArgumentException("Method $method of class $controller does not exists");
     }
 
     public function applyToRoute(Route $route)
@@ -53,6 +66,7 @@ class RouteGroup
     public function addRoutes(Route ...$routes): void
     {
         foreach ($routes as $route) {
+            $this->assertRouteIsCallable($route);
             $this->applyToRoute($route);
             $this->elements[] = $route;
         }

@@ -8,6 +8,7 @@ use Cube\Web\Router\Route;
 use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 use function Cube\measureTimeOf;
@@ -22,12 +23,29 @@ class RouterTest extends TestCase
         return $request->getRoute()->getExtras()['count'];
     }
 
+    public function getCountResponseMethod(Request $request) 
+    {
+        return $request->getRoute()->getExtras()['count'];
+    }
+
+    protected function createRoutesWithKeywords(Router $router, array $keywords, int &$count = 0)
+    {
+        foreach ($keywords as $keyword) {
+            ++$count;
+            $router->group($keyword, function: function (Router $router, RouteGroup $group) use (&$keywords, &$keyword, &$count) {
+                $router->addRoutes(
+                    Route::get('/', [self::class, 'getCountResponse'], extras: ['count' => $count])
+                );
+                $this->createRoutesWithKeywords($router, array_diff($keywords, [$keyword]), $count);
+            });
+        }
+    }
+
     /**
      * Creates a BUNCH of routes (~100k) and test routing performances.
      */
     public function testPerformances()
     {
-        $this->assertTrue(true);
         $router = new Router(new RouterConfiguration(false, false, false, [], [], '/'));
 
         $keywords = ['zim', 'zam', 'zoom', 'boo', 'bar', 'foo', 'boom'];
@@ -57,16 +75,20 @@ class RouterTest extends TestCase
         $assertRoutingTakeLessThan('/zim', 2, '1');
     }
 
-    protected function createRoutesWithKeywords(Router $router, array $keywords, int &$count = 0)
-    {
-        foreach ($keywords as $keyword) {
-            ++$count;
-            $router->group($keyword, function: function (Router $router, RouteGroup $group) use (&$keywords, &$keyword, &$count) {
-                $router->addRoutes(
-                    Route::get('/', [self::class, 'getCountResponse'], extras: ['count' => $count])
-                );
-                $this->createRoutesWithKeywords($router, array_diff($keywords, [$keyword]), $count);
-            });
-        }
+
+    public function testMethodSupport() {
+
+        $router = new Router(new RouterConfiguration(false, false, false, [], [], '/'));
+
+        $this->expectException(InvalidArgumentException::class);
+        $router->addRoutes(Route::get('/', ['InexistentClass', 'getCountResponseMethod']));
+
+        $this->expectException(InvalidArgumentException::class);
+        $router->addRoutes(Route::get('/', [static::class, 'inexistent']));
+
+        $router->addRoutes(Route::get('/', [self::class, 'getCountResponseMethod'], extras: ['count' => 1]));
+        $response = $router->route(new Request('GET', '/'));
+        $this->assertInstanceOf(Response::class, $response);
+
     }
 }
