@@ -14,6 +14,7 @@ class SQLite extends DatabaseAdapter
         'INT' => ModelField::INTEGER,
         'INT4' => ModelField::INTEGER,
         'INTEGER' => ModelField::INTEGER,
+        'TINYINT(1)' => ModelField::BOOLEAN,
         'TINYINT' => ModelField::INTEGER,
         'SMALLINT' => ModelField::INTEGER,
         'MEDIUMINT' => ModelField::INTEGER,
