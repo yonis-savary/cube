@@ -94,18 +94,20 @@ abstract class Queue
         return $this->driver->push($args);
     }
 
-    public function processNext(): void
+    public function processNext(): bool
     {
         $this->initialize();
         $args = $this->driver->next();
         try {
-            ($this)(...$args) ?? true;
+            return ($this)(...$args) ?? true;
         } catch (\Throwable $thrown) {
             $this->warning("Caught an exception while processing an item");
             $this->error($thrown->getMessage() . " " . $thrown->getFile() . "@". $thrown->getLine());
 
             if ($this->onError($thrown, $args))
                 $this->driver->push($args);
+
+            return false;
         }
     }
 
