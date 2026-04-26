@@ -13,7 +13,7 @@ class OpenAPIGenerator
     use Component;
 
     public function __construct(
-        protected OpenAPIGeneratorConfiguration $configuration
+        protected OpenAPIConfiguration $configuration
     ){}
 
     /**
@@ -32,12 +32,14 @@ class OpenAPIGenerator
         $root->generateModelSchemas();
 
 
+        $outputFile = $config->outputFile;
+
         $context->log(
             str_repeat("-", 40),
-            "    Generating file " . Path::toRelative($config->outputFile),
+            "    Generating file " . Path::toRelative($outputFile),
             str_repeat("-", 40),
         );
-        file_put_contents($config->outputFile, $root->toJSON($config->jsonFlags));
-        return $config->outputFile;
+        file_put_contents($outputFile, $root->toJSON($config->jsonFlags));
+        return $outputFile;
     }
 }

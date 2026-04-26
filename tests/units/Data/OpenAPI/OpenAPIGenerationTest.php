@@ -3,7 +3,8 @@
 namespace Cube\Tests\Units\Data\OpenAPI;
 
 use Cube\Data\OpenAPI\OpenAPIGenerator;
-use Cube\Data\OpenAPI\OpenAPIGeneratorConfiguration;
+use Cube\Data\OpenAPI\OpenAPIConfiguration;
+use Cube\Env\Storage;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\SampleController;
 use Cube\Utils\Path;
 use Cube\Web\Router\Route;
@@ -25,7 +26,12 @@ class OpenAPIGenerationTest extends TestCase
     protected function getSimpleGenerator(): OpenAPIGenerator
     {
         return new OpenAPIGenerator(
-            new OpenAPIGeneratorConfiguration(uniqid() . ".json", 'My Test Application', '0.1.0', displayLogs: false)
+            new OpenAPIConfiguration(
+                Storage::getInstance()->path(uniqid() . ".json"),
+                'My Test Application',
+                '0.1.0',
+                displayLogs: false
+            )
         );
     }
 

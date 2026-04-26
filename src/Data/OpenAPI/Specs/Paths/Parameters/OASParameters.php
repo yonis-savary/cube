@@ -6,7 +6,7 @@ use Cube\Core\Autoloader;
 use Cube\Data\AutoDataToObject;
 use Cube\Data\Bunch;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
-use Cube\Data\OpenAPI\OpenAPIGeneratorConfiguration;
+use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Rules\ObjectParam;

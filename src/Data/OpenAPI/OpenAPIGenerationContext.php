@@ -14,7 +14,7 @@ class OpenAPIGenerationContext
     public array $usedModelRefs = [];
 
     public function __construct(
-        public readonly OpenAPIGeneratorConfiguration $configuration
+        public readonly OpenAPIConfiguration $configuration
     )
     {
     }

@@ -4,9 +4,9 @@ namespace Cube\Console\Commands\Model;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
+use Cube\Console\Commands\Model\Configuration\ToTypesConfiguration;
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
-use Cube\Env\Storage;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Data\Models\Relations\HasMany;
@@ -16,6 +16,11 @@ use InvalidArgumentException;
 
 class ToTypes extends Command
 {
+    public function __construct(
+        protected ToTypesConfiguration $config
+    )
+    {}
+
     public function getHelp(): string
     {
         return 'Generate Typescript Types from your models';
@@ -93,10 +98,14 @@ class ToTypes extends Command
             ->join("\n\t")
         ;
 
+        $pluralName = $typeName . "s";
+        if (str_ends_with($pluralName, "ys"))
+            $pluralName = preg_replace("/ys$/", "ies", $pluralName);
+
         return Text::toFile("export type {$typeName} = {
             {$fields}
         }
-        export type {$typeName}s = Array<{$typeName}>
+        export type $pluralName = Array<{$typeName}>
         ");
     }
 
@@ -107,7 +116,7 @@ class ToTypes extends Command
             ->join("\n\n")
         ;
 
-        Storage::getInstance()->write('cube-types.ts', $models);
+        file_put_contents($this->config->outputFile, $models);
 
         return 0;
     }
