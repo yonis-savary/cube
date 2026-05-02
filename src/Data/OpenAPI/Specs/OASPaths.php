@@ -58,13 +58,12 @@ class OASPaths extends AutoDataToObject
             $this->groups[$path] = [];
             foreach ($routes as $route) {
                 if (!is_array($route->getMethods())) {
-                    // TODO Add Log - Ignore non-array callback routes !
+                    $context->log("Ignored non array route : $path");
                     continue;
                 }
 
                 foreach ($route->getMethods() as $method) {
                     $method = strtolower($method);
-                    // TODO Add a message in case of duplicated path/method
 
                     $context->log($this->getRouteLogString($method, $route));
 

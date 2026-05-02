@@ -98,6 +98,7 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADCustomRequestFormat.json fixture");
     }
 
+    
     public function testResponseGeneration() {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
@@ -113,6 +114,32 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADModelResponse.json fixture");
     }
 
-    
+    public function testRawResponseGeneration() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/raw", [SampleController::class, "endpointReturningARawDataType"]),
+        );
+
+        $generator = $this->getSimpleGenerator();
+
+        $file = $generator->generate($router);
+        $fixture = $this->readFixture("OADRawResponse.json");
+
+        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADRawResponse.json fixture");
+    }
+
+    public function testRawFileResponseGeneration() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/raw", [SampleController::class, "endpointReturningAFileDataType"]),
+        );
+
+        $generator = $this->getSimpleGenerator();
+
+        $file = $generator->generate($router);
+        $fixture = $this->readFixture("OADRawResponseFile.json");
+
+        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADRawResponseFile.json fixture");
+    }
 
 }

@@ -4,9 +4,13 @@ namespace Cube\Data\OpenAPI\Specs\Common;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Models\Model;
+use Cube\Data\Models\ModelField;
+use Cube\Data\OpenAPI\OpenAPIGenerationContext;
+use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\ArrayParam;
 use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Http\Rules\Rule;
+use DateTime;
 use ReflectionIntersectionType;
 use ReflectionNamedType;
 use ReflectionUnionType;
@@ -119,12 +123,48 @@ trait MakesSchemas
 
         /** @var ModelField $primaryField */
         $primaryField = $modelClass::fields()[$primaryKey] ?? false;
-        if (! $primaryField) {
+        if (! $primaryField)
             return;
-        }
 
         $rule = $primaryField->toRule();
         return $this->mutateParameterWithRule($rule, $schema);
+    }
+
+    protected function mutateParameterFromRawData(mixed $data, array &$schema) {
+        if (is_array($data)) {
+            if (empty($data)) {
+                OpenAPIGenerationContext::getInstance()->log(" - Warning: used empty array data type on parameter");
+                $schema['type'] = 'array';
+            }
+            if (Utils::isAssoc($data))
+            {
+                $schema['type'] = 'object';
+                $schema['properties'] ??= [];
+                foreach ($data as $key => $subvalue) {
+                    $schema['properties'][$key] = [];
+                    $this->mutateParameterFromRawData($subvalue, $schema['properties'][$key]);
+                }
+            }
+            else
+            {
+                $schema['type'] = 'array';
+                $schema['items'] = [ [] ];
+                $this->mutateParameterFromRawData($data[0], $schema['items'][0]);
+            }
+        } else if (is_string($data)) {
+            $schema = ['type' => 'string'];
+        } else if (is_float($data)) {
+            $schema = ['type' => 'number', 'format' => 'float',];
+        } else if (is_int($data)) {
+            $schema = ['type' => 'integer'];
+        } else if (is_bool($data)) {
+            $schema = ['type' => 'boolean'];
+        } else if ($data instanceof DateTime) {
+            $schema = ['type' => 'string', 'format' => 'date'];
+        } else {
+            OpenAPIGenerationContext::getInstance()->log(" - Warning: used 'any' data type on parameter");
+            $schema = [];
+        }
     }
 
     protected function getReflectionTypeName(ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType|null $type): ?string

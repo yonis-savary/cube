@@ -31,7 +31,6 @@ class OpenAPIGenerator
         $root->processPaths($router);
         $root->generateModelSchemas();
 
-
         $outputFile = $config->outputFile;
 
         $context->log(

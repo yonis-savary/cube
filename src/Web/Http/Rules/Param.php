@@ -127,7 +127,7 @@ class Param extends Rule
 
     /**
      * Accept any date with YYYY-MM-DD HH:mm:ss format.
-     * @param bool $addTimeToDate If `true`, will add `00:00:00` if timestamp is missing
+     * @param bool $addTimeIfMissing If `true`, will add `00:00:00` if timestamp is missing
      */
     public static function datetime(bool $nullable = false, bool $addTimeIfMissing=false): static
     {
@@ -234,22 +234,39 @@ class Param extends Rule
         ->withMetadata([self::META_MIN => $min, self::META_MAX => $max]);
     }
 
+
     /**
-     * Check if the value exists in a table as primary key.
+     * Check if the value exists in a table as primary key (or given column).
+     * @param class-string<Model> $modelClass
      */
-    public function exists(string $modelClass, bool $nullable=false, bool $explore = false, ?Database $database = null)
+    public static function exists(
+        string $modelClass,
+        ?string $column=null,
+        bool $nullable = false,
+        ?Database $database=null
+    ): static
     {
-        if (!Autoloader::extends($modelClass, Model::class)) {
-            throw new \InvalidArgumentException('$modelClass must extends Model');
+        $column ??= $modelClass::primaryKey();
+        if (!$column) {
+            throw new InvalidArgumentException('No $column given nor primary key in model');
         }
 
-        /** @var class-string<Model> $modelClass */
-        return (new self($nullable))
-            ->withValueTransformer(fn ($primaryKey) => $modelClass::find($primaryKey, $explore, $database))
-            ->withCondition(
-                fn (?Model $value) => null !== $value,
-                Text::interpolate('{key} must be a valid id (or primary key value) in table {table}, got {value}', ['table' => $modelClass::table()])
+        /** @var ModelField|false $modelField */
+        $modelField = $modelClass::fields()[$column] ?? false;
+        if (!$modelField) {
+            throw new InvalidArgumentException("Column $column not found");
+        }
+
+        $database ??= Database::getInstance();
+        return $modelField->toRule($nullable)
+            ->withValueCondition(
+                function (mixed $columnValue) use ($modelClass, $column, $database) {
+                    $result = $modelClass::findWhere([$column => $columnValue], false, $database);
+                    return $result !== null;
+                },
+                Text::interpolate('{key} must be a valid {column} in table {table}, got {value}', ['table' => $modelClass::table(), 'column' => $column])
             )
+            ->withMetadata([self::META_TYPE => 'model', self::META_MODEL => $modelClass])
         ;
     }
 }

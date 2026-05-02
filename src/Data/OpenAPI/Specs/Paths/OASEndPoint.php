@@ -8,7 +8,6 @@ use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Data\OpenAPI\Specs\Paths\Parameters\OASParameters;
 use Cube\Data\OpenAPI\Specs\Paths\RequestBody\OASRequestBody;
-use Cube\Data\OpenAPI\Specs\Paths\Responses\OASResponse;
 use Cube\Data\OpenAPI\Specs\Paths\Responses\OASResponses;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;

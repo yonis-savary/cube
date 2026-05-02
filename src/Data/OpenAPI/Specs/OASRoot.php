@@ -4,6 +4,7 @@ namespace Cube\Data\OpenAPI\Specs;
 
 use Cube\Data\AutoDataToObject as DataAutoDataToObject;
 use Cube\Data\Bunch;
+use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Data\OpenAPI\Specs\Common\ModelRef;
@@ -18,7 +19,8 @@ class OASRoot extends DataAutoDataToObject
         public string $openapi,
         public OASInfo $info,
         public array $paths = [],
-        public array $components = []
+        public array $components = [],
+        public array $security = []
     ){}
 
     public function objectKeys(): array
@@ -28,7 +30,7 @@ class OASRoot extends DataAutoDataToObject
 
     public function skipOnEmpty(): array
     {
-        return ['paths', 'components'];
+        return ['paths', 'components', 'security'];
     }
 
     public function processPaths(Router $router): void
@@ -52,5 +54,18 @@ class OASRoot extends DataAutoDataToObject
             $schema = &$this->components['schemas'][$basename];
             $this->mutateParameterWithRule($model::toObjectParam(), $schema);
         }
+    }
+
+    public function generateSecurityScheme(OpenAPIConfiguration $configuration) {
+        if (!$scheme = $configuration->authenticationScheme)
+            return;
+
+        $name = $scheme->getComponentName();
+        $arrayScheme = $scheme->toArray();
+
+        $this->components['securitySchemes'] ??= [];
+        $this->components['securitySchemes'][$name] = $arrayScheme;
+
+        $this->security[] = [$name => []];
     }
 }
