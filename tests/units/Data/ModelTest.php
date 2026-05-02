@@ -33,7 +33,7 @@ class ModelTest extends TestCase
     public function testBase(Database $database)
     {
         $database->asGlobalInstance(function(){
-            $moduleUser = ModuleUser::findWhere(['user' => 1]);
+            $moduleUser = ModuleUser::findWhere(['user' => 1], ['_user', '_module']);
 
             $this->assertEquals($moduleUser->user, 1);
             $this->assertEquals($moduleUser->module, 4);

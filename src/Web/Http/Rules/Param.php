@@ -181,7 +181,7 @@ class Param extends Rule
         string $modelClass,
         ?string $column=null,
         bool $nullable = false,
-        bool $explore=true,
+        array $with=[],
         ?Database $database=null
     ): static
     {
@@ -198,7 +198,7 @@ class Param extends Rule
 
         $database ??= Database::getInstance();
         return $modelField->toRule($nullable)
-            ->withValueTransformer(fn ($primaryKey) => $modelClass::findWhere([$column => $primaryKey], $explore, $database))
+            ->withValueTransformer(fn ($primaryKey) => $modelClass::findWhere([$column => $primaryKey], $with, $database))
             ->withCondition(
                 fn (?Model $value) => (null !== $value) || $nullable,
                 Text::interpolate('{key} must be a valid {column} in table {table}, got {value}', ['table' => $modelClass::table(), 'column' => $column])
