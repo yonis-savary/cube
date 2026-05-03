@@ -1,0 +1,171 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/post-route": {
+            "post": {
+                "summary": "postEndpointWithCustomRequest",
+                "description": "SampleController.postEndpointWithCustomRequest",
+                "operationId": "postEndpointWithCustomRequest",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "some-array": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "age": {
+                                                    "type": "integer",
+                                                    "maximum": 120
+                                                },
+                                                "last_login": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "some-boolean": {
+                                        "type": "boolean"
+                                    },
+                                    "some-float": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "some-date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "format_minimum": "2000-01-01",
+                                        "format_maximum": "2099-12-31"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/patch-route": {
+            "patch": {
+                "summary": "postEndpointWithCustomRequest",
+                "description": "SampleController.postEndpointWithCustomRequest",
+                "operationId": "postEndpointWithCustomRequest",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "some-array": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "age": {
+                                                    "type": "integer",
+                                                    "maximum": 120
+                                                },
+                                                "last_login": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "some-boolean": {
+                                        "type": "boolean"
+                                    },
+                                    "some-float": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "some-date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "format_minimum": "2000-01-01",
+                                        "format_maximum": "2099-12-31"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/put-route": {
+            "put": {
+                "summary": "postEndpointWithCustomRequest",
+                "description": "SampleController.postEndpointWithCustomRequest",
+                "operationId": "postEndpointWithCustomRequest",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "some-array": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "age": {
+                                                    "type": "integer",
+                                                    "maximum": 120
+                                                },
+                                                "last_login": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "some-boolean": {
+                                        "type": "boolean"
+                                    },
+                                    "some-float": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "some-date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "format_minimum": "2000-01-01",
+                                        "format_maximum": "2099-12-31"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

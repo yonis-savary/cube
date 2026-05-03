@@ -90,17 +90,16 @@ abstract class Model extends EventDispatcher
     /**
      * @return Query<static>
      */
-    public static function select(bool $withRelations = true): Query
+    public static function select(array $with=[]): Query
     {
         $table = static::table();
         $query = Query::select($table)->withBaseModel(static::class);
-        if ($withRelations) {
-            $query->exploreModel(static::class, $table);
-        } else {
-            foreach (static::fields() as $field) {
-                $query->selectField($field->name, $table, null, static::class);
-            }
+        foreach (static::fields() as $field) {
+            $query->selectField($field->name, $table, null, static::class);
         }
+
+        if (count($with))
+            $query->with(...$with);
 
         return $query;
     }
@@ -186,7 +185,7 @@ abstract class Model extends EventDispatcher
     public static function existsWhere(array $conditions, ?Database $database = null): bool
     {
         $database ??= Database::getInstance();
-        return null !== static::findWhere($conditions, false, $database);
+        return null !== static::findWhere($conditions, [], $database);
     }
 
     public static function exists(mixed $primaryKeyValue, ?Database $database = null): bool
@@ -202,10 +201,10 @@ abstract class Model extends EventDispatcher
     /**
      * @return ?static
      */
-    public static function findWhere(array $conditions, bool $explore = true, ?Database $database = null): ?self
+    public static function findWhere(array $conditions, array $with = [], ?Database $database = null): ?self
     {
         $database ??= Database::getInstance();
-        $query = static::select($explore)->withBaseModel(static::class);
+        $query = static::select($with)->withBaseModel(static::class);
         foreach ($conditions as $column => $value) {
             $query->where($column, $value, '=', static::table());
         }
@@ -264,27 +263,21 @@ abstract class Model extends EventDispatcher
             ->withTransformer(fn($data) => $data ? new static($data): null);
     }
 
-    /**
-     * @return ?static
-     */
-    public static function find(mixed $primaryKeyValue, bool $explore = true, ?Database $database = null): ?self
+    public static function find(mixed $primaryKeyValue, array $with = [], ?Database $database = null): ?static
     {
         $database ??= Database::getInstance();
         if (!$primaryKey = static::primaryKey()) {
             throw new \RuntimeException( static::class . " model does not have a primary key, cannot use the exists method");
         }
 
-        return static::findWhere([$primaryKey => $primaryKeyValue], $explore, $database);
+        return static::findWhere([$primaryKey => $primaryKeyValue], $with, $database);
     }
 
-    /**
-     * @return static
-     */
-    public static function findOrCreate(array $data, bool $explore = true, ?Database $database = null, array $extrasProperties = []): self
+    public static function findOrCreate(array $data, array $with = [], ?Database $database = null, array $extrasProperties = []): static
     {
         $database ??= Database::getInstance();
 
-        if (!$model = self::findWhere($data, $explore, $database))
+        if (!$model = self::findWhere($data, $with, $database))
             return  self::insertArray(array_merge($data, $extrasProperties), $database);
 
         foreach ($extrasProperties as $key => $value)
@@ -481,20 +474,24 @@ abstract class Model extends EventDispatcher
         return new HasMany($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
 
-    protected function getComputedRelationToArray(string $relation)
-    {
-        if (!str_contains($relation, "."))
-            return [$relation];
+    protected function loadTree(array $tree) {
+        foreach ($tree as $relation => $subtree) {
 
-        $parts = explode(".", $relation);
+            $this->{$relation}()->load(false);
 
-        $rest = $parts;
-        array_pop($rest);
+            if (!count($subtree))
+                continue;
 
-        return [
-            ...$this->getComputedRelationToArray(join(".", $rest)),
-            $relation
-        ];
+            $relationInstance = &$this->references[$relation];
+
+            if (is_array($relationInstance)) {
+                foreach ($relationInstance as $child)
+                    $child->loadTree($subtree);
+            } else if ($relationInstance) {
+                $relationInstance->loadTree($subtree);
+            }
+        }
+
     }
 
     /**
@@ -502,39 +499,8 @@ abstract class Model extends EventDispatcher
      */
     public function load(string ...$relations): self
     {
-        /** @var string[] $relations */
-        $relations = Utils::toArray($relations);
-
-        $relations = Bunch::of($relations)
-            ->map(fn($rel) => $this->getComputedRelationToArray($rel))
-            ->flat()
-            ->uniques()
-            ->get();
-
-        foreach ($relations as $relation) {
-            if (str_contains($relation, "."))
-                continue;
-
-            $this->{$relation}()->load(false);
-
-            $childRelations = Bunch::of($relations)
-                ->filter(fn(string $rel) => str_starts_with($rel, "$relation."))
-                ->map(fn(string $rel) => Text::dontStartsWith($rel, "$relation."))
-                ->get();
-
-            if (!count($childRelations))
-                continue;
-
-            $relationInstance = &$this->references[$relation];
-
-            if (is_array($relationInstance)) {
-                foreach ($relationInstance as $child)
-                    $child->load(...$childRelations);
-            } else if ($relationInstance) {
-                $relationInstance->load(...$childRelations);
-            }
-        }
-
+        $tree = new RelationTree(...$relations);
+        $this->loadTree($tree->getTree());
         return $this;
     }
 

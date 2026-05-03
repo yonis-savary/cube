@@ -1,0 +1,59 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/raw": {
+            "get": {
+                "summary": "endpointReturningARawDataType",
+                "description": "SampleController.endpointReturningARawDataType",
+                "operationId": "endpointReturningARawDataType",
+                "responses": {
+                    "200": {
+                        "description": null,
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "first-key": {
+                                            "type": "array",
+                                            "items": [
+                                                {
+                                                    "type": "integer"
+                                                }
+                                            ]
+                                        },
+                                        "second-key": {
+                                            "type": "object",
+                                            "properties": {
+                                                "some": {
+                                                    "type": "array",
+                                                    "items": [
+                                                        {
+                                                            "type": "string"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        "third-key": {
+                                            "type": "object",
+                                            "properties": {
+                                                "a-flag": {
+                                                    "type": "boolean"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

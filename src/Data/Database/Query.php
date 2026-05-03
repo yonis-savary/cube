@@ -20,6 +20,9 @@ use Cube\Data\Models\DummyModel;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Data\Models\Relations\HasOne;
+use Cube\Data\Models\Relations\Relation;
+use Cube\Data\Models\RelationTree;
+use Cube\Env\Logger\Logger;
 
 /**
  * @template TModel
@@ -327,43 +330,63 @@ class Query
         return Bunch::of($this->fetch());
     }
 
-    /**
-     * @return self<TModel>
-     */
-    public function exploreModel(Model|string $class, string $joinAcc): self
-    {
-        $fields = Bunch::fromValues($class::fields());
+    public function with(string ...$relations): Query {
 
-        $fields->forEach(function (ModelField $field) use (&$joinAcc, $class) {
-            $fieldName = $field->name;
-            $fieldAlias = "{$joinAcc}.{$fieldName}";
-            $this->selectField($fieldName, $joinAcc, $fieldAlias, $class, $field);
-        });
+        $tree = new RelationTree(...$relations);
+        $treeArray = $tree->getTree();
 
-        $instance = is_string($class) ? new $class() : $class;
-
-        Bunch::of($class::relations())
-            ->map(fn($rel) => $instance->$rel())
-            ->onlyInstancesOf(HasOne::class)
-            ->forEach(function(HasOne $relation) use ($joinAcc) {
-                $fieldName = $relation->fromColumn;
-                $refModel = $relation->toModel;
-                $refColumn = $relation->toColumn;
-
-                $refTable = $refModel::table();
-                $newAcc = $joinAcc.'&'.$relation->getName();
-                $this->join(
-                    'LEFT',
-                    $refTable,
-                    $newAcc,
-                    new FieldComparaison($joinAcc, $fieldName, '=', $newAcc, $refColumn)
-                );
-
-                $toExploreQueue[] = [$refModel, $newAcc];
-                $this->exploreModel($refModel, $newAcc);
-            });
+        $this->exploreTree(
+            $this->base->model,
+            $treeArray,
+            $this->base->table
+        );
 
         return $this;
+    }
+
+    /**
+     * @param class-string<Model> $referenceClass
+     */
+    protected function exploreTree(string $referenceClass, array $tree, ?string $joinAcc=null) {
+        $modelRelations = $referenceClass::relations();
+        foreach ($tree as $relationName => $subtree) {
+            if (!in_array($relationName, $modelRelations)) {
+                Logger::getInstance()->error("Cannot load $relationName on model $referenceClass");
+                continue;
+            }
+
+            $instance = new $referenceClass();
+            /** @var Relation $relation */
+            $relation = $instance->{$relationName}();
+
+            if (!$relation instanceof HasOne) {
+                Logger::getInstance()->error("Can only load HasOne relations on queries model ($referenceClass.$relationName)");
+                continue;
+            }
+
+            $fieldName = $relation->fromColumn;
+            $refModel = $relation->toModel;
+            $refColumn = $relation->toColumn;
+
+            $refTable = $refModel::table();
+            $subJoinAcc = $joinAcc.'&'.$relation->getName();
+            $this->join(
+                'LEFT',
+                $refTable,
+                $subJoinAcc,
+                new FieldComparaison($joinAcc, $fieldName, '=', $subJoinAcc, $refColumn)
+            );
+
+            $subfields = $refModel::fields();
+            foreach ($subfields as $subField) {
+                $subFieldName = $subField->name;
+                $subFieldAlias = "{$subJoinAcc}.{$subFieldName}";
+
+                $this->selectField($subFieldName, $subJoinAcc, $subFieldAlias, $refModel, $subField);
+            }
+
+            $this->exploreTree($refModel, $subtree, $subJoinAcc);
+        }
     }
 
     protected function getFieldTable(string $field): ?string

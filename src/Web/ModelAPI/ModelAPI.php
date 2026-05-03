@@ -192,7 +192,7 @@ abstract class ModelAPI extends Controller
             return Response::unprocessableContent("Request must have a '{$primaryKey}' parameter");
         }
 
-        if (!$instance = $model::find($primaryKeyValue, false)) {
+        if (!$instance = $model::find($primaryKeyValue)) {
             return Response::unprocessableContent("No {$model} with {$primaryKey} = {$primaryKeyValue} found");
         }
 

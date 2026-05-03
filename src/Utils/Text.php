@@ -76,4 +76,12 @@ class Text
 
         return $message;
     }
+
+    public static function camelCaseString(string $string) {
+        $result = $string;
+        $result = preg_replace_callback("/[ _-](.)/", fn($match) => strtoupper($match[1]), $result);
+        $result = lcfirst($result);
+
+        return $result;
+    }
 }

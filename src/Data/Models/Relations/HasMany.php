@@ -4,12 +4,12 @@ namespace Cube\Data\Models\Relations;
 
 use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Model;
-use Cube\Utils\Text;
 
 /**
+ * @template TModel extends Model
  * @property Model|string $model
  * @property Model|string $fromModel
- * @property Model|string $toModel
+ * @property Model|string|class-string<TModel> $toModel
  */
 class HasMany implements Relation
 {
@@ -60,14 +60,14 @@ class HasMany implements Relation
     /**
      * @return TModel[]
      */
-    public function load(bool $loadRelations=true): array
+    public function load(): array
     {
         $thisModel = &$this->model;
         $fromColumn = $this->fromColumn;
         $toModel = $this->toModel;
         $toColumn = $this->toColumn;
 
-        $data = $toModel::select($loadRelations)->where($toColumn, $thisModel->$fromColumn)->fetch();
+        $data = $toModel::select()->where($toColumn, $thisModel->$fromColumn)->fetch();
         $thisModel->setReference($this->getName(), $data);
 
         return $data;
