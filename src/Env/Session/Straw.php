@@ -22,4 +22,9 @@ abstract class Straw
         $session ??= Session::getInstance();
         $session->set(static::getKey(), $value);
     }
+
+    public static function unset(): void {
+        $session ??= Session::getInstance();
+        $session->unset(static::getKey());
+    }
 }
