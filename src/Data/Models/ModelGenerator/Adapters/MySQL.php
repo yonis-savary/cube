@@ -78,7 +78,7 @@ class MySQL extends SQLite
 
         $primary = null;
 
-        $fields = Bunch::of($db->query("DESCRIBE {$table}"))
+        $fields = Bunch::of($db->query("DESCRIBE `{$table}`"))
             ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); })
             ->get()
         ;
