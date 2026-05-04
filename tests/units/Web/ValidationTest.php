@@ -210,6 +210,24 @@ class ValidationTest extends TestCase
 
     }
 
+    public function testAnyKeyObjectValidation() {
+
+        $rule = Param::anyKeyObject(
+            Param::integer(true)->isBetween(0, 100)
+        );
+
+        $this->testRule($rule, ['max' => 5, 'mary' => 12]);
+        $this->testRule($rule, ['max' => 5, 'mary' => null]);
+        $this->testRule($rule, ['max' => 'invalid'], false);
+        $this->testRule($rule, ['max' => 'invalid', 'mary' => 12], false);
+
+
+        $rule = Param::anyKeyObject(
+            Param::integer(false)->isBetween(0, 100)
+        );
+        $this->testRule($rule, ['max' => null], false);
+    }
+
     public function testEmailValidation() {
         $rule = Param::email();
 

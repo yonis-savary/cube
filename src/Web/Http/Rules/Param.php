@@ -73,6 +73,11 @@ class Param extends Rule
         return new ObjectParam($rules, $nullable);
     }
 
+    public static function anyKeyObject(Rule|array $valueRule, bool $nullable = false): AnyKeyObjectParam
+    {
+        return new AnyKeyObjectParam($valueRule, $nullable);
+    }
+
     /**
      * Accept any email through filter_var().
      */

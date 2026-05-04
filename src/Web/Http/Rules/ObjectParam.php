@@ -11,7 +11,7 @@ class ObjectParam extends Rule
 {
     protected Param $param;
 
-    /** @var Array<string,Rule> */
+    /** @var array<string,Rule> */
     protected array $rules=[];
 
     public function __construct(array $assocRules=[], bool $nullable=false)
