@@ -9,6 +9,8 @@ use Cube\Security\Authentication\AuthenticationConfiguration;
 use Cube\Security\Authentication\AuthenticationProvider;
 use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
+use Cube\Security\Authentication\Events\LoggedInUser;
+use Cube\Security\Authentication\Events\LoggedOutUser;
 
 class Authentication
 {
@@ -21,9 +23,6 @@ class Authentication
 
     private AuthenticationProvider $provider;
 
-    /**
-     * @param class-string<Model> $model
-     */
     public function __construct(AuthenticationConfiguration $configuration) {
         $this->provider = $configuration->provider;
         $this->session();
@@ -39,7 +38,6 @@ class Authentication
         }
 
         $this->login($user);
-        (new AuthenticatedUser($user, $user->id()))->dispatch();
         return true;
     }
 
@@ -48,6 +46,9 @@ class Authentication
         $this->session->set(self::SESSION_USER_CLASS, $user::class);
         $this->session->set(self::SESSION_USER_DATA, $user->toArray());
         $this->session->set(self::SESSION_USER_ID, $user->id());
+
+        (new AuthenticatedUser($user, $user->id()))->dispatch();
+        (new LoggedInUser($user, $user->id()))->dispatch();
     }
 
     public function loginById(mixed $id): bool
@@ -61,8 +62,13 @@ class Authentication
 
     public function logout(): void
     {
+        $user = $this->user();
+        $userId = $this->userId();
+
         $this->session->unset(self::SESSION_USER_DATA);
         $this->session->unset(self::SESSION_USER_ID);
+
+        (new LoggedOutUser($user, $userId))->dispatch();
     }
 
     public function isLogged(): bool

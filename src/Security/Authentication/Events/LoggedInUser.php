@@ -6,9 +6,9 @@ use Cube\Event\Event;
 use Cube\Data\Models\Model;
 
 /**
- * Dispatched at the same time as LoggedInUser
+ * Dispatched at the same time as AuthenticatedUser
  */
-class AuthenticatedUser extends Event
+class LoggedInUser extends Event
 {
     public function __construct(
         public Model $authenticatedUser,

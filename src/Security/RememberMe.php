@@ -93,4 +93,17 @@ class RememberMe implements Middleware
         self::getInstance()->handleRequest($request);
         return $next($request);
     }
+
+    public function forget(Request|string $requestOrToken) {
+        $token = $requestOrToken;
+
+        if ($requestOrToken instanceof Request) {
+            $cookieName = $this->configuration->cookieName;
+            $token = $requestOrToken->getCookies()[$cookieName] ?? false;
+        }
+
+        if ($token && $this->cache->has($token)) {
+            $this->cache->delete($token);
+        }
+    }
 }
