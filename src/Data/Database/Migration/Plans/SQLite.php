@@ -78,7 +78,7 @@ class SQLite extends Plan
         $this->database->exec($query);
 
         if ($field->isUnique || $field->hasReference())
-            throw new RuntimeException("SQLite does not support constraints on already existing fields");
+            Logger::getInstance()->warning("SQLite does not support constraints on already existing fields, trying to constraint $table.$field");
     }
 
     public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
