@@ -30,7 +30,7 @@ class Authentication
 
     public function attempt(string $login, ?string $userPassword=null): bool
     {
-        $this->logout();
+        $this->resetSession();
 
         if (!$user = $this->provider->attempt($login, $userPassword)){
             (new FailedAuthentication())->dispatch();
@@ -60,13 +60,21 @@ class Authentication
         return true;
     }
 
+    protected function resetSession() {
+        $this->session->unset(self::SESSION_USER_CLASS);
+        $this->session->unset(self::SESSION_USER_DATA);
+        $this->session->unset(self::SESSION_USER_ID);
+    }
+
     public function logout(): void
     {
+        if (!$this->isLogged())
+            return;
+
         $user = $this->user();
         $userId = $this->userId();
 
-        $this->session->unset(self::SESSION_USER_DATA);
-        $this->session->unset(self::SESSION_USER_ID);
+        $this->resetSession();
 
         (new LoggedOutUser($user, $userId))->dispatch();
     }
