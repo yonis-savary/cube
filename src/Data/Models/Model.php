@@ -212,6 +212,7 @@ abstract class Model extends EventDispatcher
         $query->limit(1);
 
         if ($model = $query->fetch($database)[0] ?? false) {
+            $model->loadMissing(...$with);
             return $model->markAsOriginal(true);
         }
 
@@ -474,10 +475,13 @@ abstract class Model extends EventDispatcher
         return new HasMany($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
 
-    protected function loadTree(array $tree) {
-        foreach ($tree as $relation => $subtree) {
-
-            $this->{$relation}()->load(false);
+    protected function loadTree(array $tree, bool $skipLoaded=false) 
+    {
+        foreach ($tree as $relation => $subtree) 
+        {
+            $skip = $skipLoaded && array_key_exists($relation, $this->references);
+            if (!$skip)
+                $this->{$relation}()->load();
 
             if (!count($subtree))
                 continue;
@@ -491,7 +495,6 @@ abstract class Model extends EventDispatcher
                 $relationInstance->loadTree($subtree);
             }
         }
-
     }
 
     /**
@@ -506,28 +509,8 @@ abstract class Model extends EventDispatcher
 
     public function loadMissing(string ...$relations): self
     {
-        foreach ($relations as $relation) {
-            if (str_contains($relation, "."))
-                continue;
-
-            if (!array_key_exists($relation, $this->references))
-                $this->{$relation}()->load();
-
-            $childRelations = Bunch::of($relation)
-                ->diff([$relation])
-                ->map(fn($rel) => Text::dontStartsWith($rel, "$relation\."))
-                ->get();
-
-            $relationInstance = &$this->references[$relation];
-
-            if (is_array($relationInstance)) {
-                foreach ($relationInstance as $child)
-                    $child->loadMissing(...$childRelations);
-            } else if ($relationInstance) {
-                $relationInstance->loadMissing(...$childRelations);
-            }
-        }
-
+        $tree = new RelationTree(...$relations);
+        $this->loadTree($tree->getTree(), true);
         return $this;
     }
 
