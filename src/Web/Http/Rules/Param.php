@@ -266,7 +266,7 @@ class Param extends Rule
         return $modelField->toRule($nullable)
             ->withValueCondition(
                 function (mixed $columnValue) use ($modelClass, $column, $database) {
-                    $result = $modelClass::findWhere([$column => $columnValue], false, $database);
+                    $result = $modelClass::findWhere([$column => $columnValue], [], $database);
                     return $result !== null;
                 },
                 Text::interpolate('{key} must be a valid {column} in table {table}, got {value}', ['table' => $modelClass::table(), 'column' => $column])
