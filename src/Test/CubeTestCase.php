@@ -9,6 +9,7 @@ use Cube\Web\Http\Upload;
 use Cube\Data\Models\Model;
 use Cube\Web\Helpers\CubeServer;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
 /**
  * This test class allows you to interact with your application
@@ -30,7 +31,13 @@ abstract class CubeTestCase extends TestCase
 
     protected function setUp(): void
     {
-        TestContext::getInstance()->useNewEmptyApplicationDatabase();
+        try {
+            TestContext::getInstance()->useNewEmptyApplicationDatabase();
+
+        }
+        catch(Throwable $err) {
+            print_r($err->getTraceAsString());
+        }
     }
 
     /**
