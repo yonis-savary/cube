@@ -13,11 +13,10 @@ use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
 use Cube\Data\Models\Relations\Relation;
-use Cube\Utils\Text;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\ObjectParam;
 use DateTime;
-use Exception;
+use InvalidArgumentException;
 
 abstract class Model extends EventDispatcher
 {
@@ -690,5 +689,24 @@ abstract class Model extends EventDispatcher
 
             $this->dispatch(new SavedModel($this, $database));
         }
+    }
+
+    /**
+     * Allow the modification of multiple keys at once through an assoc array
+     * @param array|Request $assocData Associative array to merge with, it a Request is given `validated()` is used
+     */
+    public function merge(array|Request $assocData): self {
+        if ($assocData instanceof Request)
+            $assocData = $assocData->validated();
+
+        if (!Utils::isAssoc($assocData))
+            throw new InvalidArgumentException('Given $assocData must be an associative array, got a list.');
+
+        foreach ($assocData as $key => $value) {
+            if ($this->hasField($key))
+                $this->$key = $value;
+        }
+
+        return $this;
     }
 }

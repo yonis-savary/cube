@@ -256,6 +256,35 @@ class ModelTest extends TestCase
         });
     }
 
+    public function testMergeWithArray()
+    {
+        $product = new Product(['id' => 1, 'name' => 'screen', 'price_dollar' => 10]);
+
+        $product->merge(['name' => 'monitor', 'price_dollar' => 20]);
+
+        $this->assertEquals('monitor', $product->name);
+        $this->assertEquals(20, $product->price_dollar);
+    }
+
+    public function testMergeThrowsOnList()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $product = new Product(['name' => 'screen']);
+        $product->merge(['monitor', 'keyboard']);
+    }
+
+    public function testMergeWithRequest()
+    {
+        $product = new Product(['id' => 1, 'name' => 'screen', 'price_dollar' => 10]);
+
+        $request = new Request('POST', '/', [], ['name' => 'monitor', 'price_dollar' => 99]);
+        $product->merge($request);
+
+        $this->assertEquals('monitor', $product->name);
+        $this->assertEquals(99, $product->price_dollar);
+    }
+
     /*
 
     #[ DataProvider('getDatabases') ]
