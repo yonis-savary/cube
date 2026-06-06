@@ -2,10 +2,8 @@
 
 namespace Cube\Data\Models\Relations;
 
-use Cube\Data\Bunch;
 use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Model;
-use Cube\Utils\Text;
 
 /**
  * @template TModel of Model
@@ -67,9 +65,9 @@ class HasOne implements Relation
     }
 
     /**
-     * @return TModel
+     * @return TModel|null
      */
-    public function load(): Model
+    public function load(): Model|null
     {
         $thisModel = &$this->model;
         $fromColumn = $this->fromColumn;
