@@ -3,7 +3,6 @@
 namespace Cube\Web\Http;
 
 use Cube\Data\Bunch;
-use Cube\Web\Http\Rules\Validator;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
 use Cube\Web\Http\Rules\AnyParam;
@@ -313,6 +312,19 @@ class Request extends HttpMessage
             throw new InvalidArgumentException("$key key does not exists in validated values");
 
         return $result[$key];
+    }
+
+    /**
+     * @param bool $validated If `true`, only data from validated() is returned, otherwise, data from all()
+     * @return array Request data filtered by keys
+     */
+    public function only(array $keys, bool $validated = true): array {
+        return array_intersect_key(
+            $validated
+                ? $this->validated()
+                : $this->all(),
+            array_flip($keys)
+        );
     }
 
     public function fetch(
