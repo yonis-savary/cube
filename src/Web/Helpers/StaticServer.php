@@ -93,6 +93,15 @@ class StaticServer extends WebAPI
 
     protected function isPathDangerous(string $path): bool
     {
-        return str_contains($path, '..');
+        if ($this->supportsIndex && $path === '/' )
+            return false;
+
+        if (str_contains($path, '..'))
+            return true;
+
+        if (is_file(Path::join($this->directory->getRoot(), $path)))
+            return false;
+
+        return is_file($path) || is_dir($path);
     }
 }

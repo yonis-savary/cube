@@ -22,5 +22,16 @@ class StaticServerTest extends CubeTestCase
             ->body()
         ;
         $this->assertEquals('Hello!', $file);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'fakefile');
+        $this->assertFileExists($tmpFile);
+        $this->get($tmpFile)
+            ->assertNotFound();
+        
+        $file = $this->get('/etc/passwd')
+            ->assertOk()
+            ->body()
+        ;
+        $this->assertEquals('Hello from passwd', $file);
     }
 }

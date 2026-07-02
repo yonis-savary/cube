@@ -199,7 +199,7 @@ class Router
             {
                 $serviceResponse = $api->handle($request);
                 if ($serviceResponse instanceof Response)
-                    return $this->globalizeResponse(fn($r) => $api->handle($r), $request);
+                    return $this->globalizeResponse(fn() => $serviceResponse, $request);
 
                 if ($serviceResponse instanceof Route)
                 {
