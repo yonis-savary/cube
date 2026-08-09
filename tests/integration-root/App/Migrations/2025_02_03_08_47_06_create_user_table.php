@@ -22,7 +22,14 @@ return new class extends Migration {
             ModelField::integer('type')->references('user_type', 'id'),
         ]);
 
-        $database->exec("INSERT INTO user (login, password, type) VALUES ('root', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 1);");
+        $database->exec("INSERT INTO user (login, password, type) VALUES 
+            ('root', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 1),
+            ('mike', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 2),
+            ('bob', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 2),
+            ('laura', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 2),
+            ('dale', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 2),
+            ('hawk', '$2y$12\$CPWrjBtTfHIBDMcRA3yexu2.LnBP5dmqHcUWxAiJAljNI1TnD5Tri', 3);
+        ");
     }
 
     public function down(Plan $plan, Database $database)
