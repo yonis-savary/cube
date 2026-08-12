@@ -250,7 +250,7 @@ class Query
         return $builder->build($this, $database);
     }
 
-    public function count(): int
+    public function count(?Database $database = null): int
     {
         $database ??= Database::getInstance();
         $builder = $database->getQueryBuilder();
@@ -327,7 +327,7 @@ class Query
     {
         $database ??= Database::getInstance();
 
-        return Bunch::of($this->fetch());
+        return Bunch::of($this->fetch($database));
     }
 
     public function with(string ...$relations): Query {
