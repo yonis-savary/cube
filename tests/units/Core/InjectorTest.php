@@ -70,4 +70,31 @@ class InjectorTest extends TestCase
         $paramClass = Injector::instanciate(DefaultParamClass::class, ['some-name']);
         $this->assertInstanceOf(DefaultParamClass::class, $paramClass);
     }
+
+    public function test_a_null_given_on_purpose_is_a_value() {
+        $function = function(?string $label='from-the-signature') {};
+
+        $this->assertEquals([null], Injector::getDependencies($function, [null]));
+        $this->assertEquals(['given'], Injector::getDependencies($function, ['given']));
+        $this->assertEquals(['from-the-signature'], Injector::getDependencies($function));
+    }
+
+    public function test_union_typed_parameter_keeps_the_given_value() {
+        $function = function(string|int $value) {};
+
+        $this->assertEquals([12], Injector::getDependencies($function, [12]));
+    }
+
+    public function test_union_typed_parameter_falls_back_to_its_default() {
+        $function = function(string|int $value=5) {};
+
+        $this->assertEquals([5], Injector::getDependencies($function));
+    }
+
+    public function test_union_typed_parameter_without_any_value_is_reported() {
+        $function = function(string|int $value) {};
+
+        $this->expectException(\InvalidArgumentException::class);
+        Injector::getDependencies($function);
+    }
 }

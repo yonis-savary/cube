@@ -16,6 +16,7 @@ use Cube\Utils\Path;
 use Cube\Utils\Shell;
 use ErrorException;
 use Exception;
+use RuntimeException;
 
 class Autoloader
 {
@@ -93,7 +94,7 @@ class Autoloader
     public static function initialize(?string $forceProjectPath = null, ?AutoloaderConfiguration $configuration = null)
     {
         self::registerErrorHandlers();
-        self::$loader = spl_autoload_functions()[0][0];
+        self::$loader = self::findClassLoader();
 
         $cubeSrc = (new Storage(__DIR__))->parent();
         $cubeHelpers = $cubeSrc->child('Helpers');
@@ -128,7 +129,22 @@ class Autoloader
         self::saveToApcu();
     }
 
-    public static function includeRequireFiles(): void 
+    protected static function findClassLoader(): ClassLoader
+    {
+        foreach (spl_autoload_functions() as $autoloadFunction) {
+            // Composer registers its loader as [ClassLoader, 'loadClass']
+            if (!is_array($autoloadFunction))
+                continue;
+
+            $possibleLoader = $autoloadFunction[0] ?? null;
+            if ($possibleLoader instanceof ClassLoader)
+                return $possibleLoader;
+        }
+
+        throw new RuntimeException('Could not find composer ClassLoader among the registered autoloaders');
+    }
+
+    public static function includeRequireFiles(): void
     {
         foreach (self::$requireFiles as $file) {
             include_once Path::relative($file);
@@ -443,8 +459,10 @@ class Autoloader
                 continue;
             }
 
-            $app = new Storage($app);
-            foreach ($app->directories() as $directory) {
+            self::$knownApplications[] = $app;
+
+            $appStorage = new Storage($app);
+            foreach ($appStorage->directories() as $directory) {
                 $dirName = basename($directory);
 
                 switch ($dirName) {
@@ -492,8 +510,9 @@ class Autoloader
             });
         }
 
-        self::saveToApcu();
         $holder[$identifier] = $classes->get();
+        self::saveToApcu();
+
         return $holder[$identifier];
     }
 }

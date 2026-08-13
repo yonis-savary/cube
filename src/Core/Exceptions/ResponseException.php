@@ -10,6 +10,6 @@ class ResponseException extends \Exception
         string $message,
         public Response $response
     ) {
-        $this->message = $message;
+        parent::__construct($message);
     }
 }

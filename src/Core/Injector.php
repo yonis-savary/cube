@@ -8,6 +8,7 @@ use Cube\Data\Models\Model;
 use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
+use ReflectionNamedType;
 use ReflectionParameter;
 use RuntimeException;
 
@@ -63,7 +64,7 @@ class Injector
                 continue;
             }
 
-            $injectedParams[] = isset($initialValues[$i])
+            $injectedParams[] = array_key_exists($i, $initialValues)
                 ? self::resolveParameterFromGivenValue($parameter, $initialValues[$i])
                 : self::resolveParameterFromNothing($parameter)
             ;
@@ -72,8 +73,15 @@ class Injector
         return $injectedParams;
     }
 
+    protected static function resolveParameterTypeName(ReflectionParameter $parameter): ?string
+    {
+        $type = $parameter->getType();
+        return $type instanceof ReflectionNamedType ? $type->getName() : null;
+    }
+
     protected static function resolveVariadicParameter(ReflectionParameter $parameter): Bunch {
-        $classname = $parameter->getType()->getName();
+        if (!$classname = self::resolveParameterTypeName($parameter))
+            throw new RuntimeException("Variadic parameter \${$parameter->getName()} must name a single class or interface, got ".$parameter->getType());
 
         if (interface_exists($classname))
             return Bunch::fromImplements($classname);
@@ -85,8 +93,12 @@ class Injector
     }
 
     protected static function resolveParameterFromNothing(ReflectionParameter $parameter) {
-        $type = $parameter->getType();
-        $requestType = $type ? $type->getName() : Request::class;
+        if (!$requestType = self::resolveParameterTypeName($parameter)) {
+            if ($parameter->isOptional() && $parameter->isDefaultValueAvailable())
+                return $parameter->getDefaultValue();
+
+            throw new \InvalidArgumentException("Could not create dependency injection values for callback, \${$parameter->getName()} is typed ".$parameter->getType().' and no single class can be resolved from it');
+        }
 
         if (Autoloader::uses($requestType, Component::class))
             return $requestType::getInstance();
@@ -104,8 +116,8 @@ class Injector
     }
 
     protected static function resolveParameterFromGivenValue(ReflectionParameter $parameter, mixed $injected) {
-        $type = $parameter->getType();
-        $requestType = $type ? $type->getName() : Request::class;
+        if (!$requestType = self::resolveParameterTypeName($parameter))
+            return $injected;
 
         if (Autoloader::extends($requestType, Request::class)) {
             /** @var Request $request */
@@ -114,7 +126,7 @@ class Injector
             $result = $request->validate();
             if (!$result->isValid())
                 throw new ResponseException(
-                    'Given request is not valid', 
+                    'Given request is not valid',
                     Response::unprocessableContent(json_encode($result->getErrors(), JSON_THROW_ON_ERROR))
                 );
 

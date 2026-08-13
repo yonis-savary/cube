@@ -4,7 +4,10 @@ namespace Cube\Core;
 
 trait Component
 {
-    private static ?self $instance = null;
+    /**
+     * @var array<class-string,?static>
+     */
+    private static array $instances = [];
 
     public static function getDefaultInstance(): static
     {
@@ -16,11 +19,7 @@ trait Component
      */
     public static function getInstance(): mixed
     {
-        if (!static::hasInstance()) {
-            static::$instance = static::getDefaultInstance();
-        }
-
-        return static::$instance;
+        return static::$instances[static::class] ??= static::getDefaultInstance();
     }
 
     /**
@@ -30,17 +29,17 @@ trait Component
      */
     public static function setInstance($instance): void
     {
-        static::$instance = $instance;
+        static::$instances[static::class] = $instance;
     }
 
     public static function hasInstance(): bool
     {
-        return !is_null(static::$instance);
+        return isset(static::$instances[static::class]);
     }
 
     public static function removeInstance(): void
     {
-        static::$instance = null;
+        unset(static::$instances[static::class]);
     }
 
     /**
@@ -51,12 +50,16 @@ trait Component
      */
     public static function withInstance($scopedInstance, callable $callback): void
     {
-        $oldInstance = static::getInstance();
+        // Read the slot instead of getInstance() : building a default one only to
+        // restore it would leave a component instanciated that nobody asked for
+        $oldInstance = static::$instances[static::class] ?? null;
 
         static::setInstance($scopedInstance);
-        $callback($scopedInstance, $oldInstance);
-
-        static::setInstance($oldInstance);
+        try {
+            $callback($scopedInstance, $oldInstance);
+        } finally {
+            static::setInstance($oldInstance);
+        }
     }
 
     public function asGlobalInstance(callable $callback): void
