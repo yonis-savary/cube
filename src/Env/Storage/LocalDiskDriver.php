@@ -10,18 +10,15 @@ class LocalDiskDriver extends StorageDriver
 {
     public function write(string $path, string $content, int $flags = 0): bool
     {
-        $initialSize = $this->isFile($path) ? filesize($path) : 0;
+        $writtenLength = @file_put_contents($path, $content, $flags);
 
-        try {
-            file_put_contents($path, $content, $flags);
-
-            return (filesize($path) - $initialSize) == strlen($content);
-        } catch (\Throwable $err) {
-            Logger::getInstance()->warning("Could not write file [{$path}]");
-            Logger::getInstance()->warning($err);
+        if (false === $writtenLength) {
+            Logger::getInstance()->warning('Could not write file [{path}]', ['path' => $path]);
 
             return false;
         }
+
+        return strlen($content) === $writtenLength;
     }
 
     public function read(string $path): string

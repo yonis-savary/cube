@@ -16,7 +16,7 @@ trait HasLogger
         $classname = preg_replace('/.+\\\/', '', $classname);
         $classname = strtolower($classname);
 
-        return $this->logger = new Logger($classname.'.csv');
+        return $this->logger = Logger::forFile($classname.'.csv');
     }
 
     public function logThrowable(\Throwable $thrown): void

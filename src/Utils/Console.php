@@ -26,7 +26,7 @@ class Console
     public static function getLogger(): Logger
     {
         if (!self::$logger) {
-            self::$logger = new Logger('console.csv');
+            self::$logger = Logger::forFile('console.csv');
         }
 
         return self::$logger;

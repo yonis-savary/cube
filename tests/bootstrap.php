@@ -19,3 +19,6 @@ $env = new Environment(null);
 $env->set('QUEUE_REDIS_HOST', 'localhost');
 
 Environment::setInstance($env);
+
+// Open session before any output, to avoid "headers already sent" errors
+session_start();

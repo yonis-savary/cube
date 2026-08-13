@@ -2,7 +2,6 @@
 
 namespace Cube\Env;
 
-use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Env\Session\SessionConfiguration;
 use Cube\Utils\Path;
@@ -11,12 +10,12 @@ class Session
 {
     use Component;
 
-    protected ?string $namespace = null;
+    protected string $namespace;
 
     public function __construct(?string $namespace = null)
     {
-        if (!$namespace) {
-            throw new \InvalidArgumentException("Invalid session namespace [{$namespace}], namespace cannot be empty");
+        if (null === $namespace || '' === $namespace) {
+            throw new \InvalidArgumentException('Session namespace cannot be empty');
         }
 
         $this->namespace = $namespace;
@@ -41,11 +40,7 @@ class Session
 
     public function getNamespacedKey(string $key): string
     {
-        if ($namespace = $this->namespace) {
-            return "{$namespace}{$key}";
-        }
-
-        return $key;
+        return "{$this->namespace}{$key}";
     }
 
     public function set(string $key, mixed $value): void

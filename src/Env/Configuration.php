@@ -33,7 +33,7 @@ class Configuration
 
     public static function getDefaultInstance(): static
     {
-        $instance = (new self())->identify('cube-default');
+        $instance = (new static())->identify('cube-default');
 
         if (!$instance->loadFromCache()) {
             $file = Path::relative('cube.php');
@@ -86,7 +86,7 @@ class Configuration
     public function loadFile(string $fileToLoad): void
     {
         if (!is_file($fileToLoad)) {
-            throw new \RuntimeException($fileToLoad);
+            throw new \RuntimeException("Configuration file [{$fileToLoad}] does not exist");
         }
 
         $return = include $fileToLoad;

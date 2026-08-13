@@ -23,11 +23,12 @@ class Logger extends EventDispatcher implements LoggerInterface
     {
         $storage ??= Storage::getInstance()->child('Logs');
         $this->file = $file = $storage->path($file);
-        if ($existing = self::$loggers[$file] ?? false) {
-            return $existing;
+
+        if (array_key_exists($file, self::$loggers)) {
+            throw new \RuntimeException("A logger already writes to [{$file}], use ".static::class.'::forFile() to share it');
         }
 
-        self::$loggers[$file] = &$this;
+        self::$loggers[$file] = $this;
         $newFile = !is_file($file);
 
         if (!$stream = fopen($file, 'a')) {
@@ -43,14 +44,29 @@ class Logger extends EventDispatcher implements LoggerInterface
 
     public function __destruct()
     {
+        if (isset($this->file)) {
+            unset(self::$loggers[$this->file]);
+        }
+
         if ($this->stream) {
             fclose($this->stream);
         }
     }
 
-    public static function getDefaultInstance(): LoggerInterface
+    /**
+     * @return static
+     */
+    public static function forFile(string $file, ?Storage $storage = null): self
     {
-        return new self('cube.csv');
+        $storage ??= Storage::getInstance()->child('Logs');
+        $path = $storage->path($file);
+
+        return self::$loggers[$path] ?? new static($file, $storage);
+    }
+
+    public static function getDefaultInstance(): static
+    {
+        return static::forFile('cube.csv');
     }
 
     public function log($level, null|string|\Stringable $message, array $context = []): void
@@ -60,14 +76,17 @@ class Logger extends EventDispatcher implements LoggerInterface
         }
 
         $message = Text::interpolate($message, $context);
+        $datetime = (new \DateTime())->format('Y-m-d H:i:s.v');
 
         Bunch::fromExplode("\n", $message)
-            ->forEach(function ($line) use ($level) {
-                fwrite($this->stream, join("\t", [
-                    date('Y-m-d H:i:s.B'),
-                    strtoupper($level),
-                    $line,
-                ])."\n");
+            ->forEach(function ($line) use ($level, $datetime) {
+                fputcsv(
+                    $this->stream,
+                    [$datetime, strtoupper($level), $line],
+                    separator: "\t",
+                    enclosure: "'",
+                    escape: '\\'
+                );
             })
         ;
 
@@ -84,7 +103,7 @@ class Logger extends EventDispatcher implements LoggerInterface
                 $logger->log($event->level, $event->message, $event->context);
             });
         }
-        else 
+        else
         {
             $this->on(LoggedMessage::class, function (LoggedMessage $event) use ($logger) {
                 $logger->log($event->level, $event->message, $event->context);

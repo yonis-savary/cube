@@ -21,7 +21,7 @@ class Broadcast extends HttpClient
 
     public function baseLogger(): Logger
     {
-        return new Logger('broadcast-client.csv');
+        return Logger::forFile('broadcast-client.csv');
     }
 
     public function baseURL(): string {

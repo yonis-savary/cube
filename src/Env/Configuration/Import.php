@@ -5,7 +5,7 @@ namespace Cube\Env\Configuration;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 
-class Import
+class Import extends ConfigurationElement
 {
     public function __construct(
         public readonly string $fileToImport
@@ -24,6 +24,17 @@ class Import
             return [];
         }
 
-        return include $path;
+        $elements = include $path;
+
+        if (!is_array($elements)) {
+            if ($elements instanceof ConfigurationElement) {
+                $elements = [$elements];
+            } else {
+                Logger::getInstance()->warning('Imported configuration {path} must return an array, got {type}', ['path' => Path::toRelative($path), 'type' => gettype($elements)]);
+                $elements = [];
+            }
+        }
+
+        return $elements;
     }
 }

@@ -44,14 +44,13 @@ class Cache
 
     public function &getReference(string $key, mixed $default): mixed {
         $key = $this->key($key);
-        if (!$this->has($key))
-            $this->set($key, $default);
+        if (!$this->driver->has($key))
+            $this->driver->set($key, $default);
 
         return $this->driver->getReference($key);
     }
 
     public function try(string $key): mixed {
-        $key = $this->key($key);
         return $this->get($key, false);
     }
 
@@ -59,8 +58,7 @@ class Cache
      * @param mixed $value Can be any value (shall be serialized), can be a callback (then its return value is registered)
      * @return mixed set value
      */
-    public function getOrSet(string $key, mixed $value, mixed $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
-        $key = $this->key($key);
+    public function getOrSet(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
         if ($this->has($key))
             return $this->get($key);
 

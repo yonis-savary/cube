@@ -21,8 +21,6 @@ class StdOutLogger extends Logger
 
             self::$stdOutStream = $this->stream;
         }
-
-        return $this;
     }
 
     public function log($level, null|string|\Stringable $message, array $context = []): void
@@ -36,9 +34,10 @@ class StdOutLogger extends Logger
         $message = Text::interpolate($message, $context);
 
         Bunch::fromExplode("\n", $message)
-            ->forEach(function ($line) {
+            ->forEach(function ($line) use ($level) {
                 fwrite($this->stream, join(' ', [
                     date('[D M j G:i:s Y]'),
+                    strtoupper($level),
                     $line,
                 ])."\n");
             })

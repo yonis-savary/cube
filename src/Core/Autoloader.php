@@ -160,7 +160,7 @@ class Autoloader
         set_error_handler(function (int $code, string $message, string $file, int $line) {
             $exception = new \ErrorException($message, $code, 1, $file, $line);
             if (($code & E_DEPRECATED) || ($code & E_USER_DEPRECATED)) {
-                $logger = new Logger('warnings.csv');
+                $logger = Logger::forFile('warnings.csv');
                 $logger->logThrowable($exception);
                 return true;
             }
@@ -179,7 +179,7 @@ class Autoloader
             }
 
             try {
-                $logger = new Logger('fatal.csv');
+                $logger = Logger::forFile('fatal.csv');
                 $logger->logThrowable($exception);
 
                 if ('cli' === php_sapi_name()) {

@@ -17,7 +17,7 @@ class WebsocketTest extends TestCase
 
     public function setUp(): void
     {
-        $this->logger = new Logger('websocket-server.csv');
+        $this->logger = Logger::forFile('websocket-server.csv');
 
         $this->process = new Process(['php','do','websocket:serve'], Path::getProjectPath());
         $this->process->start(fn() => $this->log());

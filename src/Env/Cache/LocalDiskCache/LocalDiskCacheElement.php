@@ -90,24 +90,23 @@ class LocalDiskCacheElement
     {
         $newSerialized = serialize($this->value);
         $newMD5 = md5($newSerialized);
-        $oldMD5 = $this->contentHash;
-        $hashIsDifferent = (!$oldMD5) || ($oldMD5 != $newMD5);
-
-        $oldName = $this->file;
         $newName = $this->creationDate.'_'.$this->timeToLive.'_'.$this->key;
-        $filenameIsDifferent = (!$oldName) || ($oldName != $newName);
 
-        $needRewrite = $hashIsDifferent || $filenameIsDifferent;
-        if (!$needRewrite) {
-            return;
+        $sameFile = $this->file && (basename($this->file) === $newName);
+        $sameContent = $this->contentHash === $newMD5;
+
+        if ($sameFile && $sameContent) {
+            return; // No need to rewrite
         }
 
         $this->destroy();
 
-        if ($directory->write($newName, $newSerialized)) {
-            $this->file = $directory->path($newName);
-        } else {
+        if (!$directory->write($newName, $newSerialized)) {
             Logger::getInstance()->error("Could not write file [{$newName}] in directory [".$directory->getRoot().']');
+            return;
         }
+
+        $this->file = $directory->path($newName);
+        $this->contentHash = $newMD5;
     }
 }

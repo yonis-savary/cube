@@ -6,8 +6,6 @@ use Cube\Core\Component;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
 
-use function Cube\debug;
-
 class Environment
 {
     use Component;
@@ -17,14 +15,15 @@ class Environment
     public function __construct(?string $file = null)
     {
         $this->content = $_ENV;
+
         if ($file) {
-            return $this->mergeWithFile($file);
+            $this->mergeWithFile($file);
         }
     }
 
     public static function getDefaultInstance(): static
     {
-        $instance = new self();
+        $instance = new static();
         $instance->mergeWithFile('.env');
 
         return $instance;
@@ -44,6 +43,13 @@ class Environment
         $safeFileContent = preg_replace("~^#.+~m", "", $fileContent); # Support for comments
 
         $content = parse_ini_string($safeFileContent);
+
+        if (false === $content) {
+            Logger::getInstance()->warning('Environment: could not parse [{file}], it is left out', ['file' => $file]);
+
+            return $this;
+        }
+
         $this->content = array_merge($this->content, $content);
 
         return $this;
