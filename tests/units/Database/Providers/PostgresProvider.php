@@ -23,9 +23,20 @@ class PostgresProvider extends DatabaseProvider
 
     public function createDatabase(string $dbName): \PDO
     {
-        $this->connection->exec("CREATE DATABASE {$dbName}");
+        $this->rootConnection()->exec("CREATE DATABASE {$dbName}");
 
         return $this->getConnection($dbName);
+    }
+
+    public function dropDatabase(string $dbName): void
+    {
+        $connection = $this->rootConnection();
+
+        // Postgres refuses to drop a database that still has a session on it. Teardown
+        // closes its own connection first, but the shutdown sweep runs while the leftover
+        // Database objects are still alive, so those sessions have to be cut server-side.
+        $connection->exec("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{$dbName}'");
+        $connection->exec("DROP DATABASE IF EXISTS \"{$dbName}\"");
     }
 
     public function getDumpPath(): ?string
@@ -35,7 +46,7 @@ class PostgresProvider extends DatabaseProvider
 
     public function databaseExists(string $name): bool
     {
-        $statement = $this->connection->query('SELECT datname FROM pg_database');
+        $statement = $this->rootConnection()->query('SELECT datname FROM pg_database');
 
         return Bunch::of($statement->fetchAll())->key('datname')->has($name);
     }

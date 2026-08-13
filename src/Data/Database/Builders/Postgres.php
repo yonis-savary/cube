@@ -84,7 +84,7 @@ class Postgres extends MySQL
     public function getInsertValues(): string
     {
         return Bunch::of($this->query->insertValues)
-            ->map(fn ($values) => $this->prepareString($values->values))
+            ->map(fn ($values) => $this->prepareString($values->values, false, $this->database))
             ->join(', ')
         ;
     }

@@ -22,9 +22,9 @@ services:
     restart: always
     volumes:
       - type: tmpfs
-        target: /var/lib
+        target: /var/lib/mysql
         tmpfs:
-          size: 134217728
+          size: 1073741824
     ports:
       - ${CUBE_TEST_MYSQL_PORT:-9901}:3306
     environment:
@@ -37,6 +37,10 @@ services:
         target: /dev/shm
         tmpfs:
           size: 134217728
+      - type: tmpfs
+        target: /var/lib/postgresql
+        tmpfs:
+          size: 1073741824
     ports:
       - ${CUBE_TEST_POSTGRES_PORT:-9902}:5432
     environment:

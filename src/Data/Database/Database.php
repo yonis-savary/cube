@@ -171,7 +171,7 @@ class Database
             '/\{\}/',
             function ($match) use (&$count, $quotedPositions, $context) {
                 $doQuote = !in_array($match[0][1], $quotedPositions);
-                $val = $this->queryBuilder->prepareString($context[$count] ?? null, $doQuote);
+                $val = $this->queryBuilder->prepareString($context[$count] ?? null, $doQuote, $this);
                 ++$count;
 
                 return $val;

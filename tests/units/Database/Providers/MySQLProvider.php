@@ -23,9 +23,14 @@ class MySQLProvider extends DatabaseProvider
 
     public function createDatabase(string $dbName): \PDO
     {
-        $this->connection->exec("CREATE DATABASE {$dbName}");
+        $this->rootConnection()->exec("CREATE DATABASE {$dbName}");
 
         return $this->getConnection($dbName);
+    }
+
+    public function dropDatabase(string $dbName): void
+    {
+        $this->rootConnection()->exec("DROP DATABASE IF EXISTS {$dbName}");
     }
 
     public function getDumpPath(): ?string
@@ -35,7 +40,7 @@ class MySQLProvider extends DatabaseProvider
 
     public function databaseExists(string $name): bool
     {
-        $statement = $this->connection->query('SHOW DATABASES');
+        $statement = $this->rootConnection()->query('SHOW DATABASES');
 
         return Bunch::of($statement->fetchAll())->key('Database')->has($name);
     }

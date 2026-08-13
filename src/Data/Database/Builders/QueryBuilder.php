@@ -16,18 +16,18 @@ abstract class QueryBuilder
 
     abstract public function supports(string $pdoDriver): bool;
 
-    public function prepareString(mixed $value, $quote = false): string
+    public function prepareString(mixed $value, bool $quote, Database $database): string
     {
         if ($value instanceof Model) {
-            return $this->prepareString($value->id(), $quote);
+            return $this->prepareString($value->id(), $quote, $database);
         }
 
         if (is_array($value)) {
-            return "(". Bunch::of($value)->map(fn($v) => $this->prepareString($v, true))->join(',') . ")";
+            return "(". Bunch::of($value)->map(fn($v) => $this->prepareString($v, true, $database))->join(',') . ")";
         }
 
         if (is_object($value) && enum_exists($value::class)) {
-            return $this->prepareString($value->value);
+            return $this->prepareString($value->value, $quote, $database);
         }
 
         if (null === $value) {
@@ -42,9 +42,9 @@ abstract class QueryBuilder
             return 'FALSE';
         }
 
-        $value = preg_replace('/([\'\\\])/', '$1$1', $value);
+        $value = $database->getConnection()->quote($value, \PDO::PARAM_STR);
 
-        return $quote ? "'{$value}'" : $value;
+        return $quote ? $value : substr($value, 1, -1);
     }
 
     /**

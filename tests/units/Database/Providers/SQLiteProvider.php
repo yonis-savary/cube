@@ -10,7 +10,7 @@ class SQLiteProvider extends DatabaseProvider
     public function getConnection(?string $dbName = null): \PDO
     {
         $connection = $dbName
-            ? new \PDO('sqlite:'.Storage::getInstance()->child('Database')->path($dbName))
+            ? new \PDO('sqlite:'.$this->storage()->path($dbName))
             : new \PDO('sqlite::memory:');
         $connection->exec('PRAGMA foreign_keys = ON');
 
@@ -22,6 +22,11 @@ class SQLiteProvider extends DatabaseProvider
         return $this->getConnection($dbName);
     }
 
+    public function dropDatabase(string $dbName): void
+    {
+        $this->storage()->unlink($dbName);
+    }
+
     public function getDumpPath(): ?string
     {
         return __DIR__.'/../Dumps/sqlite.sql';
@@ -30,5 +35,10 @@ class SQLiteProvider extends DatabaseProvider
     public function databaseExists(string $name): bool
     {
         return false;
+    }
+
+    protected function storage(): Storage
+    {
+        return Storage::getInstance()->child('Database');
     }
 }
