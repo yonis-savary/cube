@@ -56,9 +56,16 @@ $count = $database->exec('DELETE FROM product WHERE name = {}', ['mouse']);
 ```
 
 Values are **not** concatenated into the SQL : every `{}` placeholder is replaced, in order, by the
-value prepared by your driver's builder. Strings are escaped and quoted, `null` becomes `NULL`,
-booleans become `TRUE`/`FALSE`, an array becomes a parenthesized list, an enum becomes its value,
-and a `Model` becomes its primary key
+value prepared by your driver's builder.
+
+| Value | Becomes |
+|---|---|
+| a string | an escaped, quoted literal |
+| `null` | `NULL` |
+| `true` / `false` | `TRUE` / `FALSE` |
+| an array | a parenthesized list, each element quoted |
+| an enum | its backing value |
+| a `Model` | its primary key |
 
 ```php
 $database->query('SELECT * FROM product WHERE id IN {}', [[1, 2, 3]]);
@@ -67,6 +74,26 @@ $database->query('SELECT * FROM product WHERE name LIKE {}', ['%scr%']);
 // A placeholder already inside quotes is not quoted twice
 $database->query("SELECT * FROM product WHERE name LIKE '%{}%'", ['scr']);
 ```
+
+Escaping is delegated to the connection itself — `PDO::quote()` — so it follows the rules of the
+server you are actually talking to, including its character set and settings like MySQL's
+`NO_BACKSLASH_ESCAPES` or Postgres' `standard_conforming_strings`. A consequence worth knowing when
+you compare generated SQL : the same value produces different text on different drivers.
+
+```php
+$database->build('SELECT {}', ["O'Brien"]);
+
+// mysql  -> SELECT 'O\'Brien'
+// pgsql  -> SELECT 'O''Brien'
+// sqlite -> SELECT 'O''Brien'
+```
+
+Assert on what a query *returns*, not on the SQL it produced, or your tests will only pass on one
+driver.
+
+One case escaping does not cover : a placeholder outside quotes is always quoted, including a number.
+`LIMIT {}` therefore produces `LIMIT '1'`, which MySQL rejects — write the bound directly, or pass it
+through a validated integer of your own.
 
 You can also read rows straight into a `Bunch`
 

@@ -2,91 +2,189 @@
 
 # Schedule and Queues
 
-(WIP)
+Two ways to do work outside a request : **schedules** run something at a given time, **queues** run
+something as soon as a worker picks it up. Both are driven from the command line, so a container or a
+system cron is all the infrastructure you need.
 
-## Queues 
+## Schedules
 
-Queues are a great way to process data asynchronously
-
-To create a queue, create a Class extending the abstract `Queue` class
+Declare a schedule from any file loaded at boot — a `Schedules/`, `Cron/` or `Requires/` file of your
+application, as described in [Applications](./103-applications.md).
 
 ```php
-class CalculatorQueue extends Queue {
-    public function __invoke(int $a, int $b) {
+// App/Schedules/reports.php
+
+Cube\schedule('0 6 * * 1', fn () => ReportMailer::sendWeekly());
+```
+
+Four helpers cover the common rhythms, so you only write a cron expression when you need a precise
+moment
+
+| Helper | Runs |
+|---|---|
+| `Cube\everyMinute(callable $callback, int $step = 1)` | every minute, or every `$step` minutes |
+| `Cube\everyHour(callable $callback, int $step = 1)` | at minute 0, every hour or every `$step` hours |
+| `Cube\daily(callable $callback, int $step = 1)` | at midnight, every day or every `$step` days |
+| `Cube\schedule(string $expression, callable $callback)` | whenever the cron expression matches |
+
+```php
+Cube\everyMinute(fn () => Heartbeat::ping());
+Cube\everyHour(fn () => Cache::getInstance()->delete('rates'), 6);   // every 6 hours
+Cube\daily(fn () => Invoice::archiveOld());
+```
+
+The expression is the standard five-field cron syntax — minute, hour, day of the month, month, day of
+the week — and supports `*`, a value, a list, a range and a step
+
+```php
+Cube\schedule('*/15 * * * *', ...);    // every quarter of an hour
+Cube\schedule('30 2 1 * *', ...);      // 02:30, first day of the month
+Cube\schedule('0 8 * * 1-5', ...);     // 08:00 on weekdays
+```
+
+An expression that is not five fields, or whose values fall outside their bounds, throws as soon as
+it is declared rather than silently never matching.
+
+### Running them
+
+One command runs every schedule whose expression matches the current minute
+
+```sh
+php do routine:launch
+```
+
+Nothing runs it for you : call it every minute from the host's cron, or from a container's scheduler
+
+```cron
+* * * * * cd /var/www && php do routine:launch
+```
+
+Since the expressions are matched against *now*, running the command more or less often than once a
+minute will make some schedules fire twice or not at all.
+
+## Queues
+
+A queue processes items asynchronously. Extend `Queue` and put the work in `__invoke()` — its
+parameters are what you push.
+
+```php
+class CalculatorQueue extends Queue
+{
+    public function __invoke(int $a, int $b)
+    {
         $this->logger->info($a + $b);
     }
 }
 ```
 
-Then, you can push data either by using `push` or `queue`
+Push items from anywhere, statically or through an instance
 
 ```php
-CalculatorQueue::queue(2,3);
-// OR
+CalculatorQueue::queue(2, 3);
+
+// or
 $queue = new CalculatorQueue();
 $queue->push(2, 3);
 ```
 
-Finally, you can launch your queue with the `queue` command
+And run the worker
 
-```bash
+```sh
 php do cube:queue --queue=CalculatorQueue
 
-# You can use the -l flag to attach the global logger to stdOut
-# Useful when launched as docker service
+# -l attaches the global logger to stdout, which is what you want as a docker service
 php do cube:queue --queue=CalculatorQueue -l
 ```
 
-In our example, you will notice that a `calculatorqueue.csv` got created in `Storage/Logs`, this file is used
-as global log file as long as your queue runs
+While a queue runs, it writes to its own log file in `Storage/Logs` — `calculatorqueue.csv` here.
 
-## Customizing Queue class 
+| Command | Does |
+|---|---|
+| `php do cube:queue --queue=<class>` | runs the worker until it is stopped |
+| `php do cube:queue --queue=<class> -l` | same, echoing the log to stdout |
+| `php do cube:queue --queue=<class> -f` | flushes the queue and exits |
 
-You can customize your queue behavior by overriding these methods
+From code, `$queue->flush()` empties it, and `$queue->processNext()` handles a single item — handy
+in a test.
+
+### Customizing a queue
+
+Two methods are meant to be overridden
 
 ```php
-class CalculatorQueue extends Queue {
+class CalculatorQueue extends Queue
+{
     /**
-     * You can edit the way the Queue store jobs
-     * Using Redis is advised for medium|large-sized applications
-     * (by default the local disk is used)
-     * You can find a basic Redis docker service at the end of this document
+     * Where jobs are stored. The local disk is used by default ; Redis is
+     * advisable as soon as several workers run at once.
      */
-    protected function getDriver(): QueueDriver {
+    protected function getDriver(): QueueDriver
+    {
         return new RedisQueue();
     }
 
     /**
-     * This method shall be called when a exception is raised
-     * when processing a queue item
+     * Called when processing an item throws.
      *
-     * @return bool If `true`, the system will re-push the failed job to the queue, otherwise, the job is cancelled
+     * @return bool `true` re-pushes the job, `false` drops it
      */
     protected function onError(Throwable $thrown, array $args): bool
     {
-        // In this exemple, we log the exception and delete the failed job
         $this->logger->logThrowable($thrown);
+
         return false;
     }
 
-    public function __invoke(int $a, int $b) {
+    public function __invoke(int $a, int $b)
+    {
         $this->logger->info($a + $b);
     }
 }
 ```
 
-## Clearing/Flushing Queue 
+Returning `true` from `onError()` puts the job back in the queue — make sure the failure is one that
+can succeed later, or the job cycles forever.
 
-To clear your Queue, you can either call the `queue` command with the `-f` flag, or call the `flush` method 
+### Drivers
 
-```bash
-php do cube:queue --queue=CalculatorQueue -f
+| Driver | Stores jobs in |
+|---|---|
+| `LocalDiskQueueDriver` | a directory of your `Storage`, the default |
+| `RedisQueue` | a Redis server |
+
+`RedisQueue` reads its host from the `QUEUE_REDIS_HOST` environment variable, defaulting to `redis` —
+the constructor argument is currently ignored, so set the variable rather than passing a host.
+
+```env
+QUEUE_REDIS_HOST=127.0.0.1
 ```
 
-or
+A Redis service to develop against
 
-```php
-$calculatorqueue->flush();
+```yaml
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "20", "1", "--loglevel", "warning"]
 ```
 
+Each queue gets its own key namespace, derived from the class name, so several queues can share one
+Redis server without colliding.
+
+### Running workers in production
+
+A worker is a long-running process : give it a supervisor that restarts it, one service per queue.
+
+```yaml
+services:
+  calculator-worker:
+    image: my-app
+    command: ["php", "do", "cube:queue", "--queue=App\\Queue\\CalculatorQueue", "-l"]
+    restart: always
+```
+
+`routine:launch` does **not** run your queues, despite what its help text suggests — schedules and
+workers are launched separately.
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./204-http-client.md">Previous : Http client</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./206-websockets.md">Next : Websockets</a></div></td></tr></table>
