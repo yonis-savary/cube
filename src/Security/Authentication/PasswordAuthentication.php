@@ -43,13 +43,7 @@ class PasswordAuthentication implements AuthenticationProvider
 
         $this->saltString($password, $user);
 
-        if (!password_verify($password, $hash)) {
-            (new FailedAuthentication())->dispatch();
-
-            return false;
-        }
-
-        return $user;
+        return password_verify($password, $hash);
     }
 
     public function userById(mixed $id): Model|false 
