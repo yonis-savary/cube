@@ -120,11 +120,14 @@ class ModelField
     }
 
     /**
-     * @param int $m Maximum number of digit
-     * @param int $d Digits to the right of the decimal point
+     * @param ?int $m Maximum number of digit
+     * @param ?int $d Digits to the right of the decimal point
      */
-    public function precision(int $m=10, int $d=5): self
+    public function precision(?int $m=null, ?int $d=null): self
     {
+        $m ??= 10;
+        $d ??= 5;
+
         if ($d > $m)
             throw new Exception("Decimal precision to the right (d) cannot exceed the maximum number of digit (m)");
 
@@ -219,12 +222,21 @@ class ModelField
         return
             "(new ModelField('".$this->name."'))"
             ."->type('".$this->type."')"
+            .($this->isPrimaryKey ? '->primaryKey()' : '')
             .($this->autoIncrement ? '->autoIncrement()' : '')
             .(($this->nullable && !$this->autoIncrement) ? '->nullable()' : '->notNull()' )
-            .'->hasDefault('.($this->hasDefault ? 'true' : 'false').')'
+            .($this->isUnique ? '->unique()' : '')
+            .($this->hasDefault
+                ? '->default('.var_export($this->default, true).')'
+                : '->hasDefault(false)')
             .($this->referenceModel ? '->references('.$this->referenceModel."::class,'".$this->referenceField."')" : '')
+            .(self::ON_DELETE_CASCADE === $this->onDeleteBehavior ? '->onDeleteCascade()' : '')
+            .(self::ON_DELETE_SET_NULL === $this->onDeleteBehavior ? '->onDeleteSetNull()' : '')
             .($this->isGenerated() ? '->generated()': '')
             .($this->maximumLength ? '->maximumLength('.$this->maximumLength.')': '')
+            .(null !== $this->decimalMaximumDigits
+                ? '->precision('.$this->decimalMaximumDigits.', '.$this->decimalDigitsToTheRight.')'
+                : '')
         ;
     }
 
@@ -242,7 +254,7 @@ class ModelField
                 return (float) $value;
 
             case self::BOOLEAN:
-                return in_array(strtolower($value), ['true', '1']);
+                return in_array(strtolower((string) $value), ['1', 'true', 't', 'y', 'yes', 'on']);
 
             case self::DATE:
             case self::DATETIME:

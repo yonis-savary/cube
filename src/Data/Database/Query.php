@@ -106,6 +106,16 @@ class Query
             if ('<>' === $operator) {
                 $operator = 'NOT IN';
             }
+
+            if (!count($value))
+            {
+                $condition = 'NOT IN' === $operator
+                    ? '1=1'
+                    : '1=0';
+                $this->conditions[] = new RawCondition($condition);
+
+                return $this;
+            }
         }
         if (is_null($value)) {
             if ('=' === $operator) {

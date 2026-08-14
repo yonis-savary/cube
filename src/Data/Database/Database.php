@@ -33,8 +33,11 @@ class Database
             $this->connection = $connection;
         }
         else if ('sqlite' === $driver) {
-            $this->database = Storage::getInstance()->path($database);
-            $dsn = $database
+            $this->database = $database
+                ? Storage::getInstance()->path($database)
+                : null;
+
+            $dsn = $this->database
                 ? 'sqlite:'.$this->database
                 : 'sqlite::memory:';
 
@@ -77,10 +80,7 @@ class Database
         return new self(database: $database, connection: $connection);
     }
 
-    /**
-     * @return ?\PDO The current connection to the database (`null` if not connected)
-     */
-    public function getConnection(): ?\PDO
+    public function getConnection(): \PDO
     {
         return $this->connection;
     }
@@ -92,7 +92,7 @@ class Database
 
     public function isConnected(): bool
     {
-        return null !== $this->connection;
+        return isset($this->connection);
     }
 
     public function getQueryBuilder(): QueryBuilder
@@ -121,7 +121,7 @@ class Database
         return $this->host;
     }
 
-    public function getPort(): ?string
+    public function getPort(): ?int
     {
         return $this->port;
     }
@@ -221,7 +221,7 @@ class Database
     }
 
     /**
-     * @return `true` if the given table exists in the database, `false` otherwise
+     * @return bool `true` if the given table exists in the database, `false` otherwise
      */
     public function hasTable(string $table): bool
     {
@@ -234,7 +234,7 @@ class Database
     }
 
     /**
-     * @return `true` if both the given table AND field exists in the database, `false` otherwise
+     * @return bool `true` if both the given table AND field exists in the database, `false` otherwise
      */
     public function hasField(string $table, string $field): bool
     {
@@ -253,8 +253,11 @@ class Database
     {
         $original = $this->dryRunMode;
         $this->dryRunMode = $enableDryRun;
-        $return = ($callback)();
-        $this->dryRunMode = $original;
-        return $return;
+
+        try {
+            return ($callback)();
+        } finally {
+            $this->dryRunMode = $original;
+        }
     }
 }

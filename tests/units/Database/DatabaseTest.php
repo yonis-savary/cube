@@ -281,4 +281,39 @@ class DatabaseTest extends TestCase
         $this->assertInstanceOf(\PDO::class, $database->getConnection());
         $this->assertContains($database->getDriver(), ['mysql', 'pgsql', 'sqlite']);
     }
+
+    public function testSqliteWithoutAFileIsHeldInMemory()
+    {
+        $database = new Database('sqlite');
+
+        $this->assertNull($database->getDatabase());
+
+        $database->exec('CREATE TABLE in_memory (id INTEGER)');
+        $this->assertTrue($database->hasTable('in_memory'));
+    }
+
+    /**
+     * A callback throwing used to leave the connection in dry run, where every later query
+     * silently does nothing while reporting success.
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testDryRunIsLeftBehindEvenWhenTheCallbackThrows(Database $database)
+    {
+        try {
+            $database->dryRun(fn () => throw new RuntimeException('failed halfway'));
+        } catch (RuntimeException) {
+        }
+
+        $database->exec('CREATE TABLE after_dry_run (id INTEGER)');
+
+        $this->assertTrue($database->hasTable('after_dry_run'));
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testDryRunSwallowsWritesWhileItLasts(Database $database)
+    {
+        $database->dryRun(fn () => $database->exec('CREATE TABLE never_created (id INTEGER)'));
+
+        $this->assertFalse($database->hasTable('never_created'));
+    }
 }

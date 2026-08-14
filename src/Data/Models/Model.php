@@ -23,7 +23,7 @@ abstract class Model extends EventDispatcher
     public object $data;
     public object $original;
 
-    /** @var Array<string,Model|Model[]> */
+    /** @var array<string,Model|Model[]> */
     public array $references = [];
 
     public function __construct(array|Model $data = [], string $relationAccumulator = '')
@@ -36,13 +36,15 @@ abstract class Model extends EventDispatcher
         $modelData = [];
 
         foreach ($fields as $key => $field) {
-            if (array_key_exists($key, $fields) && isset($data[$key])) {
-                if (is_array($data[$key])) {
-                    continue;
-                }
-
-                $modelData[$key] = $data[$key];
+            if (!array_key_exists($key, $data)) {
+                continue;
             }
+
+            if (is_array($data[$key])) {
+                continue;
+            }
+
+            $modelData[$key] = $data[$key];
         }
 
         foreach ($modelData as $key => $_) {
@@ -54,11 +56,13 @@ abstract class Model extends EventDispatcher
         $this->completeModelDataWithRelations($data, $relationAccumulator);
     }
 
-    public function __set($name, $value)
+    public function __set(string $name, mixed $value)
     {
-        if (static::hasField($name)) {
-            $this->data->{$name} = $value;
+        if (!static::hasField($name)) {
+            throw new InvalidArgumentException(static::class." does not have a [{$name}] field, use merge() to ignore the keys a model does not hold");
         }
+
+        $this->data->{$name} = $value;
     }
 
     abstract public static function table(): string;
@@ -139,10 +143,16 @@ abstract class Model extends EventDispatcher
     public function markAsOriginal(bool $relationsToo = false): self
     {
         $this->original = clone $this->data;
-        if ($relationsToo) {
-            foreach ($this->references as $name => $model) {
-                $model->markAsOriginal(true);
-            }
+
+        if (!$relationsToo) {
+            return $this;
+        }
+
+        foreach ($this->references as $reference) {
+            Bunch::of($reference)
+                ->onlyInstancesOf(Model::class)
+                ->forEach(fn (Model $model) => $model->markAsOriginal(true))
+            ;
         }
 
         return $this;
@@ -312,7 +322,7 @@ abstract class Model extends EventDispatcher
      */
     public static function deleteWhere(array $conditions, ?Database $database = null): array
     {
-                $select = static::select();
+        $select = static::select();
         $delete = static::delete();
 
         foreach ($conditions as $field => $value) {
@@ -343,9 +353,12 @@ abstract class Model extends EventDispatcher
         if (count($forbiddenAttributes))
             $rule->without($forbiddenAttributes);
 
-        if ($model = $rule->validate($request)->getResult()) {
-            foreach ($forcedAttributes as $key => $value)
-                $model->$key = $value;
+        if (!$model = $rule->validate($request)->getResult()) {
+            throw new InvalidArgumentException('Could not build a '.static::class.' out of the given request, validate it before calling fromRequest()');
+        }
+
+        foreach ($forcedAttributes as $key => $value) {
+            $model->$key = $value;
         }
 
         return $model;

@@ -31,10 +31,6 @@ class Bunch implements Countable
         $this->data = $initialData;
     }
 
-    public function __clone()
-    {
-        return new self($this->get());
-    }
 
     /**
      * @template TType
@@ -54,7 +50,7 @@ class Bunch implements Countable
             $element = [$element];
         }
 
-        return new self($element);
+        return new static($element);
     }
 
 
@@ -70,7 +66,7 @@ class Bunch implements Countable
 
     /**
      * @template TClassname
-     * @param class-string<TClassname> $class
+     * @param class-string<TClassname> $implements
      * @return self<int,TClassname>
      */
     public static function fromImplements(string $implements, array $constructorArgs=[]): self
@@ -80,7 +76,7 @@ class Bunch implements Countable
 
     /**
      * @template TClassname
-     * @param class-string<TClassname> $class
+     * @param class-string<TClassname> $uses
      * @return self<int,TClassname>
      */
     public static function fromUses(string $uses, array $constructorArgs=[]): self
@@ -95,7 +91,7 @@ class Bunch implements Countable
      */
     public static function fill(int $count, mixed $value): self
     {
-        return new self(array_fill(0, $count, $value));
+        return new static(array_fill(0, $count, $value));
     }
 
     /**
@@ -110,7 +106,7 @@ class Bunch implements Countable
      * @template TType
      * @template TTypeKey
      *
-     * @param array<TTypeKey,TType>
+     * @param array<TTypeKey,TType> $assoc
      *
      * @return self<int,TType>
      */
@@ -123,7 +119,7 @@ class Bunch implements Countable
      * @template TType
      * @template TTypeKey
      *
-     * @param array<TTypeKey,TType>
+     * @param array<TTypeKey,TType> $assoc
      *
      * @return self<int,TTypeKey>
      */
@@ -174,7 +170,7 @@ class Bunch implements Countable
     }
 
     /**
-     * @return self<int,<string></string>
+     * @return self<int,string>
      */
     public static function fromExplode(string $delimiter, string $string): self
     {
@@ -364,7 +360,7 @@ class Bunch implements Countable
     }
 
     /**
-     * @param \Closure(TValue)|Array<\Closure(TValue)> $callbacks
+     * @param \Closure(TValue)|array<\Closure(TValue)> $callbacks
      * @return array<mixed>
      */
     public function groupBy(callable|array $callbacks): array
@@ -420,11 +416,13 @@ class Bunch implements Countable
 
     public function sort(callable|int $callbackOrSortMode = SORT_REGULAR): self
     {
-        is_callable($callbackOrSortMode)
-            ? usort($this->data, fn ($a, $b) => $callbackOrSortMode($a) < $callbackOrSortMode($b) ? -1 : 1)
-            : sort($this->data, $callbackOrSortMode);
+        $sorted = $this->data;
 
-        return $this->withNewData($this->data);
+        is_callable($callbackOrSortMode)
+            ? usort($sorted, fn ($a, $b) => $callbackOrSortMode($a) <=> $callbackOrSortMode($b))
+            : sort($sorted, $callbackOrSortMode);
+
+        return $this->withNewData($sorted);
     }
 
     /**
@@ -549,8 +547,8 @@ class Bunch implements Countable
      */
     public function last(?callable $callback=null): mixed
     {
-        if ($callback === null && count($this->data)) {
-            return array_last($this->data);
+        if ($callback === null) {
+            return $this->data[array_key_last($this->data)] ?? null;
         }
 
         $data = array_reverse($this->data);
@@ -615,8 +613,7 @@ class Bunch implements Countable
     /**
      * @template TReturn
      *
-     * @param \Closure(TValue):TReturn|string|null $keyOrCallback
-     * @param TReturn|TValue                       $start
+     * @param null|\Closure(TValue):TReturn|string $keyOrCallback
      */
     public function sum(string|Closure|null $keyOrCallback=null): mixed
     {

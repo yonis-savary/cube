@@ -20,6 +20,48 @@ class ModelTest extends TestCase
 {
     use TestMultipleDrivers;
 
+    /**
+     * markAsOriginal(true) used to walk the references as if each one held a single model,
+     * where a hasMany holds an array : eager loading one crashed find() and findWhere().
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testEagerLoadingAHasManyRelation(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $product = Product::insertArray(['name' => 'screen']);
+            ProductManager::insertArray(['product' => $product->id(), 'manager' => 'Alice']);
+
+            $loaded = Product::find($product->id(), ['managers']);
+
+            $this->assertCount(1, $loaded->managers);
+            $this->assertEquals('Alice', $loaded->managers[0]->manager);
+        });
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testAColumnHoldingNullStaysOnTheModel(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $product = new Product(['name' => 'screen', 'price_dollar' => null]);
+
+            // Dropping the key would make toArray() answer a different shape per row
+            $this->assertArrayHasKey('price_dollar', $product->toArray());
+            $this->assertNull($product->toArray()['price_dollar']);
+        });
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testAssigningAnUnknownFieldIsRefused(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $product = new Product(['name' => 'screen']);
+
+            $this->expectException(\InvalidArgumentException::class);
+
+            $product->tihs_is_a_typo = 'lost in silence';
+        });
+    }
+
     protected function withBaseProducts(Database $database, callable $function) {
         $database->asGlobalInstance(function() use ($function) {
             Product::insertArray(['name' => 'screen']);

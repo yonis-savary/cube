@@ -387,4 +387,55 @@ class BunchTest extends TestCase
         $this->assertCount(1, $alphaTypedGroups['it']['P']);
         $this->assertCount(2, $alphaTypedGroups['it']['S']);
     }
+
+    public function testFirstAndLast()
+    {
+        $bunch = Bunch::of(['a', 'b', 'c']);
+
+        $this->assertEquals('a', $bunch->first());
+        $this->assertEquals('c', $bunch->last());
+
+        $this->assertNull(Bunch::of([])->first());
+        $this->assertNull(Bunch::of([])->last());
+    }
+
+    public function testSortLeavesTheOriginalAlone()
+    {
+        $bunch = Bunch::of([3, 1, 2]);
+        $sorted = $bunch->sort();
+
+        $this->assertEquals([1, 2, 3], $sorted->get());
+        $this->assertEquals([3, 1, 2], $bunch->get());
+    }
+
+    /**
+     * A comparator answering only -1 or 1 tells PHP that equal elements differ, which
+     * reorders them and loses the stability guaranteed since 8.0.
+     */
+    public function testSortKeepsEqualElementsInOrder()
+    {
+        $rows = [
+            ['rank' => 1, 'label' => 'first'],
+            ['rank' => 1, 'label' => 'second'],
+            ['rank' => 1, 'label' => 'third'],
+            ['rank' => 0, 'label' => 'lowest'],
+        ];
+
+        $sorted = Bunch::of($rows)->sort(fn ($row) => $row['rank'])->get();
+
+        $this->assertEquals(
+            ['lowest', 'first', 'second', 'third'],
+            array_column($sorted, 'label')
+        );
+    }
+
+    public function testCloneIsDetachedFromItsSource()
+    {
+        $bunch = Bunch::of([1, 2]);
+        $copy = clone $bunch;
+        $copy->push(3);
+
+        $this->assertEquals([1, 2], $bunch->get());
+        $this->assertEquals([1, 2, 3], $copy->get());
+    }
 }
