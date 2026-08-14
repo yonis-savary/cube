@@ -31,7 +31,7 @@ class ArrayParam extends Rule
 
     public function size(int $size): static
     {
-        $this->param->withValueCondition(fn($value) => is_array($value) ? count($value) === $size : true, "{key} must be an array with excalty $size items");
+        $this->param->withValueCondition(fn($value) => is_array($value) ? count($value) === $size : true, "{key} must be an array with exactly $size items");
         return $this;
     }
 
@@ -43,17 +43,17 @@ class ArrayParam extends Rule
 
         $return = new ValidationReturn([]);
 
-        for ($key=0; $key<count($array); $key++){
-            $valueReturn = $this->childRule->validate($array[$key] ?? null, $key);
+        for ($index=0; $index<count($array); $index++){
+            $valueReturn = $this->childRule->validate($array[$index] ?? null, "{$key}.{$index}");
             if ($valueReturn->isValid())
                 $return->pushResult($valueReturn->getResult());
             else
-                $return->addErrorKey($key, $valueReturn->getErrors());
+                $return->addErrorKey($index, $valueReturn->getErrors());
         }
         return $return;
     }
 
-    public function nullable(bool $nullable): Rule
+    public function nullable(bool $nullable): static
     {
         $this->param->nullable($nullable);
         return $this;

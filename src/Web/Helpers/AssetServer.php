@@ -18,15 +18,16 @@ class AssetServer extends WebAPI
     public function routes(Router $router): void
     {
         $router->addRoutes(
-            new Route($this->route, [self::class, 'serveAsset'], ['GET'])
+            new Route($this->route, [static::class, 'serveAsset'], ['GET'])
         );
     }
 
-    public static function serveAsset(Request $request)
+    public static function serveAsset(Request $request): Response
     {
-        $target = $request->getSlugValues()[0] ?? null;
+        $slugValues = $request->getSlugValues();
+        $target = count($slugValues) ? (string) reset($slugValues) : '';
 
-        if (!$file = self::findAssetFile($target)) {
+        if (!$target || !$file = static::findAssetFile($target)) {
             return new Response(StatusCode::NOT_FOUND, "[{$target}] file not found");
         }
 

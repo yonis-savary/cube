@@ -44,6 +44,7 @@ receiving the router, so you can split big route sets into functions.
 | `Route::put($path, $callback)` | `PUT` |
 | `Route::patch($path, $callback)` | `PATCH` |
 | `Route::delete($path, $callback)` | `DELETE` |
+| `Route::options($path, $callback)` | `OPTIONS` |
 | `Route::any($path, $callback)` | any method |
 | `Route::file($path, $file)` | `GET`, and serves `$file` directly |
 
@@ -152,6 +153,9 @@ public static function list()
     return Product::select()->toBunch(); // 200, JSON array of products
 }
 ```
+
+A callback that returns nothing answers `204 No Content` with an empty body — use
+`Response::json(null)` when you really mean to send a JSON `null`.
 
 ## Injected parameters
 

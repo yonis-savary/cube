@@ -9,7 +9,7 @@ use Cube\Web\Router\Router;
 
 class MathAppMocker extends HttpMockServer
 {
-    public function routes(Router $router)
+    public function routes(Router $router): void
     {
         $router->addRoutes(
             Route::get("/double/{int:number}", [self::class, 'double'])

@@ -23,7 +23,7 @@ abstract class AuthenticationMiddleware implements Middleware
         $identifier = static::getIdentifier();
 
         $route = $request->getRoute();
-        $neededPermissions = $route->getExtras()[$identifier];
+        $neededPermissions = $route->getExtras()[$identifier] ?? [];
 
         $hasPermission = static::userHasPermission($neededPermissions);
 
@@ -47,12 +47,12 @@ abstract class AuthenticationMiddleware implements Middleware
         return count($missingPermissions) ? $missingPermissions : true;
     }
 
-    public static function guard(mixed $neededPermissions, callable $callback, ?Router $router = null)
+    public static function guard(mixed $neededPermissions, callable $callback, ?Router $router = null): void
     {
         $router ??= Router::getInstance();
 
         $identifier = static::getIdentifier();
 
-        $router->group('/', [static::class], [$identifier => $neededPermissions], $callback);
+        $router->group('/', [static::class], [$identifier => $neededPermissions], function: $callback);
     }
 }

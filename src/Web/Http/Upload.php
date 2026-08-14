@@ -12,7 +12,7 @@ class Upload
     public const MB = 1024 * self::KB;
     public const GB = 1024 * self::MB;
 
-    public const PHP_ERROR_EXPLAINATION = [
+    public const PHP_ERROR_EXPLANATION = [
         UPLOAD_ERR_OK => 'UPLOAD_ERR_OK: No error with the upload',
         UPLOAD_ERR_PARTIAL => 'UPLOAD_ERR_PARTIAL: File only partially uploaded',
         UPLOAD_ERR_NO_FILE => 'UPLOAD_ERR_NO_FILE: No file was uploaded',
@@ -20,7 +20,7 @@ class Upload
         UPLOAD_ERR_FORM_SIZE => 'UPLOAD_ERR_FORM_SIZE: File exceeds MAX_FILE_SIZE in the HTML form',
         UPLOAD_ERR_INI_SIZE => 'UPLOAD_ERR_INI_SIZE: File exceeds upload_max_filesize in php.ini',
         UPLOAD_ERR_NO_TMP_DIR => 'UPLOAD_ERR_NO_TMP_DIR: Temporary folder not found',
-        UPLOAD_ERR_CANT_WRITE => 'UPLOAD_ERR_CANT_WRITE: Unknown upload error',
+        UPLOAD_ERR_CANT_WRITE => 'UPLOAD_ERR_CANT_WRITE: Failed to write file to disk',
     ];
 
     public readonly string $inputName;
@@ -67,7 +67,8 @@ class Upload
 
     public function getPHPUploadErrorMessage(): string
     {
-        return self::PHP_ERROR_EXPLAINATION[$this->error];
+        return self::PHP_ERROR_EXPLANATION[$this->error]
+            ?? "Unknown PHP upload error code [{$this->error}]";
     }
 
     /**

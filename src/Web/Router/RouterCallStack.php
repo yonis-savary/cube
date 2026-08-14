@@ -54,7 +54,7 @@ class RouterCallStack
         return $value;
     }
 
-    protected function adaptArray(mixed &$value): array
+    protected function adaptArray(array &$value): array
     {
         foreach ($value as &$row)
             $row = $this->adaptSingleValue($row);
@@ -62,10 +62,15 @@ class RouterCallStack
         return $value;
     }
 
-    protected function adaptControllerReturnToResponse(mixed $response): Response
+    protected function adaptValueToResponse(mixed $response): Response
     {
-        $response = $this->adaptSingleValue($response);
-        return Response::json($response);
+        if ($response instanceof Response)
+            return $response;
+
+        if ($response === null)
+            return new Response();
+
+        return Response::json($this->adaptSingleValue($response));
     }
 
     protected function callControllerCallback(Request $request): mixed {
@@ -78,20 +83,15 @@ class RouterCallStack
         return $controller->$method($request, ...$this->controllerParams);
     }
 
-    public function __invoke(Request $request): mixed
+    public function __invoke(Request $request): Response
     {
         $middleware = $this->getNextMiddleware();
 
         if ($middleware)
-            return $middleware::handle($request, fn(Request $request) => ($this)($request));
+            return $this->adaptValueToResponse(
+                $middleware::handle($request, fn(Request $request) => ($this)($request))
+            );
 
-        $response = $this->callControllerCallback($request);
-        if (! $response instanceof Response)
-            $response = $this->adaptControllerReturnToResponse($response);
-
-        if ($response === null)
-            $response = new Response();
-
-        return $response;
+        return $this->adaptValueToResponse($this->callControllerCallback($request));
     }
 }

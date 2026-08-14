@@ -17,7 +17,7 @@ class AssetsInserter
 
     public static function getDefaultInstance(): static
     {
-        return new self(Autoloader::getAssetsFiles());
+        return new static(Autoloader::getAssetsFiles());
     }
 
     public function __construct(array $assetsFiles)
@@ -29,7 +29,7 @@ class AssetsInserter
         return $this->assetsFiles->first(fn($file) => str_ends_with($file, $assetName));
     }
 
-    public function insert(string $assetName) {
+    public function insert(string $assetName): string {
         $path = $this->findAsset($assetName);
         if (!$path)
             throw new InvalidArgumentException("Asset not found [$assetName]");

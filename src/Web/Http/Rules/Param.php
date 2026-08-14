@@ -33,7 +33,7 @@ class Param extends Rule
      */
     public static function integer(bool $nullable = false): static
     {
-        return (new self($nullable))
+        return (new static($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be an integer, got {value}')
             ->withValueTransformer(fn ($value) => is_numeric($value) ? (int) $value : $value)
             ->withMetadata([self::META_TYPE => 'integer'])
@@ -45,7 +45,7 @@ class Param extends Rule
      */
     public static function float(bool $nullable = false): static
     {
-        return (new self($nullable))
+        return (new static($nullable))
             ->withValueCondition(fn ($value) => is_numeric($value), '{key} must be a float, got {value}')
             ->withValueTransformer(fn ($value) => is_numeric($value) ? (float) $value : $value)
             ->withMetadata([self::META_TYPE => 'float'])
@@ -54,10 +54,12 @@ class Param extends Rule
 
     public static function string(bool $trim = true, bool $nullable = false): static
     {
-        $object = new self($nullable);
+        $object = new static($nullable);
+
+        $object->withValueCondition(fn ($value) => is_scalar($value) || $value instanceof \Stringable, '{key} must be a string, got {value}');
 
         if ($trim) {
-            $object->withValueTransformer(fn ($x) => trim($x));
+            $object->withValueTransformer(fn ($value) => is_string($value) ? trim($value) : $value);
         }
 
         return $object->withMetadata([self::META_TYPE => 'string']);
@@ -83,7 +85,7 @@ class Param extends Rule
      */
     public static function email(bool $nullable = false): static
     {
-        return (new self($nullable))
+        return (new static($nullable))
             ->withValueCondition(fn ($value) => false !== filter_var($value, FILTER_VALIDATE_EMAIL), '{key} must be an email, got {value}')
             ->withMetadata([self::META_TYPE => 'email'])
         ;
@@ -94,7 +96,7 @@ class Param extends Rule
      */
     public static function boolean(bool $nullable = false): static
     {
-        return (new self($nullable))
+        return (new static($nullable))
             ->withValueTransformer(fn ($value) => is_bool($value) ? $value : in_array(strtolower((string) $value), ['on', 'true', 'yes', '1']))
             ->withMetadata([self::META_TYPE => 'boolean'])
         ;
@@ -105,7 +107,7 @@ class Param extends Rule
      */
     public static function url(bool $nullable = false): static
     {
-        return (new self($nullable))
+        return (new static($nullable))
             ->withValueCondition(fn (?string $value) => null === $value || preg_match('/^(.+?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&\/\/=]*)$/', $value ?? ''), '{key} must be an URL, got {value}')
             ->withMetadata([self::META_TYPE => 'string'])
         ;
@@ -116,7 +118,7 @@ class Param extends Rule
      */
     public static function date(bool $nullable = false): static
     {
-        return (new self($nullable))
+        return (new static($nullable))
             ->withValueCondition(function (?string $value){
                 if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value ?? '', $matches))
                     return false;
@@ -136,10 +138,10 @@ class Param extends Rule
      */
     public static function datetime(bool $nullable = false, bool $addTimeIfMissing=false): static
     {
-        $rule = (new self($nullable));
+        $rule = (new static($nullable));
 
         if ($addTimeIfMissing)
-            $rule->withTransformer(function($value) {
+            $rule->withValueTransformer(function($value) {
                 if (preg_match('/(\d{2}):(\d{2}):(\d{2})$/', $value ?? ''))
                     return $value;
 
@@ -169,7 +171,7 @@ class Param extends Rule
      */
     public static function uuid(bool $nullable = false): static
     {
-        return (new self($nullable))
+        return (new static($nullable))
             ->withValueCondition(
                 fn($value)=> (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower($value ?? '')),
                 '{key} must be an UUID, got [{value}]'
@@ -188,7 +190,7 @@ class Param extends Rule
         bool $nullable = false,
         array $with=[],
         ?Database $database=null
-    ): static
+    ): Rule
     {
         $column ??= $modelClass::primaryKey();
         if (!$column) {
@@ -249,7 +251,7 @@ class Param extends Rule
         ?string $column=null,
         bool $nullable = false,
         ?Database $database=null
-    ): static
+    ): Rule
     {
         $column ??= $modelClass::primaryKey();
         if (!$column) {

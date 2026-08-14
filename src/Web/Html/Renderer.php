@@ -19,7 +19,7 @@ class Renderer
 
     public static function getDefaultInstance(): static
     {
-        return new self(Autoloader::getViewFiles());
+        return new static(Autoloader::getViewFiles());
     }
 
     public function __construct(array $viewFiles=[])
@@ -52,10 +52,7 @@ class Renderer
 
             try
             {
-                foreach ($context as $key => $value)
-                    $$key = $value;
-
-                require $path;
+                self::requireView($path, $context);
             }
             catch (Throwable $err)
             {
@@ -66,5 +63,13 @@ class Renderer
             $renderedHtml = ob_get_clean();
         });
         return $renderedHtml;
+    }
+
+    protected static function requireView(string $__cubeViewPath, array $__cubeViewContext): void
+    {
+        unset($__cubeViewContext['__cubeViewPath']);
+        extract($__cubeViewContext, EXTR_SKIP);
+
+        require $__cubeViewPath;
     }
 }

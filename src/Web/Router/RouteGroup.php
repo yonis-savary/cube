@@ -90,7 +90,10 @@ class RouteGroup
             }, []);
     }
 
-    public function getElements()
+    /**
+     * @return array<Route|RouteGroup>
+     */
+    public function getElements(): array
     {
         return $this->elements;
     }
@@ -100,10 +103,10 @@ class RouteGroup
         return $this->middlewares;
     }
 
-    public function &addSubGroup(RouteGroup $paramGroup): RouteGroup
+    public function addSubGroup(RouteGroup $paramGroup): RouteGroup
     {
         $addedGroup = $this->mergeWith($paramGroup);
-        $this->elements[] = &$addedGroup;
+        $this->elements[] = $addedGroup;
 
         return $addedGroup;
     }

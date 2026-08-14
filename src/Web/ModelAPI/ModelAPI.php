@@ -156,15 +156,15 @@ abstract class ModelAPI extends Controller
         $model = static::getModel($request);
 
         if (!$primaryKey = $model::primaryKey()) {
-            throw new \Exception("{$model} model does not have a primary key");
+            throw new \Exception($model::class.' model does not have a primary key');
         }
 
-        if (!$primaryKeyValue = $request->param($primaryKey)) {
+        if (null === $primaryKeyValue = $request->param($primaryKey)) {
             return Response::unprocessableContent("Request must have a '{$primaryKey}' parameter");
         }
 
         if (!$instance = $model::find($primaryKeyValue)) {
-            return Response::unprocessableContent("No {$model} with {$primaryKey} = {$primaryKeyValue} found");
+            return Response::unprocessableContent('No '.$model::class." with {$primaryKey} = {$primaryKeyValue} found");
         }
 
         $query = $model::update()->where($primaryKey, $primaryKeyValue);
@@ -185,15 +185,15 @@ abstract class ModelAPI extends Controller
         $model = static::getModel($request);
 
         if (!$primaryKey = $model::primaryKey()) {
-            throw new \Exception("{$model} model does not have a primary key");
+            throw new \Exception($model::class.' model does not have a primary key');
         }
 
-        if (!$primaryKeyValue = $request->param($primaryKey)) {
+        if (null === $primaryKeyValue = $request->param($primaryKey)) {
             return Response::unprocessableContent("Request must have a '{$primaryKey}' parameter");
         }
 
         if (!$instance = $model::find($primaryKeyValue)) {
-            return Response::unprocessableContent("No {$model} with {$primaryKey} = {$primaryKeyValue} found");
+            return Response::unprocessableContent('No '.$model::class." with {$primaryKey} = {$primaryKeyValue} found");
         }
 
         $model::delete()->where($primaryKey, $primaryKeyValue)->fetch();
@@ -203,18 +203,21 @@ abstract class ModelAPI extends Controller
 
     protected static function getModel(Request $request): Model
     {
-        $modelClass = $request->getRoute()->getExtras()[self::ROUTE_EXTRAS_MODEL_KEY] ?? false;
+        $modelClass = $request->getRoute()->getExtras()[self::ROUTE_EXTRAS_MODEL_KEY] ?? null;
+        if (!$modelClass) {
+            throw new \RuntimeException(static::class.' route is missing its ['.self::ROUTE_EXTRAS_MODEL_KEY.'] extra, it must be registered through '.static::class.'::routes()');
+        }
 
         return new $modelClass();
     }
 
-    protected static function makeSearchQuery(Query &$query, string $fieldName, mixed $value, string $comparisonKeywork="LIKE")
+    protected static function makeSearchQuery(Query $query, string $fieldName, mixed $value, string $comparisonKeyword="LIKE")
     {
         $database = Database::getInstance();
 
         $conditions = Bunch::fromExplode(' ', (string) $value)
             ->map(fn ($word) => "%{$word}%")
-            ->map(fn ($word) => $database->build("`{$fieldName}` $comparisonKeywork {}", [$word]))
+            ->map(fn ($word) => $database->build("`{$fieldName}` $comparisonKeyword {}", [$word]))
             ->join(' AND ')
         ;
 

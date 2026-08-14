@@ -9,7 +9,7 @@ use Cube\Web\Http\Response;
 interface Middleware
 {
     /**
-     * @param \Closure(Request):mixed
+     * @param \Closure(Request):mixed $next
      */
     public static function handle(Request $request, Closure $next): Request|Response;
 }

@@ -32,15 +32,7 @@ class Request extends HttpMessage
     protected array $slugObjects = [];
 
     /**
-     * @var string $method
-     * @var string $path
-     * @var array $get
-     * @var array $post
-     * @var array $headers
-     * @var Upload[] $uploads
-     * @var string $body
-     * @var ?string $ip
-     * @var array $cookies
+     * @param Upload[] $uploads
      */
     public function __construct(
         string $method = 'GET',
@@ -64,14 +56,14 @@ class Request extends HttpMessage
         $this->cookies = $cookies;
 
         if ($this->isJSON() && $body && !count($post)) {
-            $decodedBody = json_decode($body, JSON_THROW_ON_ERROR);
+            $decodedBody = json_decode($body, true);
             if (is_array($decodedBody)) {
                 $this->post = $decodedBody;
             }
         }
     }
 
-    public static function fromRequest(Request $source): self
+    public static function fromRequest(Request $source): static
     {
         $newReq = new static();
 
@@ -90,7 +82,7 @@ class Request extends HttpMessage
         return $newReq;
     }
 
-    public function logSelf(?LoggerInterface $logger = null)
+    public function logSelf(?LoggerInterface $logger = null): void
     {
         $logger ??= Logger::getInstance();
         $logger->log('info', '{method} {path}', [
@@ -99,7 +91,7 @@ class Request extends HttpMessage
         ]);
     }
 
-    public static function fromGlobals(): self
+    public static function fromGlobals(): static
     {
         $headers = function_exists('getallheaders')
             ? getallheaders()
@@ -115,7 +107,7 @@ class Request extends HttpMessage
             $uri = Text::dontEndsWith($uri, '/');
         }
 
-        $request = new self(
+        return new static(
             $_SERVER['REQUEST_METHOD'] ?? php_sapi_name(),
             $uri,
             $get,
@@ -126,13 +118,11 @@ class Request extends HttpMessage
             $_SERVER['REMOTE_ADDR'] ?? null,
             $_COOKIE
         );
-
-        return $request;
     }
 
     public function param(string $name, mixed $default = null): mixed
     {
-        return $this->body[$name] ?? $this->get[$name] ?? $this->post[$name] ?? $default;
+        return $this->get[$name] ?? $this->post[$name] ?? $default;
     }
 
     public function params(array $keys, array $default = []): array
@@ -302,8 +292,8 @@ class Request extends HttpMessage
 
     public function validated(?string $key=null, ?Rule $validator = null): mixed
     {
-        $rule ??= $this->getObjectParam();
-        $result = $rule->validate($this->getBodyMergedWithUpload(), 'request')->getResult();
+        $validator ??= $this->getObjectParam();
+        $result = $validator->validate($this->getBodyMergedWithUpload(), 'request')->getResult();
 
         if (!$key)
             return $result;

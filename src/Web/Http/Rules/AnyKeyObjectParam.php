@@ -46,7 +46,7 @@ class AnyKeyObjectParam extends Rule
         return $this->transform($return);
     }
 
-    public function nullable(bool $nullable): Rule
+    public function nullable(bool $nullable): static
     {
         $this->param->nullable($nullable);
         return $this;

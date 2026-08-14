@@ -7,6 +7,7 @@ use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Utils\Path;
+use Cube\Web\Middleware;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionMethod;
@@ -32,7 +33,7 @@ class Route
     protected ?array $methods = [];
     protected ?array $extras = [];
 
-    /** @var array<Middleware> */
+    /** @var array<class-string<Middleware>> */
     protected array $middlewares = [];
 
     public function __construct(
@@ -42,8 +43,8 @@ class Route
         array $middlewares = [],
         array $extras = []
     ) {
-        if (str_ends_with($path, '/')) {
-            $path = substr($path, 0, strlen($path) - 2);
+        if ('/' !== $path && str_ends_with($path, '/')) {
+            $path = substr($path, 0, strlen($path) - 1);
         }
 
         $this->path = $path;
@@ -92,9 +93,9 @@ class Route
         return new self($path, $callback, ['DELETE'], $middlewares, $extras);
     }
 
-    public static function option(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function options(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
     {
-        return new self($path, $callback, ['OPTION'], $middlewares, $extras);
+        return new self($path, $callback, ['OPTIONS'], $middlewares, $extras);
     }
 
     public static function file(string $path, string $file, array $middlewares = [], array $extras = [])
@@ -152,7 +153,7 @@ class Route
 
     public function setMiddlewares(array $middlewares): void
     {
-        $this->middlewares = $middlewares = $middlewares;
+        $this->middlewares = $middlewares;
     }
 
     public function getMiddlewares(): array
@@ -162,7 +163,7 @@ class Route
 
     public function setExtras(array $extras): void
     {
-        $this->extras = $extras = $extras;
+        $this->extras = $extras;
     }
 
     public function getExtras(): array
@@ -197,7 +198,7 @@ class Route
         return true;
     }
 
-    protected function matchPathRegex(Request $request): string
+    protected function matchPathRegex(Request $request): bool
     {
         $regexMap = [];
         $parts = explode('/', $this->getPath());

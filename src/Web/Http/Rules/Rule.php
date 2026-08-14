@@ -72,8 +72,13 @@ abstract class Rule
     /**
      * Given value to replace any incoming `null` value
      */
-    public function default(mixed $defaultValue) {
-        array_unshift($this->steps, new ValidationStep(ValidationStep::TYPE_TRANSFORMER, fn() => $defaultValue));
+    public function default(mixed $defaultValue): static
+    {
+        array_unshift($this->steps, new ValidationStep(
+            ValidationStep::TYPE_TRANSFORMER,
+            fn (mixed $value) => $value ?? $defaultValue
+        ));
+
         return $this;
     }
 
@@ -87,7 +92,7 @@ abstract class Rule
         return $return->setResult($currentValue);
     }
 
-    public function nullable(bool $nullable): self
+    public function nullable(bool $nullable): static
     {
         $this->nullable = $nullable;
         return $this;

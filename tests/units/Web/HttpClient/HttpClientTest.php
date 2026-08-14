@@ -1,0 +1,131 @@
+<?php
+
+namespace Cube\Tests\Units\Web\HttpClient;
+
+use Cube\Web\Http\HttpMockServer;
+use Cube\Web\Http\MockServers;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * @internal
+ */
+class HttpClientTest extends TestCase
+{
+    protected function tearDown(): void
+    {
+        MockServers::removeInstance();
+    }
+
+    /**
+     * A header value is separated from its name by ": ", keeping that space made every value
+     * start with one — `getHeader('content-type')` answered " application/json".
+     */
+    public function testHeaderValuesAreTrimmed()
+    {
+        $client = new ExposedHttpClient();
+
+        $headers = $client->publicParseHeaders("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nX-Total: 42\r\n", true);
+
+        $this->assertEquals('application/json', $headers['content-type']);
+        $this->assertEquals('42', $headers['x-total']);
+    }
+
+    public function testHeaderNamesAreLeftAloneWhenNotAskedToLowercase()
+    {
+        $client = new ExposedHttpClient();
+
+        $headers = $client->publicParseHeaders("Content-Type: text/html\r\n");
+
+        $this->assertArrayHasKey('Content-Type', $headers);
+    }
+
+    public function testABaseUrlIsPrependedToTheRequestPath()
+    {
+        $client = new ExposedHttpClient('http://some-api.org/v1');
+
+        $this->assertEquals('http://some-api.org/v1/products', $client->publicPath(new Request('GET', '/products')));
+    }
+
+    public function testWithoutABaseUrlThePathIsUsedAsIs()
+    {
+        $client = new ExposedHttpClient();
+
+        $this->assertEquals('http://some-api.org/products', $client->publicPath(new Request('GET', 'http://some-api.org/products')));
+    }
+
+    /**
+     * baseUserAgent() and baseLogger() are what a subclass declares for its own requests, and
+     * they were resolved after the handle was built — which is the only thing that carries them.
+     */
+    public function testTheDefaultsASubclassDeclaresReachTheHandle()
+    {
+        // Nothing listens on port 1, curl gives up at once and the handle is already built
+        $client = new ExposedHttpClient('http://127.0.0.1:1/');
+
+        try {
+            $client->fetch(new Request('GET', '/ping'), timeout: 1, userAgent: null);
+        } catch (\RuntimeException $_) {
+        }
+
+        $this->assertEquals('CubeTestAgent/1.0', $client->handleArguments['userAgent']);
+        $this->assertNotNull($client->handleArguments['logger']);
+        $this->assertEquals(1, $client->baseUserAgentCalls);
+        $this->assertEquals(1, $client->baseLoggerCalls);
+    }
+
+    public function testNothingIsBuiltWhenAMockAnswers()
+    {
+        $client = new ExposedHttpClient('http://some-math-api/');
+        $client->setMockServer(HttpMockServer::fromArray(['/ping' => Response::ok('pong')]));
+
+        $response = $client->get('/ping');
+
+        $this->assertEquals('pong', $response->getBody());
+        $this->assertEquals([], $client->handleArguments);
+    }
+
+    public function testAMockGivenToTheClientIsUsed()
+    {
+        $client = new ExposedHttpClient('http://unreachable.invalid/');
+        $client->setMockServer(HttpMockServer::fromArray(['/products' => Response::json([['name' => 'screen']])]));
+
+        $this->assertEquals([['name' => 'screen']], $client->get('/products')->getJSON());
+    }
+
+    public function testAMockRegisteredForTheClassIsUsed()
+    {
+        MockServers::getInstance()->set(
+            ExposedHttpClient::class,
+            HttpMockServer::fromArray(['/products' => Response::ok('from the register')])
+        );
+
+        $this->assertEquals('from the register', (new ExposedHttpClient('http://unreachable.invalid/'))->get('/products')->getBody());
+    }
+
+    public function testAsyncFetchIsShortCircuitedByAMock()
+    {
+        $client = new ExposedHttpClient('http://unreachable.invalid/');
+        $client->setMockServer(HttpMockServer::fromArray(['/events' => Response::ok()]));
+
+        $this->assertTrue($client->postJsonAsync('/events', ['name' => 'clicked']));
+    }
+
+    public function testLastDurationIsKnownBeforeAnyFetch()
+    {
+        $this->assertEquals(0.0, (new ExposedHttpClient())->lastDuration());
+    }
+
+    public function testAMockServerAnswersEveryVerb()
+    {
+        $client = new ExposedHttpClient('http://some-api/');
+        $client->setMockServer(HttpMockServer::fromRoutes(
+            new \Cube\Web\Router\Route('/products', fn (Request $request) => Response::ok($request->getMethod()))
+        ));
+
+        foreach (['get', 'post', 'put', 'patch', 'delete'] as $verb) {
+            $this->assertEquals(strtoupper($verb), $client->{$verb}('/products')->getBody());
+        }
+    }
+}

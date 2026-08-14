@@ -41,7 +41,7 @@ class HttpClient
     protected Logger $logger;
     protected ?HttpMockServer $httpMockServer = null;
 
-    protected float $lastFetchDurationMicro;
+    protected float $lastFetchDurationMilli = 0;
 
     public function baseLogger(): Logger
     {
@@ -253,8 +253,8 @@ class HttpClient
 
             case 'PUT':
             case 'PATCH':
-                $logger->info('Using CURLOPT_PUT');
-                $options[CURLOPT_PUT] = true;
+                $logger->info('Setting CURLOPT_CUSTOMREQUEST to {method}', ['method' => $method]);
+                $options[CURLOPT_CUSTOMREQUEST] = strtoupper($method);
                 break;
 
             default:
@@ -352,8 +352,6 @@ class HttpClient
         int $logFlags = self::DEBUG_ESSENTIALS,
         ?callable $curlMutator = null
     ): Response {
-        $handle = $this->toCurlHandle($request, $timeout, $userAgent, $logger, $curlMutator);
-
         if ($this->httpMockServer)
             return $this->httpMockServer->handle($request);
 
@@ -361,8 +359,9 @@ class HttpClient
             return $registeredMock->handle($request);
 
         $userAgent ??= $this->baseUserAgent();
-
         $logger ??= $this->baseLogger();
+
+        $handle = $this->toCurlHandle($request, $timeout, $userAgent, $logger, $curlMutator);
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_HEADERS)) {
             $logger->info('{method} {path}', ['method' => $request->getMethod(), 'path' => $request->getPath()]);
@@ -380,7 +379,7 @@ class HttpClient
             throw new \RuntimeException(sprintf('Curl error %s: %s', curl_errno($handle), curl_error($handle)));
         }
 
-        $this->lastFetchDurationMicro = (hrtime(true) - $startTime) / 1000000; // ns => ms
+        $this->lastFetchDurationMilli = (hrtime(true) - $startTime) / 1000000; // ns => ms
 
         $headerSize = curl_getinfo($handle, CURLINFO_HEADER_SIZE);
         $resStatus = curl_getinfo($handle, CURLINFO_HTTP_CODE);
@@ -401,13 +400,15 @@ class HttpClient
 
         if ($supportRedirection && $nextURL = ($resHeaders['location'] ?? null)) {
             $logger->info('Got redirected to [{url}]', ['url' => $nextURL]);
-            $request = new Request('GET', $nextURL);
 
-            return $request->fetch(
+            return $this->fetch(
+                new Request('GET', $nextURL),
                 $logger,
                 $timeout,
                 $userAgent,
-                $supportRedirection
+                $supportRedirection,
+                $logFlags,
+                $curlMutator
             );
         }
 
@@ -471,7 +472,7 @@ class HttpClient
         $parsed = parse_url($url);
 
         $host = $parsed['host'];
-        $port = $parsed['port'];
+        $port = $parsed['port'] ?? ('https' === ($parsed['scheme'] ?? 'http') ? 443 : 80);
         $path = $parsed['path'] ?? '/';
 
         $headers["Connection"] = "close";
@@ -496,9 +497,12 @@ class HttpClient
         }
     }
 
-    public function lastDuration(): int
+    /**
+     * @return float Duration of the last fetch(), in milliseconds
+     */
+    public function lastDuration(): float
     {
-        return $this->lastFetchDurationMicro;
+        return $this->lastFetchDurationMilli;
     }
 
     /**
@@ -510,6 +514,7 @@ class HttpClient
         $result = Bunch::fromExplode("\n", $headers)
             ->filter(fn ($line) => str_contains($line, ':'))
             ->map(fn($line) => explode(':', trim($line), 2))
+            ->map(fn($pair) => [trim($pair[0]), trim($pair[1])])
             ->zip()
         ;
 

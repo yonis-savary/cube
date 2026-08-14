@@ -46,15 +46,18 @@ The check is on by default and can be turned off with `secure: false`.
 new StaticServer('App/Static', secure: false);   // only if you know why
 ```
 
-A path is refused when it contains `..`, or when it resolves to a real file or directory **outside**
-the served directory. The order matters : what exists inside the directory is served first, so a
-legitimate `App/Static/etc/passwd` is still served at `/etc/passwd` — it is the system file of the
-same name that is out of reach.
+The requested path is resolved inside the directory, and refused when what it resolves to is not
+under that directory — whether it left through `..` or through a symlink. A path resolving to
+nothing is refused too : there is nothing to serve.
+
+The check is on the *resolved* path, not on the text of the request, so the served directory is a
+real boundary and a file name is only a file name.
 
 ```
-GET /etc/passwd     -> App/Static/etc/passwd when that file exists, otherwise nothing
-GET /tmp/whatever   -> refused, that is a real path on the host
-GET /../../secrets  -> refused, it contains ..
+GET /etc/passwd        -> App/Static/etc/passwd when that file exists, otherwise nothing
+GET /../../secrets     -> refused, it resolves outside the directory
+GET /link.txt          -> refused when link.txt is a symlink pointing outside
+GET /backup..2024.txt  -> served, two dots in a file name are not a traversal
 ```
 
 ## Single-page applications

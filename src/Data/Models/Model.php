@@ -258,7 +258,7 @@ abstract class Model extends EventDispatcher
 
                 /** @var ObjectParam $baseRule */
                 $baseRule = $toModel::toObjectParam(true, false);
-                $baseRule->optionnal($relation->toColumn);
+                $baseRule->optional($relation->toColumn);
 
                 if ($relation instanceof HasMany) {
                     $rules[$relationName] = Param::array($baseRule, true);

@@ -56,15 +56,12 @@ class StaticServer extends WebAPI
             return;
         }
 
-        $directory = $this->directory;
-        $indexPath = $directory->path($this->indexFile);
-
         $router->addRoutes(
-            Route::get('/{any:any}', [static::class, 'serveIndexFile'], extras: ['file' => $indexPath])
+            Route::get('/{any:any}', [static::class, 'serveIndexFile'], extras: ['file' => $this->indexFile])
         );
     }
 
-    public static function serveIndexFile(Request $request)
+    public static function serveIndexFile(Request $request): Response
     {
         $file = $request->getRoute()->getExtras()['file'];
 
@@ -93,15 +90,13 @@ class StaticServer extends WebAPI
 
     protected function isPathDangerous(string $path): bool
     {
-        if ($this->supportsIndex && $path === '/' )
-            return false;
+        $root = realpath($this->directory->getRoot());
+        $target = realpath($this->directory->path($path));
 
-        if (str_contains($path, '..'))
+        if (!$root || !$target)
             return true;
 
-        if (is_file(Path::join($this->directory->getRoot(), $path)))
-            return false;
-
-        return is_file($path) || is_dir($path);
+        return $target !== $root
+            && !str_starts_with($target, $root.DIRECTORY_SEPARATOR);
     }
 }

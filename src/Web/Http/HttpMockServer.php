@@ -10,7 +10,7 @@ class HttpMockServer
 {
     protected Router $router;
 
-    public static function fromRoutes(Route ...$routes): self {
+    public static function fromRoutes(Route ...$routes): static {
         $server = new static();
         $server->addRoutes(...$routes);
 
@@ -20,7 +20,7 @@ class HttpMockServer
     /**
      * @param array<string,\Closure|Response> $routes
      */
-    public static function fromArray(array $routes): self {
+    public static function fromArray(array $routes): static {
         $server = new static();
 
         foreach ($routes as $path => $handler) {
@@ -43,10 +43,11 @@ class HttpMockServer
         $this->routes($this->router);
     }
 
-    public function routes(Router $router) {
+    public function routes(Router $router): void
+    {
     }
 
-    public function addRoutes(Route ...$routes) {
+    public function addRoutes(Route ...$routes): void {
         $this->router->addRoutes(...$routes);
     }
 

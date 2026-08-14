@@ -31,7 +31,7 @@ class WebsocketRouter implements MessageComponentInterface
         $this->logger = Logger::getInstance();
         $this->channels = Bunch::fromExtends(Channel::class)->zip(fn(Channel $instance) => [$instance::class, $instance]);
 
-        foreach ($this->channels as $class => $instance) {
+        foreach (array_keys($this->channels) as $class) {
             $this->logger->info("Registering channel $class...");
         }
     }
@@ -45,7 +45,7 @@ class WebsocketRouter implements MessageComponentInterface
             if ($slugValues = $channel->match($path)) {
                 if ($errorMessage = $channel->authorize($slugValues)) {
                     $this->logger->info("Connection refused by channel to path [$path] => $errorMessage");
-                    $connection->send(['error' => $errorMessage]);
+                    $connection->send(json_encode(['error' => $errorMessage], JSON_THROW_ON_ERROR));
                     $connection->close();
                     return;
                 }
@@ -91,12 +91,12 @@ class WebsocketRouter implements MessageComponentInterface
         $body = json_decode($request->getBody(), true);
 
         if (!($class = $body["__class"] ?? false)) {
-            $this->logger->error("Recieved Invalid message : __class missing");
+            $this->logger->error("Received invalid message : __class missing");
             return $response->withBody(new BufferedBody("__class missing"))->withStatus(StatusCode::BAD_REQUEST);
         }
 
         if (!($channel = $this->channels[$class] ?? false)) {
-            $this->logger->error("Recieved Invalid message : invalid __class");
+            $this->logger->error("Received invalid message : invalid __class");
             return $response->withBody(new BufferedBody("invalid __class : $class"))->withStatus(StatusCode::UNPROCESSABLE_CONTENT);
         }
 

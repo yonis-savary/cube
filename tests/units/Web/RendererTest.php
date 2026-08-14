@@ -83,6 +83,34 @@ class RendererTest extends TestCase
         $this->assertStringContainsString("AA=6", $html);
     }
 
+    /**
+     * The view used to be included in the scope of render() itself, where a context key named
+     * `path` overwrote the very variable holding the file about to be required.
+     */
+    public function test_render_with_a_context_key_named_like_a_local_variable()
+    {
+        $renderer = new Renderer((new Storage(Path::join(__DIR__, 'Views')))->exploreFiles());
+
+        $html = $renderer->render('context_scope', ['path' => 'from the context', 'context' => 'also from the context']);
+
+        $this->assertStringContainsString('path=from the context', $html);
+        $this->assertStringContainsString('context=also from the context', $html);
+    }
+
+    public function test_render_without_context()
+    {
+        $renderer = new Renderer((new Storage(Path::join(__DIR__, 'Views')))->exploreFiles());
+
+        $this->assertStringContainsString('plain view', $renderer->render('plain'));
+    }
+
+    public function test_render_of_an_unknown_view()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->getRenderer()->render('there/is/no/such/view');
+    }
+
     public function test_render_assets()
     {
         $renderer = $this->getRenderer();

@@ -355,7 +355,101 @@ class ValidationTest extends TestCase
         });
     }
 
-    public function testNullableEdition() 
+    /**
+     * default() fills a missing value in, it does not overwrite the one that came in : the
+     * transformer used to ignore its argument and hand the default back every time.
+     */
+    public function testDefaultOnlyReplacesAMissingValue()
+    {
+        $rule = Param::integer(true)->default(21);
+
+        $this->testRule($rule, null, true, 21);
+        $this->testRule($rule, 5, true, 5);
+        $this->testRule($rule, '5', true, 5);
+    }
+
+    public function testDefaultRunsBeforeTheConditions()
+    {
+        $rule = Param::integer()->isBetween(0, 10)->default(5);
+
+        $this->testRule($rule, null, true, 5);
+
+        $rule = Param::integer()->isBetween(0, 10)->default(50);
+
+        $this->testRule($rule, null, false);
+    }
+
+    public function testDefaultInsideAnObject()
+    {
+        $rule = Param::object([
+            'name' => Param::string(),
+            'quantity' => Param::integer(true)->default(1),
+        ]);
+
+        $this->testRule($rule, ['name' => 'screen'], true, ['name' => 'screen', 'quantity' => 1]);
+        $this->testRule($rule, ['name' => 'screen', 'quantity' => 12], true, ['name' => 'screen', 'quantity' => 12]);
+    }
+
+    public function testOptionalAndMandatoryEditTheSameRules()
+    {
+        $rule = Param::object([
+            'name' => Param::string(),
+            'price' => Param::integer(),
+        ]);
+
+        $this->testRule($rule, ['name' => 'screen'], false);
+
+        $rule->optional('price');
+        $this->testRule($rule, ['name' => 'screen'], true, ['name' => 'screen', 'price' => null]);
+
+        $rule->mandatory('price');
+        $this->testRule($rule, ['name' => 'screen'], false);
+    }
+
+    public function testObjectRulesCanBeAddedAndRemoved()
+    {
+        $rule = Param::object(['name' => Param::string(), 'price' => Param::integer()]);
+
+        $rule->without('price');
+        $this->testRule($rule, ['name' => 'screen'], true, ['name' => 'screen']);
+
+        $rule->with(['quantity' => Param::integer()]);
+        $this->testRule($rule, ['name' => 'screen'], false);
+        $this->testRule($rule, ['name' => 'screen', 'quantity' => 2], true, ['name' => 'screen', 'quantity' => 2]);
+    }
+
+    public function testAStringRuleRefusesWhatIsNotAString()
+    {
+        $rule = Param::string();
+
+        $this->testRule($rule, ['an', 'array'], false);
+        $this->testRule($rule, new \stdClass(), false);
+    }
+
+    /**
+     * The index of the failing item is what tells the caller which one to fix, and the loop
+     * counter used to overwrite the parameter carrying the path.
+     */
+    public function testAnArrayReportsWhichItemFailed()
+    {
+        $rule = Param::array(Param::integer());
+
+        $errors = $rule->validate([1, 'nope', 3], 'quantities')->getErrors();
+
+        $this->assertArrayHasKey(1, $errors);
+        $this->assertArrayNotHasKey(0, $errors);
+        $this->assertStringContainsString('quantities.1', $errors[1][0]);
+    }
+
+    public function testANullableDatetimeStaysNullWhenTimeIsAddedAutomatically()
+    {
+        $rule = Param::datetime(true, true);
+
+        $this->testRule($rule, null, true, null);
+        $this->testRule($rule, '2025-01-01', true, '2025-01-01 00:00:00');
+    }
+
+    public function testNullableEdition()
     {
         // Optionnal at first
         $rule = Param::array(Param::integer(), true);

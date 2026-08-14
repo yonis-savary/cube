@@ -2,8 +2,13 @@
 
 namespace Cube\Tests\Units\Web;
 
+use Cube\Core\Exceptions\ResponseException;
+use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
+use Cube\Tests\Units\Web\Classes\CountingApi;
+use Cube\Tests\Units\Web\Classes\TracingMiddleware;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
+use Cube\Web\Http\StatusCode;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
@@ -23,7 +28,7 @@ class RouterTest extends TestCase
         return $request->getRoute()->getExtras()['count'];
     }
 
-    public function getCountResponseMethod(Request $request) 
+    public function getCountResponseMethod(Request $request)
     {
         return $request->getRoute()->getExtras()['count'];
     }
@@ -46,7 +51,7 @@ class RouterTest extends TestCase
      */
     public function testPerformances()
     {
-        $router = new Router(new RouterConfiguration(false, false, false, [], [], '/'));
+        $router = $this->newRouter();
 
         $keywords = ['zim', 'zam', 'zoom', 'boo', 'bar', 'foo', 'boom'];
 
@@ -78,7 +83,7 @@ class RouterTest extends TestCase
 
     public function testMethodSupport() {
 
-        $router = new Router(new RouterConfiguration(false, false, false, [], [], '/'));
+        $router = $this->newRouter();
 
         $this->expectException(InvalidArgumentException::class);
         $router->addRoutes(Route::get('/', ['InexistentClass', 'getCountResponseMethod']));
@@ -90,5 +95,213 @@ class RouterTest extends TestCase
         $response = $router->route(new Request('GET', '/'));
         $this->assertInstanceOf(Response::class, $response);
 
+    }
+
+    public function testAnUnknownPathAnswersNotFound()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/products', fn () => Response::ok()));
+
+        $this->assertEquals(StatusCode::NOT_FOUND, $router->route(new Request('GET', '/orders'))->getStatusCode());
+    }
+
+    public function testAKnownPathWithTheWrongMethodAnswersMethodNotAllowed()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::post('/products', fn () => Response::ok()));
+
+        $response = $router->route(new Request('GET', '/products'));
+
+        $this->assertEquals(StatusCode::METHOD_NOT_ALLOWED, $response->getStatusCode());
+        $this->assertStringContainsString('POST', $response->getBody());
+    }
+
+    public function testAnOptionsRequestAnswersTheAllowedMethods()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(
+            Route::post('/products', fn () => Response::ok()),
+            new Route('/products', fn () => Response::ok(), ['PUT']),
+        );
+
+        $response = $router->route(new Request('OPTIONS', '/products'));
+
+        $this->assertEquals(StatusCode::NO_CONTENT, $response->getStatusCode());
+
+        $allowed = $response->getHeader('access-control-allow-methods');
+        $this->assertStringContainsString('POST', $allowed);
+        $this->assertStringContainsString('PUT', $allowed);
+    }
+
+    /**
+     * A controller with nothing to return means an empty body, not the string "null" : the
+     * call stack used to hand that return value to Response::json().
+     */
+    public function testAControllerReturningNothingAnswersNoContent()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/ping', fn () => null));
+
+        $response = $router->route(new Request('GET', '/ping'));
+
+        $this->assertEquals(StatusCode::NO_CONTENT, $response->getStatusCode());
+        $this->assertEquals('', $response->getBody());
+    }
+
+    public function testAControllerReturningAnArrayAnswersJson()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/products', fn () => [['name' => 'screen']]));
+
+        $response = $router->route(new Request('GET', '/products'));
+
+        $this->assertEquals(StatusCode::OK, $response->getStatusCode());
+        $this->assertEquals([['name' => 'screen']], $response->getJSON());
+    }
+
+    public function testMiddlewaresRunBeforeTheController()
+    {
+        TracingMiddleware::reset();
+
+        $router = $this->newRouter();
+        $router->addRoutes(
+            Route::get('/products', fn () => Response::ok('reached'), [TracingMiddleware::class])
+        );
+
+        $response = $router->route(new Request('GET', '/products'));
+
+        $this->assertEquals([TracingMiddleware::class], TracingMiddleware::$trace);
+        $this->assertEquals('reached', $response->getBody());
+    }
+
+    /**
+     * The call stack converts what comes back from a middleware too, and a Response is already
+     * an answer : encoding it again gave "{}", since a Response holds no public property.
+     */
+    public function testAResponseCrossingAMiddlewareIsLeftUntouched()
+    {
+        TracingMiddleware::reset();
+
+        $router = $this->newRouter();
+        $router->addRoutes(
+            Route::get('/products', fn () => Response::ok('reached'), [TracingMiddleware::class])
+        );
+
+        $response = $router->route(new Request('GET', '/products'));
+
+        $this->assertEquals(StatusCode::OK, $response->getStatusCode());
+        $this->assertEquals('reached', $response->getBody());
+    }
+
+    public function testAControllerReturnIsConvertedOnceBehindAMiddleware()
+    {
+        TracingMiddleware::reset();
+
+        $router = $this->newRouter();
+        $router->addRoutes(
+            Route::get('/products', fn () => [['name' => 'screen']], [TracingMiddleware::class]),
+            Route::get('/ping', fn () => null, [TracingMiddleware::class]),
+        );
+
+        $this->assertEquals([['name' => 'screen']], $router->route(new Request('GET', '/products'))->getJSON());
+
+        $empty = $router->route(new Request('GET', '/ping'));
+        $this->assertEquals(StatusCode::NO_CONTENT, $empty->getStatusCode());
+        $this->assertEquals('', $empty->getBody());
+    }
+
+    public function testAMiddlewareCanAnswerWithoutTheController()
+    {
+        $reached = false;
+
+        $router = $this->newRouter();
+        $router->addRoutes(
+            Route::get('/products', function () use (&$reached) {
+                $reached = true;
+
+                return Response::ok();
+            }, [BlockingMiddleware::class])
+        );
+
+        $response = $router->route(new Request('GET', '/products'));
+
+        $this->assertFalse($reached);
+        $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
+    }
+
+    public function testAGroupLendsItsPrefixAndMiddlewaresToItsRoutes()
+    {
+        TracingMiddleware::reset();
+
+        $router = $this->newRouter();
+        $router->group('/api', [TracingMiddleware::class], function: function (Router $router) {
+            $router->addRoutes(Route::get('/products', fn () => Response::ok('grouped')));
+        });
+
+        $this->assertEquals(StatusCode::NOT_FOUND, $router->route(new Request('GET', '/products'))->getStatusCode());
+
+        $response = $router->route(new Request('GET', '/api/products'));
+
+        $this->assertEquals('grouped', $response->getBody());
+        $this->assertEquals([TracingMiddleware::class], TracingMiddleware::$trace);
+    }
+
+    public function testAResponseExceptionIsUnwrappedByTheRouter()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/products', function () {
+            throw new ResponseException('nope', Response::unprocessableContent('aborted'));
+        }));
+
+        $response = $router->route(new Request('GET', '/products'));
+
+        $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
+        $this->assertEquals('aborted', $response->getBody());
+    }
+
+    /**
+     * The configured apis are already known by the constructor : registering them again in
+     * loadRoutes() listed them twice, so every one of them was asked about every request twice.
+     */
+    public function testAConfiguredApiIsRegisteredOnce()
+    {
+        $api = new CountingApi();
+        $router = new Router(new RouterConfiguration(false, false, false, [$api], [], '/'));
+
+        $router->route(new Request('GET', '/counting-api'));
+
+        $this->assertCount(1, $router->getApis());
+        $this->assertEquals(1, $api->routesCalls);
+        $this->assertEquals(1, $api->handleCalls);
+    }
+
+    public function testAnApiCanClaimARequestWithItsOwnResponse()
+    {
+        $api = new CountingApi(Response::ok('claimed'));
+        $router = new Router(new RouterConfiguration(false, false, false, [$api], [], '/'));
+        $router->addRoutes(Route::get('/products', fn () => Response::ok('from the route')));
+
+        $this->assertEquals('claimed', $router->route(new Request('GET', '/products'))->getBody());
+    }
+
+    public function testAnApiRegistersItsOwnRoutes()
+    {
+        $api = new CountingApi();
+        $router = new Router(new RouterConfiguration(false, false, false, [$api], [], '/'));
+
+        $this->assertEquals('from routes()', $router->route(new Request('GET', '/counting-api'))->getBody());
+    }
+
+    public function testARouteIsReachableWithOrWithoutItsTrailingSlash()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/products/', fn () => Response::ok('products')));
+
+        $this->assertEquals('products', $router->route(new Request('GET', '/products'))->getBody());
+    }
+
+    protected function newRouter(): Router
+    {
+        return new Router(new RouterConfiguration(false, false, false, [], [], '/'));
     }
 }

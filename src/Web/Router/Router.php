@@ -12,11 +12,10 @@ use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
-use Cube\Data\Models\Model;
 use Cube\Utils\Path;
 use Cube\Web\Controller;
-use Cube\Web\Router\RouterConfiguration;
 use Cube\Web\Helpers\WebAPI;
+use Cube\Web\Middleware;
 
 class Router
 {
@@ -47,7 +46,7 @@ class Router
         $this->apis = $this->configuration->apis;
     }
 
-    public function loadRoutes()
+    public function loadRoutes(): void
     {
         if ($this->routesAreLoaded)
             return;
@@ -61,8 +60,8 @@ class Router
         if ($config->loadRoutesFiles)
             $this->loadRoutesFiles();
 
-        foreach($config->apis as $api)
-            $this->addService($api);
+        foreach($this->apis as $api)
+            $api->routes($this);
     }
 
     public function loadControllers(): void
@@ -107,7 +106,7 @@ class Router
     /**
      * @param array<class-string<Middleware>> $middlewares
      * @param Route[]|null $routes
-     * @param \Closure(Router,RouterGroup) $function
+     * @param \Closure(Router,RouteGroup) $function
      */
     public function group(
         string $prefix="/",
@@ -168,8 +167,11 @@ class Router
         /** @var InvalidRequestMethodException[] */
         $exceptions = [];
 
-        if ($firstRoute = $this->rootHolder->findMatchingRoute($request, $exceptions))
+        if ($firstRoute = $this->rootHolder->findMatchingRoute($request, $exceptions)) {
+            if ($this->configuration->cached)
+                $this->cache->set($request->getPath(), $firstRoute);
             return $firstRoute;
+        }
 
         $isOptionsRequest = $request->getMethod() === 'OPTIONS';
         if (count($exceptions) || $isOptionsRequest)

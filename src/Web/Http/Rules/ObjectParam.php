@@ -24,7 +24,8 @@ class ObjectParam extends Rule
             ->withValueCondition(fn ($array) => Utils::isAssoc($array), '{key} must be an object, got {value}');
     }
 
-    public function getRules()
+    /** @return array<string,Rule> */
+    public function getRules(): array
     {
         return $this->rules;
     }
@@ -63,7 +64,7 @@ class ObjectParam extends Rule
         return $this;
     }
 
-    public function optionnal(string|array $keys): static {
+    public function optional(string|array $keys): static {
         Bunch::of($keys)
         ->filter(fn($key) => array_key_exists($key, $this->rules))
         ->forEach(fn($key) => $this->rules[$key]->nullable(true));
@@ -87,7 +88,7 @@ class ObjectParam extends Rule
         return $this;
     }
 
-    public function nullable(bool $nullable): Rule
+    public function nullable(bool $nullable): static
     {
         $this->param->nullable($nullable);
         return $this;
