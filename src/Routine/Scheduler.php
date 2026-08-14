@@ -4,6 +4,7 @@ namespace Cube\Routine;
 
 use Cube\Core\Component;
 use Cube\Data\Bunch;
+use Cube\Env\Logger\Logger;
 
 class Scheduler
 {
@@ -31,7 +32,11 @@ class Scheduler
         ;
 
         foreach ($handlersToLaunch as $callback) {
-            $callback();
+            try {
+                $callback();
+            } catch (\Throwable $thrown) {
+                Logger::getInstance()->logThrowable($thrown);
+            }
         }
     }
 }

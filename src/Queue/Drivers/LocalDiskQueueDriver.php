@@ -1,10 +1,9 @@
-<?php 
+<?php
 
 namespace Cube\Queue\Drivers;
 
 use Cube\Data\Bunch;
 use Cube\Env\Storage;
-use Exception;
 
 class LocalDiskQueueDriver extends BasicQueueDriver
 {
@@ -13,48 +12,34 @@ class LocalDiskQueueDriver extends BasicQueueDriver
         return Storage::getInstance()->child('Queues')->child($this->identifier);
     }
 
+    /**
+     * @return ?string Path of the locked file, `null` when another worker won the race
+     */
     protected static function lockFile(string $file): ?string
     {
         $dir = dirname($file);
         $basename = basename($file);
         $newPath = "{$dir}/#{$basename}";
 
-        if (!rename($file, $newPath)) {
+        return @rename($file, $newPath)
+            ? $newPath
+            : null;
+    }
+
+    public function next(): ?array
+    {
+        $storage = $this->getStorage();
+
+        $toProcess = Bunch::of($storage->files())
+            ->first(fn ($file) => !str_starts_with(basename($file), '#'))
+        ;
+
+        if (!$toProcess) {
             return null;
         }
 
-        return $newPath;
-    }
-
-
-    protected static function unlockFile(string $file): ?string
-    {
-        $dir = dirname($file);
-        $basename = basename($file);
-        $newBasename = ltrim($basename, "#");
-        $newPath = "{$dir}/{$newBasename}";
-
-        if (!rename($file, $newPath)) {
+        if (!$locked = self::lockFile($toProcess)) {
             return null;
-        }
-
-        return $newPath;
-    }
-
-    public function next(): array
-    {
-        $storage = $this->getStorage($this->identifier);
-        $files = $storage->files();
-
-        do {
-            $files = $storage->files();
-            $toProcess = Bunch::of($files)->first(fn ($x) => !str_starts_with(basename($x), '#'));
-            if (!$toProcess)
-                sleep(1);
-        } while (!$toProcess);
-
-        if (!$locked = $this->lockFile($toProcess)) {
-            throw new Exception(static::class.": could not lock file {$toProcess}");
         }
 
         $element = unserialize(file_get_contents($locked));
@@ -63,17 +48,15 @@ class LocalDiskQueueDriver extends BasicQueueDriver
         return $element;
     }
 
-    public function flush()
+    public function flush(): void
     {
-        $storage = $this->getStorage($this->identifier);
-
-        Bunch::of($storage->files())->forEach(fn ($x) => unlink($x));
+        Bunch::of($this->getStorage()->files())
+        ->forEach(fn ($file) => unlink($file));
     }
 
-    public function push(array $args)
+    public function push(array $args): void
     {
-        $storage = $this->getStorage();
-        $uniqueName = uniqid(time().'-');
-        $storage->write($uniqueName, serialize($args));
+        $this->getStorage()
+        ->write(uniqid(time().'-'), serialize($args));
     }
 }

@@ -39,9 +39,15 @@ class IntegrationApplicationTest extends TestCase
         $output = $proc->getOutput() . $proc->getErrorOutput();
         $this->assertEquals(0, $proc->getExitCode(), $output);
 
-        $proc = Shell::launchInDirectory('php do cube:queue --queue=DisplayerQueue', $storage->getRoot());
+        $proc = Shell::launchInDirectory('exec php do cube:queue --queue=DisplayerQueue', $storage->getRoot());
         sleep(3);
         $proc->stop();
+
+        $queuesDirectory = $storage->path('Storage/Queues');
+        Shell::executeInDirectory('rm -rf Storage/Queues', $storage->getRoot());
+        sleep(1);
+
+        $this->assertDirectoryDoesNotExist($queuesDirectory, 'The queue worker outlived the test');
 
         $logsFile = $storage->path("Storage/Logs/displayerqueue.csv");
         $this->assertFileExists($logsFile);

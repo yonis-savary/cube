@@ -12,12 +12,16 @@ class StepValue implements CronValue
     {
         list($step) = Bunch::fromExplode('/', $rawSet)->asIntegers()->get();
 
+        if ($step < 1) {
+            throw new \InvalidArgumentException("A step must be greater than zero (got [{$rawSet}])");
+        }
+
         $this->step = $step;
     }
 
     public static function accepts(string $value): bool
     {
-        return preg_match('/^\*\/\d+$/', $value);
+        return (bool) preg_match('/^\*\/\d+$/', $value);
     }
 
     public function matches(int $value): bool
@@ -27,6 +31,6 @@ class StepValue implements CronValue
 
     public function getHeldValues(): array
     {
-        return [];
+        return [$this->step];
     }
 }

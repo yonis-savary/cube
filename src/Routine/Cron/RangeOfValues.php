@@ -13,8 +13,8 @@ class RangeOfValues implements CronValue
     {
         list($min, $max) = Bunch::fromExplode('-', $rawSet)->asIntegers()->get();
 
-        if (!($min < $max)) {
-            throw new \InvalidArgumentException("Max must be greater than min value (Got min={$min}, max={$max})");
+        if ($min > $max) {
+            throw new \InvalidArgumentException("Max must be greater than or equal to min value (Got min={$min}, max={$max})");
         }
 
         $this->min = $min;
@@ -23,7 +23,7 @@ class RangeOfValues implements CronValue
 
     public static function accepts(string $value): bool
     {
-        return preg_match('/^\d+-\d+$/', $value);
+        return (bool) preg_match('/^\d+-\d+$/', $value);
     }
 
     public function matches(int $value): bool

@@ -2,7 +2,6 @@
 
 namespace Cube\Queue\Drivers;
 
-use Cube\Queue\QueueCallback;
 use InvalidArgumentException;
 use Redis;
 use RedisException;
@@ -12,13 +11,15 @@ use function Cube\env;
 
 class RedisQueue extends BasicQueueDriver
 {
+    protected const BLOCKING_TIMEOUT = 1;
+
     protected Redis $connection;
     protected string $host;
-    protected string $port;
+    protected int $port;
 
     public function __construct(?string $host=null, int $port=6379)
     {
-        $host = env('QUEUE_REDIS_HOST', 'redis');
+        $host ??= env('QUEUE_REDIS_HOST', 'redis');
         if (!$host)
             throw new InvalidArgumentException('$host parameter is needed (can also be configured through env QUEUE_REDIS_HOST)');
 
@@ -28,7 +29,8 @@ class RedisQueue extends BasicQueueDriver
         $this->reconnect();
     }
 
-    protected function reconnect() {
+    protected function reconnect(): void
+    {
         $host = $this->host;
         $port = $this->port;
 
@@ -36,26 +38,30 @@ class RedisQueue extends BasicQueueDriver
             throw new RuntimeException("Could not connect to redis service $host:$port");
     }
 
-    public function flush() {
+    public function flush(): void
+    {
         $this->connection->del($this->identifier);
     }
 
-    public function push(array $args) {
+    public function push(array $args): void
+    {
         $this->connection->rPush($this->identifier, serialize($args));
     }
 
-    public function next(): array {
-        while (true) {
-            try
-            {
-                $result = $this->connection->blPop($this->identifier, 30);
-                if ($result)
-                    return unserialize($result[1]);
-            }
-            catch (RedisException $_) {
-                $this->reconnect();
-            }
+    public function next(): ?array
+    {
+        try
+        {
+            $result = $this->connection->blPop($this->identifier, self::BLOCKING_TIMEOUT);
+        }
+        catch (RedisException $_) {
+            $this->reconnect();
+
+            return null;
         }
 
+        return $result
+            ? unserialize($result[1])
+            : null;
     }
 }

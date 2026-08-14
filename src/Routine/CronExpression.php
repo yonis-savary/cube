@@ -19,28 +19,17 @@ class CronExpression
     public function __construct(
         string $expression
     ) {
-        if (!preg_match('/([^ ]+ ){4}([^ ]+)/', $expression)) {
-            throw new \InvalidArgumentException('Given expression is not a standart cron expression');
+        if (!preg_match('/^([^ ]+ ){4}([^ ]+)$/', $expression)) {
+            throw new \InvalidArgumentException("Given expression [{$expression}] is not a standart cron expression, five space separated fields are expected");
         }
 
-        list($min, $hour, $dayOfTheMonth, $month, $dayOfTheWeek) = explode(' ', $expression);
+        [$min, $hour, $dayOfTheMonth, $month, $dayOfTheWeek] = explode(' ', $expression);
 
-        $values = [&$min, &$hour, &$dayOfTheMonth, &$month, &$dayOfTheWeek];
-
-        foreach ($values as &$value) {
-            $value = $this->transformValueToCronValue($value);
-        }
-        /** @var CronValue $min */
-        /** @var CronValue $hour */
-        /** @var CronValue $dayOfTheMonth */
-        /** @var CronValue $month */
-        /** @var CronValue $dayOfTheWeek */
-
-        $this->min = $min;
-        $this->hour = $hour;
-        $this->dayOfTheMonth = $dayOfTheMonth;
-        $this->month = $month;
-        $this->dayOfTheWeek = $dayOfTheWeek;
+        $this->min = $this->transformValueToCronValue($min);
+        $this->hour = $this->transformValueToCronValue($hour);
+        $this->dayOfTheMonth = $this->transformValueToCronValue($dayOfTheMonth);
+        $this->month = $this->transformValueToCronValue($month);
+        $this->dayOfTheWeek = $this->transformValueToCronValue($dayOfTheWeek);
 
         $this->assertValueIsInBounds($this->min, 0, 59, 'minute');
         $this->assertValueIsInBounds($this->hour, 0, 23, 'hour');
@@ -77,20 +66,19 @@ class CronExpression
         return new self("0 0 * * {$expr}");
     }
 
-    public function matches(\DateTime|string $datetime = 'now')
+    public function matches(\DateTime|string $datetime = 'now'): bool
     {
         if (is_string($datetime)) {
             $datetime = new \DateTime($datetime);
         }
 
-        $timestamp = $datetime->getTimestamp();
-
+        // timezone-proof comparison
         return
-            $this->min->matches(date('i', $timestamp))
-            && $this->hour->matches(date('H', $timestamp))
-            && $this->dayOfTheMonth->matches(date('d', $timestamp))
-            && $this->month->matches(date('m', $timestamp))
-            && $this->dayOfTheWeek->matches(date('w', $timestamp));
+            $this->min->matches((int) $datetime->format('i'))
+            && $this->hour->matches((int) $datetime->format('H'))
+            && $this->dayOfTheMonth->matches((int) $datetime->format('d'))
+            && $this->month->matches((int) $datetime->format('m'))
+            && $this->dayOfTheWeek->matches((int) $datetime->format('w'));
     }
 
     protected function transformValueToCronValue(string $value): CronValue
