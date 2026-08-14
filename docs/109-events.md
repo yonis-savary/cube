@@ -112,7 +112,7 @@ On the `Events` component
 | `LoggedOutUser` | a user session was closed | `authenticatedUser`, `userId` |
 | `FailedAuthentication` | credentials were rejected | — |
 | `RememberedUser` | a user was restored from a remember-me token | `userData`, `userPrimaryKeyValue` |
-| `GeneratedModels` | `php do model:generate` finished | — |
+| `GeneratedModels` | `php do models:generate` finished | — |
 
 On the object itself
 

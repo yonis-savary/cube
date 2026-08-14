@@ -6,10 +6,10 @@ When copying server files to your project directory, you may have noticed the `d
 
 Example, launch PHP web server
 ```bash
-php do cube:serve
+php do web:serve
 ```
 
-Here, the `cube` part is called the "scope", and `serve` is an automatic name made from the command classname
+Here, the `web` part is called the "scope", and `serve` is an automatic name made from the command classname
 
 ## Creating a command
 
@@ -26,14 +26,19 @@ class SayHello extends Command
     public function execute(Args $args): int
     {
         Console::print(Console::withGreenBackground("Hello, world !"));
+
+        return 0;
     }
 }
 ```
 
-To create a command, three criteria are needed:
+To create a command, two criteria are needed:
 - extend from `Command`
-- implements `getScope()`
-- implements `execute(Args $args)`
+- implement `execute(Args $args)`, which returns the exit code of your command
+
+`getScope()` is optional : left alone, the scope is the root namespace of your command,
+so `App\Commands\SayHello` answers to `app:say-hello`. Override it when you want to group
+several commands under one word, the way the framework does with `models:` or `make:`.
 
 Now, you can launch your brand new command with either
 ```bash
@@ -53,7 +58,8 @@ Here is how you can use it
 // In this example, we call
 // php do say-hello -n some-custom-name -f file1 -f file2 --file file3
 
-$args->dump(); // ["-n" => "some-custom-name"]
+// Every parameter holds the list of the values that followed it
+$args->dump(); // ["-n" => ["some-custom-name"], "-f" => ["file1", "file2"], "--file" => ["file3"]]
 $args->toString(); // convert to -n some-custom-name -f file1 -f file2 --file file3
 $args->has("-f", "--file"); // true !
 $args->getValues("-f", "--file"); // Get ["file1", "file2", "file3"]
@@ -67,12 +73,15 @@ The Cube framework contains a bunch of commands you can use out-of-the-box !, wh
 | Command | Purpose |
 |---------|---------|
 | `cube:hello-world` | Say hello ! |
-| `cube:help` | Print the command list |
-| `web:serve` | Start PHP Builtin Webserver to serve your app |
+| `cube:help [COMMAND]` | Print the command list, or the manual of one command |
+| `cube:queue --queue=<QUEUE>` | Run a queue, or flush it with `-f` |
+| `cube:test` | Run the PHPUnit suite of your project |
+| `web:serve [PORT]` | Start PHP Builtin Webserver to serve your app |
 | `configuration:cache` | Cache your app configuration |
 | `cache:clear` | Clear every cache items |
-| `dto:generate` | Can create a DTO object from a JSON user input |
-| `migrate:make <MIGRATION_NAME>` | Create a migration file |
+| `make:dto` | Can create a DTO object from a JSON user input |
+| `make:migration <MIGRATION_NAME>` | Create a migration file |
+| `make:openapi` | Generate the OpenAPI document of your API |
 | `migrate:migrate` | Apply migrations to your database |
 | `models:generate` | Generate Models Classes from your database tables |
 | `models:to-types` | Generate a Typescript file exporting your database types (useful to make bridge between front and back-end) |

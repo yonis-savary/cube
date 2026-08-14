@@ -2,6 +2,7 @@
 
 namespace Cube\Console;
 
+use Cube\Data\Bunch;
 use Cube\Utils\Text;
 
 class Args
@@ -12,11 +13,23 @@ class Args
     {
         $args = new Args();
         $currentArg = null;
+        $locked = false;
 
         foreach ($argv as $arg) {
-            if (str_starts_with($arg, '-')) {
+            if ($arg === '--') {
+                $locked = true;
+                $currentArg = null;
+                continue;
+            }
+
+            if ($locked) {
+                $args->addValue($currentArg, $arg);
+                continue;
+            }
+
+            if (str_starts_with($arg, '-') && $arg !== '-' ) {
                 if (str_contains($arg, '=')) {
-                    list($param, $value) = explode('=', $arg);
+                    list($param, $value) = explode('=', $arg, 2);
 
                     $args->addValue($param, $value);
                     $currentArg = null;
@@ -39,22 +52,20 @@ class Args
 
     public function toString(): string
     {
-        $string = '';
-
-        foreach ($this->values as $param => $values) {
-            $string .= $param.' '.join(' ', $values);
-        }
-
-        return $string;
+        return Bunch::unzip($this->values)
+        ->map(fn($pair) =>  ($pair[0] ? ($pair[0] . " ") : '') . join(' ', $pair[1]) )
+        ->join(' ');
     }
 
     public function addParameter(?string $parameter): void
     {
+        $parameter ??= '';
         $this->values[$parameter] ??= [];
     }
 
     public function addValue(?string $parameter, string $value): self
     {
+        $parameter ??= '';
         $this->values[$parameter] ??= [];
         $this->values[$parameter][] = $value;
 
