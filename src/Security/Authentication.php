@@ -81,7 +81,7 @@ class Authentication
 
     public function isLogged(): bool
     {
-        return false != $this->session->get(self::SESSION_USER_DATA, false);
+        return false !== $this->session->get(self::SESSION_USER_DATA, false);
     }
 
     public function user(): Model

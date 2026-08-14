@@ -4,11 +4,12 @@ namespace Cube\Security\Authentication;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Models\Model;
-use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Utils\Utils;
 
 class PasswordAuthentication implements AuthenticationProvider
 {
+    private static ?string $decoyHash = null;
+
     /**
      * @param class-string<Model> $model
      */
@@ -26,6 +27,7 @@ class PasswordAuthentication implements AuthenticationProvider
     public function attempt(string $identifier, ?string $password = null): Model|false
     {
         $model = $this->model;
+        $password ??= '';
 
         $loginFields = Utils::toArray($this->loginFields);
         $query = $model::select();
@@ -35,15 +37,33 @@ class PasswordAuthentication implements AuthenticationProvider
         }
 
         if (!$user = $query->first()) {
+            password_verify($password, self::decoyHash());
             return false;
         }
 
-        $passwordField = $this->passwordField;
-        $hash = $user->{$passwordField};
-
         $this->saltString($password, $user);
 
-        return password_verify($password, $hash);
+        $storedHash = (string) $user->{$this->passwordField};
+        if ('' === $storedHash) {
+            password_verify($password, self::decoyHash());
+            return false;
+        }
+
+        if (!password_verify($password, $storedHash)) {
+            return false;
+        }
+
+        return $user;
+    }
+
+    /**
+     * A hash of a value nobody can submit, built once per process with the algorithm
+     * `password_hash()` currently defaults to, so verifying against it costs what verifying a
+     * real password costs.
+     */
+    protected static function decoyHash(): string
+    {
+        return self::$decoyHash ??= password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
     }
 
     public function userById(mixed $id): Model|false 

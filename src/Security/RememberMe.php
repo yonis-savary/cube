@@ -27,7 +27,7 @@ class RememberMe implements Middleware
 
     public static function getDefaultInstance(): static
     {
-        return new self(
+        return new static(
             Cache::getInstance(),
             Authentication::getInstance(),
             UserRegisterConfiguration::resolve()
@@ -50,7 +50,11 @@ class RememberMe implements Middleware
             return $request;
         }
 
-        $this->authentication->loginById($userId);
+        if (!$this->authentication->loginById($userId)) {
+            $this->cache->delete($token);
+            return $request;
+        }
+
         $userData = $this->authentication->user();
 
         (new RememberedUser(
@@ -65,36 +69,31 @@ class RememberMe implements Middleware
         return $request;
     }
 
-    public function register(AuthenticatedUser|Model $user)
+    public function register(AuthenticatedUser|Model $user): void
     {
-        if ($user instanceof AuthenticatedUser) {
-            $userId = $user->userId;
-        } else {
-            $userId = $user->id();
-        }
+        $userId = $user instanceof AuthenticatedUser
+            ? $user->userId
+            : $user->id();
 
         $token = uniqid('rememberuser', true);
         $duration = $this->configuration->cookieDuration;
 
         $this->cache->set($token, $userId, $duration);
-
-        setcookie(
-            $this->configuration->cookieName,
-            $token,
-            time() + $duration,
-            path: $this->configuration->cookiePath,
-            secure: $this->configuration->cookieSecure,
-            httponly: $this->configuration->cookieHttpOnly
-        );
+        $this->sendCookie($token, time() + $duration);
     }
 
     public static function handle(Request $request, Closure $next): Request|Response
     {
-        self::getInstance()->handleRequest($request);
-        return $next($request);
+        $handled = self::getInstance()->handleRequest($request);
+
+        return $handled instanceof Response
+            ? $handled
+            : $next($handled)
+        ;
     }
 
-    public function forget(Request|string $requestOrToken) {
+    public function forget(Request|string $requestOrToken): void
+    {
         $token = $requestOrToken;
 
         if ($requestOrToken instanceof Request) {
@@ -105,5 +104,20 @@ class RememberMe implements Middleware
         if ($token && $this->cache->has($token)) {
             $this->cache->delete($token);
         }
+
+        // Without this the browser keeps sending a token nothing answers to
+        $this->sendCookie('', time() - 3600);
+    }
+
+    protected function sendCookie(string $value, int $expiresAt): void
+    {
+        setcookie(
+            $this->configuration->cookieName,
+            $value,
+            $expiresAt,
+            path: $this->configuration->cookiePath,
+            secure: $this->configuration->cookieSecure,
+            httponly: $this->configuration->cookieHttpOnly
+        );
     }
 }
