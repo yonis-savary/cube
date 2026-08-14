@@ -392,7 +392,7 @@ class Response extends HttpMessage
         );
     }
 
-    public function logstatic(?LoggerInterface $logger = null): void
+    public function logSelf(?LoggerInterface $logger = null): void
     {
         $logger ??= Logger::getInstance();
         $logger->log('info', '{code} {content-type}', [

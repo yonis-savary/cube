@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Web;
 
 use Cube\Env\Storage;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
+use Cube\Tests\Units\Env\Classes\SpyLogger;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -146,6 +147,21 @@ class ResponseTest extends TestCase
             ->withResponseCallback(function () { echo 'from the callback'; });
 
         $this->assertEquals('from the callback', $response->getBody());
+    }
+
+    /**
+     * `server/Public/index.php` closes every request with `$response->logSelf()` : losing the
+     * method turns each one into a 500, and only a test going through a real entry point
+     * noticed the last time.
+     */
+    public function testAResponseCanLogItself()
+    {
+        $logger = new SpyLogger();
+
+        Response::json(['name' => 'screen'])->logSelf($logger);
+
+        $this->assertEquals(['info'], $logger->levels());
+        $this->assertEquals('{code} {content-type}', $logger->records[0][1]);
     }
 
     public function testToObjectRefusesAFailedResponse()

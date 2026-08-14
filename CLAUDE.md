@@ -42,13 +42,28 @@ These four rules decide every design argument in this repository:
 ## Commands
 
 ```sh
-make test            # composer install + docker compose up + full phpunit suite + cleanup
+make test            # composer install + docker compose up + full suite + cleanup
 make test-dirty      # same, without the cleanup step
-make workflow-test   # phpunit only (what CI runs, services already up)
-make test filter=Foo # restrict phpunit --filter
+make workflow-test   # tests only (what CI runs, services already up)
+make test filter=Foo # restrict --filter
+make test jobs=4     # cap the number of ParaTest processes
+make test-serial     # everything in one phpunit process, when a parallel run confuses a failure
 make cleanup         # remove test databases/caches left behind
 php do cube:help     # list every command (framework + application)
 ```
 
+Tests run on **ParaTest**, one process per test class across the three suites — every ambient
+service is a per-process singleton and the database providers name what they create randomly,
+so workers never share state.
+
+`RouterTest::testPerformances` asserts on wall-clock time and routes once before measuring :
+the first `Router::route()` of a process spends ~15 ms resolving a callback through the
+`Injector`, one-off work that would otherwise land in the measurement.
+
 Integration and APCu suites need the docker services (`compose.yml`: MySQL, Postgres, Redis,
 nginx+php-apcu). Unit suite alone runs without them.
+
+The APCu image **bakes the framework source in at build time** (`COPY . /vendor/cube`), so a
+source change only reaches it through `docker compose up --build`. That container also answers
+`loaded_with_apcu: false` on its first request only, so running the APCu suite twice without
+`docker compose restart php-apcu-test` fails the second time.

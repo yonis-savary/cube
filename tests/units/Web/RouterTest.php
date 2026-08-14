@@ -47,7 +47,7 @@ class RouterTest extends TestCase
     }
 
     /**
-     * Creates a BUNCH of routes (~100k) and test routing performances.
+     * Creates a BUNCH of routes (13 699 of them) and tests routing performances.
      */
     public function testPerformances()
     {
@@ -57,6 +57,10 @@ class RouterTest extends TestCase
 
         $count = 0;
         $this->createRoutesWithKeywords($router, $keywords, $count);
+
+        // The first route() of a process pays for the Injector resolving a callback for the
+        // first time, ~15ms of one-off work that has nothing to do with walking the route tree
+        $router->route(new Request('GET', '/zim'));
 
         $assertRoutingTakeLessThan = function (string $request, int $routingTimeMs, string $expectedResponse) use (&$router) {
             $routingTimeMicro = $routingTimeMs * 1000;

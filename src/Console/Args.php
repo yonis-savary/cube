@@ -84,7 +84,7 @@ class Args
     public function getValues(?string $short = null, ?string $long = null): array
     {
         if (null === $short && null === $long) {
-            return $this->values[null] ?? [];
+            return $this->values[''] ?? [];
         }
 
         $short ??= '';

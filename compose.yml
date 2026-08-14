@@ -24,7 +24,7 @@ services:
       - type: tmpfs
         target: /var/lib/mysql
         tmpfs:
-          size: 1073741824
+          size: 2147483648
     ports:
       - ${CUBE_TEST_MYSQL_PORT:-9901}:3306
     environment:
@@ -40,7 +40,9 @@ services:
       - type: tmpfs
         target: /var/lib/postgresql
         tmpfs:
-          size: 1073741824
+          # Every test method provisions its own database and nothing is dropped before the
+          # process ends, so the live set is the whole run : parallel workers multiply the peak
+          size: 3221225472
     ports:
       - ${CUBE_TEST_POSTGRES_PORT:-9902}:5432
     environment:

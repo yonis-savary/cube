@@ -548,7 +548,9 @@ class Bunch implements Countable
     public function last(?callable $callback=null): mixed
     {
         if ($callback === null) {
-            return $this->data[array_key_last($this->data)] ?? null;
+            return count($this->data)
+                ? $this->data[array_key_last($this->data)]
+                : null;
         }
 
         $data = array_reverse($this->data);

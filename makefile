@@ -1,4 +1,7 @@
 filter=.
+jobs=
+
+processes=$(if $(jobs),--processes $(jobs),)
 
 cleanup:
 	@[ -d 'tests/integration-apps' ] && rm -r tests/integration-apps || true
@@ -16,9 +19,22 @@ test-dirty:
 	@composer install
 	@docker compose up -d --build
 	@make --no-print-directory cleanup
-	@vendor/bin/phpunit --filter=$(filter)
+	@make --no-print-directory workflow-test
 
+# ParaTest runs the three suites together, one process per test class.
 workflow-test:
+	@vendor/bin/paratest --filter=$(filter) $(processes)
+
+test-serial:
+	@make --no-print-directory test-serial-dirty; \
+	status=$$?; \
+	make --no-print-directory cleanup; \
+	exit $$status
+
+test-serial-dirty:
+	@composer install
+	@docker compose up -d --build
+	@make --no-print-directory cleanup
 	@vendor/bin/phpunit --filter=$(filter)
 
 fix:
