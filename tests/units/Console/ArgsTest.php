@@ -15,7 +15,7 @@ class ArgsTest extends TestCase
         $args = Args::fromArgv(['text.csv', '-a', 'file.php', '--append', 'file-2.php', '-s', '--short', '-i=file-3.txt', 'another', '--input=file-4.txt']);
 
         $this->assertEquals([
-            null => ['text.csv', 'another'],
+            '' => ['text.csv', 'another'],
             '-a' => ['file.php'],
             '--append' => ['file-2.php'],
             '-s' => [],
@@ -195,7 +195,7 @@ class ArgsTest extends TestCase
     {
         $args = Args::fromArgv(['--', 'first.csv']);
 
-        $this->assertEquals([null => ['first.csv']], $args->dump());
+        $this->assertEquals(['' => ['first.csv']], $args->dump());
     }
 
     public function testALoneDashIsAValue()

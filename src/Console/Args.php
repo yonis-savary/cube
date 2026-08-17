@@ -83,12 +83,12 @@ class Args
 
     public function getValues(?string $short = null, ?string $long = null): array
     {
-        if (null === $short && null === $long) {
-            return $this->values[''] ?? [];
-        }
-
         $short ??= '';
         $long ??= '';
+
+        if ('' === $short && '' === $long) {
+            return $this->values[''] ?? [];
+        }
 
         $short = Text::startsWith($short, '-');
         $long = Text::startsWith($long, '--');
