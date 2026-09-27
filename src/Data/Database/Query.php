@@ -233,6 +233,16 @@ class Query
     /**
      * @return self<TModel>
      */
+    public function limitless(): self
+    {
+        $this->limit = null;
+
+        return $this;
+    }
+
+    /**
+     * @return self<TModel>
+     */
     public function order(?string $fieldOrAlias = null, string $type = 'DESC', ?string $table = null): self
     {
         $table ??= $this->getFieldTable($fieldOrAlias);
@@ -314,6 +324,22 @@ class Query
 
         return $results;
     }
+
+    /**
+     * @param \Closure(TModel[],Bunch<int,TModel>):void $callback
+     */
+    public function chunk(int $chunkSize, callable $callback, ?Database $database = null): void
+    {
+        $count = $this->limitless()->count($database);
+        $chunkCount = ceil($count / $chunkSize);
+
+        for ($i=0; $i<$chunkCount; $i++)
+        {
+            $chunkData = $this->limit($chunkSize, $i * $chunkSize)->fetch($database);
+            $callback($chunkData, Bunch::of($chunkData));
+        }
+    }
+
 
     /**
      * @return Bunch<TModel>
