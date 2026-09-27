@@ -414,13 +414,38 @@ class Bunch implements Countable
         );
     }
 
-    public function sort(callable|int $callbackOrSortMode = SORT_REGULAR): self
+    /**
+     * @template TCallback of \Closure|string
+     *
+     * @param TCallback|TCallback[]|int $callbackOrSortMode
+     */
+    public function sort(callable|int|array $callbackOrSortMode = SORT_REGULAR): self
     {
         $sorted = $this->data;
 
-        is_callable($callbackOrSortMode)
-            ? usort($sorted, fn ($a, $b) => $callbackOrSortMode($a) <=> $callbackOrSortMode($b))
-            : sort($sorted, $callbackOrSortMode);
+        if (is_int($callbackOrSortMode)) {
+            sort($sorted, $callbackOrSortMode);
+            return $this->withNewData($sorted);
+        }
+
+        $callbacks = $callbackOrSortMode;
+        if (is_callable($callbacks))
+            $callbacks = [$callbacks];
+
+        foreach ($callbacks as &$callback)
+        {
+            if (is_string($callback)) // "callback" is a key !
+                $callback = fn($x) => $x[$callback];
+        }
+
+
+        usort($sorted, function ($a, $b) use ($callbacks) {
+            foreach ($callbacks as $callback)
+                if ($order = $callback($a) <=> $callback($b))
+                    return $order;
+
+            return 0;
+        });
 
         return $this->withNewData($sorted);
     }
@@ -629,6 +654,21 @@ class Bunch implements Countable
             /** @var mixed $x */
             return $acc + $x;
         }, 0);
+    }
+
+    /**
+     * @param \Closure(TValue[],Bunch<int,TValue>):void $callback
+     */
+    public function chunk(int $chunkSize, callable $callback): void
+    {
+        $data = &$this->data;
+        $size = count($data);
+        $chunkCount = ceil($size / $chunkSize);
+
+        for ($i=0; $i<$chunkCount; $i++) {
+            $chunkData = array_slice($data, $i * $chunkSize, $chunkSize);
+            $callback($chunkData, Bunch::of($chunkData));
+        }
     }
 
     /**

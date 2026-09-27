@@ -438,4 +438,177 @@ class BunchTest extends TestCase
         $this->assertEquals([1, 2], $bunch->get());
         $this->assertEquals([1, 2, 3], $copy->get());
     }
+
+    public function testChunk()
+    {
+        $chunks = [];
+        Bunch::range(7)->chunk(3, function ($chunk) use (&$chunks) {
+            $chunks[] = $chunk;
+        });
+
+        $this->assertEquals([[1, 2, 3], [4, 5, 6], [7]], $chunks);
+    }
+
+    public function testChunkWithExactMultiple()
+    {
+        $chunks = [];
+        Bunch::range(4)->chunk(2, function ($chunk) use (&$chunks) {
+            $chunks[] = $chunk;
+        });
+
+        $this->assertEquals([[1, 2], [3, 4]], $chunks);
+    }
+
+    public function testChunkLargerThanTheBunch()
+    {
+        $chunks = [];
+        Bunch::of([1, 2])->chunk(10, function ($chunk) use (&$chunks) {
+            $chunks[] = $chunk;
+        });
+
+        $this->assertEquals([[1, 2]], $chunks);
+    }
+
+    public function testChunkOnEmptyBunchNeverCallsBack()
+    {
+        $calls = 0;
+        Bunch::of([])->chunk(3, function () use (&$calls) {
+            $calls++;
+        });
+
+        $this->assertEquals(0, $calls);
+    }
+
+    public function testChunkLeavesTheOriginalAlone()
+    {
+        $bunch = Bunch::of([1, 2, 3]);
+        $bunch->chunk(2, fn () => null);
+
+        $this->assertEquals([1, 2, 3], $bunch->get());
+    }
+
+    public function testChunkAlsoGivesTheChunkAsABunch()
+    {
+        $chunks = [];
+        Bunch::range(5)->chunk(2, function (array $chunk, Bunch $bunch) use (&$chunks) {
+            $this->assertEquals($chunk, $bunch->get());
+            $chunks[] = $bunch->sum();
+        });
+
+        $this->assertEquals([3, 7, 5], $chunks);
+    }
+
+    public function testSortOnMultipleLevels()
+    {
+        $rows = [
+            ['rank' => 2, 'age' => 30],
+            ['rank' => 1, 'age' => 50],
+            ['rank' => 2, 'age' => 10],
+            ['rank' => 1, 'age' => 20],
+            ['rank' => 3, 'age' => 40],
+        ];
+
+        $sorted = Bunch::of($rows)->sort([
+            fn ($row) => $row['rank'],
+            fn ($row) => $row['age'],
+        ])->get();
+
+        $this->assertEquals([
+            ['rank' => 1, 'age' => 20],
+            ['rank' => 1, 'age' => 50],
+            ['rank' => 2, 'age' => 10],
+            ['rank' => 2, 'age' => 30],
+            ['rank' => 3, 'age' => 40],
+        ], $sorted);
+    }
+
+    public function testSortOnThreeLevels()
+    {
+        $rows = [
+            ['a' => 1, 'b' => 2, 'c' => 2],
+            ['a' => 0, 'b' => 1, 'c' => 1],
+            ['a' => 1, 'b' => 1, 'c' => 9],
+            ['a' => 1, 'b' => 2, 'c' => 1],
+            ['a' => 0, 'b' => 1, 'c' => 0],
+        ];
+
+        $sorted = Bunch::of($rows)->sort(['a','b','c'])->get();
+
+        $this->assertEquals([
+            ['a' => 0, 'b' => 1, 'c' => 0],
+            ['a' => 0, 'b' => 1, 'c' => 1],
+            ['a' => 1, 'b' => 1, 'c' => 9],
+            ['a' => 1, 'b' => 2, 'c' => 1],
+            ['a' => 1, 'b' => 2, 'c' => 2],
+        ], $sorted);
+    }
+
+    public function testSortOnMultipleLevelsWithNonIntegerKeys()
+    {
+        $rows = [
+            ['city' => 'Lyon', 'price' => 1.5],
+            ['city' => 'Brest', 'price' => 2.5],
+            ['city' => 'Lyon', 'price' => 1.2],
+            ['city' => 'Annecy', 'price' => 9.9],
+        ];
+
+        $sorted = Bunch::of($rows)->sort([
+            fn ($row) => $row['city'],
+            fn ($row) => $row['price'],
+        ])->get();
+
+        $this->assertEquals([
+            ['city' => 'Annecy', 'price' => 9.9],
+            ['city' => 'Brest', 'price' => 2.5],
+            ['city' => 'Lyon', 'price' => 1.2],
+            ['city' => 'Lyon', 'price' => 1.5],
+        ], $sorted);
+    }
+
+    public function testSortWithASingleLevelListMatchesTheCallback()
+    {
+        $values = [3, -1, 2, 0];
+
+        $this->assertEquals(
+            Bunch::of($values)->sort(fn ($x) => $x)->get(),
+            Bunch::of($values)->sort([fn ($x) => $x])->get()
+        );
+    }
+
+    public function testSortOnMultipleLevelsKeepsEqualElementsInOrder()
+    {
+        $rows = [
+            ['rank' => 1, 'label' => 'first'],
+            ['rank' => 0, 'label' => 'lowest'],
+            ['rank' => 1, 'label' => 'second'],
+        ];
+
+        $sorted = Bunch::of($rows)->sort([
+            fn ($row) => $row['rank'],
+            fn ($row) => 0,
+        ])->get();
+
+        $this->assertEquals(['lowest', 'first', 'second'], array_column($sorted, 'label'));
+    }
+
+    public function testSortOnMultipleLevelsLeavesTheOriginalAlone()
+    {
+        $bunch = Bunch::of([3, 1, 2]);
+        $sorted = $bunch->sort([fn ($x) => $x]);
+
+        $this->assertEquals([1, 2, 3], $sorted->get());
+        $this->assertEquals([3, 1, 2], $bunch->get());
+    }
+
+    public function testSortWithACallableArrayStaysASingleCallback()
+    {
+        $sorted = Bunch::of(['ccc', 'a', 'bb'])->sort([self::class, 'lengthOf'])->get();
+
+        $this->assertEquals(['a', 'bb', 'ccc'], $sorted);
+    }
+
+    public static function lengthOf(string $value): int
+    {
+        return strlen($value);
+    }
 }
