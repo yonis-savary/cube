@@ -19,8 +19,10 @@ use Cube\Data\Database\Query\UpdateField;
 use Cube\Data\Models\DummyModel;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
+use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
 use Cube\Data\Models\Relations\Relation;
+use Cube\Data\Models\Relations\RelationResolver;
 use Cube\Data\Models\RelationTree;
 use Cube\Env\Logger\Logger;
 
@@ -55,6 +57,9 @@ class Query
     public array $orders = [];
 
     public ?Limit $limit = null;
+
+    /** @var RelationResolver[] $resolvers */
+    public array $resolvers = [];
 
     public function __construct(string $type, string $table, string $model = DummyModel::class)
     {
@@ -98,6 +103,9 @@ class Query
     public function where(string $field, mixed $value, string $operator = '=', ?string $table = null): self
     {
         $table ??= $this->getFieldTable($field);
+
+        if ($value instanceof Bunch)
+            $value = $value->toArray();
 
         if (is_array($value)) {
             if ('=' === $operator) {
@@ -322,6 +330,10 @@ class Query
             $results[] = $compiledRow;
         }
 
+        foreach ($this->resolvers as $resolver) {
+            $resolver->enrichData($results, $database);
+        }
+
         return $results;
     }
 
@@ -383,7 +395,7 @@ class Query
     /**
      * @param class-string<Model> $referenceClass
      */
-    protected function exploreTree(string $referenceClass, array $tree, ?string $joinAcc=null) {
+    public function exploreTree(string $referenceClass, array $tree, ?string $joinAcc=null): self {
         $modelRelations = $referenceClass::relations();
         foreach ($tree as $relationName => $subtree) {
             if (!in_array($relationName, $modelRelations)) {
@@ -395,17 +407,23 @@ class Query
             /** @var Relation $relation */
             $relation = $instance->{$relationName}();
 
-            if (!$relation instanceof HasOne) {
-                Logger::getInstance()->error("Can only load HasOne relations on queries model ($referenceClass.$relationName)");
-                continue;
-            }
-
             $fieldName = $relation->fromColumn;
             $refModel = $relation->toModel;
             $refColumn = $relation->toColumn;
 
             $refTable = $refModel::table();
             $subJoinAcc = $joinAcc.'&'.$relation->getName();
+
+            if ($relation instanceof HasMany) {
+                $newRelationAcc = array_slice(explode('&', $joinAcc ?? ''), 1);
+                $this->resolvers[] = new RelationResolver($relation, $newRelationAcc, $subtree);
+                continue;
+            }
+            else if (!$relation instanceof HasOne) {
+                Logger::getInstance()->error("Can only load HasOne relations on queries model ($referenceClass.$relationName)");
+                continue;
+            }
+
             $this->join(
                 'LEFT',
                 $refTable,
@@ -423,6 +441,8 @@ class Query
 
             $this->exploreTree($refModel, $subtree, $subJoinAcc);
         }
+
+        return $this;
     }
 
     protected function getFieldTable(string $field): ?string

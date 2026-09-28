@@ -332,6 +332,13 @@ class Bunch implements Countable
     }
 
     /**
+     * @param \Closure(Bunch<TKey,TValue>):Bunch<TKey,TValue> $callback
+     */
+    public function when(bool $condition, callable $callback) {
+        return $condition ? $callback($this): $this;
+    }
+
+    /**
      * @return Bunch<TKey,mixed>
      */
     public function key(array|string $keys, string $compoundKeySeparator = '.'): self
