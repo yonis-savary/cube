@@ -244,67 +244,82 @@ class Autoloader
      */
     public static function classesList(): array
     {
-        if (self::$classIndex['list'] ?? false) {
+        if (isset(self::$classIndex['list'])) {
             return self::$classIndex['list'];
         }
 
-        /** @var ClassLoader $loader */
         $loader = self::getClassLoader();
-        $classMap = $loader->getClassMap();
+        $classes = Bunch::fromKeys($loader->getClassMap());
 
-        $classes = Bunch::fromKeys($classMap);
-        $classMapFiles = Bunch::fromValues($classMap)->map(fn ($path) => realpath($path));
-
-        $vendorDirectory = Path::relative('vendor');
-        $cubeDirectory = Path::relative('vendor/yonis-savary/cube/src');
-        $directoriesToScan = $loader->getPrefixesPsr4();
-
-        foreach ($directoriesToScan as $namespace => $directories) {
-
-            $directories = Bunch::of($directories)->map(realpath(...))->toArray();
-            $safeDirectories = Bunch::of($directories);
-
-            if ($directories[0] !== $cubeDirectory) {
-                $safeDirectories = $safeDirectories->filter(fn($p) => !str_starts_with($p, $vendorDirectory));
-            }
-
-            foreach ($safeDirectories->toArray() as $directory) {
-                if (!is_dir($directory)) {
-                    Logger::getInstance()->warning('Could not read PSR4 directory [{dir}]', ['dir' => $directory]);
-
-                    continue;
-                }
-
-                $storage = new Storage($directory);
-
-                $files = Bunch::of($storage->exploreFiles())
-                    ->filter(function ($file) use ($classMapFiles) {
-                        if ($classMapFiles->has(realpath($file))) {
-                            return false;
-                        }
-
-                        $expectedClassName = pathinfo($file, PATHINFO_FILENAME);
-                        $content = file_get_contents($file);
-
-                        return
-                            str_contains($content, "class {$expectedClassName}")
-                            || str_contains($content, "interface {$expectedClassName}")
-                            || str_contains($content, "trait {$expectedClassName}");
-                    })
-                    ->map(fn ($path) => $namespace.Path::toRelative($path, $directory))
-                    ->map(fn ($path) => str_replace('/', '\\', $path))
-                    ->map(fn ($path) => preg_replace('/\..+$/', '', $path))
-                    ->get()
-                ;
-
-                $classes->push(...$files);
-            }
+        if (!$loader->isClassMapAuthoritative()) {
+            $classes->push(...self::classesInPsr4Directories($loader));
         }
 
         self::$classIndex['list'] = $list = $classes->uniques()->get();
         self::saveToApcu();
 
         return $list;
+    }
+
+    /** @return array<class-string> */
+    protected static function classesInPsr4Directories(ClassLoader $loader): array
+    {
+        $classMapFiles = array_flip(
+            Bunch::fromValues($loader->getClassMap())
+                ->map(realpath(...))
+                ->filter()
+                ->get()
+        );
+
+        $vendorDirectory = Path::relative('vendor');
+        $vendorDirectory = realpath($vendorDirectory) ?: $vendorDirectory;
+        $cubeDirectory = realpath(Path::relative('vendor/yonis-savary/cube/src'));
+
+        $classes = Bunch::of([]);
+        foreach ($loader->getPrefixesPsr4() as $namespace => $directories) {
+            $realDirectories = Bunch::of($directories)->map(realpath(...))->get();
+            $isCubeNamespace = in_array($cubeDirectory, $realDirectories, true);
+
+            foreach ($directories as $directory) {
+                if (!is_dir($directory)) {
+                    Logger::getInstance()->warning('Could not read PSR4 directory [{dir}]', ['dir' => $directory]);
+                    continue;
+                }
+
+                $directory = realpath($directory);
+                if (!$isCubeNamespace && str_starts_with($directory, $vendorDirectory)) {
+                    continue;
+                }
+
+                $classes->push(...self::classesInPsr4Directory($namespace, $directory, $classMapFiles));
+            }
+        }
+
+        return $classes->get();
+    }
+
+    /**
+     * @param array<string,int> $classMapFiles
+     * @return array<class-string>
+     */
+    protected static function classesInPsr4Directory(string $namespace, string $directory, array $classMapFiles): array
+    {
+        return Bunch::of((new Storage($directory))->exploreFiles())
+            ->filter(fn ($file) => str_ends_with($file, '.php'))
+            ->filter(fn ($file) => !isset($classMapFiles[$file]))
+            ->filter(self::declaresTypeNamedAfterFile(...))
+            ->map(fn ($path) => $namespace.Path::toRelative($path, $directory))
+            ->map(fn ($path) => str_replace('/', '\\', $path))
+            ->map(fn ($path) => preg_replace('/\.php$/', '', $path))
+            ->get()
+        ;
+    }
+
+    protected static function declaresTypeNamedAfterFile(string $file): bool
+    {
+        $expectedName = preg_quote(pathinfo($file, PATHINFO_FILENAME), '/');
+
+        return (bool) preg_match("/\\b(class|interface|trait|enum)\\s+{$expectedName}\\b/", file_get_contents($file));
     }
 
     public static function extends($class, $parentClass, bool $considerSelfAsExtending = true): bool
@@ -409,7 +424,9 @@ class Autoloader
 
     public static function classExists(string $class, bool $autoload = true): bool
     {
-        if (in_array($class, self::classesList())) {
+        self::$classIndex['lookup'] ??= array_flip(self::classesList());
+
+        if (isset(self::$classIndex['lookup'][$class])) {
             return true;
         }
 

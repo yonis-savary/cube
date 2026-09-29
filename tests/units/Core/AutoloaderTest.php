@@ -9,6 +9,7 @@ use Cube\Tests\Units\Core\Classes\Bird;
 use Cube\Tests\Units\Core\Classes\Common;
 use Cube\Tests\Units\Core\Classes\Counter;
 use Cube\Tests\Units\Core\Classes\Dragon;
+use Cube\Tests\Units\Core\Classes\Habitat;
 use Cube\Tests\Units\Core\Classes\Zombie;
 use Cube\Tests\Units\Core\Contracts\CanFly;
 use Cube\Web\Controller;
@@ -28,6 +29,11 @@ class AutoloaderTest extends TestCase
 
         $this->assertContains(Autoloader::class, $classes);
         $this->assertContains(Bird::class, $classes);
+    }
+
+    public function test_classes_list_holds_enums()
+    {
+        $this->assertContains(Habitat::class, Autoloader::classesList());
     }
 
     public function test_classes_that_extends_finds_every_child()
