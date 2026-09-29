@@ -4,10 +4,11 @@ Cube is a light framework that provide essential features for back-end web devel
 
 You can find the framework's documentation in the [`/docs`](./docs/README.md) directory !
 
-## Disclaimer - AI (non)Usage
+## AI Usage
 
-So far, Cube source code has been developed without the help of AI (and this will continue as is).
-Though, AI can be used to generate/update the [documentation](./docs/README.md) and tests !
+Cube source code should not be generated, AI can be used to improve readability/performances. Still, source code should be handwritten
+
+Tests can be automatically written by Agents
 
 ## 🧰 Features
 
