@@ -13,6 +13,10 @@ use Cube\Utils\Utils;
 /**
  * @template TKey
  * @template TValue
+ * @template TCallback of \Closure|string
+ * @template TNullableCallback of \Closure|string|null
+ * @template TCallbacks of TCallback|TCallback[]
+ * @template TNullableCallbacks of TNullableCallback|TNullableCallback[]
  */
 class Bunch implements Countable
 {
@@ -150,6 +154,29 @@ class Bunch implements Countable
         return self::of($data);
     }
 
+    /** @param TNullableCallbacks $callbacks */
+    protected function normalizeCallbacks(array|callable|string|null $callbacks)
+    {
+        if (is_callable($callbacks) || is_string($callbacks))
+            $callbacks = [$callbacks];
+
+        foreach ($callbacks as &$callback)
+            $callback = $this->normalizeSingleCallback($callback);
+
+        return $callbacks;
+    }
+
+    /** @param TNullableCallback $callback */
+    protected function normalizeSingleCallback(callable|string|null $callback) {
+        if ($callback === null)
+            return null;
+
+        if (is_string($callback))
+            return fn($el) => is_object($el) ? $el->$callback : $el[$callback];
+
+        return $callback;
+    }
+
     /**
      * @template TReturnKey
      * @template TReturnValue
@@ -203,20 +230,20 @@ class Bunch implements Countable
         return $this->get();
     }
 
-    /**
-     * @return self<int>
-     */
-    public function asIntegers(): self
+    /** @return self<int> */
+    public function asIntegers(bool $filterNumerics = true): self
     {
-        return $this->filter(fn ($x) => is_numeric($x))->map(fn ($x) => (int) $x);
+        return $this
+            ->when($filterNumerics, fn($b) => $b->filter(is_numeric(...)))
+            ->map(fn ($x) => (int) $x);
     }
 
-    /**
-     * @return self<float>
-     */
-    public function asFloats(): self
+    /** @return self<float> */
+    public function asFloats(bool $filterNumerics = true): self
     {
-        return $this->filter(fn ($x) => is_numeric($x))->map(fn ($x) => (float) $x);
+        return $this
+            ->when($filterNumerics, fn($b) => $b->filter(is_numeric(...)))
+            ->map(fn ($x) => (float) $x);
     }
 
     /**
@@ -272,13 +299,13 @@ class Bunch implements Countable
         return $sum / $count;
     }
 
-    /**
-     * @param \Closure(TValue):bool $callback
-     * @return static
-     */
-    public function filter(?callable $callback = null): self
+    /** @param TNullableCallback $callback */
+    public function filter(callable|string|null $callback = null): static
     {
-        return $this->withNewData(array_filter($this->data, $callback));
+        return $this->withNewData(array_filter(
+            $this->data,
+            $this->normalizeSingleCallback($callback)
+        ));
     }
 
     /**
@@ -308,12 +335,12 @@ class Bunch implements Countable
     /**
      * @template TReturnValue
      *
-     * @param \Closure(TValue):TReturnValue $callback
-     *
+     * @param TCallback $callback
      * @return Bunch<TKey,TReturnValue>
      */
-    public function map(callable $callback): self
+    public function map(callable|string $callback): self
     {
+        $callback = $this->normalizeSingleCallback($callback);
         return $this->withNewData(array_map($callback, $this->data));
     }
 
@@ -367,17 +394,14 @@ class Bunch implements Countable
     }
 
     /**
-     * @param \Closure(TValue)|array<\Closure(TValue)> $callbacks
+     * @param TCallbacks $callbacks
      * @return array<mixed>
      */
-    public function groupBy(callable|array $callbacks): array
+    public function groupBy(callable|array|string $callbacks): array
     {
-        if (!is_array($callbacks)) {
-            $callbacks = [$callbacks];
-        }
+        $callbacks = $this->normalizeCallbacks($callbacks);
 
         $mainCallback = array_shift($callbacks);
-        $nextCallbacks = $callbacks;
 
         $grouped = [];
 
@@ -387,9 +411,9 @@ class Bunch implements Countable
             $grouped[$groupId][] = $row;
         }
 
-        if (count($nextCallbacks)) {
+        if (count($callbacks)) {
             foreach ($grouped as &$group) {
-                $group = Bunch::of($group)->groupBy($nextCallbacks);
+                $group = Bunch::of($group)->groupBy($callbacks);
             }
         }
 
@@ -422,8 +446,6 @@ class Bunch implements Countable
     }
 
     /**
-     * @template TCallback of \Closure|string
-     *
      * @param TCallback|TCallback[]|int $callbackOrSortMode
      */
     public function sort(callable|int|array $callbackOrSortMode = SORT_REGULAR): self
@@ -435,16 +457,7 @@ class Bunch implements Countable
             return $this->withNewData($sorted);
         }
 
-        $callbacks = $callbackOrSortMode;
-        if (is_callable($callbacks))
-            $callbacks = [$callbacks];
-
-        foreach ($callbacks as &$callback)
-        {
-            if (is_string($callback)) // "callback" is a key !
-                $callback = fn($x) => $x[$callback];
-        }
-
+        $callbacks = $this->normalizeCallbacks($callbackOrSortMode);
 
         usort($sorted, function ($a, $b) use ($callbacks) {
             foreach ($callbacks as $callback)
@@ -473,7 +486,7 @@ class Bunch implements Countable
     public function any(callable $callback): bool
     {
         foreach ($this->data as $element) {
-            if (true === $callback($element)) {
+            if (true == $callback($element)) {
                 return true;
             }
         }
@@ -487,7 +500,7 @@ class Bunch implements Countable
     public function all(callable $callback): bool
     {
         foreach ($this->data as $element) {
-            if (false === $callback($element)) {
+            if (false == $callback($element)) {
                 return false;
             }
         }
@@ -613,7 +626,7 @@ class Bunch implements Countable
 
     public function has(mixed $value): bool
     {
-        return in_array($value, $this->data);
+        return $this->any(fn($el) => $el === $value);
     }
 
     public function count(): int
@@ -647,20 +660,16 @@ class Bunch implements Countable
     /**
      * @template TReturn
      *
-     * @param null|\Closure(TValue):TReturn|string $keyOrCallback
+     * @param \Closure(TValue):TReturn|string|null $callback
+     * @return TReturn|TValue
      */
-    public function sum(string|Closure|null $keyOrCallback=null): mixed
+    public function sum(string|callable|null $callback=null): mixed
     {
-        if (is_string($keyOrCallback))
-            return $this->key($keyOrCallback)->sum();
+        $callback =
+            $this->normalizeSingleCallback($callback) ??
+            fn($el) => $el;
 
-        if (is_callable($keyOrCallback))
-            return $this->reduce(fn($acc, $cur) => $acc + $keyOrCallback($cur), 0);
-
-        return $this->reduce(function($acc, $x){
-            /** @var mixed $x */
-            return $acc + $x;
-        }, 0);
+        return $this->reduce(fn($acc, $cur) => $acc + $callback($cur), 0);
     }
 
     /**
@@ -681,7 +690,7 @@ class Bunch implements Countable
     /**
      * @template TNKey
      * @template TNValues
-     * 
+     *
      * @param array<TNKey,TNValues> $data
      * @return self<int,TNValues>
      */

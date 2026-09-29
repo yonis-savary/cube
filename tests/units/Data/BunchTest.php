@@ -607,6 +607,90 @@ class BunchTest extends TestCase
         $this->assertEquals(['a', 'bb', 'ccc'], $sorted);
     }
 
+    public function testAsIntegersWithoutFilteringNumerics()
+    {
+        $this->assertEquals([1, 0, 0, 3], Bunch::of(['1', 'Hello World', null, '3.1416'])->asIntegers(false)->get());
+    }
+
+    public function testAsFloatsWithoutFilteringNumerics()
+    {
+        $this->assertEquals([1.5, 0.0, 0.0], Bunch::of(['1.5', 'Hello World', null])->asFloats(false)->get());
+    }
+
+    public function testFilterWithAKey()
+    {
+        $rows = [
+            ['label' => 'Keyboard', 'inStock' => true],
+            ['label' => 'Mouse', 'inStock' => false],
+            ['label' => 'Screen', 'inStock' => true],
+        ];
+
+        $this->assertEquals(['Keyboard', 'Screen'], Bunch::of($rows)->filter('inStock')->map('label')->get());
+    }
+
+    public function testMapWithAKeyReadsArraysAndObjects()
+    {
+        $this->assertEquals(['Lyon', 'Brest'], Bunch::of([['city' => 'Lyon'], ['city' => 'Brest']])->map('city')->get());
+        $this->assertEquals(['Lyon', 'Brest'], Bunch::of([(object) ['city' => 'Lyon'], (object) ['city' => 'Brest']])->map('city')->get());
+    }
+
+    public function testGroupByWithKeys()
+    {
+        $rows = Bunch::of([
+            ['type' => 'it', 'brand' => 'Logitech', 'label' => 'Keyboard'],
+            ['type' => 'it', 'brand' => 'Logitech', 'label' => 'Mouse'],
+            ['type' => 'it', 'brand' => 'Dell', 'label' => 'Screen'],
+            ['type' => 'car', 'brand' => 'Bosch', 'label' => 'Engine'],
+        ]);
+
+        $groups = $rows->groupBy('type');
+        $this->assertCount(3, $groups['it']);
+        $this->assertCount(1, $groups['car']);
+
+        $groups = $rows->groupBy(['type', fn ($row) => $row['brand']]);
+        $this->assertCount(2, $groups['it']['Logitech']);
+        $this->assertCount(1, $groups['it']['Dell']);
+        $this->assertCount(1, $groups['car']['Bosch']);
+    }
+
+    public function testSortWithKeysReadsObjects()
+    {
+        $rows = [
+            (object) ['city' => 'Lyon', 'price' => 1.5],
+            (object) ['city' => 'Brest', 'price' => 2.5],
+            (object) ['city' => 'Lyon', 'price' => 1.2],
+        ];
+
+        $sorted = Bunch::of($rows)->sort(['city', 'price'])->get();
+
+        $this->assertEquals([2.5, 1.2, 1.5], array_column($sorted, 'price'));
+    }
+
+    public function testSumWithAKeyReadsObjects()
+    {
+        $this->assertEquals(6, Bunch::of([(object) ['price' => 1], (object) ['price' => 5]])->sum('price'));
+    }
+
+    public function testAnyAndAllAcceptTruthyResults()
+    {
+        $elements = Bunch::of([['A' => 3], ['A' => 0]]);
+
+        $this->assertTrue($elements->any(fn ($x) => $x['A']));
+        $this->assertFalse($elements->all(fn ($x) => $x['A']));
+        $this->assertFalse(Bunch::of([0, null, ''])->any(fn ($x) => $x));
+        $this->assertTrue(Bunch::of([1, 'a', [1]])->all(fn ($x) => $x));
+    }
+
+    public function testHasIsStrict()
+    {
+        $elements = Bunch::of([1, 2, 3, 0]);
+
+        $this->assertTrue($elements->has(1));
+        $this->assertFalse($elements->has('1'));
+        $this->assertFalse($elements->has(null));
+        $this->assertFalse($elements->has(false));
+    }
+
     public static function lengthOf(string $value): int
     {
         return strlen($value);
