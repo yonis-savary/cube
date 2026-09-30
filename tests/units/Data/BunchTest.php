@@ -335,8 +335,12 @@ class BunchTest extends TestCase
     {
         $this->assertEquals(50, Bunch::of([0, 100])->average());
         $this->assertEquals(null, Bunch::of([])->average());
-        $this->assertEquals(12, Bunch::of([])->average(12));
+        $this->assertEquals(12, Bunch::of([])->average(default: 12));
         $this->assertEquals(12, Bunch::of([])->average() ?? 12);
+
+        $this->assertEquals(100, Bunch::of([0, 100])->average(fn($x) => $x * 2));
+        $this->assertEquals(3, Bunch::of([1, 5])->map(fn($x) => ['myKey' => $x])->average('myKey'));
+        $this->assertEquals(12, Bunch::of([])->average(fn($x) => $x * 2, 12));
     }
 
 

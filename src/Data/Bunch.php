@@ -277,26 +277,18 @@ class Bunch implements Countable
     /**
      * @template TDefault
      *
+     * @param TNullableCallback $callback
      * @param TDefault $default Default value used when no value is present
      *
      * @return TDefault|TValue
      */
-    public function average(mixed $default = null): mixed
+    public function average(callable|string|null $callback=null, mixed $default = null): mixed
     {
         $count = $this->count();
-        if (!$count) {
-            return $default;
-        }
 
-        /** @var array<null|array|bool|float|int|string> $data */
-        $data = $this->data;
-        $sum = $data[0];
-
-        for ($i = 1; $i < $count; ++$i) {
-            $sum += $data[$i];
-        }
-
-        return $sum / $count;
+        return $count
+            ? $this->sum($callback) / $count
+            : $default;
     }
 
     /** @param TNullableCallback $callback */
