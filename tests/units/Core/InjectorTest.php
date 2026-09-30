@@ -46,7 +46,7 @@ class InjectorTest extends TestCase
     public function test_interface_variadic_injection() {
         $reduceClassesFor = function($callable) {
             $objects = $this->injector->getDependencies($callable);
-            return Bunch::of($objects)->map(fn($x) => $x::class)->sort()->toArray();
+            return Bunch::of($objects)->filter()->map(fn($x) => $x::class)->sort()->toArray();
         };
 
         $this->assertEquals([Bird::class, Dragon::class], $reduceClassesFor([self::class, 'processCanFly']));

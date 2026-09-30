@@ -8,7 +8,6 @@ use Cube\Data\Database\Query;
 use Cube\Data\Database\Query\Field;
 use Cube\Data\Database\Query\FieldComparaison;
 use Cube\Data\Database\Query\FieldCondition;
-use Cube\Data\Database\Query\InsertValues;
 use Cube\Data\Database\Query\Join;
 use Cube\Data\Database\Query\Order;
 use Cube\Data\Database\Query\QueryBase;

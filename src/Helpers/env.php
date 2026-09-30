@@ -14,4 +14,8 @@ if (!function_exists('env')) {
     {
         return Environment::getInstance()->get($key, $default);
     }
+
+    function isProduction(): bool {
+        return str_starts_with(strtolower(env('env', 'debug')), 'prod');
+    }
 }

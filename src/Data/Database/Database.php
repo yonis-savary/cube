@@ -6,7 +6,6 @@ use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Builders\QueryBuilder;
 use Cube\Env\Storage;
-use PDO;
 use Throwable;
 
 class Database

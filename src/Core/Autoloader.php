@@ -416,7 +416,7 @@ class Autoloader
 
         return self::filterClassesWithCache(
             self::$classIndex['uses'],
-            ((string) $trait).($rejectAbstracts ? '' : '-r'),
+            ((string) $trait).($rejectAbstracts ? '-r' : ''),
             fn ($class) => self::uses($class, $trait),
             $rejectAbstracts
         );

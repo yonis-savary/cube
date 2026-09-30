@@ -46,7 +46,17 @@ class Injector
         $this->providedVariadic[$class] = $elementOrCallback;
     }
 
+    protected function valueOrInstantiate(mixed $value): mixed {
+        return is_string($value)
+            ? $this->instanciate($value)
+            : $value
+        ;
+    }
+
     protected function assertProvidedRespectType(string $class, mixed $provided) : void {
+        if ($provided === null)
+            return;
+
         $providedClass = $provided::class;
         if (class_exists($class)) {
             Autoloader::extends($providedClass, $class)
@@ -67,22 +77,26 @@ class Injector
 
     public function getProvidedValue(string $class, bool $variadic = false, ?string $caller = null): mixed {
         $store = $variadic ? $this->providedVariadic : $this->provided;
-        $value = $store[$class] ?? null;
+        if (!array_key_exists($class, $store))
+            return null;
+
+        $value = $store[$class];
 
         if (is_callable($value))
             $value = $value($caller);
 
-        if ($value === null)
-            return null;
-
         if (!$variadic) {
+            $value = $this->valueOrInstantiate($value);
+
             $this->assertProvidedRespectType($class, $value);
+
             return $value;
         }
 
-        $value = Bunch::of($value);
-        $value->forEach(fn($subvalue) => $this->assertProvidedRespectType($class, $subvalue));
-        return $value;
+        return Bunch::of($value)
+            ->map(fn($value) => $this->valueOrInstantiate($value))
+            ->forEach(fn($subvalue) => $this->assertProvidedRespectType($class, $subvalue))
+        ;
     }
 
     /**

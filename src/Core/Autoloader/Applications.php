@@ -2,6 +2,7 @@
 
 namespace Cube\Core\Autoloader;
 
+use Cube\Data\Bunch;
 use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Utils\Path;
 
@@ -19,12 +20,8 @@ class Applications extends ConfigurationElement
             $paths = ['App'];
         }
 
-        foreach ($paths as &$path) {
-            if (!is_dir($path)) {
-                $path = Path::relative($path);
-            }
-        }
-
-        $this->paths = $paths;
+        $this->paths = Bunch::of($paths)
+            ->map(fn($path) => is_dir($path) ? $path: Path::relative($path))
+            ->get();
     }
 }

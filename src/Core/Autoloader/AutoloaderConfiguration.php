@@ -4,7 +4,7 @@ namespace Cube\Core\Autoloader;
 
 use Cube\Env\Configuration\ConfigurationElement;
 
-use function Cube\env;
+use function Cube\isProduction;
 
 class AutoloaderConfiguration extends ConfigurationElement
 {
@@ -16,6 +16,6 @@ class AutoloaderConfiguration extends ConfigurationElement
     public function __construct(
         ?bool $cached = null
     ) {
-        $this->cached = $cached ?? str_starts_with(strtolower(env('env', 'debug')), 'prod');
+        $this->cached = $cached ?? isProduction();
     }
 }
