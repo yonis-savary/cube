@@ -25,6 +25,7 @@ use Cube\Data\Models\Relations\Relation;
 use Cube\Data\Models\Relations\RelationResolver;
 use Cube\Data\Models\RelationTree;
 use Cube\Env\Logger\Logger;
+use stdClass;
 
 /**
  * @template TModel
@@ -50,7 +51,7 @@ class Query
     /** @var Join[] */
     public array $joins = [];
 
-    /** @var array<FieldComparaison|FieldCondition|RawCondition> */
+    /** @var array<FieldComparaison|FieldCondition|RawCondition|'OR'|array> */
     public array $conditions = [];
 
     /** @var Order[] */
@@ -98,6 +99,25 @@ class Query
     }
 
     /**
+     * Build a grouped condition parenthesis
+     * The query is given to the callback (nested whereGroup is supported)
+     *
+     * @param \Closure(self):void $groupBuilder
+     */
+    public function whereGroup(callable $groupBuilder): self {
+
+        $parentConditions = $this->conditions;
+        $this->conditions = [];
+
+        $groupBuilder($this);
+
+        $parentConditions[] = $this->conditions;
+        $this->conditions = $parentConditions;
+
+        return $this;
+    }
+
+    /**
      * @return self<TModel>
      */
     public function where(string $field, mixed $value, string $operator = '=', ?string $table = null): self
@@ -138,6 +158,17 @@ class Query
 
         return $this;
     }
+
+    public function whereIn(string $field, array|Bunch|Query $value, ?string $table = null): self
+    {
+        return $this->where($field, $value, 'IN', $table);
+    }
+
+    public function whereNotIn(string $field, array|Bunch|Query $value, ?string $table = null): self
+    {
+        return $this->where($field, $value, 'NOT IN', $table);
+    }
+
 
     /**
      * @return self<TModel>
@@ -199,7 +230,7 @@ class Query
     /**
      * @return self<TModel>
      */
-    public function selectField(string $field, ?string $table = null, ?string $alias = null, string $model = DummyModel::class, ?ModelField $modelField = null): self
+    public function selectField(string $field, ?string $table = null, ?string $alias = null, string $model = stdClass::class, ?ModelField $modelField = null): self
     {
         $table ??= $this->getFieldTable($field);
 

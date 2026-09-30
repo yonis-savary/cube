@@ -88,23 +88,17 @@ class MySQL extends QueryBuilder
 
     public function getUpdates(): string
     {
-        return
-            Bunch::of($this->query->updateFields)
-                ->map(function (UpdateField $field) {
-                    return sprintf(
-                        '`%s`.%s = %s',
-                        $field->table,
-                        $field->field,
-                        $this->getSQLValue($field->newValue)
-                    );
-                })
-                ->join(', ')
+        return Bunch::of($this->query->updateFields)
+            ->map(fn (UpdateField $field) => sprintf('`%s`.%s = %s', $field->table, $field->field, $this->getSQLValue($field->newValue)))
+            ->join(', ')
         ;
     }
 
     public function getSQLValue(mixed $value): string
     {
-        return $this->database->build('{}', [$value]);
+        return $value instanceof Query
+            ? "(" . (new static())->build($value, $this->database) . ")"
+            : $this->database->build('{}', [$value]);
     }
 
     public function getFieldComparaison(FieldComparaison $condition)
@@ -119,56 +113,62 @@ class MySQL extends QueryBuilder
         );
     }
 
-    public function getConditions(): string
+    public function getQualifiedTable(string $table): string
     {
-        if (! $count = count($this->query->conditions))
-            return '';
+        return "`{$table}`";
+    }
 
-        $conditions = "";
-        for ($i=0; $i < $count; $i++)
+    public function getConditions(array $conditions): string
+    {
+        $body = $this->getConditionsBody($conditions);
+
+        return $body ? "WHERE $body" : '';
+    }
+
+    protected function getConditionsBody(array $conditions): string
+    {
+        $body = '';
+        for ($i = 0; $i < count($conditions); $i++)
         {
-            $condition = $this->query->conditions[$i];
+            $condition = $conditions[$i];
             if (is_string($condition))
                 continue;
 
-            $nextElement = $this->query->conditions[$i+1] ?? 'AND';
+            if (!$stringCondition = $this->getCondition($condition))
+                continue;
 
-            if (!is_string($nextElement)) 
+            $nextElement = $conditions[$i+1] ?? 'AND';
+            if (!is_string($nextElement))
                 $nextElement = 'AND';
 
-            if ($condition instanceof FieldComparaison) {
-                $stringCondition = $this->getFieldComparaison($condition);
-            }
-            else if ($condition instanceof FieldCondition) {
-                $stringCondition = sprintf(
-                    '%s%s %s %s',
-                    $condition->table ? '`'.$condition->table.'`.' : '',
-                    $condition->field,
-                    $condition->operator,
-                    $this->getSQLValue($condition->expression),
-                );
-            }
-            else if ($condition instanceof RawCondition) {
-                $stringCondition = $condition->expression;
-            }
-            else 
-            {
-                return '';
-            }
-
-            $conditions .= $stringCondition . " $nextElement ";
+            $body .= "$stringCondition $nextElement ";
         }
 
-        $fullCondition = trim("WHERE $conditions");
-        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'OR'));
-        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'AND'));
+        $body = trim(Text::dontEndsWith(trim($body), 'OR'));
+        return trim(Text::dontEndsWith($body, 'AND'));
+    }
 
-        return $fullCondition;
+    protected function getCondition(array|FieldComparaison|FieldCondition|RawCondition $condition): string
+    {
+        if (is_array($condition))
+            return ($group = $this->getConditionsBody($condition)) ? "($group)" : '';
+
+        return match (true) {
+            $condition instanceof FieldComparaison => $this->getFieldComparaison($condition),
+            $condition instanceof RawCondition => $condition->expression,
+            $condition instanceof FieldCondition => sprintf(
+                '%s%s %s %s',
+                $condition->table ? $this->getQualifiedTable($condition->table).'.' : '',
+                $condition->field,
+                $condition->operator,
+                $this->getSQLValue($condition->expression),
+            ),
+        };
     }
 
     public function getUpdateConditions(): string
     {
-        $baseConditions = $this->getConditions();
+        $baseConditions = $this->getConditions($this->query->conditions);
 
         $updateConditions = count($this->query->joins)
             ? '('
@@ -277,7 +277,7 @@ class MySQL extends QueryBuilder
             $this->getSelectFields(),
             $this->getTable($this->query->base->table),
             $this->getJoins(),
-            $this->getConditions(),
+            $this->getConditions($this->query->conditions),
             $this->getOrders(),
             $this->getLimit()
         );
@@ -300,7 +300,7 @@ class MySQL extends QueryBuilder
         return sprintf(
             "DELETE FROM %s \n%s \n%s \n%s",
             $this->getTable($this->query->base->table),
-            $this->getConditions(),
+            $this->getConditions($this->query->conditions),
             $this->getOrders(),
             $this->getLimit()
         );

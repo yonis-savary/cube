@@ -56,9 +56,17 @@ abstract class Model extends EventDispatcher
         $this->completeModelDataWithRelations($data, $relationAccumulator);
     }
 
+    protected function getAttributeDefaultValue(string $name): mixed {
+        throw new \RuntimeException("Either ".static::class." does not have a {$name} attribute, or a relation needs to be loaded");
+    }
+
+    protected function allowNonTableAttributeSet(): bool {
+        return false;
+    }
+
     public function __set(string $name, mixed $value)
     {
-        if (!static::hasField($name)) {
+        if (!static::hasField($name) && !$this->allowNonTableAttributeSet()) {
             throw new InvalidArgumentException(static::class." does not have a [{$name}] field, use merge() to ignore the keys a model does not hold");
         }
 
@@ -417,20 +425,14 @@ abstract class Model extends EventDispatcher
         return $this->references[$referenceName];
     }
 
-    /**
-     * @return static
-     */
-    public function setReference(string $referenceName, array|Model $model): self
+    public function setReference(string $referenceName, array|Model $model): static
     {
         $this->references[$referenceName] = $model;
 
         return $this;
     }
 
-    /**
-     * @return static
-     */
-    public function pushReference(string $referenceName, Model $model): self
+    public function pushReference(string $referenceName, Model $model): static
     {
         $this->references[$referenceName] ??= [];
         $this->references[$referenceName][] = $model;
@@ -438,16 +440,11 @@ abstract class Model extends EventDispatcher
         return $this;
     }
 
-    public function &__get(string $name): mixed
+    public function __get(string $name): mixed
     {
-        if (isset($this->references[$name])) {
-            return $this->references[$name];
-        }
-        if (static::hasField($name)) {
-            return $this->data->{$name};
-        }
-
-        throw new \RuntimeException("Either ".static::class." does not have a {$name} attribute, or a relation needs to be loaded");
+        return $this->references[$name]
+            ?? $this->data->{$name}
+            ?? $this->getAttributeDefaultValue($name);
     }
 
     public function toArray(): array
@@ -627,7 +624,7 @@ abstract class Model extends EventDispatcher
     {
         $primaryKey = $this->primaryKey();
 
-        return $primaryKey && $this->{$primaryKey};
+        return $primaryKey && isset($this->data->{$primaryKey}) && ($this->{$primaryKey} ?? false);
     }
 
     protected function saveExisting(?Database $database = null)

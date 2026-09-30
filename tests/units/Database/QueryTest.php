@@ -4,7 +4,9 @@ namespace Cube\Tests\Units\Database;
 
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
+use Cube\Data\Database\Query;
 use Cube\Tests\Units\Models\Product;
+use Cube\Tests\Units\Models\ProductManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -152,6 +154,444 @@ class QueryTest extends TestCase
                 ['product-1', 'product-2'],
                 ['product-3'],
             ], $chunks);
+        });
+    }
+
+    protected function insertManagedProducts(): void
+    {
+        $this->insertProducts(4);
+
+        ProductManager::insertArray(['product' => 1, 'manager' => 'alice']);
+        ProductManager::insertArray(['product' => 3, 'manager' => 'alice']);
+        ProductManager::insertArray(['product' => 4, 'manager' => 'bob']);
+    }
+
+    /**
+     * @param Query<Product> $query
+     * @return string[]
+     */
+    protected function fetchNames(Query $query): array
+    {
+        return Bunch::of($query->order('id', 'ASC')->fetch())
+            ->map(fn (Product $product) => $product->name)
+            ->get();
+    }
+
+    protected function productsManagedBy(string $manager): Query
+    {
+        return Query::select('product_manager')
+            ->selectField('product', 'product_manager')
+            ->where('manager', $manager, table: 'product_manager');
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInSubQuery(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(
+                ['product-1', 'product-3'],
+                $this->fetchNames(Product::select()->where('id', $this->productsManagedBy('alice'), 'IN'))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereNotInSubQuery(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(
+                ['product-2', 'product-4'],
+                $this->fetchNames(Product::select()->where('id', $this->productsManagedBy('alice'), 'NOT IN'))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereEqualsSingleRowSubQuery(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(
+                ['product-4'],
+                $this->fetchNames(Product::select()->where('id', $this->productsManagedBy('bob')))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereSubQueryWithoutMatchReturnsNothing(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(
+                [],
+                $this->fetchNames(Product::select()->where('id', $this->productsManagedBy('nobody'), 'IN'))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereSubQueryCombinesWithOtherConditions(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(
+                ['product-3'],
+                $this->fetchNames(
+                    Product::select()
+                        ->where('id', $this->productsManagedBy('alice'), 'IN')
+                        ->where('name', 'product-1', '<>')
+                )
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereSubQueryEscapesItsOwnValues(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+            ProductManager::insertArray(['product' => 2, 'manager' => "o'hara"]);
+
+            $this->assertEquals(
+                ['product-2'],
+                $this->fetchNames(Product::select()->where('id', $this->productsManagedBy("o'hara"), 'IN'))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereNestedSubQueries(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $aliceProductsNamedOne = Query::select('product')
+                ->selectField('id', 'product')
+                ->where('id', $this->productsManagedBy('alice'), 'IN', 'product')
+                ->where('name', 'product-1', table: 'product');
+
+            $this->assertEquals(
+                ['product-1'],
+                $this->fetchNames(Product::select()->where('id', $aliceProductsNamedOne, 'IN'))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testDeleteWhereInSubQuery(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            Query::delete('product_manager')
+                ->where('product', Query::select('product')->selectField('id', 'product')->where('name', 'product-4', table: 'product'), 'IN', 'product_manager')
+                ->fetch();
+
+            $this->assertEquals(2, ProductManager::select()->count());
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInArray(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(['product-1', 'product-3'], $this->fetchNames(Product::select()->whereIn('id', [1, 3])));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereNotInArray(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(['product-2', 'product-4'], $this->fetchNames(Product::select()->whereNotIn('id', [1, 3])));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInBunch(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(['product-2', 'product-4'], $this->fetchNames(Product::select()->whereIn('name', Bunch::of(['product-2', 'product-4']))));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereNotInBunch(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(['product-1', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('name', Bunch::of(['product-2', 'product-4']))));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInEmptyArrayMatchesNothing(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(3);
+
+            $this->assertEquals([], $this->fetchNames(Product::select()->whereIn('id', [])));
+            $this->assertEquals([], $this->fetchNames(Product::select()->whereIn('id', Bunch::of([]))));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereNotInEmptyArrayMatchesEverything(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(3);
+
+            $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('id', [])));
+            $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('id', Bunch::of([]))));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInSubQueryHelper(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(['product-1', 'product-3'], $this->fetchNames(Product::select()->whereIn('id', $this->productsManagedBy('alice'))));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereNotInSubQueryHelper(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(['product-2', 'product-4'], $this->fetchNames(Product::select()->whereNotIn('id', $this->productsManagedBy('alice'))));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInOnAnExplicitTable(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $managers = ProductManager::select()
+                ->whereIn('product', [3, 4], 'product_manager')
+                ->order('product', 'ASC', 'product_manager')
+                ->fetch();
+
+            $this->assertEquals(['alice', 'bob'], Bunch::of($managers)->map(fn (ProductManager $row) => $row->manager)->get());
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInCombinesWithWhereNotIn(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(5);
+
+            $this->assertEquals(
+                ['product-2', 'product-4'],
+                $this->fetchNames(Product::select()->whereIn('id', [1, 2, 4])->whereNotIn('name', ['product-1']))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereInOnAQueryWithoutModel(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $rows = Query::select('product_manager')
+                ->selectField('manager', 'product_manager')
+                ->whereIn('product', [3, 4], 'product_manager')
+                ->order('product', 'ASC', 'product_manager')
+                ->fetch();
+
+            $this->assertEquals(['alice', 'bob'], Bunch::of($rows)->map(fn ($row) => $row->manager)->get());
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereGroupGivesTheQueryToItsCallback(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $query = Product::select();
+            $query->whereGroup(fn (Query $group) => $this->assertSame($query, $group));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereGroupKeepsItsOrInsideParentheses(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(
+                ['product-4'],
+                $this->fetchNames(
+                    Product::select()
+                        ->where('id', 3, '>')
+                        ->whereGroup(fn (Query $query) => $query->where('name', 'product-4')->or()->where('name', 'product-2'))
+                )
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereGroupAsFirstCondition(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(
+                ['product-3'],
+                $this->fetchNames(
+                    Product::select()
+                        ->whereGroup(fn (Query $query) => $query->where('name', 'product-1')->or()->where('name', 'product-3'))
+                        ->where('id', 1, '>')
+                )
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testConditionsAfterWhereGroupAreOutsideOfIt(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(
+                ['product-2'],
+                $this->fetchNames(
+                    Product::select()
+                        ->whereGroup(fn (Query $query) => $query->where('name', 'product-1')->or()->where('name', 'product-2'))
+                        ->where('id', 2)
+                )
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testTwoWhereGroups(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(
+                ['product-2'],
+                $this->fetchNames(
+                    Product::select()
+                        ->whereGroup(fn (Query $query) => $query->where('id', 1)->or()->where('id', 2))
+                        ->whereGroup(fn (Query $query) => $query->where('id', 2)->or()->where('id', 3))
+                )
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testNestedWhereGroups(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(5);
+
+            $this->assertEquals(
+                ['product-1', 'product-4'],
+                $this->fetchNames(
+                    Product::select()
+                        ->whereGroup(fn (Query $query) => $query
+                            ->where('name', 'product-1')
+                            ->or()
+                            ->whereGroup(fn (Query $query) => $query
+                                ->where('id', 2, '>')
+                                ->whereGroup(fn (Query $query) => $query->where('name', 'product-5')->or()->where('name', 'product-4'))
+                                ->where('id', 5, '<')
+                            )
+                        )
+                )
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testEmptyWhereGroupIsIgnored(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(3);
+
+            $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()->whereGroup(fn () => null)));
+            $this->assertEquals(
+                ['product-2'],
+                $this->fetchNames(Product::select()->whereGroup(fn () => null)->where('id', 2)->whereGroup(fn () => null))
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereGroupAcceptsEveryKindOfCondition(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertManagedProducts();
+
+            $this->assertEquals(
+                ['product-2'],
+                $this->fetchNames(
+                    Product::select()
+                        ->where('id', 3, '<')
+                        ->whereGroup(fn (Query $query) => $query
+                            ->whereIn('name', ['product-2'])
+                            ->or()
+                            ->whereRaw('1=0')
+                            ->or()
+                            ->whereIn('id', $this->productsManagedBy('alice'))
+                            ->where('name', 'product-1', '<>')
+                        )
+                )
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereGroupIsRespectedByCount(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(
+                1,
+                Product::select()
+                    ->where('id', 3, '>')
+                    ->whereGroup(fn (Query $query) => $query->where('name', 'product-4')->or()->where('name', 'product-2'))
+                    ->count()
+            );
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testDeleteWithWhereGroup(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            Query::delete('product')
+                ->where('id', 3, '>')
+                ->whereGroup(fn (Query $query) => $query->where('name', 'product-4')->or()->where('name', 'product-2'))
+                ->fetch();
+
+            $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()));
         });
     }
 }

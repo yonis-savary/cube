@@ -7,15 +7,11 @@ use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
 use Cube\Data\Database\Query\Field;
 use Cube\Data\Database\Query\FieldComparaison;
-use Cube\Data\Database\Query\FieldCondition;
-use Cube\Data\Database\Query\InsertValues;
 use Cube\Data\Database\Query\Join;
 use Cube\Data\Database\Query\Order;
 use Cube\Data\Database\Query\QueryBase;
-use Cube\Data\Database\Query\RawCondition;
 use Cube\Data\Database\Query\UpdateField;
 use Cube\Env\Logger\Logger;
-use Cube\Utils\Text;
 use Exception;
 use Throwable;
 
@@ -91,22 +87,17 @@ class Postgres extends MySQL
 
     public function getUpdates(): string
     {
-        return
-            Bunch::of($this->query->updateFields)
-                ->map(function (UpdateField $field) {
-                    return sprintf(
-                        '%s = %s',
-                        $field->field,
-                        $this->getSQLValue($field->newValue)
-                    );
-                })
-                ->join(', ')
+        return Bunch::of($this->query->updateFields)
+            ->map(fn (UpdateField $field) => sprintf('%s = %s', $field->field, $this->getSQLValue($field->newValue)))
+            ->join(', ')
         ;
     }
 
     public function getSQLValue(mixed $value): string
     {
-        return $this->database->build('{}', [$value]);
+        return $value instanceof Query
+            ? "(" . (new static())->build($value, $this->database) . ")"
+            : $this->database->build('{}', [$value]);
     }
 
     public function getFieldComparaison(FieldComparaison $condition)
@@ -122,54 +113,14 @@ class Postgres extends MySQL
     }
 
 
-    public function getConditions(): string
+    public function getQualifiedTable(string $table): string
     {
-        if (! $count = count($this->query->conditions))
-            return '';
-
-        $conditions = "";
-        for ($i=0; $i < $count; $i++)
-        {
-            $condition = $this->query->conditions[$i];
-            $nextElement = $this->query->conditions[$i+1] ?? 'AND';
-
-            if (!is_string($nextElement)) 
-                $nextElement = 'AND';
-
-            if ($condition instanceof FieldComparaison) {
-                $stringCondition = $this->getFieldComparaison($condition);
-            }
-            else if ($condition instanceof FieldCondition) {
-                $stringCondition = sprintf(
-                    '%s%s %s %s',
-                    $condition->table ? '"'.$condition->table.'".' : '',
-                    $condition->field,
-                    $condition->operator,
-                    $this->getSQLValue($condition->expression),
-                );
-            }
-            else if ($condition instanceof RawCondition) {
-                $stringCondition = $condition->expression;
-            }
-            else 
-            {
-                return '';
-            }
-
-            $conditions .= $stringCondition . " $nextElement ";
-        }
-
-        $fullCondition = trim("WHERE $conditions");
-        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'OR'));
-        $fullCondition = trim(Text::dontEndsWith($fullCondition, 'AND'));
-
-        return $fullCondition;
+        return "\"{$table}\"";
     }
-
 
     public function getUpdateConditions(): string
     {
-        $baseConditions = $this->getConditions();
+        $baseConditions = $this->getConditions($this->query->conditions);
 
         $updateConditions = count($this->query->joins)
             ? '('
@@ -278,7 +229,7 @@ class Postgres extends MySQL
             $this->getSelectFields(),
             $this->getTable($this->query->base->table),
             $this->getJoins(),
-            $this->getConditions(),
+            $this->getConditions($this->query->conditions),
             $this->getOrders(),
             $this->getLimit()
         );
@@ -305,7 +256,7 @@ class Postgres extends MySQL
         return sprintf(
             "DELETE FROM %s \n%s \n%s",
             $this->getTable($this->query->base->table),
-            $this->getConditions(),
+            $this->getConditions($this->query->conditions),
             $this->getOrders()
         );
     }
