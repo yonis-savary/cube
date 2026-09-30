@@ -9,6 +9,6 @@ if (!function_exists('inject')) {
      * @return T
      */
     function inject(string $class, mixed $contructorArgs=[]): mixed {
-        return Injector::instanciate($class, $contructorArgs);
+        return Injector::getInstance()->instanciate($class, $contructorArgs);
     }
 }

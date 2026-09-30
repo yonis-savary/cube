@@ -44,7 +44,7 @@ abstract class Queue
     }
 
     public static function queue(mixed ...$args): void {
-        $instance = Injector::instanciate(static::class);
+        $instance = Injector::getInstance()->instanciate(static::class);
         $instance->push(...$args);
     }
 

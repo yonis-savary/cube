@@ -22,6 +22,7 @@ class Router
     use Component;
 
     protected RouterConfiguration $configuration;
+    protected Injector $injector;
     protected RouteGroup $rootHolder;
     protected RouteGroup $currentGroup;
 
@@ -31,8 +32,13 @@ class Router
     /** @var WebAPI[] $apis */
     protected array $apis = [];
 
-    public function __construct(RouterConfiguration $config)
+    public function __construct(
+        RouterConfiguration $config,
+        ?Injector $injector = null
+    )
     {
+        $this->injector = $injector ?? Injector::getInstance();
+
         if ($config->cached)
             $this->cache = Cache::getInstance()->child("Routers")->child(md5(static::class));
 
@@ -231,7 +237,7 @@ class Router
 
         try
         {
-            $parameters = Injector::getDependencies(
+            $parameters = $this->injector->getDependencies(
                 $route->getCallback(),
                 [$request, ...array_values($request->getSlugValues())]
             );
@@ -239,7 +245,7 @@ class Router
             /** @var Request $request */
             $request = &$parameters[0];
 
-            $parametersReflections = Injector::resolveClosureParameters($route->getCallback());
+            $parametersReflections = $this->injector->resolveClosureParameters($route->getCallback());
 
             $slugValues = $request->getSlugValues();
 

@@ -11,7 +11,9 @@ trait Component
 
     public static function getDefaultInstance(): static
     {
-        return Injector::instanciate(static::class);
+        return static::class === Injector::class
+            ? new static()
+            : Injector::getInstance()->instanciate(static::class);
     }
 
     /**

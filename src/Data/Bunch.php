@@ -338,7 +338,7 @@ class Bunch implements Countable
 
     public function instanciates(array $args=[])
     {
-        return $this->map(fn($class) => Injector::instanciate($class, $args));
+        return $this->map(fn($class) => Injector::getInstance()->instanciate($class, $args));
     }
 
     public function diff(array|Bunch $values): self

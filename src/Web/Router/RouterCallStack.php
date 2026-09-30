@@ -79,7 +79,7 @@ class RouterCallStack
 
         list($controllerClass, $method) = $this->controllerCallback;
 
-        $controller = Injector::instanciate($controllerClass);
+        $controller = Injector::getInstance()->instanciate($controllerClass);
         return $controller->$method($request, ...$this->controllerParams);
     }
 

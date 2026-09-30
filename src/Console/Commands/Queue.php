@@ -53,7 +53,7 @@ class Queue extends Command
             : new NullLogger()
         ;
 
-        $instance = Injector::instanciate($queueClass);
+        $instance = Injector::getInstance()->instanciate($queueClass);
 
         if ($args->has("-f", "--flush")) {
             $logger->info("Flushing " . $queueClass . " queue");

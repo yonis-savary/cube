@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Data\OpenAPI;
 
+use Cube\Core\Injector;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
 use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Env\Storage;
@@ -37,7 +38,9 @@ class OpenAPIGenerationTest extends TestCase
 
     protected function getStandaloneRouter(): Router
     {
-        return new Router(new RouterConfiguration(loadControllers: false, loadRoutesFiles: false));
+        return new Router(
+            new RouterConfiguration(loadControllers: false, loadRoutesFiles: false)
+        );
     }
 
     public function testSimpleGeneration() {

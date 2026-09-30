@@ -8,23 +8,96 @@ use Cube\Data\Models\Model;
 use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
+use InvalidArgumentException;
 use ReflectionNamedType;
 use ReflectionParameter;
 use RuntimeException;
 
 class Injector
 {
+    use Component;
+
+    protected array $provided = [];
+    protected array $providedVariadic = [];
+
+    /**
+     * Specify to Injector which value, callback must be provided
+     * when a specific class/interface/trait request a certain type for a parameter
+     *
+     * @param string $class Class, Interface or Trait full name
+     * @param mixed|\Closure(string):mixed $elementOrCallback Provided Class/Interface/Trait or some callback that resolve the good object
+     * @note If a callback is provided, the first argument given when called shalled be the requester class
+     */
+    public function provide(string $class, mixed $elementOrCallback): void
+    {
+        $this->provided[$class] = $elementOrCallback;
+    }
+
+    /**
+     * Specify to Injector which value, callback must be provided
+     * when a specific class/interface/trait request a certain type for a variadic parameter
+     *
+     * @param string $class Class, Interface or Trait full name
+     * @param mixed|\Closure(string):mixed $elementOrCallback Provided Class/Interface/Trait or some callback that resolve the good object
+     * @note If a callback is provided, the first argument given when called shalled be the requester class
+     */
+    public function provideVariadic(string $class, mixed $elementOrCallback): void
+    {
+        $this->providedVariadic[$class] = $elementOrCallback;
+    }
+
+    protected function assertProvidedRespectType(string $class, mixed $provided) : void {
+        $providedClass = $provided::class;
+        if (class_exists($class)) {
+            Autoloader::extends($providedClass, $class)
+                || throw new RuntimeException("Provided class of type $providedClass does not extends $class");
+        }
+        else if (interface_exists($class)) {
+            Autoloader::implements($providedClass, $class)
+                || throw new RuntimeException("Provided class of type $providedClass does not implements interface $class");
+        }
+        else if (trait_exists($class)) {
+            Autoloader::uses($providedClass, $class)
+                || throw new RuntimeException("Provided class of type $providedClass does not use $class trait");
+        }
+        else {
+            throw new InvalidArgumentException("Could not determine if $class is a Class/Interface/Trait");
+        }
+    }
+
+    public function getProvidedValue(string $class, bool $variadic = false, ?string $caller = null): mixed {
+        $store = $variadic ? $this->providedVariadic : $this->provided;
+        $value = $store[$class] ?? null;
+
+        if (is_callable($value))
+            $value = $value($caller);
+
+        if ($value === null)
+            return null;
+
+        if (!$variadic) {
+            $this->assertProvidedRespectType($class, $value);
+            return $value;
+        }
+
+        $value = Bunch::of($value);
+        $value->forEach(fn($subvalue) => $this->assertProvidedRespectType($class, $subvalue));
+        return $value;
+    }
 
     /**
      * @template TClass
      * @param class-string<TClass> $class
      * @return TClass
      */
-    public static function instanciate(string $class, array $args=[])
+    public function instanciate(string $class, array $args=[], ?string $caller = null)
     {
-        $parameters = [];
-        if (method_exists($class, '__construct'))
-            $parameters = self::getDependencies([$class, '__construct'], $args);
+        if ($provided = $this->getProvidedValue($class, false, $caller))
+            return $provided;
+
+        $parameters = method_exists($class, '__construct')
+            ? $this->getDependencies([$class, '__construct'], $args)
+            : $args;
 
         return new $class(...$parameters);
     }
@@ -32,7 +105,7 @@ class Injector
     /**
      * @return ReflectionParameter[]
      */
-    public static function resolveClosureParameters(callable|array $callback): array
+    public function resolveClosureParameters(callable|array $callback): array
     {
         if (is_array($callback)) {
             $controller = new \ReflectionClass($callback[0]);
@@ -46,13 +119,17 @@ class Injector
     /**
      * @return array<mixed>
      */
-    public static function getDependencies(callable|array $callback, array $initialValues=[]): array
+    public function getDependencies(callable|array $callback, array $initialValues=[]): array
     {
-        $parameters = self::resolveClosureParameters($callback);
+        $parameters = $this->resolveClosureParameters($callback);
 
         if (!count($parameters)) {
             return $initialValues;
         }
+
+        $caller = is_array($callback) // [class, method]
+            ? $callback[0]
+            : null;
 
         $injectedParams = [];
 
@@ -60,28 +137,31 @@ class Injector
             $parameter = $parameters[$i];
 
             if ($parameter->isVariadic()) {
-                array_push($injectedParams, ...self::resolveVariadicParameter($parameter)->toArray());
+                array_push($injectedParams, ...$this->resolveVariadicParameter($parameter, $caller)->toArray());
                 continue;
             }
 
             $injectedParams[] = array_key_exists($i, $initialValues)
-                ? self::resolveParameterFromGivenValue($parameter, $initialValues[$i])
-                : self::resolveParameterFromNothing($parameter)
+                ? $this->resolveParameterFromGivenValue($parameter, $initialValues[$i])
+                : $this->resolveParameterFromNothing($parameter, $caller)
             ;
         }
 
         return $injectedParams;
     }
 
-    protected static function resolveParameterTypeName(ReflectionParameter $parameter): ?string
+    protected function resolveParameterTypeName(ReflectionParameter $parameter): ?string
     {
         $type = $parameter->getType();
         return $type instanceof ReflectionNamedType ? $type->getName() : null;
     }
 
-    protected static function resolveVariadicParameter(ReflectionParameter $parameter): Bunch {
-        if (!$classname = self::resolveParameterTypeName($parameter))
+    protected function resolveVariadicParameter(ReflectionParameter $parameter, ?string $caller = null): Bunch {
+        if (!$classname = $this->resolveParameterTypeName($parameter))
             throw new RuntimeException("Variadic parameter \${$parameter->getName()} must name a single class or interface, got ".$parameter->getType());
+
+        if ($provided = $this->getProvidedValue($classname, true, $caller))
+            return $provided;
 
         if (interface_exists($classname))
             return Bunch::fromImplements($classname);
@@ -92,13 +172,16 @@ class Injector
         throw new RuntimeException("Could not make values for type $classname");
     }
 
-    protected static function resolveParameterFromNothing(ReflectionParameter $parameter) {
-        if (!$requestType = self::resolveParameterTypeName($parameter)) {
+    protected function resolveParameterFromNothing(ReflectionParameter $parameter, ?string $caller = null) {
+        if (!$requestType = $this->resolveParameterTypeName($parameter)) {
             if ($parameter->isOptional() && $parameter->isDefaultValueAvailable())
                 return $parameter->getDefaultValue();
 
             throw new \InvalidArgumentException("Could not create dependency injection values for callback, \${$parameter->getName()} is typed ".$parameter->getType().' and no single class can be resolved from it');
         }
+
+        if ($provided = $this->getProvidedValue($requestType, false, $caller))
+            return $provided;
 
         if (Autoloader::uses($requestType, Component::class))
             return $requestType::getInstance();
@@ -107,7 +190,7 @@ class Injector
             return $requestType::resolve();
 
         if (class_exists($requestType))
-            return Injector::instanciate($requestType);
+            return $this->instanciate($requestType, caller: $caller);
 
         if ($parameter->isOptional() && $parameter->isDefaultValueAvailable())
             return $parameter->getDefaultValue();
@@ -115,8 +198,8 @@ class Injector
         throw new \InvalidArgumentException('Could not create dependency injection values for callback, no value for '.$parameter->getName().' parameter');
     }
 
-    protected static function resolveParameterFromGivenValue(ReflectionParameter $parameter, mixed $injected) {
-        if (!$requestType = self::resolveParameterTypeName($parameter))
+    protected function resolveParameterFromGivenValue(ReflectionParameter $parameter, mixed $injected) {
+        if (!$requestType = $this->resolveParameterTypeName($parameter))
             return $injected;
 
         if (Autoloader::extends($requestType, Request::class)) {

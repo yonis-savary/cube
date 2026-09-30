@@ -64,7 +64,7 @@ class WebsocketTest extends TestCase
 
     public function testEmitFromChannel() {
         $this->assertTrue($this->process->isRunning());
-        $channel = Injector::instanciate(ProductChannel::class);
+        $channel = Injector::getInstance()->instanciate(ProductChannel::class);
 
         $channel->lockParams([1]);
         $this->assertTrue($channel->emit(["some" => 'value']));
