@@ -13,7 +13,7 @@ class SpecificValue implements CronValue
         return is_numeric($value);
     }
 
-    public function matches(int $value): bool
+    public function matches(int $value, int $fieldMinimum = 0): bool
     {
         return $value === $this->value;
     }

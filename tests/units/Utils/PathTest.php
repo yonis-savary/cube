@@ -69,4 +69,9 @@ class PathTest extends TestCase
         $this->assertEquals('/data/etc/passwd', Path::confined('/data/../etc/passwd', '/data'));
         $this->assertEquals('/data', Path::confined('/', '/data'));
     }
+
+    public function testPathToNamespaceOutsideOfThePsr4PrefixesPascalCasesEachDirectory()
+    {
+        $this->assertEquals('Storage\\MyModule\\SubDirectory', Path::pathToNamespace(Path::relative('Storage/my-module/sub_directory')));
+    }
 }

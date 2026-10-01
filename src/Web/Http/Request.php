@@ -46,7 +46,7 @@ class Request extends HttpMessage
         array $cookies = []
     ) {
         $this->method = $method;
-        $this->path = preg_replace('/\?.+/', '', $path);
+        $this->path = explode('?', $path, 2)[0];
         $this->get = $get;
         $this->post = $post;
         $this->setHeaders($headers);
@@ -102,7 +102,7 @@ class Request extends HttpMessage
 
         $uploads = self::getUploadsArray($_FILES);
 
-        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+        $uri = explode('?', $_SERVER['REQUEST_URI'] ?? '/', 2)[0];
         if ('/' != $uri) {
             $uri = Text::dontEndsWith($uri, '/');
         }

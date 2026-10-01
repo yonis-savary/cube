@@ -256,7 +256,7 @@ class Bunch implements Countable
     public function min(mixed $default = null): mixed
     {
         return $this->count()
-            ? min(...$this->data)
+            ? min($this->data)
             : $default;
     }
 
@@ -270,7 +270,7 @@ class Bunch implements Countable
     public function max(mixed $default = null): mixed
     {
         return $this->count()
-            ? max(...$this->data)
+            ? max($this->data)
             : $default;
     }
 
@@ -370,8 +370,8 @@ class Bunch implements Countable
 
         $arrayMode = is_array($this->data[0] ?? false);
         $valueGetter = $arrayMode
-            ? fn ($object, $key) => $object[$key] ?? new NoValue()
-            : fn ($object, $key) => $object->{$key} ?? new NoValue();
+            ? fn ($object, $key) => array_key_exists($key, $object) ? $object[$key] : new NoValue()
+            : fn ($object, $key) => property_exists($object, $key) ? $object->{$key} : ($object->{$key} ?? new NoValue());
 
         return $this->map(function ($element) use (&$keys, $valueGetter, $compoundKeySeparator) {
             foreach ($keys as $key) {
@@ -416,7 +416,7 @@ class Bunch implements Countable
     {
         $data = [];
         foreach ($this->data as $array) {
-            array_push($data, ...$array);
+            array_push($data, ...array_values($array));
         }
 
         return $this->withNewData($data);
@@ -553,7 +553,7 @@ class Bunch implements Countable
         }
 
         foreach ($this->data as $element) {
-            if (true === $callback($element)) {
+            if ($callback($element)) {
                 return $element;
             }
         }
@@ -569,7 +569,7 @@ class Bunch implements Countable
         $dataCount = count($this->data);
         for ($i = 0; $i < $dataCount; ++$i) {
             $element = $this->data[$i];
-            if (true === $callback($element)) {
+            if ($callback($element)) {
                 return $i;
             }
         }
@@ -592,7 +592,7 @@ class Bunch implements Countable
 
         $data = array_reverse($this->data);
         foreach ($data as $element) {
-            if (true === $callback($element)) {
+            if ($callback($element)) {
                 return $element;
             }
         }
@@ -608,7 +608,7 @@ class Bunch implements Countable
         $dataCount = count($this->data);
         for ($i = $dataCount-1; $i >= 0; --$i) {
             $element = $this->data[$i];
-            if (true === $callback($element)) {
+            if ($callback($element)) {
                 return $i;
             }
         }

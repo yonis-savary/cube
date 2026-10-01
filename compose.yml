@@ -29,6 +29,8 @@ services:
       - ${CUBE_TEST_MYSQL_PORT:-9901}:3306
     environment:
       MYSQL_ROOT_PASSWORD: ${CUBE_TEST_DATABASE_PASSWORD:-root}
+    # A data-provided test keeps its connection for the whole process, whatever the number of workers
+    command: ["--max-connections=500"]
   postgres:
     image: postgres
     restart: always
@@ -42,11 +44,14 @@ services:
         tmpfs:
           # Every test method provisions its own database and nothing is dropped before the
           # process ends, so the live set is the whole run : parallel workers multiply the peak
-          size: 3221225472
+          size: 4294967296
     ports:
       - ${CUBE_TEST_POSTGRES_PORT:-9902}:5432
     environment:
       POSTGRES_PASSWORD: ${CUBE_TEST_DATABASE_PASSWORD:-root}
+    # A data-provided test keeps its connection for the whole process, whatever the number of workers
+    # CREATE DATABASE logs every copied page : a small WAL is recycled before it fills the tmpfs
+    command: ["postgres", "-c", "max_connections=500", "-c", "max_wal_size=128MB", "-c", "min_wal_size=32MB"]
 
   redis:
     image: redis:7

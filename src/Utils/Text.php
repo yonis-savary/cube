@@ -20,6 +20,9 @@ class Text
 
     public static function dontEndsWith(string $string, string $suffix): string
     {
+        if ('' === $suffix)
+            return $string;
+
         $suffixLength = strlen($suffix);
         while (str_ends_with($string, $suffix)) {
             $string = substr($string, 0, strlen($string) - $suffixLength);
@@ -39,6 +42,9 @@ class Text
 
     public static function dontStartsWith(string $string, string $prefix): string
     {
+        if ('' === $prefix)
+            return $string;
+
         $prefixLength = strlen($prefix);
         while (str_starts_with($string, $prefix)) {
             $string = substr($string, $prefixLength);
@@ -70,11 +76,13 @@ class Text
         $message ??= '';
         $message = (string) $message;
 
+        $replacements = [];
         foreach ($context as $key => $value) {
-            $message = str_replace('{'.$key.'}', self::anyToString($value), $message);
+            $replacements['{'.$key.'}'] = self::anyToString($value);
         }
 
-        return $message;
+        // strtr() replaces in a single pass, so a value holding a placeholder is never expanded
+        return strtr($message, $replacements);
     }
 
     public static function camelCaseString(string $string) {

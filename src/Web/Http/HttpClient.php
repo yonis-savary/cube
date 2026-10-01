@@ -10,6 +10,9 @@ use Cube\Utils\Utils;
 
 class HttpClient
 {
+    public const REDIRECTION_STATUSES = [301, 302, 303, 307, 308];
+    public const MAX_REDIRECTIONS = 10;
+
     /** Debug the CURL Request build process */
     public const DEBUG_REQUEST_CURL = 0b0000_0001;
 
@@ -190,9 +193,55 @@ class HttpClient
 
     
 
+    protected function followRedirection(
+        string $currentURL,
+        string $nextURL,
+        Logger $logger,
+        ?int $timeout,
+        ?string $userAgent,
+        int $logFlags,
+        ?callable $curlMutator,
+        int $followedRedirections
+    ): Response {
+        if ($followedRedirections >= self::MAX_REDIRECTIONS)
+            throw new \RuntimeException(sprintf('Stopped after %d redirections, the last one to [%s]', self::MAX_REDIRECTIONS, $nextURL));
+
+        $logger->info('Got redirected to [{url}]', ['url' => $nextURL]);
+
+        // Base headers often carry credentials : they are only sent back to the same host
+        $client = parse_url($nextURL, PHP_URL_HOST) === parse_url($currentURL, PHP_URL_HOST)
+            ? $this
+            : new self();
+
+        [$nextPath, $nextQuery] = explode('?', $nextURL, 2) + [1 => ''];
+        parse_str($nextQuery, $nextGet);
+
+        return $client->fetch(new Request('GET', $nextPath, $nextGet), $logger, $timeout, $userAgent, true, $logFlags, $curlMutator, $followedRedirections + 1);
+    }
+
+    /**
+     * @return ?string The absolute URL `$location` points to, `null` when it is not an http(s) one
+     */
+    protected function resolveLocation(string $currentURL, string $location): ?string
+    {
+        if (preg_match('/^([a-z][a-z0-9+.-]*):/i', $location, $scheme))
+            return in_array(strtolower($scheme[1]), ['http', 'https']) ? $location : null;
+
+        $current = parse_url($currentURL);
+        $origin = $current['scheme'].'://'.$current['host'].(isset($current['port']) ? ':'.$current['port'] : '');
+
+        if (str_starts_with($location, '//'))
+            return $current['scheme'].':'.$location;
+
+        if (str_starts_with($location, '/'))
+            return $origin.$location;
+
+        return $origin.Path::join(dirname($current['path'] ?? '/'), $location);
+    }
+
     protected function path(Request $request): string {
         $path = $request->getPath();
-        if (!$base = $this->baseURL())
+        if (str_contains($path, '://') || !$base = $this->baseURL())
             return $path;
 
         if (!str_starts_with($base, "http"))
@@ -350,7 +399,8 @@ class HttpClient
         ?string $userAgent = null,
         bool $supportRedirection = true,
         int $logFlags = self::DEBUG_ESSENTIALS,
-        ?callable $curlMutator = null
+        ?callable $curlMutator = null,
+        int $followedRedirections = 0
     ): Response {
         if ($this->httpMockServer)
             return $this->httpMockServer->handle($request);
@@ -398,18 +448,14 @@ class HttpClient
             $logger->info('{headers}', ['headers' => $resHeaders]);
         }
 
-        if ($supportRedirection && $nextURL = ($resHeaders['location'] ?? null)) {
-            $logger->info('Got redirected to [{url}]', ['url' => $nextURL]);
+        $location = $resHeaders['location'] ?? null;
+        if ($supportRedirection && $location && in_array($resStatus, self::REDIRECTION_STATUSES)) {
+            $currentURL = curl_getinfo($handle, CURLINFO_EFFECTIVE_URL);
 
-            return $this->fetch(
-                new Request('GET', $nextURL),
-                $logger,
-                $timeout,
-                $userAgent,
-                $supportRedirection,
-                $logFlags,
-                $curlMutator
-            );
+            if ($nextURL = $this->resolveLocation($currentURL, $location))
+                return $this->followRedirection($currentURL, $nextURL, $logger, $timeout, $userAgent, $logFlags, $curlMutator, $followedRedirections);
+
+            $logger->warning('Not following the redirection to [{url}], only http and https are followed', ['url' => $location]);
         }
 
         $resBody = substr($result, $headerSize);

@@ -24,9 +24,9 @@ class StepValue implements CronValue
         return (bool) preg_match('/^\*\/\d+$/', $value);
     }
 
-    public function matches(int $value): bool
+    public function matches(int $value, int $fieldMinimum = 0): bool
     {
-        return 0 === $value % $this->step;
+        return 0 === ($value - $fieldMinimum) % $this->step;
     }
 
     public function getHeldValues(): array

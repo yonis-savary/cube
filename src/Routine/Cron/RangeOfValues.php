@@ -26,7 +26,7 @@ class RangeOfValues implements CronValue
         return (bool) preg_match('/^\d+-\d+$/', $value);
     }
 
-    public function matches(int $value): bool
+    public function matches(int $value, int $fieldMinimum = 0): bool
     {
         return $this->min <= $value && $value <= $this->max;
     }

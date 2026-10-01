@@ -208,8 +208,10 @@ class Route
             if (!$part)
                 continue;
 
-            if (!preg_match('/^\{.+\}$/', $part))
+            if (!preg_match('/^\{.+\}$/', $part)) {
+                $part = preg_quote($part, '/');
                 continue;
+            }
 
             $part = substr($part, 1, strlen($part) - 2);
 

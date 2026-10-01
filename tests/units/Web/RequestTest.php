@@ -125,6 +125,11 @@ class RequestTest extends TestCase
         }
     }
 
+    public function testAnEmptyQueryStringIsNotPartOfThePath()
+    {
+        $this->assertEquals('/products', (new Request('GET', '/products?'))->getPath());
+    }
+
     public function testAllMergesGetAndPost()
     {
         $request = new Request('POST', '/', ['shared' => 'from get'], ['shared' => 'from post', 'only' => 'post']);

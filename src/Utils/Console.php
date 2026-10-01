@@ -232,23 +232,23 @@ class Console
             return;
         }
 
-        $firstItem = $data[0];
-        $columns ??= Utils::isAssoc($firstItem) ? array_keys($firstItem) : $firstItem;
-        if ($columns === $firstItem) {
-            array_pop($data);
+        $data = array_values($data);
+        if (!$columns) {
+            $columns = Utils::isAssoc($data[0]) ? array_keys($data[0]) : array_shift($data);
         }
+        $data = array_map(fn (array $row) => array_values($row), $data);
 
-        $columnsSizes = array_fill(0, count($columns), 0);
+        $columnsSizes = [];
         $updateColumnsSizes = function (array $data) use (&$columnsSizes) {
             for ($i = 0; $i < count($data); ++$i) {
-                $columnsSizes[$i] = max($columnsSizes[$i], strlen($data[$i]));
+                $columnsSizes[$i] = max($columnsSizes[$i] ?? 0, strlen((string) $data[$i]));
             }
         };
 
         $printValueLine = function (array $data) use (&$columnsSizes, $print) {
             $line = '';
             for ($i = 0; $i < count($data); ++$i) {
-                $bit = $data[$i];
+                $bit = (string) $data[$i];
                 $bitLength = strlen($bit);
                 $line .= $bit.str_repeat(' ', ($columnsSizes[$i] - $bitLength) + 2);
             }
@@ -272,31 +272,34 @@ class Console
         }
     }
 
+    /**
+     * @return array{int,mixed} The index of the chosen element in `$choices`, and the element itself
+     */
     public static function promptList(string $prompt, array $choices, ?int $defaultChoiceIndex = null): array
     {
+        $choices = array_values($choices);
         $hasDefault = null !== $defaultChoiceIndex;
-        $defaultChoiceString = $hasDefault ? (string) $choices[$defaultChoiceIndex] : '';
+        $promptLine = $hasDefault
+            ? '['.($defaultChoiceIndex + 1).' ('.((string) $choices[$defaultChoiceIndex]).')] > '
+            : ' > ';
 
-        $choicesCount = count($choices);
-        do {
-            for ($i = 1; $i <= $choicesCount; ++$i) {
-                $choice = $choices[$i];
-                echo $prompt."\n";
-                echo "{$i} - ".((string) $choice)."\n";
-                echo "\n";
-
-                $promptLine = $hasDefault ? "[{$defaultChoiceIndex} ({$defaultChoiceString})] > " : ' > ';
-                $userChoice = readline($promptLine);
-
-                if (('' === $userChoice) && $hasDefault) {
-                    return [$defaultChoiceIndex, $choices[$defaultChoiceIndex]];
-                }
-
-                $userChoice = (int) $userChoice;
+        while (true) {
+            echo $prompt."\n";
+            foreach ($choices as $index => $choice) {
+                echo ($index + 1).' - '.((string) $choice)."\n";
             }
-        } while (!(0 < $userChoice && $userChoice < ($choicesCount - 1)));
+            echo "\n";
 
-        return [$userChoice, $choices[$userChoice]];
+            $userChoice = readline($promptLine);
+            if (('' === $userChoice) && $hasDefault) {
+                return [$defaultChoiceIndex, $choices[$defaultChoiceIndex]];
+            }
+
+            $index = (int) $userChoice - 1;
+            if (array_key_exists($index, $choices)) {
+                return [$index, $choices[$index]];
+            }
+        }
     }
 
     public static function chooseApplication(): string
@@ -312,6 +315,8 @@ class Console
                 'Please choose an application to proceed',
                 Bunch::of($appsToLoad->paths)->map(fn ($x) => Path::toRelative($x))->get()
             );
+
+            return $paths[$index];
         }
 
         do {

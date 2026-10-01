@@ -9,7 +9,7 @@ class AnyValue implements CronValue
         return '*' === $value;
     }
 
-    public function matches(int $value): bool
+    public function matches(int $value, int $fieldMinimum = 0): bool
     {
         return true;
     }

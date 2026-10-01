@@ -167,23 +167,33 @@ Order : exploitable flaws first, then data integrity, then functional correctnes
 
 ## 8. Utilities and crypto
 
-- [ ] **8.1 `encrypt` / `decrypt`** — `"0"` and `""` refused ; CBC without MAC, key not derived.
-  *Decision : moving to AES-GCM makes already encrypted data unreadable.*
-  - `EncryptionTest::testFalsyPlaintextsSurviveARoundTrip`,
-    `EncryptionTest::testATamperedCiphertextIsRejected`
-- [ ] **8.2 Bunch** — `min`/`max` of one element, `key` on null, associative `flat`, `first` with a
-  callback returning an int.
+- [x] **8.1 `encrypt` / `decrypt`** — `"0"` and `""` were refused ; CBC without MAC, raw key cut or
+  padded to 32 bytes. `Security\Encryption\Encryption` now encrypts with AES-256-GCM and a key derived
+  through HKDF-SHA256, its values prefixed with `v2:`. `Security\Encryption\LegacyEncryption` still
+  reads the former CBC values ; `Cube\decrypt()` picks one by the prefix, so a tampered `v2:` value is
+  never retried as a legacy one.
+  - `EncryptionTest` (8 tests)
+- [x] **8.2 Bunch** — `min`/`max` of one element, `key` on null, associative `flat`, `first` /
+  `firstIndex` / `last` / `lastIndex` with a callback returning a truthy non-boolean.
   - `BunchTest::testMinAndMaxOfASingleElement`, `BunchTest::testKeyReturnsAFieldHoldingNull`,
     `BunchTest::testFlatOnAssociativeRows`, `BunchTest::testFirstAcceptsATruthyResult`
-- [ ] **8.3 Text** — `interpolate` re-expands values, `dontEndsWith('')` loops forever.
-  - `TextTest::testInterpolateDoesNotExpandPlaceholdersFoundInValues`
-- [ ] **8.4 Misc** — `pathToNamespace`, empty job file, `/products/?page=2`, `.` in routes,
-  interactive `Console` helpers, `HttpClient` redirects.
+- [x] **8.3 Text** — `interpolate` re-expanded values (now `strtr()`), `dontEndsWith('')` /
+  `dontStartsWith('')` looped forever.
+  - `TextTest::testInterpolateDoesNotExpandPlaceholdersFoundInValues`, `TextTest::testAnEmptyAffixIsLeftAlone`
+- [x] **8.4 Misc** — `pathToNamespace` (PSR-4 lookup, PascalCase fallback), empty or half-written job
+  file (jobs are now written under a locked name, then renamed), `/products/?page=2` and
+  `/products?`, `.` in routes (`preg_quote`), `Console::table` / `promptList` / `chooseApplication`,
+  `HttpClient` redirections (3xx only, 10 at most, http(s) only, base headers kept for the same host,
+  relative `Location` resolved with its query string, base URL not applied to an absolute URL).
   - `PathTest::testPathToNamespaceFollowsThePsr4Prefixes`,
+    `PathTest::testPathToNamespaceOutsideOfThePsr4PrefixesPascalCasesEachDirectory`,
     `LocalDiskQueueDriverTest::test_an_empty_job_file_gives_nothing_to_process`,
     `RequestTest::testATrailingSlashBeforeTheQueryStringIsTrimmed`,
-    `RouteTest::testADotInAStaticPartIsLiteral`
-- [ ] **8.5 Cron** — `*/2` (day of month) and `*/6` (month) don't start on 1.
-  *Decision : standard cron or current behaviour, which existing tests assert.*
+    `RequestTest::testAnEmptyQueryStringIsNotPartOfThePath`,
+    `RouteTest::testADotInAStaticPartIsLiteral`, `ConsoleTest` (2 tests),
+    `HttpClientRedirectionTest` (6 tests)
+- [x] **8.5 Cron** — steps now count from the first value of their field (standard cron), `7` is
+  accepted as sunday. Still not supported : mixing a list, a range and a step in one field, and
+  the day of the month / day of the week `OR` of standard cron.
   - `CronExpressionTest::testADayOfTheMonthStepStartsOnTheFirst`,
-    `CronExpressionTest::testAMonthStepStartsOnJanuary`
+    `CronExpressionTest::testAMonthStepStartsOnJanuary`, `CronExpressionTest::testSevenIsSunday`

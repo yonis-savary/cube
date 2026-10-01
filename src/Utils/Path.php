@@ -123,21 +123,34 @@ class Path
 
     public static function pathToNamespace(string|\Stringable $directory): string
     {
-        $loader = Autoloader::getClassLoader();
+        $directory = realpath((string) $directory) ?: (string) $directory;
+        $directory = self::normalize($directory);
 
-        $relDirectory = self::toRelative($directory);
-        $prefixes = Bunch::of($loader->getPrefixesPsr4());
-        foreach ($prefixes as $namespace => $path) {
-            if ($relDirectory === $path) {
-                return $namespace;
+        $matchingNamespace = null;
+        $matchingRoot = '';
+        foreach (Autoloader::getClassLoader()->getPrefixesPsr4() as $namespace => $roots) {
+            foreach ($roots as $root) {
+                $root = realpath($root) ?: $root;
+                $root = self::normalize($root);
+
+                if (!self::isInside($directory, $root) || strlen($root) <= strlen($matchingRoot))
+                    continue;
+
+                $matchingNamespace = $namespace;
+                $matchingRoot = $root;
             }
         }
 
-        $fallback = $relDirectory;
-        $fallback = preg_replace_callback('/[a-z]-[a-z]/', fn ($m) => $m[1].strtoupper($m[2]), $fallback);
-        $fallback = preg_replace_callback('/[a-z]\/[a-z]/', fn ($m) => $m[1].strtoupper($m[2]), $fallback);
+        if (null !== $matchingNamespace) {
+            $subNamespace = str_replace('/', '\\', trim(substr($directory, strlen($matchingRoot)), '/'));
 
-        return str_replace('/', '\\', $fallback);
+            return rtrim($matchingNamespace.$subNamespace, '\\');
+        }
+
+        return Bunch::fromExplode('/', self::toRelative($directory))
+            ->filter()
+            ->map(fn (string $segment) => str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $segment))))
+            ->join('\\');
     }
 
     public static function resolveProjectPath(?string $forceProjectPath = null): void

@@ -45,7 +45,7 @@ class LocalDiskQueueDriver extends BasicQueueDriver
         $element = unserialize(file_get_contents($locked));
         unlink($locked);
 
-        return $element;
+        return is_array($element) ? $element : null;
     }
 
     public function flush(): void
@@ -56,7 +56,11 @@ class LocalDiskQueueDriver extends BasicQueueDriver
 
     public function push(array $args): void
     {
-        $this->getStorage()
-        ->write(uniqid(time().'-'), serialize($args));
+        $storage = $this->getStorage();
+        $name = uniqid(time().'-');
+
+        // Written under a locked name first : a worker must never read a file still being written
+        $storage->write("#{$name}", serialize($args));
+        rename($storage->path("#{$name}"), $storage->path($name));
     }
 }

@@ -42,4 +42,11 @@ class TextTest extends TestCase
             Text::interpolate('Customer {name} ordered {item}', ['name' => '{email}', 'email' => 'secret', 'item' => 'secret'])
         );
     }
+
+    /** An empty suffix or prefix is always found, so the loop removing it never ended. */
+    public function testAnEmptyAffixIsLeftAlone()
+    {
+        $this->assertEquals('invoice', Text::dontEndsWith('invoice', ''));
+        $this->assertEquals('invoice', Text::dontStartsWith('invoice', ''));
+    }
 }

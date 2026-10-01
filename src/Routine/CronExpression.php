@@ -35,7 +35,7 @@ class CronExpression
         $this->assertValueIsInBounds($this->hour, 0, 23, 'hour');
         $this->assertValueIsInBounds($this->dayOfTheMonth, 1, 31, 'day of the month');
         $this->assertValueIsInBounds($this->month, 1, 12, 'month');
-        $this->assertValueIsInBounds($this->dayOfTheWeek, 0, 6, 'day of the week');
+        $this->assertValueIsInBounds($this->dayOfTheWeek, 0, 7, 'day of the week');
     }
 
     public static function everyMinute(int $step = 1): self
@@ -72,13 +72,15 @@ class CronExpression
             $datetime = new \DateTime($datetime);
         }
 
-        // timezone-proof comparison
+        $dayOfTheWeek = (int) $datetime->format('w');
+
+        // timezone-proof comparison ; 7 is the other name cron gives to sunday
         return
-            $this->min->matches((int) $datetime->format('i'))
-            && $this->hour->matches((int) $datetime->format('H'))
-            && $this->dayOfTheMonth->matches((int) $datetime->format('d'))
-            && $this->month->matches((int) $datetime->format('m'))
-            && $this->dayOfTheWeek->matches((int) $datetime->format('w'));
+            $this->min->matches((int) $datetime->format('i'), 0)
+            && $this->hour->matches((int) $datetime->format('H'), 0)
+            && $this->dayOfTheMonth->matches((int) $datetime->format('d'), 1)
+            && $this->month->matches((int) $datetime->format('m'), 1)
+            && ($this->dayOfTheWeek->matches($dayOfTheWeek, 0) || (0 === $dayOfTheWeek && $this->dayOfTheWeek->matches(7, 0)));
     }
 
     protected function transformValueToCronValue(string $value): CronValue

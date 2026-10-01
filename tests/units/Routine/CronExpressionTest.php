@@ -91,7 +91,7 @@ class CronExpressionTest extends TestCase
             'hour out of bounds' => ['0 24 * * *'],
             'day of the month out of bounds' => ['0 0 32 * *'],
             'month out of bounds' => ['0 0 * 13 *'],
-            'day of the week out of bounds' => ['0 0 * * 7'],
+            'day of the week out of bounds' => ['0 0 * * 8'],
             'reversed range' => ['10-5 * * * *'],
         ];
     }
@@ -136,9 +136,10 @@ class CronExpressionTest extends TestCase
         $this->assertTrue(CronExpression::everyDayOfTheMonth()->matches('2026-08-14 00:00:00'));
         $this->assertFalse(CronExpression::everyDayOfTheMonth()->matches('2026-08-14 00:01:00'));
 
+        // Steps count from the first day of the month : 1, 4, 7, 10, 13, 16...
         $everyThree = CronExpression::everyDayOfTheMonth(3);
-        $this->assertTrue($everyThree->matches('2026-08-15 00:00:00'));
-        $this->assertFalse($everyThree->matches('2026-08-14 00:00:00'));
+        $this->assertTrue($everyThree->matches('2026-08-16 00:00:00'));
+        $this->assertFalse($everyThree->matches('2026-08-15 00:00:00'));
     }
 
     public function testEveryDayOfTheWeek()
@@ -168,5 +169,14 @@ class CronExpressionTest extends TestCase
         $this->assertTrue($everySix->matches('2026-01-01 00:00:00'));
         $this->assertTrue($everySix->matches('2026-07-01 00:00:00'));
         $this->assertFalse($everySix->matches('2026-06-01 00:00:00'));
+    }
+
+    /** 7 was refused, where cron accepts it as a second name for sunday. */
+    public function testSevenIsSunday()
+    {
+        // 2026-08-16 is a sunday
+        $this->assertTrue((new CronExpression('0 0 * * 7'))->matches('2026-08-16 00:00:00'));
+        $this->assertTrue((new CronExpression('0 0 * * 5-7'))->matches('2026-08-16 00:00:00'));
+        $this->assertFalse((new CronExpression('0 0 * * 7'))->matches('2026-08-17 00:00:00'));
     }
 }

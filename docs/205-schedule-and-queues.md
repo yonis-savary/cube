@@ -40,7 +40,13 @@ the week — and supports `*`, a value, a list, a range and a step
 Cube\schedule('*/15 * * * *', ...);    // every quarter of an hour
 Cube\schedule('30 2 1 * *', ...);      // 02:30, first day of the month
 Cube\schedule('0 8 * * 1-5', ...);     // 08:00 on weekdays
+Cube\schedule('0 0 */2 * *', ...);     // midnight on the 1st, 3rd, 5th... of the month
 ```
+
+A step counts from the first value of its field, as in standard cron : `*/2` on the day of the month
+fires on odd days, starting with the 1st. The day of the week accepts both `0` and `7` for sunday.
+A list, a range and a step cannot be combined in one field (`1-5,7` or `0-30/10` are refused), and
+when both the day of the month and the day of the week are restricted, both must match.
 
 An expression that is not five fields, or whose values fall outside their bounds, throws as soon as
 it is declared rather than silently never matching.
