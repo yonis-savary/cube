@@ -17,6 +17,8 @@ class UploadRule extends Rule
             $this->withCondition(fn (mixed $value) => null !== $value, '{key} upload is needed');
         }
 
+        $this->withValueCondition(fn (mixed $value) => $value instanceof Upload, '{key} must be an uploaded file');
+
         if ($rejectUploadsWithErrors) {
             $this->withValueCondition(
                 fn (Upload $upload) => UPLOAD_ERR_OK === $upload->error,

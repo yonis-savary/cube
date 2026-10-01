@@ -14,7 +14,7 @@ class ArrayParam extends Rule
     )
     {
         $this->childRule = Param::from($childRule, $nullable);
-        $this->param = (new Param($nullable))->withValueCondition(fn ($array) => Utils::isList($array), '{key} must be a list, got {value}');
+        $this->param = (new Param($nullable))->withValueCondition(fn ($array) => is_array($array) && Utils::isList($array), '{key} must be a list, got {value}');
     }
 
     public function maxSize(int $maxSize): static
@@ -50,7 +50,10 @@ class ArrayParam extends Rule
             else
                 $return->addErrorKey($index, $valueReturn->getErrors());
         }
-        return $return;
+
+        return $return->isValid()
+            ? $this->runSteps($return->getResult(), $return, $key)
+            : $return;
     }
 
     public function nullable(bool $nullable): static

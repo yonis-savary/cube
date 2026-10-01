@@ -84,12 +84,22 @@ abstract class Rule
 
     public function validate(mixed $currentValue, ?string $key=null): ValidationReturn
     {
-        $return = new ValidationReturn();
+        return $this->runSteps($currentValue, new ValidationReturn(), $key);
+    }
+
+    /**
+     * The steps stop at the first failed check, so a later step can trust what an earlier one checked
+     */
+    protected function runSteps(mixed $value, ValidationReturn $return, ?string $key): ValidationReturn
+    {
         foreach ($this->steps as $step) {
-            $step($currentValue, $return, $key);
+            $step($value, $return, $key);
+
+            if (!$return->isValid())
+                break;
         }
 
-        return $return->setResult($currentValue);
+        return $return->setResult($value);
     }
 
     public function nullable(bool $nullable): static
@@ -101,18 +111,6 @@ abstract class Rule
     public function isNullable(): bool
     {
         return $this->nullable;
-    }
-
-    protected function transform(ValidationReturn $return) : ValidationReturn {
-        $pointer = $return->getResult();
-
-        foreach ($this->steps as $step) {
-            if ($step->type === ValidationStep::TYPE_TRANSFORMER)
-                $step($pointer, $return);
-        }
-        $return->setResult($pointer);
-
-        return $return;
     }
 
     public function withMetadata(array $metadata): static

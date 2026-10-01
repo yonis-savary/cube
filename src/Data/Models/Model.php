@@ -381,7 +381,8 @@ abstract class Model extends EventDispatcher
         if (count($forbiddenAttributes))
             $rule->without($forbiddenAttributes);
 
-        if (!$model = $rule->validate($request)->getResult()) {
+        $validation = $rule->validate($request);
+        if (!$validation->isValid() || !$model = $validation->getResult()) {
             throw new InvalidArgumentException('Could not build a '.static::class.' out of the given request, validate it before calling fromRequest()');
         }
 

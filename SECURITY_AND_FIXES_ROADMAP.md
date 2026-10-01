@@ -115,16 +115,24 @@ Order : exploitable flaws first, then data integrity, then functional correctnes
 
 ## 6. Validation (`Http\Rules`)
 
-- [ ] **6.1 Stop after a failed type check** — the next steps still run : 500 instead of 422 on a
-  mistyped input.
-  - `ValidationTest::testAMalformedValueIsRefusedWithoutThrowing` (7 cases)
-- [ ] **6.2 Composite rules** — their conditions and transformers are ignored.
+- [x] **6.1 Stop after a failed type check** — the next steps still ran : 500 instead of 422 on a
+  mistyped input. Steps now stop at the first failed check, and the built-in checks (`date`,
+  `datetime`, `url`, `uuid`, `boolean`, `object`, `array`, uploads) check the type themselves.
+  `Model::fromRequest()` refuses an invalid request instead of returning a partial result.
+  - `ValidationTest::testAMalformedValueIsRefusedWithoutThrowing` (10 cases),
+    `ValidationTest::testAFailedCheckStopsTheFollowingSteps`
+- [x] **6.2 Composite rules** — their conditions and transformers were ignored. They now run on the
+  validated children, once those are valid.
   - `ValidationTest::testAConditionOnAnObjectIsChecked`,
-    `ValidationTest::testAConditionOnAnArrayIsChecked`
-- [ ] **6.3 Nullable object** — refuses `null`.
+    `ValidationTest::testAConditionOnAnArrayIsChecked`,
+    `ValidationTest::testATransformerOnAnObjectReceivesTheValidatedChildren`,
+    `ValidationTest::testAConditionOnAnObjectWaitsForValidChildren`
+- [x] **6.3 Nullable object** — refused `null`.
   - `ValidationTest::testANullableObjectAcceptsNull`
-- [ ] **6.4 Lossy coercions** — `integer('1.9')`, `string(true)`, `"null"` in a form,
-  `2024-02-31`. *Decision : how strict.*
+- [x] **6.4 Lossy coercions** — `integer()` only accepts whole numbers in range, `date()` and
+  `datetime()` check the day exists. Left as they are, by decision : `string(true)` and the
+  `"null"` / `"off"` normalization of form values.
+  - `ValidationTest::testIntegerOnlyAcceptsWholeNumbers`, `ValidationTest::testDatesMustExistInTheCalendar`
 
 ## 7. Ambient services
 

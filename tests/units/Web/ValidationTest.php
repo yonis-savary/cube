@@ -529,6 +529,9 @@ class ValidationTest extends TestCase
             'array as url' => [Param::url(), ['https://example.com']],
             'array as uuid' => [Param::uuid(), ['x']],
             'string as upload' => [new UploadRule(), 'avatar.png'],
+            'array as boolean' => [Param::boolean(), ['yes']],
+            'array as typed condition' => [Param::string()->withCondition(fn (string $value) => strlen($value) > 3, 'too short'), ['long enough']],
+            'string as object of a nullable list' => [Param::array(Param::object(['name' => Param::string()]), true), ['bob']],
         ];
     }
 
@@ -537,5 +540,55 @@ class ValidationTest extends TestCase
     public function testAMalformedValueIsRefusedWithoutThrowing(Rule $rule, mixed $value)
     {
         $this->assertFalse($rule->validate($value)->isValid());
+    }
+
+    public function testAFailedCheckStopsTheFollowingSteps()
+    {
+        $result = Param::integer()
+            ->withCondition(fn ($value) => is_int($value), 'must have been converted')
+            ->validate('abc', 'quantity');
+
+        $this->assertCount(1, $result->getErrors());
+    }
+
+    public function testATransformerOnAnObjectReceivesTheValidatedChildren()
+    {
+        $rule = Param::object(['first' => Param::string(), 'last' => Param::string()])
+            ->withTransformer(fn (array $value) => "{$value['first']} {$value['last']}");
+
+        $this->assertEquals('Ada Lovelace', $rule->validate(['first' => ' Ada ', 'last' => 'Lovelace'])->getResult());
+    }
+
+    public function testAConditionOnAnObjectWaitsForValidChildren()
+    {
+        $rule = Param::object(['password' => Param::string()])
+            ->withCondition(fn (array $value) => strlen($value['password']) > 8, 'password too short');
+
+        $this->assertEquals(['password' => ['password cannot be null']], $rule->validate([])->getErrors());
+    }
+
+    /** integer() used to accept anything is_numeric() accepts, truncating it on the way. */
+    public function testIntegerOnlyAcceptsWholeNumbers()
+    {
+        foreach ([5, '5', '-12', (string) PHP_INT_MAX] as $valid) {
+            $this->assertTrue(Param::integer()->validate($valid)->isValid(), var_export($valid, true).' should be accepted');
+        }
+
+        foreach (['1.9', ' 5', '5 ', '1e3', '0x1A', '99999999999999999999', 1.5, true, ''] as $invalid) {
+            $this->assertFalse(Param::integer()->validate($invalid)->isValid(), var_export($invalid, true).' should be refused');
+        }
+
+        $this->assertSame(-12, Param::integer()->validate('-12')->getResult());
+    }
+
+    /** date() and datetime() used to accept any day from 01 to 31, whatever the month. */
+    public function testDatesMustExistInTheCalendar()
+    {
+        $this->assertTrue(Param::date()->validate('2024-02-29')->isValid());
+        $this->assertFalse(Param::date()->validate('2023-02-29')->isValid());
+        $this->assertFalse(Param::date()->validate('2024-04-31')->isValid());
+
+        $this->assertTrue(Param::datetime()->validate('2024-02-29 10:00:00')->isValid());
+        $this->assertFalse(Param::datetime()->validate('2024-02-31 10:00:00')->isValid());
     }
 }

@@ -18,12 +18,15 @@ class AnyKeyObjectParam extends Rule
     {
         $this->childRule = Param::from($childRule, $nullable);
         $this->param = (new Param($nullable))
-            ->withValueCondition(fn ($array) => Utils::isAssoc($array), '{key} must be an object, got {value}');
+            ->withValueCondition(fn ($array) => is_array($array) && Utils::isAssoc($array), '{key} must be an object, got {value}');
     }
 
     public function validate(mixed $value, ?string $key=null): ValidationReturn {
         if ($value instanceof Request)
             $value = $value->all();
+
+        if (null === $value && $this->param->isNullable())
+            return new ValidationReturn();
 
         $value ??= [];
         $baseReturn = $this->param->validate($value, $key);
@@ -43,7 +46,9 @@ class AnyKeyObjectParam extends Rule
                 $return->addErrorKey("$key.$subKey", $valueReturn->getErrors());
         }
 
-        return $this->transform($return);
+        return $return->isValid()
+            ? $this->runSteps($return->getResult(), $return, $key)
+            : $return;
     }
 
     public function nullable(bool $nullable): static

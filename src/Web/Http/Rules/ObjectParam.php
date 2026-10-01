@@ -21,7 +21,7 @@ class ObjectParam extends Rule
 
         $this->rules = $assocRules;
         $this->param = (new Param($nullable))
-            ->withValueCondition(fn ($array) => Utils::isAssoc($array), '{key} must be an object, got {value}');
+            ->withValueCondition(fn ($array) => is_array($array) && Utils::isAssoc($array), '{key} must be an object, got {value}');
     }
 
     /** @return array<string,Rule> */
@@ -33,6 +33,9 @@ class ObjectParam extends Rule
     public function validate(mixed $value, ?string $key=null): ValidationReturn {
         if ($value instanceof Request)
             $value = $value->all();
+
+        if (null === $value && $this->param->isNullable())
+            return new ValidationReturn();
 
         $value ??= [];
         $baseReturn = $this->param->validate($value, $key);
@@ -53,7 +56,9 @@ class ObjectParam extends Rule
                 $return->addErrorKey($ruleKey, $valueReturn->getErrors());
 
         }
-        return $this->transform($return);
+        return $return->isValid()
+            ? $this->runSteps($return->getResult(), $return, $key)
+            : $return;
     }
 
     public function without(array|string $paramsToDelete): static {

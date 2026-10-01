@@ -100,10 +100,11 @@ public static function storeProduct(StoreProductRequest $request)
 | Factory | Accepts |
 |---|---|
 | `Param::string(bool $trim = true)` | a string, trimmed by default |
-| `Param::integer()` / `Param::float()` | a number, coerced to the PHP type |
+| `Param::integer()` | an int, or a string writing a whole number (`"12"`, not `"1.9"` nor `" 5"`) |
+| `Param::float()` | a number, coerced to `float` |
 | `Param::boolean()` | `true`/`false`, and the strings the request normalized |
 | `Param::email()` / `Param::url()` / `Param::uuid()` | a validated format |
-| `Param::date()` / `Param::datetime()` | a date, `datetime` can add a missing time |
+| `Param::date()` / `Param::datetime()` | a date that exists in the calendar, `datetime` can add a missing time |
 | `Param::object(array $rules)` | a nested shape, recursing into `$rules` |
 | `Param::array(Rule $childRule)` | a list whose every item matches `$childRule` |
 | `Param::anyKeyObject(Rule $valueRule)` | a map with unknown keys and known value shape |
@@ -111,7 +112,14 @@ public static function storeProduct(StoreProductRequest $request)
 | `UploadRule::new()` | an upload, chain `withMimeType()` and `withMaxSize()` |
 
 Two chainable checks apply to any of them : `inArray(array $values)` and
-`isBetween($min, $max, bool $canBeEqual = true)`.
+`isBetween($min, $max, bool $canBeEqual = true)`. Add your own with `withCondition()` and
+`withTransformer()` — on `object()` and `array()` too, where they receive the validated children.
+Steps stop at the first failed check, so a condition never sees a value an earlier check refused
+
+```php
+Param::object(['password' => Param::string(), 'confirmation' => Param::string()])
+    ->withCondition(fn (array $value) => $value['password'] === $value['confirmation'], 'passwords do not match');
+```
 
 Uploads are validated alongside the body — the rule key is the input name
 
