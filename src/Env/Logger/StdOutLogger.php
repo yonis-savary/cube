@@ -9,6 +9,7 @@ use Exception;
 
 class StdOutLogger extends Logger
 {
+    /** @var ?resource $stdOutStream */
     protected static $stdOutStream = null;
 
     public function __construct()
@@ -34,13 +35,13 @@ class StdOutLogger extends Logger
         $message = Text::interpolate($message, $context);
 
         Bunch::fromExplode("\n", $message)
-            ->forEach(function ($line) use ($level) {
+            ->forEach(fn ($line) =>
                 fwrite($this->stream, join(' ', [
                     date('[D M j G:i:s Y]'),
                     strtoupper($level),
                     $line,
-                ])."\n");
-            })
+                ])."\n")
+            )
         ;
 
         $this->dispatch(new LoggedMessage($level, $message, $context));

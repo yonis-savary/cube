@@ -53,10 +53,7 @@ class Logger extends EventDispatcher implements LoggerInterface
         }
     }
 
-    /**
-     * @return static
-     */
-    public static function forFile(string $file, ?Storage $storage = null): self
+    public static function forFile(string $file, ?Storage $storage = null): static
     {
         $storage ??= Storage::getInstance()->child('Logs');
         $path = $storage->path($file);
@@ -79,15 +76,15 @@ class Logger extends EventDispatcher implements LoggerInterface
         $datetime = (new \DateTime())->format('Y-m-d H:i:s.v');
 
         Bunch::fromExplode("\n", $message)
-            ->forEach(function ($line) use ($level, $datetime) {
+            ->forEach(fn ($line) =>
                 fputcsv(
                     $this->stream,
                     [$datetime, strtoupper($level), $line],
                     separator: "\t",
                     enclosure: "'",
                     escape: '\\'
-                );
-            })
+                )
+            )
         ;
 
         $this->dispatch(new LoggedMessage($level, $message, $context));

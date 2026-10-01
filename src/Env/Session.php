@@ -3,6 +3,7 @@
 namespace Cube\Env;
 
 use Cube\Core\Component;
+use Cube\Data\Bunch;
 use Cube\Env\Session\SessionConfiguration;
 use Cube\Utils\Path;
 
@@ -63,9 +64,10 @@ class Session
         return array_key_exists($key, $_SESSION);
     }
 
-    public function unset(string $key): void
+    public function unset(string ...$keys): void
     {
-        $key = $this->getNamespacedKey($key);
-        unset($_SESSION[$key]);
+        Bunch::of($keys)
+            ->map(fn($key) => $this->getNamespacedKey($key))
+            ->forEach(function($key) { unset($_SESSION[$key]); });
     }
 }
