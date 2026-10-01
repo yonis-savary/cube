@@ -244,6 +244,14 @@ class ProductAPI extends ModelAPI
 }
 ```
 
+Middlewares and extras declared in a `ModelAPIConfiguration` wrap every `ModelAPI` of the
+application, around the group `getRouteGroup()` returns
+
+```php
+// cube.php
+new ModelAPIConfiguration(middlewares: [AuthMiddleware::class]),
+```
+
 Reading deserves a note : a parameter matching a `STRING` field becomes a `LIKE` search, split on
 spaces, every word having to match. Any other field type is compared for equality.
 

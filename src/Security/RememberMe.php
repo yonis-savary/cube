@@ -46,7 +46,7 @@ class RememberMe implements Middleware
             return $request;
         }
 
-        if (!$userId = $this->cache->try($token)) {
+        if (!$this->isToken($token) || !$userId = $this->cache->try($token)) {
             return $request;
         }
 
@@ -63,6 +63,7 @@ class RememberMe implements Middleware
         ))->dispatch();
 
         if ($this->configuration->refreshTokenOnRemember) {
+            $this->cache->delete($token);
             $this->register($userData);
         }
 
@@ -75,7 +76,7 @@ class RememberMe implements Middleware
             ? $user->userId
             : $user->id();
 
-        $token = uniqid('rememberuser', true);
+        $token = bin2hex(random_bytes(32));
         $duration = $this->configuration->cookieDuration;
 
         $this->cache->set($token, $userId, $duration);
@@ -111,13 +112,17 @@ class RememberMe implements Middleware
 
     protected function sendCookie(string $value, int $expiresAt): void
     {
-        setcookie(
-            $this->configuration->cookieName,
-            $value,
-            $expiresAt,
-            path: $this->configuration->cookiePath,
-            secure: $this->configuration->cookieSecure,
-            httponly: $this->configuration->cookieHttpOnly
-        );
+        setcookie($this->configuration->cookieName, $value, [
+            'expires' => $expiresAt,
+            'path' => $this->configuration->cookiePath,
+            'secure' => $this->configuration->cookieSecure,
+            'httponly' => $this->configuration->cookieHttpOnly,
+            'samesite' => $this->configuration->cookieSameSite,
+        ]);
+    }
+
+    protected function isToken(mixed $token): bool
+    {
+        return is_string($token) && 1 === preg_match('/^[0-9a-f]{64}$/', $token);
     }
 }

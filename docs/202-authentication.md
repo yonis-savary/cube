@@ -43,6 +43,10 @@ $auth->user();       // the user Model
 `user()` rebuilds the model from what was stored in the session, so it costs no query. It **throws**
 when nobody is logged in — guard with `isLogged()` rather than catching.
 
+`login()` and `logout()` give the session a new id, so an id planted before login is worth nothing
+after it. The session cookie is `HttpOnly`, `Secure` over HTTPS, and `SameSite=Lax` — change the
+latter with `new SessionConfiguration(sameSite: 'Strict')`.
+
 | Method | Does |
 |---|---|
 | `attempt(string $login, ?string $password = null)` | checks credentials through the provider and opens the session |
@@ -78,6 +82,9 @@ new PasswordAuthentication(
 A `saltField` means the stored hash was computed over `password + salt`, so hash it the same way when
 you create the user.
 
+The models `attempt()` and `userById()` return come without their `passwordField` and `saltField`, so
+the copy kept in the session never holds a hash. Use `find()` when you need those columns.
+
 ### Your own provider
 
 Implement `AuthenticationProvider` — two methods — and pass it to the configuration instead. This is
@@ -100,8 +107,9 @@ class TokenAuthentication implements AuthenticationProvider
 
 ## Remembering a user across sessions
 
-`RememberMe` is a middleware that logs a user back in from a cookie. It stores a random token in the
-cache pointing at the user id, and sets that token as a cookie.
+`RememberMe` is a middleware that logs a user back in from a cookie. It stores a random token (64
+hexadecimal characters from `random_bytes()`) in the cache pointing at the user id, and sets that
+token as a cookie. A cookie of any other shape is ignored.
 
 Add it to the routes that should accept it — usually as a common middleware
 
@@ -134,10 +142,11 @@ RememberMe::getInstance()->forget($request);
 |---|---|---|
 | `cookieName` | `remember-me-token` | name of the cookie |
 | `cookieDuration` | 2 weeks | lifetime, in seconds, of both cookie and cache entry |
-| `refreshTokenOnRemember` | `true` | issue a fresh token each time one is used |
+| `refreshTokenOnRemember` | `true` | issue a fresh token each time one is used, the used one stops working |
 | `cookieSecure` | `true` | HTTPS only |
-| `cookieHttpOnly` | `false` | hide the cookie from JavaScript |
+| `cookieHttpOnly` | `true` | hide the cookie from JavaScript |
 | `cookiePath` | `/` | path the cookie is sent for |
+| `cookieSameSite` | `Lax` | `SameSite` attribute of the cookie |
 
 Since the token lives in the cache, clearing the cache logs everybody's cookie out — that is your
 emergency switch.

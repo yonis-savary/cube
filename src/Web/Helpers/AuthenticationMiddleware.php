@@ -22,8 +22,11 @@ abstract class AuthenticationMiddleware implements Middleware
     {
         $identifier = static::getIdentifier();
 
-        $route = $request->getRoute();
-        $neededPermissions = $route->getExtras()[$identifier] ?? [];
+        $neededPermissions = [];
+        foreach ($request->getRoute()->getExtras() as $key => $permissions) {
+            if (str_starts_with((string) $key, $identifier))
+                array_push($neededPermissions, ...$permissions);
+        }
 
         $hasPermission = static::userHasPermission($neededPermissions);
 
@@ -51,7 +54,8 @@ abstract class AuthenticationMiddleware implements Middleware
     {
         $router ??= Router::getInstance();
 
-        $identifier = static::getIdentifier();
+        // One key per permission list, so a nested guard adds to the outer one instead of replacing it
+        $identifier = static::getIdentifier().'-'.md5(serialize($neededPermissions));
 
         $router->group('/', [static::class], [$identifier => $neededPermissions], function: $callback);
     }

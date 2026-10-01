@@ -20,15 +20,17 @@ use React\Http\Message\Response as ReactResponse;
 class WebsocketRouter implements MessageComponentInterface
 {
     private Logger $logger;
+    private WebsocketConfiguration $configuration;
 
     /**
      * @var array<class-string<Channel>,Channel> $channels
      */
     protected array $channels = [];
 
-    public function __construct()
+    public function __construct(?WebsocketConfiguration $configuration = null)
     {
         $this->logger = Logger::getInstance();
+        $this->configuration = $configuration ?? WebsocketConfiguration::resolve();
         $this->channels = Bunch::fromExtends(Channel::class)->zip(fn(Channel $instance) => [$instance::class, $instance]);
 
         foreach (array_keys($this->channels) as $class) {
@@ -107,6 +109,15 @@ class WebsocketRouter implements MessageComponentInterface
     }
 
 
+    protected function isAllowedToBroadcast(ServerRequestInterface $request): bool
+    {
+        if (null === $secret = $this->configuration->broadcastSecret) {
+            return true;
+        }
+
+        return hash_equals($secret, $request->getHeaderLine(WebsocketConfiguration::BROADCAST_SECRET_HEADER));
+    }
+
     public function getHttpServerCallback()
     {
         return function (ServerRequestInterface $request) {
@@ -133,6 +144,10 @@ class WebsocketRouter implements MessageComponentInterface
 
             if (!str_contains(join(";", $request->getHeader("Content-Type")), "application/json")) {
                 return $response->withStatus(StatusCode::BAD_REQUEST);
+            }
+
+            if (!$this->isAllowedToBroadcast($request)) {
+                return $response->withStatus(StatusCode::FORBIDDEN);
             }
 
             return $this->dispatch($request, $response);

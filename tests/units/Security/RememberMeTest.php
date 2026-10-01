@@ -238,6 +238,16 @@ class RememberMeTest extends TestCase
         $this->assertFalse($this->cache->has($firstToken), 'The replaced token still points at the user');
     }
 
+    /** Any cache key used to be accepted as a token, so a cookie naming another entry logged someone in. */
+    public function testACookieNamingAnotherCacheEntryIsIgnored()
+    {
+        $this->cache->set('last-import', User::findWhere(['login' => 'alice'])->id());
+
+        $this->newRememberMe()->handleRequest($this->requestWithToken('last-import'));
+
+        $this->assertFalse($this->authentication->isLogged());
+    }
+
     protected function newRememberMe(?UserRegisterConfiguration $configuration = null): SpyRememberMe
     {
         return new SpyRememberMe(

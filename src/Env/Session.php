@@ -27,9 +27,31 @@ class Session
         }
 
         if (PHP_SESSION_ACTIVE !== $status) {
-            session_name(md5(Path::getProjectPath()));
-            session_start();
+            $this->start();
         }
+    }
+
+    protected function start(): void
+    {
+        $https = $_SERVER['HTTPS'] ?? '';
+
+        session_name(md5(Path::getProjectPath()));
+        session_set_cookie_params([
+            'httponly' => true,
+            'secure' => '' !== $https && 'off' !== strtolower($https),
+            'samesite' => SessionConfiguration::resolve()->sameSite,
+        ]);
+        ini_set('session.use_strict_mode', '1');
+        session_start();
+    }
+
+    public function regenerateId(): void
+    {
+        // Impossible once output started, which only happens outside of an HTTP request
+        if (headers_sent())
+            return;
+
+        session_regenerate_id(true);
     }
 
     public static function getDefaultInstance(): static

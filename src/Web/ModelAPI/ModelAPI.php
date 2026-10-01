@@ -76,10 +76,14 @@ abstract class ModelAPI extends Controller
 
         $modes = $this->modes;
 
-        $modelGroup = $this->group->mergeWith(new RouteGroup(
-            $table,
-            extras: [self::ROUTE_EXTRAS_MODEL_KEY => $this->model::class]
-        ));
+        $configuration = ModelAPIConfiguration::resolve();
+
+        $modelGroup = (new RouteGroup('/', $configuration->middlewares, $configuration->routeExtras))
+            ->mergeWith($this->group)
+            ->mergeWith(new RouteGroup(
+                $table,
+                extras: [self::ROUTE_EXTRAS_MODEL_KEY => $this->model::class]
+            ));
 
         $router->group(
             $modelGroup->prefix,

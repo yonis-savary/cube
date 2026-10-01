@@ -128,4 +128,26 @@ class HttpClientTest extends TestCase
             $this->assertEquals(strtoupper($verb), $client->{$verb}('/products')->getBody());
         }
     }
+
+    /** fetchAsync() used to send the request headers only, leaving baseHeaders() behind. */
+    public function testAsyncFetchSendsTheBaseHeaders()
+    {
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) substr(strrchr(stream_socket_get_name($server, false), ':'), 1);
+
+        $client = new class("http://127.0.0.1:{$port}") extends ExposedHttpClient {
+            public function baseHeaders(): array
+            {
+                return ['X-Api-Token' => 'abc'];
+            }
+        };
+
+        $this->assertTrue($client->postJsonAsync('/events', ['name' => 'created']));
+
+        $connection = stream_socket_accept($server, 1);
+        $this->assertStringContainsString('X-Api-Token: abc', stream_get_contents($connection));
+
+        fclose($connection);
+        fclose($server);
+    }
 }

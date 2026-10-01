@@ -257,6 +257,9 @@ Guard::guard(['invoice:read'], function (Router $router) {
 });
 ```
 
+Guards nest, and their permissions add up : a route inside `guard(['admin'])` and then
+`guard(['invoice:read'])` needs both.
+
 ## Configuration
 
 The router is configured with a `RouterConfiguration` element in your `cube.php`

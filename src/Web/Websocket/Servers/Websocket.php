@@ -48,6 +48,10 @@ class Websocket
 
         $this->logger->info("HTTP server listening at $httpOrigin");
 
+        if (null === $this->configuration->broadcastSecret) {
+            $this->logger->warning('No broadcastSecret configured : anyone reaching {origin} can broadcast', ['origin' => $httpOrigin]);
+        }
+
         $loop->run();
     }
 }

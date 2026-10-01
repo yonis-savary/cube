@@ -299,6 +299,14 @@ class AuthenticationTest extends TestCase
         $this->assertNotEquals($sessionIdBeforeLogin, session_id());
     }
 
+    /** The session copy of the user used to carry its password hash. */
+    public function testThePasswordHashIsNotKeptInTheSession()
+    {
+        $this->assertTrue($this->newAuthentication()->attempt('alice', 'correct-horse'));
+
+        $this->assertArrayNotHasKey('password', $this->newAuthentication()->user()->toArray());
+    }
+
     protected function newAuthentication(?PasswordAuthentication $provider = null): Authentication
     {
         $provider ??= new PasswordAuthentication(User::class, 'login', 'password');

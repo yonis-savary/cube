@@ -13,6 +13,7 @@ class UserRegisterConfiguration extends ConfigurationElement
         public bool $refreshTokenOnRemember = true,
         public bool $cookieSecure = true,
         public bool $cookieHttpOnly = true,
-        public string $cookiePath = '/'
+        public string $cookiePath = '/',
+        public string $cookieSameSite = 'Lax',
     ) {}
 }

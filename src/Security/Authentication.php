@@ -43,6 +43,7 @@ class Authentication
 
     public function login(Model $user): void
     {
+        $this->session->regenerateId();
         $this->session->set(self::SESSION_USER_CLASS, $user::class);
         $this->session->set(self::SESSION_USER_DATA, $user->toArray());
         $this->session->set(self::SESSION_USER_ID, $user->id());
@@ -75,6 +76,7 @@ class Authentication
         $userId = $this->userId();
 
         $this->resetSession();
+        $this->session->regenerateId();
 
         (new LoggedOutUser($user, $userId))->dispatch();
     }

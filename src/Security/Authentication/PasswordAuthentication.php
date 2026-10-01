@@ -53,7 +53,7 @@ class PasswordAuthentication implements AuthenticationProvider
             return false;
         }
 
-        return $user;
+        return $this->withoutCredentials($user);
     }
 
     /**
@@ -69,7 +69,21 @@ class PasswordAuthentication implements AuthenticationProvider
     public function userById(mixed $id): Model|false 
     {
         $model = $this->model;
-        return $model::find($id) ?? false;
+
+        if (!$user = $model::find($id))
+            return false;
+
+        return $this->withoutCredentials($user);
+    }
+
+    protected function withoutCredentials(Model $user): Model
+    {
+        foreach ([$this->passwordField, $this->saltField] as $field) {
+            if ($field)
+                unset($user->data->{$field});
+        }
+
+        return $user;
     }
 
     public function saltString(string &$string, Model $user): void

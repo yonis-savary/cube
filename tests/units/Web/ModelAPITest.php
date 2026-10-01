@@ -14,6 +14,7 @@ use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\ModelAPI\ModelAPI;
 use Cube\Web\ModelAPI\ModelAPIConfiguration;
+use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -180,6 +181,22 @@ class ModelAPITest extends TestCase
             $response = $this->route(new Request('GET', '/product'));
 
             $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
+        });
+    }
+
+    public function testConfiguredMiddlewaresWrapAnOverriddenRouteGroup()
+    {
+        $api = new class() extends ProductAPI {
+            public function getRouteGroup(): RouteGroup
+            {
+                return new RouteGroup('/api');
+            }
+        };
+
+        Configuration::withInstance(new Configuration(new ModelAPIConfiguration([BlockingMiddleware::class])), function () use ($api) {
+            $router = new Router(new RouterConfiguration(false, false, false, [$api], [], '/'));
+
+            $this->assertEquals(StatusCode::FORBIDDEN, $router->route(new Request('GET', '/api/product'))->getStatusCode());
         });
     }
 

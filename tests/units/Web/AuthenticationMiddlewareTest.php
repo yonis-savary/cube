@@ -83,6 +83,20 @@ class AuthenticationMiddlewareTest extends TestCase
         $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
     }
 
+    public function testNestedGuardsLetThroughAUserHoldingEveryPermission()
+    {
+        RoleMiddleware::$roles = ['admin', 'reader'];
+
+        $router = $this->newRouter();
+        RoleMiddleware::guard(['admin'], function (Router $router) {
+            RoleMiddleware::guard(['reader'], function (Router $router) {
+                $router->addRoutes(Route::get('/reports', fn () => Response::ok('reached')));
+            }, $router);
+        }, $router);
+
+        $this->assertEquals(StatusCode::OK, $router->route(new Request('GET', '/reports'))->getStatusCode());
+    }
+
     protected function routeGuardedBy(array $permissions): Response
     {
         $router = $this->newRouter();

@@ -14,8 +14,14 @@ class BroadcastConfiguration extends ConfigurationElement
         protected ?string $socketHost = null,
         protected ?int $socketPort = null,
         protected ?string $httpHost = null,
-        protected ?int $httpPort = null
+        protected ?int $httpPort = null,
+        protected ?string $broadcastSecret = null,
     ){}
+
+    public function getBroadcastSecret(): ?string
+    {
+        return $this->broadcastSecret ?? WebsocketConfiguration::resolve()->broadcastSecret;
+    }
 
     public function getHttpOrigin(): string
     {

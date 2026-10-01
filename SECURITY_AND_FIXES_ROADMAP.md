@@ -87,19 +87,31 @@ Order : exploitable flaws first, then data integrity, then functional correctnes
 
 ## 5. Authentication and sessions
 
-- [ ] **5.1 Nested guards** — the inner guard replaces the outer permissions.
+- [x] **5.1 Nested guards** — the inner guard replaced the outer permissions. Each permission list
+  now gets its own extras key, and the middleware sums every key it owns.
   - `AuthenticationMiddlewareTest::testANestedGuardKeepsTheOuterPermissions`
-- [ ] **5.2 Session fixation** — no `session_regenerate_id`, cookie without HttpOnly/SameSite.
+- [x] **5.2 Session fixation** — no `session_regenerate_id`, cookie without HttpOnly/SameSite.
+  `login()` / `logout()` regenerate the id ; the cookie is `HttpOnly`, `Secure` over HTTPS,
+  `SameSite` from `SessionConfiguration` (`Lax`), with `session.use_strict_mode`.
   - `AuthenticationTest::testLoggingInRenewsTheSessionId`
-- [ ] **5.3 RememberMe** — predictable `uniqid` token, old token never invalidated, cache shared
-  with the Autoloader, no SameSite.
+- [x] **5.3 RememberMe** — predictable `uniqid` token, old token never invalidated, any cache key
+  accepted as a token, no SameSite. Tokens are 64 hex chars from `random_bytes()` and checked
+  before any cache lookup, a refresh deletes the used token, `cookieSameSite` added.
   - `RememberMeTest::testTheTokenIsNotDerivedFromTheClock`,
-    `RememberMeTest::testARefreshedTokenCannotBeReplayed`
-- [ ] **5.4 ModelAPI** — `ModelAPIConfiguration` (middlewares, extras) is never read.
-  - `ModelAPITest::testConfiguredMiddlewaresGuardTheApi`
-- [ ] **5.5 Websocket broadcast** — unauthenticated. *Decision : shared secret or local IP only.*
-  - `WebsocketRouterTest::testAnAnonymousBroadcastIsRefused`
-- [ ] **5.6 Untested** — `Authentication::login()` puts the password hash in the session.
+    `RememberMeTest::testARefreshedTokenCannotBeReplayed`,
+    `RememberMeTest::testACookieNamingAnotherCacheEntryIsIgnored`
+- [x] **5.4 ModelAPI** — `ModelAPIConfiguration` (middlewares, extras) was never read. It now wraps
+  every ModelAPI, around the group `getRouteGroup()` returns.
+  - `ModelAPITest::testConfiguredMiddlewaresGuardTheApi`,
+    `ModelAPITest::testConfiguredMiddlewaresWrapAnOverriddenRouteGroup`
+- [x] **5.5 Websocket broadcast** — unauthenticated. Optional `broadcastSecret` in
+  `WebsocketConfiguration` : when set, the HTTP endpoint answers `403` without the
+  `X-Broadcast-Secret` header, which `Broadcast` sends ; when not, everything passes and the server
+  logs a warning. `HttpClient::fetchAsync()` now sends `baseHeaders()` like `fetch()`.
+  - `WebsocketRouterTest` (3 tests), `HttpClientTest::testAsyncFetchSendsTheBaseHeaders`
+- [x] **5.6 Password hash in the session** — `PasswordAuthentication` returns its users without
+  `passwordField` / `saltField`.
+  - `AuthenticationTest::testThePasswordHashIsNotKeptInTheSession`
 
 ## 6. Validation (`Http\Rules`)
 

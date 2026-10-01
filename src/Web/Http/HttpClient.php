@@ -464,7 +464,7 @@ class HttpClient
         $body = $request->getBody();
         $body = $body ? $body : json_encode($postParams, JSON_THROW_ON_ERROR);
 
-        $headers = $request->getHeaders();
+        $headers = array_merge($this->baseHeaders(), $request->getHeaders());
         if ($userAgent)
             $headers['User-Agent'] = $userAgent;
 

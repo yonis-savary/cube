@@ -36,6 +36,8 @@ new WebsocketConfiguration(
     // where the backend connects — keep this one private
     httpHost: '0.0.0.0',
     httpPort: 8089,
+    // shared by the socket process and Broadcast, which sends it with every signal
+    broadcastSecret: env('WEBSOCKET_SECRET'),
 ),
 
 new BroadcastConfiguration(
@@ -51,8 +53,10 @@ new BroadcastConfiguration(
 frontend should connect to — set them when the address your browser sees differs from the one the
 process binds, which is the normal case behind a reverse proxy.
 
-The HTTP side is what makes a signal appear on every browser : anyone who can reach it can emit on
-any channel. Expose only the websocket port publicly.
+The HTTP side is what makes a signal appear on every browser. With a `broadcastSecret`, it answers
+`403` to any request that does not carry it in the `X-Broadcast-Secret` header — `Broadcast` adds it
+for you. Without one, anyone who can reach it can emit on any channel, and the server logs a warning
+when it starts. Either way, expose only the websocket port publicly.
 
 ## Creating a channel
 
