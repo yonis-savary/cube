@@ -155,11 +155,14 @@ class Database
         // This regex capture quoted content
         preg_match_all('/([\'"`])(?:.*?(?:\1\1|\\\1)?)+?\1/', $sql, $matchesQuoted, PREG_OFFSET_CAPTURE);
 
-        $quotedPositions = [];
-        foreach ($matchesQuoted[0] as $m) {
+        list($fullMatches, $delimiterMatches) = $matchesQuoted;
+
+        $delimiterByPosition = [];
+        foreach ($fullMatches as $index => list($quotedText, $quotedOffset)) {
+            $delimiter = $delimiterMatches[$index][0];
             $offset = 0;
-            while (($pos = strpos($m[0], '{}', $offset)) !== false) {
-                $quotedPositions[] = $m[1] + $pos;
+            while (($pos = strpos($quotedText, '{}', $offset)) !== false) {
+                $delimiterByPosition[$quotedOffset + $pos] = $delimiter;
                 $offset = $pos + 1;
             }
         }
@@ -168,9 +171,13 @@ class Database
 
         return preg_replace_callback(
             '/\{\}/',
-            function ($match) use (&$count, $quotedPositions, $context) {
-                $doQuote = !in_array($match[0][1], $quotedPositions);
-                $val = $this->queryBuilder->prepareString($context[$count] ?? null, $doQuote, $this);
+            function ($match) use (&$count, $delimiterByPosition, $context) {
+                $value = $context[$count] ?? null;
+                $placeholderOffset = $match[0][1];
+
+                $val = array_key_exists($placeholderOffset, $delimiterByPosition)
+                    ? $this->queryBuilder->prepareQuotedString($value, $delimiterByPosition[$placeholderOffset], $this)
+                    : $this->queryBuilder->prepareString($value, true, $this);
                 ++$count;
 
                 return $val;

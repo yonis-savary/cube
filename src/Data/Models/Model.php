@@ -26,6 +26,8 @@ abstract class Model extends EventDispatcher
     /** @var array<string,Model|Model[]> */
     public array $references = [];
 
+    protected bool $persisted = false;
+
     public function __construct(array|Model $data = [], string $relationAccumulator = '')
     {
         if ($data instanceof Model)
@@ -148,6 +150,24 @@ abstract class Model extends EventDispatcher
         $this->save();
     }
 
+    public function markAsPersisted(bool $relationsToo = false): self
+    {
+        $this->persisted = true;
+
+        if (!$relationsToo) {
+            return $this;
+        }
+
+        foreach ($this->references as $reference) {
+            Bunch::of($reference)
+                ->onlyInstancesOf(Model::class)
+                ->forEach(fn (Model $model) => $model->markAsPersisted(true))
+            ;
+        }
+
+        return $this;
+    }
+
     public function markAsOriginal(bool $relationsToo = false): self
     {
         $this->original = clone $this->data;
@@ -174,7 +194,7 @@ abstract class Model extends EventDispatcher
         return Query::insert(static::table())->withBaseModel(static::class);
     }
 
-    public static function last(?string $key=null, ?Database $database = null): static
+    public static function last(?string $key=null, ?Database $database = null): ?static
     {
         $database ??= Database::getInstance();
         $key ??= static::primaryKey();
@@ -442,9 +462,13 @@ abstract class Model extends EventDispatcher
 
     public function __get(string $name): mixed
     {
-        return $this->references[$name]
-            ?? $this->data->{$name}
-            ?? $this->getAttributeDefaultValue($name);
+        if (array_key_exists($name, $this->references))
+            return $this->references[$name];
+
+        if (property_exists($this->data, $name))
+            return $this->data->{$name};
+
+        return $this->getAttributeDefaultValue($name);
     }
 
     public function toArray(): array
@@ -547,13 +571,15 @@ abstract class Model extends EventDispatcher
         $query = static::delete();
 
         if ($primaryKey = static::primaryKey()) {
-            $query->where($primaryKey, $this->id());
+            $query->where($primaryKey, $this->original->{$primaryKey});
         } else {
-            foreach ($this->data as $key => $value) {
+            foreach ($this->original as $key => $value) {
                 $query->where($key, $value);
             }
         }
         $query->limit(1)->fetch($database);
+
+        $this->persisted = false;
     }
 
     public function reload(?Database $database = null): void
@@ -622,25 +648,19 @@ abstract class Model extends EventDispatcher
 
     protected function existsInDatabase(): bool
     {
-        $primaryKey = $this->primaryKey();
-
-        return $primaryKey && isset($this->data->{$primaryKey}) && ($this->{$primaryKey} ?? false);
+        return $this->persisted;
     }
 
     protected function saveExisting(?Database $database = null)
     {
         $primaryKey = $this->primaryKey();
 
-        $query = static::update()->where($primaryKey, $this->{$primaryKey});
+        $query = static::update()->where($primaryKey, $this->original->{$primaryKey});
 
         $gotAnyChange = false;
         foreach ($this->data as $key => $value) {
             $field = static::fields()[$key] ?? null;
 
-            if ($value instanceof \DateTime) {
-                $type = ($field?->type ?? ModelField::DATE);
-                $value = $value->format('Y-m-d' . (ModelField::DATE === $type ? ' h:i:s' : ''));
-            }
             if ($field?->isGenerated() ?? false) {
                 continue;
             }
@@ -652,7 +672,7 @@ abstract class Model extends EventDispatcher
             }
 
             $gotAnyChange = true;
-            $query->set($key, $value);
+            $query->set($key, $field?->format($value) ?? $value);
         }
 
         if ($gotAnyChange) {
@@ -665,6 +685,7 @@ abstract class Model extends EventDispatcher
 
     protected function saveNew(?Database $database = null)
     {
+        $database ??= Database::getInstance();
         $data = [];
         foreach ($this->fields() as $name => $field) {
             if (!$field->isInsertable()) {
@@ -680,7 +701,7 @@ abstract class Model extends EventDispatcher
                     continue;
                 }
 
-                $data[$name] = $value;
+                $data[$name] = $field->format($value);
             }
         }
 
@@ -691,10 +712,13 @@ abstract class Model extends EventDispatcher
                 ->fetch($database)
             ;
 
+            $this->markAsPersisted(true);
+
             if ($primaryKey = $this->primaryKey()) {
-                $id = static::last(null, $database)->id();
-                $this->data->{$primaryKey} = $id;
+                $this->data->{$primaryKey} = $data[$primaryKey] ?? $database->lastInsertId();
                 $this->reload($database);
+            } else {
+                $this->markAsOriginal();
             }
 
             $this->dispatch(new SavedModel($this, $database));

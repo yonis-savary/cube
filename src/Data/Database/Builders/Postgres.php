@@ -25,6 +25,11 @@ class Postgres extends MySQL
         return $pdoDriver === 'pgsql';
     }
 
+    public function getIdentifierDelimiters(): array
+    {
+        return ['"'];
+    }
+
     public function getTable(string $table): string
     {
         return "\"{$table}\"";

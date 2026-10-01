@@ -268,6 +268,15 @@ class ModelField
         }
     }
 
+    public function format(mixed $value): mixed
+    {
+        if (!$value instanceof \DateTimeInterface) {
+            return $value;
+        }
+
+        return $value->format(self::DATE === $this->type ? 'Y-m-d' : 'Y-m-d H:i:s');
+    }
+
     public function toRule(?bool $forceNullable=null): Rule
     {
         $nullable = is_null($forceNullable) ? $this->nullable : $forceNullable;

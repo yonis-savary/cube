@@ -121,7 +121,7 @@ Product::findWhere(['name' => 'screen']);  // first match, or null
 Product::findOrCreate(['name' => 'screen']);
 Product::exists(1);
 Product::existsWhere(['name' => 'screen']);
-Product::last();                           // highest primary key
+Product::last();                           // highest primary key, or null on an empty table
 Product::select()->where('name', 'screen')->first();
 ```
 
@@ -162,9 +162,12 @@ Product::deleteId(1);
 Product::deleteWhere(['name' => 'mouse']); // returns the deleted models
 ```
 
-`save()` inserts when the model has no primary key value and updates otherwise. An update only
-writes the fields that actually changed — models keep their original values in memory for that —
-and skips `generated()` fields.
+`save()` updates a model read from the database (or already saved once) and inserts any other,
+even when you filled its primary key yourself. An update targets the row through the primary key
+the model was read with, so changing the key and saving renames that row rather than another one.
+It only writes the fields that actually changed — models keep their original values in memory for
+that — and skips `generated()` fields. `DateTime` values are written as `Y-m-d H:i:s`, or `Y-m-d`
+for a `DATE` field.
 
 A few more methods worth knowing
 

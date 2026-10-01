@@ -358,7 +358,7 @@ class Query
                 ++$fieldCount;
             }
 
-            $results[] = $compiledRow;
+            $results[] = $compiledRow->markAsPersisted(true);
         }
 
         foreach ($this->resolvers as $resolver) {

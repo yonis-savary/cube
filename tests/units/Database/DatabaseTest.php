@@ -318,8 +318,8 @@ class DatabaseTest extends TestCase
     }
 
     /**
-     * A `{}` written inside an identifier quote only gets the string escaping of the driver,
-     * which never doubles a backtick nor a double quote : the value closes the identifier.
+     * A `{}` written inside an identifier quote used to get the string escaping of the driver,
+     * which never doubles a backtick nor a double quote : the value closed the identifier.
      */
     #[ DataProvider('getDatabases') ]
     public function testIdentifierPlaceholderCannotBeClosedByItsValue(Database $database)

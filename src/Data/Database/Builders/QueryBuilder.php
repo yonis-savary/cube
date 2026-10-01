@@ -16,10 +16,25 @@ abstract class QueryBuilder
 
     abstract public function supports(string $pdoDriver): bool;
 
+    /** @return string[] */
+    abstract public function getIdentifierDelimiters(): array;
+
+    public function prepareQuotedString(mixed $value, string $delimiter, Database $database): string
+    {
+        if (!in_array($delimiter, $this->getIdentifierDelimiters()))
+            return $this->prepareString($value, false, $database);
+
+        return str_replace($delimiter, $delimiter.$delimiter, (string) $value);
+    }
+
     public function prepareString(mixed $value, bool $quote, Database $database): string
     {
         if ($value instanceof Model) {
             return $this->prepareString($value->id(), $quote, $database);
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $this->prepareString($value->format('Y-m-d H:i:s'), $quote, $database);
         }
 
         if (is_array($value)) {

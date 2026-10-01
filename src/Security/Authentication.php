@@ -91,7 +91,7 @@ class Authentication
         }
 
         $userClass = $this->session->get(self::SESSION_USER_CLASS);
-        return new $userClass($userArrayData);
+        return (new $userClass($userArrayData))->markAsPersisted();
     }
 
     /**

@@ -328,7 +328,7 @@ class ModelTest extends TestCase
     }
 
     /**
-     * __get() chains its lookups with ??, so a field holding NULL falls through to the
+     * __get() used to chain its lookups with ??, so a field holding NULL fell through to the
      * "unknown attribute" exception
      */
     #[ DataProvider('getDatabases') ]
@@ -342,7 +342,7 @@ class ModelTest extends TestCase
     }
 
     /**
-     * saveExisting() targets the row through the current primary key value instead of the original one
+     * saveExisting() used to target the row through the current primary key value instead of the original one
      */
     #[ DataProvider('getDatabases') ]
     public function testSavingAChangedPrimaryKeyNeverTouchesAnotherRow(Database $database)
@@ -363,7 +363,7 @@ class ModelTest extends TestCase
     }
 
     /**
-     * save() picks an UPDATE as soon as the primary key is filled, so the row is never inserted
+     * save() used to pick an UPDATE as soon as the primary key was filled, so the row was never inserted
      */
     #[ DataProvider('getDatabases') ]
     public function testInsertingWithAnExplicitPrimaryKey(Database $database)
@@ -389,7 +389,7 @@ class ModelTest extends TestCase
     }
 
     /**
-     * saveExisting() formats a DateTime with a time only for DATE fields, and with a 12-hour clock
+     * saveExisting() used to format a DateTime with a time only for DATE fields, and with a 12-hour clock
      */
     #[ DataProvider('getDatabases') ]
     public function testUpdatingADateTimeKeepsItsTime(Database $database)
@@ -408,7 +408,7 @@ class ModelTest extends TestCase
     }
 
     /**
-     * destroy() returns early through existsInDatabase(), which requires a primary key
+     * destroy() used to return early through existsInDatabase(), which required a primary key
      */
     #[ DataProvider('getDatabases') ]
     public function testDestroyAModelWithoutPrimaryKey(Database $database)
