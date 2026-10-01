@@ -201,6 +201,7 @@ class Route
     protected function matchPathRegex(Request $request): bool
     {
         $regexMap = [];
+        $untypedSlugs = [];
         $parts = explode('/', $this->getPath());
 
         foreach ($parts as &$part) {
@@ -218,6 +219,8 @@ class Route
             if (str_contains($part, ':')) {
                 list($type, $name) = explode(':', $part, 2);
                 $expression = self::SLUG_FORMATS[$type] ?? $type;
+            } else {
+                $untypedSlugs[] = $name;
             }
 
             $regexMap[] = $name;
@@ -236,7 +239,13 @@ class Route
         $namedSlugs = [];
         array_shift($slugs);
         for ($i = 0; $i < count($slugs); ++$i) {
-            $namedSlugs[$regexMap[$i]] = urldecode($slugs[$i]);
+            $name = $regexMap[$i];
+            $value = urldecode($slugs[$i]);
+
+            if (in_array($name, $untypedSlugs) && str_contains($value, '/'))
+                return false;
+
+            $namedSlugs[$name] = $value;
         }
 
         $request->setSlugValues($namedSlugs);

@@ -50,18 +50,25 @@ Order : exploitable flaws first, then data integrity, then functional correctnes
 
 ## 3. Files and path traversal
 
-- [ ] **3.1 `Storage` confinement** — `..` never resolved, `Path::relative` without a separator
-  boundary, `Path::join` drops a `"0"` part.
+- [x] **3.1 `Storage` confinement** — `..` never resolved, `Path::relative` without a separator
+  boundary, `Path::join` dropped a `"0"` part. `Storage` now resolves paths through
+  `Path::confined()` ; `Path::relative()` keeps allowing `..` for project-relative configuration.
   - `StorageTest::test_path_does_not_escape_the_root`,
     `PathTest::testRelativeOnlyLeavesAPathUnderTheReferenceAlone`,
-    `PathTest::testJoinKeepsAPartNamedZero`
-- [ ] **3.2 LargeUpload** — a `../victim` identifier is accepted (writes and deletes outside the
-  upload directory), `uniqid` identifiers are guessable.
-  - `LargeUploadTest::testAnIdentifierCannotEscapeTheUploadDirectory`
-- [ ] **3.3 `%2F` in a slug** — decoded after matching. *Decision : refuse it or don't decode it.*
-  - `RouteTest::testAnEncodedSlashDoesNotSplitIntoTheSlug`
-- [ ] **3.4 StaticServer** — serves the source of `.php` files and dotfiles.
-  - `StaticServerTest::testAPhpIndexFileIsNotServedAsSource`
+    `PathTest::testJoinKeepsAPartNamedZero`,
+    `PathTest::testConfinedResolvesDotSegmentsInsideTheReference`
+- [x] **3.2 LargeUpload** — a `../victim` (or `.`) identifier was accepted (writes and deletes
+  outside the upload directory), `uniqid` identifiers were guessable.
+  - `LargeUploadTest::testAnIdentifierCannotEscapeTheUploadDirectory`,
+    `LargeUploadTest::testTheUploadDirectoryItselfIsNotAnUpload`,
+    `LargeUploadTest::testIdentifiersAreNotDerivedFromTheClock`
+- [x] **3.3 `%2F` in a slug** — decoded after matching. An untyped slug whose decoded value holds a
+  `/` no longer matches ; `{any:…}` slugs keep it.
+  - `RouteTest::testAnEncodedSlashDoesNotSplitIntoTheSlug`, `RouteTest::testAnAnySlugKeepsAnEncodedSlash`
+- [x] **3.4 StaticServer** — served the source of `.php` files and dotfiles. The index is
+  `index.html` only ; `secure` refuses `.php` files and dotfiles (`.well-known/` excepted).
+  - `StaticServerTest::testAPhpIndexFileIsNotServedAsSource`, `StaticServerTest::testAPhpFileIsNotServed`,
+    `StaticServerTest::testADotFileIsNotServed`, `StaticServerTest::testTheWellKnownDirectoryIsServed`
 
 ## 4. XSS and error responses
 

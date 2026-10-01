@@ -71,4 +71,33 @@ class LargeUploadTest extends TestCase
             $this->tearDownTemporaryStorage();
         }
     }
+
+    public function testTheUploadDirectoryItselfIsNotAnUpload()
+    {
+        $this->setUpTemporaryStorage('large-upload-test-');
+        $uploads = $this->storage->child('uploads');
+        $uploads->child('other-upload')->write('info.json', '{}');
+
+        $manager = new LargeUploadManager(new LargeUploadManagerConfiguration($uploads->getRoot()));
+
+        try {
+            $this->assertNull($manager->find('.'));
+            $this->assertFalse($manager->delete('.'));
+            $this->assertTrue($uploads->isFile('other-upload/info.json'));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
+    public function testIdentifiersAreNotDerivedFromTheClock()
+    {
+        $this->setUpTemporaryStorage('large-upload-test-');
+        $manager = new LargeUploadManager(new LargeUploadManagerConfiguration($this->storage->child('uploads')->getRoot()));
+
+        try {
+            $this->assertMatchesRegularExpression('/^largeupload-[0-9a-f]{32}$/', $manager->start()->identifier);
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
 }

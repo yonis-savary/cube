@@ -81,6 +81,9 @@ You can constrain a slug with a type, written `{type:name}`
 
 Anything else is used as a raw regular expression, so `{[a-z]{2}:lang}` is a valid slug too.
 
+Slug values are URL-decoded. A slug without a type never holds a `/` : `/products/a%2Fb` does not
+match `/products/{id}`. Use `{any:name}` when a value may contain slashes.
+
 Slug values are passed to your callback after the `Request`, in the order they appear in the path
 
 ```php

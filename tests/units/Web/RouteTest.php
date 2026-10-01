@@ -143,9 +143,17 @@ class RouteTest extends TestCase
         $route = Route::get('/uploads/{identifier}', fn () => null);
         $request = new Request('GET', '/uploads/..%2F..%2Fsecrets');
 
-        $route->match($request);
-
+        $this->assertFalse($route->match($request));
         $this->assertStringNotContainsString('/', $request->getSlugValues()['identifier'] ?? '');
+    }
+
+    public function testAnAnySlugKeepsAnEncodedSlash()
+    {
+        $route = Route::get('/files/{any:path}', fn () => null);
+        $request = new Request('GET', '/files/reports%2F2026.pdf');
+
+        $this->assertTrue($route->match($request));
+        $this->assertEquals('reports/2026.pdf', $request->getSlugValues()['path']);
     }
 
     /** Static parts of a slugged route were not regex-quoted, so a dot matched any character. */

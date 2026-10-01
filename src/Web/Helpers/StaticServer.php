@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Helpers;
 
+use Cube\Data\Bunch;
 use Cube\Env\Storage;
 use Cube\Utils\Path;
 use Cube\Web\Http\Request;
@@ -34,16 +35,8 @@ class StaticServer extends WebAPI
 
         $indexFile = null;
         if ($supportsIndex) {
-            $supportsIndex = false;
-            foreach (['index.php', 'index.html'] as $possibleFile) {
-                if (!$directory->isFile($possibleFile)) {
-                    continue;
-                }
-
-                $indexFile = $directory->path($possibleFile);
-                $supportsIndex = true;
-                break;
-            }
+            $supportsIndex = $directory->isFile('index.html');
+            $indexFile = $supportsIndex ? $directory->path('index.html') : null;
         }
 
         $this->indexFile = $indexFile;
@@ -73,7 +66,7 @@ class StaticServer extends WebAPI
         $path = $request->getPath();
         $directory = $this->directory;
 
-        if ($this->secure && $this->isPathDangerous($path)) {
+        if ($this->secure && ($this->isPathDangerous($path) || $this->isPathPrivate($path))) {
             return null;
         }
 
@@ -86,6 +79,15 @@ class StaticServer extends WebAPI
         }
 
         return null;
+    }
+
+    protected function isPathPrivate(string $path): bool
+    {
+        if (str_ends_with(strtolower($path), '.php'))
+            return true;
+
+        return Bunch::fromExplode('/', $path)
+            ->any(fn (string $segment) => str_starts_with($segment, '.') && '.well-known' !== $segment);
     }
 
     protected function isPathDangerous(string $path): bool

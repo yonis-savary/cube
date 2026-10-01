@@ -45,7 +45,7 @@ class Storage extends StorageDriver implements \Stringable
 
     public function path(string $path): string
     {
-        return Path::relative($path, $this->rootPath);
+        return Path::confined($path, $this->rootPath);
     }
 
     public function write(string $path, string $content, int $flags = 0): bool

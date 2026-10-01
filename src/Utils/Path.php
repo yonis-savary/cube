@@ -40,7 +40,7 @@ class Path
      */
     public static function join(string ...$parts): string
     {
-        $parts = array_filter($parts);
+        $parts = array_filter($parts, fn (string $part) => '' !== $part);
 
         return self::normalize(join('/', $parts));
     }
@@ -60,11 +60,46 @@ class Path
         $reference ??= self::getProjectPath();
         $reference = self::normalize($reference);
 
-        if (!str_starts_with($path, $reference)) {
+        if (!self::isInside($path, $reference)) {
             $path = self::join($reference, $path);
         }
 
         return self::normalize($path);
+    }
+
+    /**
+     * Same as `Path::relative()`, but `.` and `..` are resolved inside `$reference`, which the result never leaves
+     */
+    public static function confined(string $path, string $reference): string
+    {
+        $path = self::normalize($path);
+        $reference = self::normalize($reference);
+
+        if (self::isInside($path, $reference)) {
+            $path = substr($path, strlen($reference));
+        }
+
+        $segments = [];
+        foreach (explode('/', $path) as $segment) {
+            if ('' === $segment || '.' === $segment) {
+                continue;
+            }
+
+            if ('..' === $segment) {
+                array_pop($segments);
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        return self::join($reference, ...$segments);
+    }
+
+    public static function isInside(string $path, string $directory): bool
+    {
+        return $path === $directory
+            || str_starts_with($path, rtrim($directory, '/').'/');
     }
 
     /**

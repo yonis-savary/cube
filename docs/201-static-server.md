@@ -28,8 +28,9 @@ new StaticServer('App/Static');
 new StaticServer(Storage::getInstance()->child('Public'));
 ```
 
-When the path is `/`, the server looks for an index file, trying `index.php` then `index.html`. If
-neither exists the server simply never answers for `/`, and your routes handle it.
+When the path is `/`, the server answers with `index.html`. If it does not exist the server simply
+never answers for `/`, and your routes handle it. The files are sent as they are, never executed :
+a PHP page belongs in a route.
 
 | Request | Answer |
 |---|---|
@@ -40,23 +41,27 @@ neither exists the server simply never answers for `/`, and your routes handle i
 ## The path check
 
 A static server is the classic way to leak a filesystem, so it refuses a path before touching it.
-The check is on by default and can be turned off with `secure: false`.
+The check is on by default and can be turned off with `secure: false`. Whatever the option, `..`
+never leaves the directory : the path is resolved inside it, as any `Storage` path is.
 
 ```php
 new StaticServer('App/Static', secure: false);   // only if you know why
 ```
 
-The requested path is resolved inside the directory, and refused when what it resolves to is not
-under that directory — whether it left through `..` or through a symlink. A path resolving to
-nothing is refused too : there is nothing to serve.
+The check refuses a path that resolves outside the directory through a symlink, a `.php` file, and
+any file or directory whose name starts with a dot (`.env`, `.git/`) — except `.well-known/`. A
+path resolving to nothing is refused too : there is nothing to serve.
 
 The check is on the *resolved* path, not on the text of the request, so the served directory is a
 real boundary and a file name is only a file name.
 
 ```
 GET /etc/passwd        -> App/Static/etc/passwd when that file exists, otherwise nothing
-GET /../../secrets     -> refused, it resolves outside the directory
+GET /../../secrets     -> App/Static/secrets when that file exists, `..` stops at the directory
 GET /link.txt          -> refused when link.txt is a symlink pointing outside
+GET /config.php        -> refused, PHP sources are never served
+GET /.env              -> refused, and so is everything under /.git/
+GET /.well-known/x.txt -> served
 GET /backup..2024.txt  -> served, two dots in a file name are not a traversal
 ```
 
@@ -109,6 +114,6 @@ A request for an unknown asset answers `404` with the name that was not found.
 | Option | Default | Does |
 |---|---|---|
 | `$directory` | required | path relative to the project, or a `Storage` |
-| `$secure` | `true` | refuse paths escaping the directory |
-| `$supportsIndex` | `true` | look for `index.php` then `index.html` to answer `/` |
+| `$secure` | `true` | refuse symlinks escaping the directory, `.php` files and dotfiles |
+| `$supportsIndex` | `true` | answer `/` with `index.html` when it exists |
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./111-models.md">Previous : Models</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./202-authentication.md">Next : Authentication</a></div></td></tr></table>

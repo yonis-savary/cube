@@ -23,7 +23,7 @@ class LargeUploadManager
 
     public function start(): LargeUpload
     {
-        $identifier = uniqid("largeupload-", true);
+        $identifier = 'largeupload-'.bin2hex(random_bytes(16));
         return new LargeUpload($identifier, $this->getStorage());
     }
 
@@ -31,7 +31,7 @@ class LargeUploadManager
     {
         $storage = $this->getStorage();
 
-        if (!$storage->isDirectory($identifier))
+        if (!$this->isIdentifier($identifier) || !$storage->isDirectory($identifier))
             return null;
 
         return new LargeUpload($identifier, $storage);
@@ -41,11 +41,16 @@ class LargeUploadManager
     {
         $storage = $this->getStorage();
 
-        if (!$storage->isDirectory($identifier))
+        if (!$this->isIdentifier($identifier) || !$storage->isDirectory($identifier))
             return false;
 
         $upload = new LargeUpload($identifier, $storage);
         $upload->delete();
         return true;
+    }
+
+    protected function isIdentifier(string $identifier): bool
+    {
+        return 1 === preg_match('/^[\w-]+(\.[\w-]+)*$/', $identifier);
     }
 }

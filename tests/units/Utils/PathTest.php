@@ -61,4 +61,12 @@ class PathTest extends TestCase
         $this->assertEquals('Cube\\Tests\\Units\\Utils', Path::pathToNamespace(Path::relative('tests/units/Utils')));
         $this->assertEquals('App', Path::pathToNamespace(Path::relative('tests/integration-root/App')));
     }
+
+    public function testConfinedResolvesDotSegmentsInsideTheReference()
+    {
+        $this->assertEquals('/data/b.txt', Path::confined('a/../b.txt', '/data'));
+        $this->assertEquals('/data/outside.txt', Path::confined('../../outside.txt', '/data'));
+        $this->assertEquals('/data/etc/passwd', Path::confined('/data/../etc/passwd', '/data'));
+        $this->assertEquals('/data', Path::confined('/', '/data'));
+    }
 }

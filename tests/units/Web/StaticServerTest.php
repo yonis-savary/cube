@@ -106,10 +106,11 @@ class StaticServerTest extends TestCase
 
     public function testTheCheckCanBeTurnedOff()
     {
-        // Documented as "only if you know why" : without it the directory is not a boundary
+        // Documented as "only if you know why" : without it a symlink can lead out of the directory
+        $this->symlinkOrSkip($this->storage->path('secret.txt'), $this->public->path('linked-secret.txt'));
         $server = new StaticServer($this->public, secure: false);
 
-        $this->assertEquals('the secret', $server->handle(new Request('GET', '/../secret.txt'))->getBody());
+        $this->assertEquals('the secret', $server->handle(new Request('GET', '/linked-secret.txt'))?->getBody());
     }
 
     public function testTheFallbackRouteServesTheIndexFile()
@@ -142,6 +143,29 @@ class StaticServerTest extends TestCase
         $response = (new StaticServer($site))->handle(new Request('GET', '/'));
 
         $this->assertStringNotContainsString('<?php', $response?->getBody() ?? '');
+    }
+
+    public function testAPhpFileIsNotServed()
+    {
+        $this->public->write('config.php', '<?php return ["password" => "x"];');
+
+        $this->assertNull($this->served('/config.php'));
+    }
+
+    public function testADotFileIsNotServed()
+    {
+        $this->public->write('.env', 'DB_PASSWORD=x');
+        $this->public->child('.git')->write('config', '[core]');
+
+        $this->assertNull($this->served('/.env'));
+        $this->assertNull($this->served('/.git/config'));
+    }
+
+    public function testTheWellKnownDirectoryIsServed()
+    {
+        $this->public->child('.well-known')->write('security.txt', 'Contact: security@example.com');
+
+        $this->assertEquals('Contact: security@example.com', $this->served('/.well-known/security.txt')?->getBody());
     }
 
     protected function served(string $path): ?Response
