@@ -49,6 +49,29 @@ class EnvironmentTest extends TestCase
         unlink($sampleFile);
     }
 
+    /** The environment only read $_ENV, which is empty under the production php.ini (variables_order=GPCS). */
+    public function testEnvironmentReadsTheProcessVariables() {
+        putenv('CUBE_TEST_GETENV=from-getenv');
+
+        try {
+            $this->assertEquals('from-getenv', (new Environment())->get('CUBE_TEST_GETENV'));
+        } finally {
+            putenv('CUBE_TEST_GETENV');
+        }
+    }
+
+    public function testIniKeywordsKeepTheirFormerValues() {
+        $sampleFile = $this->writeEnvironmentFile("DEBUG=false\nCACHED=true\nLEGACY=yes\nNOTHING=null\nCOUNT=42");
+        $env = (new Environment())->mergeWithFile($sampleFile);
+        unlink($sampleFile);
+
+        $this->assertSame('', $env->get('DEBUG'));
+        $this->assertSame('1', $env->get('CACHED'));
+        $this->assertSame('1', $env->get('LEGACY'));
+        $this->assertSame('', $env->get('NOTHING'));
+        $this->assertSame('42', $env->get('COUNT'));
+    }
+
     public function testGetFallsBackOnTheGivenDefault() {
         $env = new Environment();
 

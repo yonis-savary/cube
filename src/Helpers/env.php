@@ -4,7 +4,7 @@ namespace Cube;
 
 use Cube\Env\Environment;
 
-if (!function_exists('env')) {
+if (!function_exists('Cube\env')) {
     /**
      * Return a value (by default from your `.env` file).
      *

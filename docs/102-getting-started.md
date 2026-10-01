@@ -57,7 +57,12 @@ env=debug
 | anything else | `false` | `true` | the message and the trace |
 | no key | `false` | `false` | `Internal Server Error` |
 
-`isProduction()` is also the default of `AutoloaderConfiguration(cached:)`.
+`isProduction()` is also the default of `AutoloaderConfiguration(cached:)`, which caches the class
+index under the `composer.lock` hash and, when APCu is available, snapshots it there too.
+
+Values are read as written, so `APP_KEY=c2VjcmV0==` or `PASSWORD=abc!def` need no quotes. `true`,
+`on`, `yes` read as `"1"`, and `false`, `off`, `no`, `none`, `null` as `""`. Variables of the process
+(`getenv()` and `$_ENV`) are read first, and the `.env` file overrides them.
 
 ## Components
 

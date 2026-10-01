@@ -27,6 +27,7 @@ class Injector
      * @param string $class Class, Interface or Trait full name
      * @param mixed|\Closure(string):mixed $elementOrCallback Provided Class/Interface/Trait or some callback that resolve the good object
      * @note If a callback is provided, the first argument given when called shalled be the requester class
+     * @note A class name is resolved like a parameter typed with it : a Component gives its instance, a ConfigurationElement resolves
      */
     public function provide(string $class, mixed $elementOrCallback): void
     {
@@ -48,14 +49,28 @@ class Injector
 
     protected function valueOrInstantiate(mixed $value): mixed {
         return is_string($value)
-            ? $this->instanciate($value)
+            ? $this->resolveClass($value)
             : $value
         ;
+    }
+
+    protected function resolveClass(string $class, ?string $caller = null): mixed
+    {
+        if (Autoloader::uses($class, Component::class))
+            return $class::getInstance();
+
+        if (Autoloader::extends($class, ConfigurationElement::class))
+            return $class::resolve();
+
+        return $this->instanciate($class, caller: $caller);
     }
 
     protected function assertProvidedRespectType(string $class, mixed $provided) : void {
         if ($provided === null)
             return;
+
+        if (!is_object($provided))
+            throw new RuntimeException("Provided value for $class must be an object, got ".get_debug_type($provided));
 
         $providedClass = $provided::class;
         if (class_exists($class)) {
@@ -82,7 +97,7 @@ class Injector
 
         $value = $store[$class];
 
-        if (is_callable($value))
+        if ($value instanceof \Closure)
             $value = $value($caller);
 
         if (!$variadic) {
@@ -197,14 +212,8 @@ class Injector
         if ($provided = $this->getProvidedValue($requestType, false, $caller))
             return $provided;
 
-        if (Autoloader::uses($requestType, Component::class))
-            return $requestType::getInstance();
-
-        if (Autoloader::extends($requestType, ConfigurationElement::class))
-            return $requestType::resolve();
-
         if (class_exists($requestType))
-            return $this->instanciate($requestType, caller: $caller);
+            return $this->resolveClass($requestType, $caller);
 
         if ($parameter->isOptional() && $parameter->isDefaultValueAvailable())
             return $parameter->getDefaultValue();

@@ -39,7 +39,10 @@ class Cache
 
     public function get(string $key, mixed $default=null): mixed {
         $key = $this->key($key);
-        return $this->driver->get($key) ?? $default;
+
+        return $this->driver->has($key)
+            ? $this->driver->get($key)
+            : $default;
     }
 
     public function &getReference(string $key, mixed $default): mixed {
@@ -55,7 +58,7 @@ class Cache
     }
 
     /**
-     * @param mixed $value Can be any value (shall be serialized), can be a callback (then its return value is registered)
+     * @param mixed $value Can be any value (shall be serialized), can be a Closure (then its return value is registered)
      * @return mixed set value
      */
     public function getOrSet(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
@@ -66,12 +69,12 @@ class Cache
     }
 
     /**
-     * @param mixed $value Can be any value (shall be serialized), can be a callback (then its return value is registered)
+     * @param mixed $value Can be any value (shall be serialized), can be a Closure (then its return value is registered)
      * @return mixed set value
      */
     public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
         $key = $this->key($key);
-        if (is_callable($value))
+        if ($value instanceof \Closure)
             $value = ($value)();
 
         $this->driver->set($key, $value, $timeToLive, $creationDate);
@@ -93,10 +96,9 @@ class Cache
     }
 
     public function child(string $subkey): self {
-        $subkey = $this->prefixKey
-            ? $this->prefixKey . '-' . $subkey
-            : $subkey;
+        $child = clone $this;
+        $child->prefixKey = $this->key($subkey);
 
-        return new static($this->configuration, $subkey);
+        return $child;
     }
 }

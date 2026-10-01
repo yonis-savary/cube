@@ -141,7 +141,16 @@ class Router
         if (!$this->cache)
             return false;
 
-        return $this->cache->get($request->getPath(), false);
+        $route = $this->cache->get($this->getCacheKey($request), false);
+
+        return $route instanceof Route && $route->match($request)
+            ? $route
+            : false;
+    }
+
+    protected function getCacheKey(Request $request): string
+    {
+        return $request->getMethod().' '.$request->getPath();
     }
 
     public function getRoutes(): array
@@ -174,8 +183,8 @@ class Router
         $exceptions = [];
 
         if ($firstRoute = $this->rootHolder->findMatchingRoute($request, $exceptions)) {
-            if ($this->configuration->cached)
-                $this->cache->set($request->getPath(), $firstRoute);
+            if ($this->configuration->cached && $firstRoute->isCachable())
+                $this->cache->set($this->getCacheKey($request), $firstRoute);
             return $firstRoute;
         }
 

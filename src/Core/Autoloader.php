@@ -33,6 +33,7 @@ class Autoloader
     protected static ?ClassLoader $loader;
     protected static mixed $classIndex = [];
     protected static Cache $autoloadCache;
+    protected static ?string $apcuKey = null;
 
     public static bool $loadedThroughApcu = false;
 
@@ -41,16 +42,16 @@ class Autoloader
         if (!function_exists('apcu_fetch'))
             return;
 
-        apcu_delete(__DIR__ . ".autoload-data");
+        apcu_delete(new \APCUIterator('/^'.preg_quote(__DIR__.'.autoload-data', '/').'/'));
     }
 
     public static function tryToLoadThroughApcu(): bool
     {
-        if (!function_exists('apcu_fetch'))
+        if (!self::$apcuKey || !function_exists('apcu_fetch'))
             return false;
 
         $success = false;
-        $autoloadFullData = apcu_fetch(__DIR__ . ".autoload-data", $success);
+        $autoloadFullData = apcu_fetch(self::$apcuKey, $success);
 
         if (!$success)
             return false;
@@ -77,10 +78,10 @@ class Autoloader
 
     public static function saveToApcu(): void
     {
-        if (!function_exists('apcu_fetch'))
+        if (!self::$apcuKey || !function_exists('apcu_fetch'))
             return;
 
-        apcu_store(__DIR__ . ".autoload-data", [
+        apcu_store(self::$apcuKey, [
             self::$knownApplications,
             self::$assetsFiles,
             self::$requireFiles,
@@ -103,9 +104,6 @@ class Autoloader
             include_once $helperFile;
         }
 
-        if (self::tryToLoadThroughApcu())
-            return self::includeRequireFiles();
-
         Path::resolveProjectPath($forceProjectPath);
 
         $configuration ??= AutoloaderConfiguration::resolve();
@@ -113,6 +111,11 @@ class Autoloader
         if ($configuration->cached) {
             $lockFile = Path::relative('composer.lock');
             $cacheIdentifier = is_file($lockFile) ? md5_file($lockFile) : 'default';
+            self::$apcuKey = __DIR__.".autoload-data-$cacheIdentifier";
+
+            if (self::tryToLoadThroughApcu())
+                return self::includeRequireFiles();
+
             self::$autoloadCache = Cache::getInstance();
             self::$classIndex = &self::$autoloadCache->getReference($cacheIdentifier, []);
 
@@ -455,10 +458,22 @@ class Autoloader
         }
     }
 
+    /**
+     * @return string[] Every trait `$class` uses, through its parents and the traits it uses
+     */
     public static function classUses(mixed $class, bool $autoload = true): array
     {
         try {
-            return class_uses($class, $autoload);
+            $traits = [];
+            foreach ([$class, ...class_parents($class, $autoload)] as $classOrParent) {
+                array_push($traits, ...array_values(class_uses($classOrParent, $autoload)));
+            }
+
+            foreach ($traits as $trait) {
+                array_push($traits, ...self::classUses($trait, $autoload));
+            }
+
+            return array_values(array_unique($traits));
         } catch (\Throwable $_) {
             return [];
         }

@@ -32,21 +32,25 @@ class LocalDiskCacheElement
 
         list($creationDate, $timeToLive, $key) = explode('_', $filename, 3);
 
-        $creationDate = (int) $creationDate;
-        $timeToLive = (int) $timeToLive;
-
-        $now = time();
-        $expireDate = $creationDate + $timeToLive;
-
-        if ((CacheDriverInterface::PERMANENT != $timeToLive) && ($expireDate < $now)) {
+        $element = new self(
+            rawurldecode($key),
+            null,
+            (int) $timeToLive,
+            (int) $creationDate
+        );
+        if ($element->isExpired()) {
             unlink($file);
 
             return null;
         }
 
-        $value = unserialize(file_get_contents($file));
+        return new self($element->key, unserialize(file_get_contents($file)), $element->timeToLive, $element->creationDate, $file);
+    }
 
-        return new self($key, $value, $timeToLive, $creationDate, $file);
+    public function isExpired(): bool
+    {
+        return CacheDriverInterface::PERMANENT !== $this->timeToLive
+            && ($this->creationDate ?? time()) + $this->timeToLive < time();
     }
 
     public function setValue(mixed $value)
@@ -90,7 +94,7 @@ class LocalDiskCacheElement
     {
         $newSerialized = serialize($this->value);
         $newMD5 = md5($newSerialized);
-        $newName = $this->creationDate.'_'.$this->timeToLive.'_'.$this->key;
+        $newName = $this->creationDate.'_'.$this->timeToLive.'_'.rawurlencode($this->key);
 
         $sameFile = $this->file && (basename($this->file) === $newName);
         $sameContent = $this->contentHash === $newMD5;

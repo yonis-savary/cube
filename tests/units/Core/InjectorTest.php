@@ -11,6 +11,7 @@ use Cube\Tests\Units\Core\Classes\Cat;
 use Cube\Tests\Units\Core\Classes\Cattery;
 use Cube\Tests\Units\Core\Classes\Collar;
 use Cube\Tests\Units\Core\Classes\Common;
+use Cube\Tests\Units\Core\Classes\Counter;
 use Cube\Tests\Units\Core\Classes\DefaultParamClass;
 use Cube\Tests\Units\Core\Classes\Dog;
 use Cube\Tests\Units\Core\Classes\Dragon;
@@ -19,6 +20,7 @@ use Cube\Tests\Units\Core\Classes\Kennel;
 use Cube\Tests\Units\Core\Classes\Logbook;
 use Cube\Tests\Units\Core\Classes\RedCollar;
 use Cube\Tests\Units\Core\Classes\Shelter;
+use Cube\Tests\Units\Core\Classes\SpecializedCounter;
 use Cube\Tests\Units\Core\Classes\StrangeGroup;
 use Cube\Tests\Units\Core\Classes\StrangeGroupVariadic;
 use Cube\Tests\Units\Core\Classes\Zombie;
@@ -246,6 +248,16 @@ class InjectorTest extends TestCase
     /** The PSR LoggerInterface provision instanciates Logger, whose constructor needs a file name. */
     public function test_a_psr_logger_interface_is_resolved_to_cube_logger() {
         $this->assertInstanceOf(Logger::class, Injector::getInstance()->instanciate(Logbook::class)->logger);
+    }
+
+    public function test_a_provided_component_name_gives_its_ambient_instance() {
+        $ambient = new SpecializedCounter('ambient');
+
+        SpecializedCounter::withInstance($ambient, function () use ($ambient) {
+            $this->injector->provide(Counter::class, SpecializedCounter::class);
+
+            $this->assertSame($ambient, $this->injector->instanciate(Counter::class));
+        });
     }
 
     /** A provided invokable object is called as if it were a resolving callback. */

@@ -61,12 +61,19 @@ class LocalDiskCache implements CacheDriverInterface
 
     public function has(string $key): bool
     {
-        return array_key_exists($key, $this->index);
+        if (!array_key_exists($key, $this->index))
+            return false;
+
+        if (!$this->index[$key]->isExpired())
+            return true;
+
+        $this->delete($key);
+        return false;
     }
 
     public function delete(string $key): void
     {
-        if (!$this->has($key))
+        if (!array_key_exists($key, $this->index))
             return;
 
         $this->index[$key]->destroy();

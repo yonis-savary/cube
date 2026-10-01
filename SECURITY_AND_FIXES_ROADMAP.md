@@ -136,24 +136,34 @@ Order : exploitable flaws first, then data integrity, then functional correctnes
 
 ## 7. Ambient services
 
-- [ ] **7.1 Cache** — `child()` re-initialises the driver, TTL not checked in memory, a stored
-  `null` replaced by the default, keys holding `/` never persisted.
+- [x] **7.1 Cache** — `child()` re-initialised the driver, TTL was not checked in memory, a stored
+  `null` was replaced by the default, keys holding `/` were never persisted. `child()` now clones,
+  `LocalDiskCache::has()` drops expired elements, file names are URL-encoded.
   - `LocalDiskCacheTest` (4 tests)
-- [ ] **7.2 Cached router** (after 7.1) — `Cache::set` calls the `Route` (`__invoke`), key without
-  the HTTP method. *Test still to write.*
-- [ ] **7.3 Loggers** — `getInstance()` returns the wrong subtype, shared stdout gets closed.
+- [x] **7.2 Cached router** — `Cache::set` called the `Route` (`__invoke`), the key ignored the HTTP
+  method, a cached route skipped `match()` (no slugs). Only a `Closure` is called by `Cache::set`,
+  the key is method + path, cached routes are matched again, and only `isCachable()` routes are kept.
+  - `RouterTest::testACachedRouterAnswersLikeAnUncachedOne`
+- [x] **7.3 Loggers** — `getInstance()` returned the wrong subtype, shared stdout got closed.
+  `StdOutLogger` and `NullLogger` build their own default instance, `StdOutLogger` never closes stdout.
   - `LoggerTest::test_a_logger_subclass_gets_an_instance_of_its_own_type`,
     `LoggerTest::test_destroying_a_stdout_logger_keeps_the_shared_stream_open`
-- [ ] **7.4 Injector** — `LoggerInterface` not resolved, provided invokable object gets called,
-  provided scalar.
+- [x] **7.4 Injector** — `LoggerInterface` not resolved, provided invokable object got called,
+  provided scalar crashed. Only a `Closure` is called, `LoggerInterface` is provided as
+  `Logger::getInstance()`, a non-object is refused with a `RuntimeException`.
   - `InjectorTest::test_a_psr_logger_interface_is_resolved_to_cube_logger`,
     `InjectorTest::test_a_provided_invokable_object_is_handed_as_is`,
     `InjectorTest::test_a_provided_scalar_is_rejected_like_a_mismatching_object`
-- [ ] **7.5 Autoloader and helpers** — `uses()` misses inherited traits, `function_exists('env')`
-  guard, APCu snapshot ignoring the configuration and the `composer.lock` hash.
+- [x] **7.5 Autoloader and helpers** — `uses()` missed inherited traits, `function_exists('env')`
+  guard, APCu snapshot ignored the configuration and the `composer.lock` hash. `classUses()` walks
+  parents and nested traits ; the guard checks `Cube\env` ; APCu is only used when `cached` is on,
+  under a key holding the `composer.lock` hash (the APCu test app now declares `cached: true`).
   - `AutoloaderTest::test_uses_predicate_sees_a_trait_inherited_from_a_parent`
-- [ ] **7.6 Environment** — a `.env` holding `=` or `!` is dropped entirely, `getenv()` never read.
-  - `EnvironmentTest::testValuesHoldingIniOperatorsAreRead`
+- [x] **7.6 Environment** — a `.env` holding `=` or `!` was dropped entirely, `getenv()` never read.
+  The file is parsed in raw mode, INI keywords keep their former values, `getenv()` is merged first.
+  - `EnvironmentTest::testValuesHoldingIniOperatorsAreRead`,
+    `EnvironmentTest::testEnvironmentReadsTheProcessVariables`,
+    `EnvironmentTest::testIniKeywordsKeepTheirFormerValues`
 
 ## 8. Utilities and crypto
 

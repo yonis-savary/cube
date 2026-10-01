@@ -3,8 +3,13 @@
 namespace Cube\Tests\Units\Web;
 
 use Cube\Core\Exceptions\ResponseException;
+use Cube\Env\Cache;
+use Cube\Env\Cache\CacheConfiguration;
+use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
+use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
 use Cube\Tests\Units\Web\Classes\CountingApi;
+use Cube\Tests\Units\Web\Classes\ProductReader;
 use Cube\Tests\Units\Web\Classes\TracingMiddleware;
 use Cube\Tests\Units\Web\Examples\PriceRequest;
 use Cube\Web\Http\Request;
@@ -24,6 +29,8 @@ use function Cube\measureTimeOf;
  */
 class RouterTest extends TestCase
 {
+    use HasTemporaryStorage;
+
     public static function getCountResponse(Request $request)
     {
         return $request->getRoute()->getExtras()['count'];
@@ -316,6 +323,26 @@ class RouterTest extends TestCase
 
         $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
         $this->assertEquals('application/json', $response->getHeader('content-type'));
+    }
+
+    /** A cached router used to call the Route while caching it, and reused it without checking the method nor the slugs. */
+    public function testACachedRouterAnswersLikeAnUncachedOne()
+    {
+        $this->setUpTemporaryStorage('router-cache-test-');
+
+        try {
+            Cache::withInstance(new Cache(new CacheConfiguration(new LocalDiskCache($this->storage))), function () {
+                $router = new Router(new RouterConfiguration(true, false, false, [], [], '/'));
+                $router->addRoutes(Route::get('/products/{int:id}', [ProductReader::class, 'read']));
+
+                $this->assertEquals('product 5', $router->route(new Request('GET', '/products/5'))->getBody());
+                $this->assertEquals('product 5', $router->route(new Request('GET', '/products/5'))->getBody());
+                $this->assertEquals('product 7', $router->route(new Request('GET', '/products/7'))->getBody());
+                $this->assertEquals(StatusCode::METHOD_NOT_ALLOWED, $router->route(new Request('DELETE', '/products/5'))->getStatusCode());
+            });
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
     }
 
     protected function newRouter(): Router

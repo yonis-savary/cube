@@ -24,6 +24,13 @@ class StdOutLogger extends Logger
         }
     }
 
+    public static function getDefaultInstance(): static
+    {
+        return new static();
+    }
+
+    public function __destruct() {}
+
     public function log($level, null|string|\Stringable $message, array $context = []): void
     {
         $message ??= 'null';

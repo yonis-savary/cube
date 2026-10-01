@@ -75,7 +75,8 @@ $count = $cache->get('user-count', 0);      // 0 when absent or expired
 ```
 
 `getOrSet()` is the form you will use most : it computes the value only when the key is missing, and
-a callable is invoked rather than stored.
+a `Closure` is called rather than stored — any other value, an invokable object included, is stored
+as it is.
 
 ```php
 $rates = $cache->getOrSet('exchange-rates', fn () => $api->fetchRates(), Cache::HOUR);
