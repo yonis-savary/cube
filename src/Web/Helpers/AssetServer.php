@@ -28,7 +28,7 @@ class AssetServer extends WebAPI
         $target = count($slugValues) ? (string) reset($slugValues) : '';
 
         if (!$target || !$file = static::findAssetFile($target)) {
-            return new Response(StatusCode::NOT_FOUND, "[{$target}] file not found");
+            return Response::text("[{$target}] file not found", StatusCode::NOT_FOUND);
         }
 
         return Response::file($file);

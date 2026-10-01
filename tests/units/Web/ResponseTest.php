@@ -56,6 +56,15 @@ class ResponseTest extends TestCase
         }
     }
 
+    public function testTextIsSentAsPlainText()
+    {
+        $response = Response::text('<b>not markup</b>', StatusCode::NOT_FOUND);
+
+        $this->assertEquals(StatusCode::NOT_FOUND, $response->getStatusCode());
+        $this->assertEquals('text/plain', $response->getHeader('content-type'));
+        $this->assertEquals('<b>not markup</b>', $response->getBody());
+    }
+
     public function testIsOkCoversTheWholeTwoHundredRange()
     {
         $this->assertTrue(Response::ok()->isOk());

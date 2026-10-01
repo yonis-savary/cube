@@ -107,7 +107,7 @@ abstract class ModelAPI extends Controller
             $body = $request->all();
 
             if (!is_array($body)) {
-                return Response::unprocessableContent('Array expected got '.gettype($body));
+                return Response::text('Array expected got '.gettype($body), StatusCode::UNPROCESSABLE_CONTENT);
             }
 
             $instances = Utils::isList($body)
@@ -159,11 +159,11 @@ abstract class ModelAPI extends Controller
         }
 
         if (null === $primaryKeyValue = $request->param($primaryKey)) {
-            return Response::unprocessableContent("Request must have a '{$primaryKey}' parameter");
+            return Response::text("Request must have a '{$primaryKey}' parameter", StatusCode::UNPROCESSABLE_CONTENT);
         }
 
         if (!$instance = $model::find($primaryKeyValue)) {
-            return Response::unprocessableContent('No '.$model::class." with {$primaryKey} = {$primaryKeyValue} found");
+            return Response::text('No '.$model::class." with {$primaryKey} = {$primaryKeyValue} found", StatusCode::UNPROCESSABLE_CONTENT);
         }
 
         $query = $model::update()->where($primaryKey, $primaryKeyValue);
@@ -188,11 +188,11 @@ abstract class ModelAPI extends Controller
         }
 
         if (null === $primaryKeyValue = $request->param($primaryKey)) {
-            return Response::unprocessableContent("Request must have a '{$primaryKey}' parameter");
+            return Response::text("Request must have a '{$primaryKey}' parameter", StatusCode::UNPROCESSABLE_CONTENT);
         }
 
         if (!$instance = $model::find($primaryKeyValue)) {
-            return Response::unprocessableContent('No '.$model::class." with {$primaryKey} = {$primaryKeyValue} found");
+            return Response::text('No '.$model::class." with {$primaryKey} = {$primaryKeyValue} found", StatusCode::UNPROCESSABLE_CONTENT);
         }
 
         $model::delete()->where($primaryKey, $primaryKeyValue)->fetch();

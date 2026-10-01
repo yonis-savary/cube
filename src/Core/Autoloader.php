@@ -7,7 +7,6 @@ use Cube\Core\Autoloader\Applications;
 use Cube\Core\Autoloader\AutoloaderConfiguration;
 use Cube\Data\Bunch;
 use Cube\Env\Cache;
-use Cube\Env\Environment;
 use Cube\Env\Storage;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -17,6 +16,8 @@ use Cube\Utils\Shell;
 use ErrorException;
 use Exception;
 use RuntimeException;
+
+use function Cube\isDebug;
 
 class Autoloader
 {
@@ -193,13 +194,12 @@ class Autoloader
 
                 $errorMessage = 'Internal Server Error';
 
-                $env = Environment::getInstance();
-                if (!str_contains($env->get('environment', 'debug'), 'prod')) {
+                if (isDebug()) {
                     $errorMessage .= "\n\n".$exception->getMessage();
                     $errorMessage .= "\n".$exception->getTraceAsString();
                 }
 
-                $response = (new Response(500, str_replace("\n", "<br>", $errorMessage), ['Content-Type' => 'text/html']));
+                $response = Response::text($errorMessage, 500);
                 Shell::logRequestAndResponseToStdOut(Request::fromGlobals(), $response);
                 $response->exit();
             } catch (\Throwable $_) {

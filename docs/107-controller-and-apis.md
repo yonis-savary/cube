@@ -146,10 +146,12 @@ return Response::notFound('No such product');
 return Response::unprocessableContent('Array expected');
 ```
 
-Two constructors do more than set a code
+A few constructors do more than set a code
 
 ```php
 Response::json($product);                       // encodes and sets the content type
+Response::text('No such product', StatusCode::NOT_FOUND); // text/plain, safe for a message echoing input
+Response::html('<h1>Hello</h1>');               // text/html
 Response::file($storage->path('invoice.pdf'));  // streams a file
 Response::file($path, attachmentFile: 'invoice.pdf'); // as a download
 ```

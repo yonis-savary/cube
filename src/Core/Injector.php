@@ -225,6 +225,7 @@ class Injector
                 throw new ResponseException(
                     'Given request is not valid',
                     Response::unprocessableContent(json_encode($result->getErrors(), JSON_THROW_ON_ERROR))
+                        ->withHeaders(['Content-Type' => 'application/json'])
                 );
 
             return $request;

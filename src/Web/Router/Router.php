@@ -230,7 +230,7 @@ class Router
                 }
                 catch(InvalidRequestMethodException $invalid)
                 {
-                    return new Response(StatusCode::METHOD_NOT_ALLOWED, $invalid->getMessage());
+                    return Response::text($invalid->getMessage(), StatusCode::METHOD_NOT_ALLOWED);
                 }
             }
         }

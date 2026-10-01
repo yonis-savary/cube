@@ -119,6 +119,7 @@ class RouterTest extends TestCase
 
         $this->assertEquals(StatusCode::METHOD_NOT_ALLOWED, $response->getStatusCode());
         $this->assertStringContainsString('POST', $response->getBody());
+        $this->assertEquals('text/plain', $response->getHeader('content-type'));
     }
 
     public function testAnOptionsRequestAnswersTheAllowedMethods()

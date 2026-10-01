@@ -15,7 +15,15 @@ if (!function_exists('env')) {
         return Environment::getInstance()->get($key, $default);
     }
 
+    function environmentName(): ?string {
+        return env('env') ?? env('environment');
+    }
+
     function isProduction(): bool {
-        return str_starts_with(strtolower(env('env', 'debug')), 'prod');
+        return str_starts_with(strtolower(environmentName() ?? 'debug'), 'prod');
+    }
+
+    function isDebug(): bool {
+        return null !== environmentName() && !isProduction();
     }
 }

@@ -383,6 +383,15 @@ class Response extends HttpMessage
         );
     }
 
+    public static function text(string $value, int $code = StatusCode::OK): static
+    {
+        return new static(
+            $code,
+            $value,
+            ['Content-Type' => 'text/plain']
+        );
+    }
+
     public static function html(mixed $value, int $code = StatusCode::OK): static
     {
         return new static(

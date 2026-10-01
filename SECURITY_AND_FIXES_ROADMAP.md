@@ -72,13 +72,18 @@ Order : exploitable flaws first, then data integrity, then functional correctnes
 
 ## 4. XSS and error responses
 
-- [ ] **4.1 422 responses** — no Content-Type (so `text/html`) and they reflect the input.
+- [x] **4.1 422 responses** — had no Content-Type (so `text/html`) and reflected the input. Now
+  `application/json`.
   - `RouterTest::testAnInvalidRequestAnswersJson`
-- [ ] **4.2 AssetServer 404** — reflects the requested name as HTML ; same pattern in `ModelAPI`
-  messages.
-  - `AssetServerTest::testAnUnknownAssetNameIsNotRenderedAsHtml`
-- [ ] **4.3 Exception handler** — debug by default when `environment` is missing ; the handler and
-  `isProduction()` read different keys (`environment` / `env`).
+- [x] **4.2 Reflected messages** — AssetServer 404, `ModelAPI` 422 and router 405 echoed a value
+  without Content-Type. They use the new `Response::text()`.
+  - `AssetServerTest::testAnUnknownAssetNameIsNotRenderedAsHtml`, `ResponseTest::testTextIsSentAsPlainText`,
+    `RouterTest::testAKnownPathWithTheWrongMethodAnswersMethodNotAllowed`,
+    `ModelAPITest::testUpdatingAnUnknownRowIsRefused`
+- [x] **4.3 Exception handler** — showed message and trace as unescaped HTML when `environment` was
+  missing, and read another key than `isProduction()`. Both read `env` then `environment` ; the
+  trace is only shown when `Cube\isDebug()` (a key is set and is not production), as plain text.
+  - `EnvironmentHelpersTest::testProductionAndDebugModes`
 
 ## 5. Authentication and sessions
 

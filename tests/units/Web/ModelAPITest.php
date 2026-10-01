@@ -153,6 +153,7 @@ class ModelAPITest extends TestCase
         $response = $this->route(new Request('PUT', '/product', [], ['id' => 404, 'name' => 'Ghost']));
 
         $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
+        $this->assertEquals('text/plain', $response->getHeader('content-type'));
     }
 
     public function testDeleting()

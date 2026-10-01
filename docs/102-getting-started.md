@@ -45,6 +45,20 @@ return [
 ];
 ```
 
+The `env` key of your `.env` (or `environment`, read when `env` is missing) names the environment
+
+```ini
+env=debug
+```
+
+| Value | `Cube\isProduction()` | `Cube\isDebug()` | An uncaught exception answers |
+|---|---|---|---|
+| starts with `prod` | `true` | `false` | `Internal Server Error` |
+| anything else | `false` | `true` | the message and the trace |
+| no key | `false` | `false` | `Internal Server Error` |
+
+`isProduction()` is also the default of `AutoloaderConfiguration(cached:)`.
+
 ## Components
 
 Cube components are classes that uses the `Component` trait. This trait
