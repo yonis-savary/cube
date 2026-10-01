@@ -14,6 +14,7 @@ use Cube\Security\Authentication\PasswordAuthentication;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Security\Classes\ExposedPasswordAuthentication;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -285,6 +286,17 @@ class AuthenticationTest extends TestCase
         $callback();
 
         return microtime(true) - $start;
+    }
+
+    /** Logging in kept the pre-login session id, leaving the session open to fixation. */
+    #[RunInSeparateProcess]
+    public function testLoggingInRenewsTheSessionId()
+    {
+        $sessionIdBeforeLogin = session_id();
+
+        $this->assertTrue($this->newAuthentication()->attempt('alice', 'correct-horse'));
+
+        $this->assertNotEquals($sessionIdBeforeLogin, session_id());
     }
 
     protected function newAuthentication(?PasswordAuthentication $provider = null): Authentication

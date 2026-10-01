@@ -153,4 +153,13 @@ class StorageTest extends TestCase
 
         $this->assertEquals($this->storage->getRoot(), $child->parent()->getRoot());
     }
+
+    /** path() joins the given path without resolving "..", so it can leave the root. */
+    public function test_path_does_not_escape_the_root()
+    {
+        $this->assertStringStartsWith(
+            $this->storage->getRoot(),
+            realpath(dirname($this->storage->path('../../outside.csv')))
+        );
+    }
 }

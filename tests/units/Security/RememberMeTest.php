@@ -211,6 +211,33 @@ class RememberMeTest extends TestCase
         $this->assertTrue((new UserRegisterConfiguration())->cookieSecure);
     }
 
+    /** Tokens came from uniqid(), a clock reading anyone can guess, instead of a CSPRNG. */
+    public function testTheTokenIsNotDerivedFromTheClock()
+    {
+        $rememberMe = $this->newRememberMe();
+        $clockBefore = substr(sprintf('%08x', time()), 0, 6);
+
+        $rememberMe->register(User::findWhere(['login' => 'alice']));
+
+        $clockAfter = substr(sprintf('%08x', time()), 0, 6);
+        $token = $rememberMe->lastCookie()['value'];
+
+        $this->assertStringNotContainsString($clockBefore, $token);
+        $this->assertStringNotContainsString($clockAfter, $token);
+    }
+
+    /** Refreshing issued a new token but left the old one valid, so a stolen cookie kept working. */
+    public function testARefreshedTokenCannotBeReplayed()
+    {
+        $rememberMe = $this->newRememberMe(new UserRegisterConfiguration(refreshTokenOnRemember: true));
+        $rememberMe->register(User::findWhere(['login' => 'alice']));
+        $firstToken = $rememberMe->lastCookie()['value'];
+
+        $rememberMe->handleRequest($this->requestWithToken($firstToken));
+
+        $this->assertFalse($this->cache->has($firstToken), 'The replaced token still points at the user');
+    }
+
     protected function newRememberMe(?UserRegisterConfiguration $configuration = null): SpyRememberMe
     {
         return new SpyRememberMe(

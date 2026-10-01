@@ -316,4 +316,17 @@ class DatabaseTest extends TestCase
 
         $this->assertFalse($database->hasTable('never_created'));
     }
+
+    /**
+     * A `{}` written inside an identifier quote only gets the string escaping of the driver,
+     * which never doubles a backtick nor a double quote : the value closes the identifier.
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testIdentifierPlaceholderCannotBeClosedByItsValue(Database $database)
+    {
+        $this->assertFalse($database->hasTable('product` -- '));
+        $this->assertFalse($database->hasTable('product" -- '));
+        $this->assertFalse($database->hasField('product', 'name` FROM product -- '));
+        $this->assertFalse($database->hasField('product', 'name" FROM product -- '));
+    }
 }

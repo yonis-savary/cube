@@ -699,4 +699,30 @@ class BunchTest extends TestCase
     {
         return strlen($value);
     }
+
+    /** min() and max() spread the data, and PHP refuses min() with a single non-array argument. */
+    public function testMinAndMaxOfASingleElement()
+    {
+        $this->assertEquals(5, Bunch::of([5])->min());
+        $this->assertEquals(5, Bunch::of([5])->max());
+    }
+
+    /** key() reads values through ??, so a field holding null is taken for a missing one. */
+    public function testKeyReturnsAFieldHoldingNull()
+    {
+        $this->assertEquals([null], Bunch::of([['discount' => null]])->key('discount')->get());
+        $this->assertEquals([null], Bunch::of([(object) ['discount' => null]])->key('discount')->get());
+    }
+
+    /** flat() spreads each row into array_push(), which takes string keys for named arguments. */
+    public function testFlatOnAssociativeRows()
+    {
+        $this->assertEquals([1, 2], Bunch::of([['first' => 1], ['second' => 2]])->flat()->get());
+    }
+
+    /** first() requires a strict true while any() accepts a truthy result. */
+    public function testFirstAcceptsATruthyResult()
+    {
+        $this->assertEquals('apple', Bunch::of(['pear', 'apple'])->first(fn ($fruit) => preg_match('/a.p/', $fruit)));
+    }
 }

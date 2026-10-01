@@ -58,6 +58,17 @@ class AssetServerTest extends TestCase
         $this->assertEquals('console.log("hello")', $response->getBody());
     }
 
+    /** The 404 echoed the requested name with no Content-Type, so the browser rendered it as HTML. */
+    public function testAnUnknownAssetNameIsNotRenderedAsHtml()
+    {
+        $response = $this->route('/assets/%3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E');
+
+        $contentType = $response->getHeader('content-type') ?? 'text/html';
+        $rendersMarkup = str_contains($contentType, 'html') && str_contains($response->getBody(), '<img');
+
+        $this->assertFalse($rendersMarkup, "The 404 is served as {$contentType} with the requested markup inside");
+    }
+
     protected function route(string $path, ?TemporaryAssetServer $server = null)
     {
         $server ??= new TemporaryAssetServer();

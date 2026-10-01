@@ -136,4 +136,23 @@ class RouteTest extends TestCase
 
         $this->assertEquals('/product/1/price/', $route->buildPath([1]));
     }
+
+    /** An encoded slash was decoded after matching, so a single slug could carry `../` segments. */
+    public function testAnEncodedSlashDoesNotSplitIntoTheSlug()
+    {
+        $route = Route::get('/uploads/{identifier}', fn () => null);
+        $request = new Request('GET', '/uploads/..%2F..%2Fsecrets');
+
+        $route->match($request);
+
+        $this->assertStringNotContainsString('/', $request->getSlugValues()['identifier'] ?? '');
+    }
+
+    /** Static parts of a slugged route were not regex-quoted, so a dot matched any character. */
+    public function testADotInAStaticPartIsLiteral()
+    {
+        $route = Route::get('/api/v1.0/products/{id}', fn () => null);
+
+        $this->assertFalse($route->match(new Request('GET', '/api/v1x0/products/5')));
+    }
 }

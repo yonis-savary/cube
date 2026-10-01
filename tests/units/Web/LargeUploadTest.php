@@ -4,11 +4,16 @@ namespace Cube\Tests\Units\Web;
 
 use Cube\Env\Logger\Logger;
 use Cube\Env\Storage;
+use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Web\Helpers\LargeUpload\LargeUpload;
+use Cube\Web\Helpers\LargeUpload\LargeUploadManager;
+use Cube\Web\Helpers\LargeUpload\LargeUploadManagerConfiguration;
 use PHPUnit\Framework\TestCase;
 
 class LargeUploadTest extends TestCase
 {
+    use HasTemporaryStorage;
+
     public function testLargeUploadChunksAndWrap() {
         $textFilePath = Storage::getInstance()->path(uniqid('randomTextFile-'));
 
@@ -47,5 +52,23 @@ class LargeUploadTest extends TestCase
             md5_file($largeUploadResult)
         );
 
+    }
+
+    /** An identifier holding `..` resolved outside the upload directory, so delete() wiped any directory. */
+    public function testAnIdentifierCannotEscapeTheUploadDirectory()
+    {
+        $this->setUpTemporaryStorage('large-upload-test-');
+        $victim = $this->storage->child('victim');
+        $victim->write('important.txt', 'keep me');
+
+        $manager = new LargeUploadManager(new LargeUploadManagerConfiguration($this->storage->child('uploads')->getRoot()));
+
+        try {
+            $this->assertNull($manager->find('../victim'));
+            $this->assertFalse($manager->delete('../victim'));
+            $this->assertTrue($victim->isFile('important.txt'));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
     }
 }

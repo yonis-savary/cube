@@ -3,13 +3,16 @@
 namespace Cube\Tests\Units\Web;
 
 use Cube\Data\Database\Database;
+use Cube\Env\Configuration;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Models\Product;
+use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
 use Cube\Tests\Units\Web\Classes\ProductAPI;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\ModelAPI\ModelAPI;
+use Cube\Web\ModelAPI\ModelAPIConfiguration;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
 use PHPUnit\Framework\TestCase;
@@ -147,6 +150,16 @@ class ModelAPITest extends TestCase
         $response = $this->route(new Request('DELETE', '/product', [], ['id' => 404]));
 
         $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
+    }
+
+    /** ModelAPIConfiguration is never read, so the middlewares it declares never guard the API. */
+    public function testConfiguredMiddlewaresGuardTheApi()
+    {
+        Configuration::withInstance(new Configuration(new ModelAPIConfiguration([BlockingMiddleware::class])), function () {
+            $response = $this->route(new Request('GET', '/product'));
+
+            $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
+        });
     }
 
     protected function route(Request $request): Response

@@ -91,6 +91,24 @@ class EnvironmentTest extends TestCase
         unlink($sampleFile);
     }
 
+    /** parse_ini_string() rejects an unquoted "=" or "!", and the whole file is then left out. */
+    public function testValuesHoldingIniOperatorsAreRead() {
+        $sampleFile = $this->writeEnvironmentFile("APP_KEY=c2VjcmV0==\nDATABASE_PASSWORD=abc!def\nAPP_NAME=shop");
+
+        set_error_handler(fn () => true);
+
+        try {
+            $env = (new Environment())->mergeWithFile($sampleFile);
+        } finally {
+            restore_error_handler();
+            unlink($sampleFile);
+        }
+
+        $this->assertEquals('c2VjcmV0==', $env->get('APP_KEY'));
+        $this->assertEquals('abc!def', $env->get('DATABASE_PASSWORD'));
+        $this->assertEquals('shop', $env->get('APP_NAME'));
+    }
+
     protected function writeEnvironmentFile(string $content): string {
         $file = Storage::getInstance()->path(uniqid('environment-') . '.env');
         file_put_contents($file, $content);

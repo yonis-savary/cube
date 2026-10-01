@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Env;
 
 use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
+use Cube\Env\Logger\StdOutLogger;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Env\Classes\SpyLogger;
 use PHPUnit\Framework\TestCase;
@@ -157,6 +158,29 @@ class LoggerTest extends TestCase
         $logger->error('Order lost');
 
         $this->assertEquals([], $this->storage->files());
+    }
+
+    /** forFile() hands back the base logger already registered for cube.csv instead of a subclass instance. */
+    public function test_a_logger_subclass_gets_an_instance_of_its_own_type()
+    {
+        Logger::getInstance();
+
+        try {
+            $this->assertInstanceOf(StdOutLogger::class, StdOutLogger::getInstance());
+        } finally {
+            StdOutLogger::removeInstance();
+        }
+    }
+
+    /** Every StdOutLogger shares one stdout stream, and the first one destroyed closes it for all. */
+    public function test_destroying_a_stdout_logger_keeps_the_shared_stream_open()
+    {
+        (fn () => new StdOutLogger())();
+
+        $logger = new StdOutLogger();
+        $stream = (new \ReflectionProperty(StdOutLogger::class, 'stream'))->getValue($logger);
+
+        $this->assertTrue(is_resource($stream));
     }
 
     protected function newLogFile(): string

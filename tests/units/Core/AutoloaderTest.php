@@ -10,6 +10,7 @@ use Cube\Tests\Units\Core\Classes\Common;
 use Cube\Tests\Units\Core\Classes\Counter;
 use Cube\Tests\Units\Core\Classes\Dragon;
 use Cube\Tests\Units\Core\Classes\Habitat;
+use Cube\Tests\Units\Core\Classes\SpecializedCounter;
 use Cube\Tests\Units\Core\Classes\Zombie;
 use Cube\Tests\Units\Core\Contracts\CanFly;
 use Cube\Web\Controller;
@@ -89,6 +90,12 @@ class AutoloaderTest extends TestCase
     {
         $this->assertTrue(Autoloader::uses(Counter::class, Component::class));
         $this->assertFalse(Autoloader::uses(Bird::class, Component::class));
+    }
+
+    /** class_uses() only reports the traits a class declares itself, not the ones of its parents. */
+    public function test_uses_predicate_sees_a_trait_inherited_from_a_parent()
+    {
+        $this->assertTrue(Autoloader::uses(SpecializedCounter::class, Component::class));
     }
 
     public function test_class_exists_answers_for_both_indexed_and_unknown_classes()

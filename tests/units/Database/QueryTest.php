@@ -3,8 +3,10 @@
 namespace Cube\Tests\Units\Database;
 
 use Cube\Data\Bunch;
+use Cube\Data\Database\Builders\MySQL;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
+use Cube\Data\Database\Query\FieldComparaison;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\ProductManager;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -593,5 +595,63 @@ class QueryTest extends TestCase
 
             $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()));
         });
+    }
+
+    /**
+     * fetch() splits every alias on a dot to find its table, an alias written by hand has none
+     */
+    #[DataProvider('getDatabases')]
+    public function testFetchAnAliasedExpression(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(3);
+
+            $row = Query::select('product')->selectExpression('COUNT(*)', 'total')->fetch()[0];
+
+            $this->assertEquals(3, $row->total);
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testFetchAnAliasedField(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(1);
+
+            $row = Query::select('product')->selectField('name', alias: 'label')->fetch()[0];
+
+            $this->assertEquals('product-1', $row->label);
+        });
+    }
+
+    /**
+     * MySQL and SQLite both refuse an OFFSET that does not follow a LIMIT
+     */
+    #[DataProvider('getDatabases')]
+    public function testOffsetWithoutLimit(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(3);
+
+            $this->assertEquals(
+                ['product-2', 'product-3'],
+                $this->fetchNames(Product::select()->limit(null, 1))
+            );
+        });
+    }
+
+    /**
+     * Without any where(), the join conditions used to be written without their WHERE keyword
+     */
+    public function testUpdateWithAJoinAndNoConditionKeepsItsWhereKeyword()
+    {
+        $database = new Database('sqlite', queryBuilder: new MySQL());
+
+        $sql = Query::update('product')
+            ->join('LEFT', 'product_manager', null, new FieldComparaison('product', 'id', '=', 'product_manager', 'product'))
+            ->set('name', 'renamed', 'product')
+            ->build($database);
+
+        $this->assertMatchesRegularExpression('/WHERE\s+\(`product`\.id = `product_manager`\.product\)/', $sql);
     }
 }

@@ -112,6 +112,19 @@ class RequestTest extends TestCase
         $this->assertEquals('/products', (new Request('GET', '/products?page=2'))->getPath());
     }
 
+    /** fromGlobals() trimmed the trailing slash before stripping the query, so `/products/?page=2` kept it. */
+    public function testATrailingSlashBeforeTheQueryStringIsTrimmed()
+    {
+        $originalUri = $_SERVER['REQUEST_URI'] ?? null;
+        $_SERVER['REQUEST_URI'] = '/products/?page=2';
+
+        try {
+            $this->assertEquals('/products', Request::fromGlobals()->getPath());
+        } finally {
+            $_SERVER['REQUEST_URI'] = $originalUri;
+        }
+    }
+
     public function testAllMergesGetAndPost()
     {
         $request = new Request('POST', '/', ['shared' => 'from get'], ['shared' => 'from post', 'only' => 'post']);

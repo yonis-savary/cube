@@ -133,6 +133,17 @@ class StaticServerTest extends TestCase
         $this->assertEquals([], $router->getRoutes());
     }
 
+    /** An index.php was answered through readfile(), handing out its PHP source. */
+    public function testAPhpIndexFileIsNotServedAsSource()
+    {
+        $site = $this->storage->child('php-site');
+        $site->write('index.php', '<?php echo "rendered";');
+
+        $response = (new StaticServer($site))->handle(new Request('GET', '/'));
+
+        $this->assertStringNotContainsString('<?php', $response?->getBody() ?? '');
+    }
+
     protected function served(string $path): ?Response
     {
         return (new StaticServer($this->public))->handle(new Request('GET', $path));

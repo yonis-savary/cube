@@ -6,6 +6,7 @@ use Cube\Core\Exceptions\ResponseException;
 use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
 use Cube\Tests\Units\Web\Classes\CountingApi;
 use Cube\Tests\Units\Web\Classes\TracingMiddleware;
+use Cube\Tests\Units\Web\Examples\PriceRequest;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -302,6 +303,18 @@ class RouterTest extends TestCase
         $router->addRoutes(Route::get('/products/', fn () => Response::ok('products')));
 
         $this->assertEquals('products', $router->route(new Request('GET', '/products'))->getBody());
+    }
+
+    /** The 422 body echoes the input as JSON but carried no Content-Type, so browsers rendered it as HTML. */
+    public function testAnInvalidRequestAnswersJson()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/prices', fn (PriceRequest $request) => Response::ok()));
+
+        $response = $router->route(new Request('GET', '/prices', ['price' => '<svg onload=alert(1)>']));
+
+        $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
+        $this->assertEquals('application/json', $response->getHeader('content-type'));
     }
 
     protected function newRouter(): Router

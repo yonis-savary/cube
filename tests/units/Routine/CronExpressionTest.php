@@ -150,4 +150,23 @@ class CronExpressionTest extends TestCase
         $this->assertTrue($everyTwo->matches('2026-08-16 00:00:00'));
         $this->assertFalse($everyTwo->matches('2026-08-17 00:00:00'));
     }
+
+    /** A step counts from zero, so a step of 2 on the 1-based day of the month skips the 1st. */
+    public function testADayOfTheMonthStepStartsOnTheFirst()
+    {
+        $everyTwo = new CronExpression('0 0 */2 * *');
+
+        $this->assertTrue($everyTwo->matches('2026-08-01 00:00:00'));
+        $this->assertFalse($everyTwo->matches('2026-08-02 00:00:00'));
+    }
+
+    /** A step counts from zero, so a step of 6 on the 1-based month never fires in January. */
+    public function testAMonthStepStartsOnJanuary()
+    {
+        $everySix = new CronExpression('0 0 1 */6 *');
+
+        $this->assertTrue($everySix->matches('2026-01-01 00:00:00'));
+        $this->assertTrue($everySix->matches('2026-07-01 00:00:00'));
+        $this->assertFalse($everySix->matches('2026-06-01 00:00:00'));
+    }
 }

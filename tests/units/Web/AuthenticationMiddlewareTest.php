@@ -66,6 +66,23 @@ class AuthenticationMiddlewareTest extends TestCase
         $this->assertEquals('reached', $response->getBody());
     }
 
+    /** A nested guard() replaced the outer permission list instead of adding to it. */
+    public function testANestedGuardKeepsTheOuterPermissions()
+    {
+        RoleMiddleware::$roles = ['reader'];
+
+        $router = $this->newRouter();
+        RoleMiddleware::guard(['admin'], function (Router $router) {
+            RoleMiddleware::guard(['reader'], function (Router $router) {
+                $router->addRoutes(Route::get('/reports', fn () => Response::ok('reached')));
+            }, $router);
+        }, $router);
+
+        $response = $router->route(new Request('GET', '/reports'));
+
+        $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
+    }
+
     protected function routeGuardedBy(array $permissions): Response
     {
         $router = $this->newRouter();

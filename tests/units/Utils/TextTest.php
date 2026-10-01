@@ -33,4 +33,13 @@ class TextTest extends TestCase
         $this->assertEquals('111000', Text::dontStartsWith('111000', '000'));
         $this->assertEquals('111000', Text::dontStartsWith('000111000', '000'));
     }
+
+    /** Each placeholder is replaced in turn, so a value holding a placeholder gets expanded too. */
+    public function testInterpolateDoesNotExpandPlaceholdersFoundInValues()
+    {
+        $this->assertEquals(
+            'Customer {email} ordered secret',
+            Text::interpolate('Customer {name} ordered {item}', ['name' => '{email}', 'email' => 'secret', 'item' => 'secret'])
+        );
+    }
 }

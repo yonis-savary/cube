@@ -327,6 +327,110 @@ class ModelTest extends TestCase
         $this->assertEquals(99, $product->price_dollar);
     }
 
+    /**
+     * __get() chains its lookups with ??, so a field holding NULL falls through to the
+     * "unknown attribute" exception
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testReadingAFieldHoldingNull(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $product = Product::insertArray(['name' => 'screen']);
+
+            $this->assertNull($product->price_dollar);
+        });
+    }
+
+    /**
+     * saveExisting() targets the row through the current primary key value instead of the original one
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testSavingAChangedPrimaryKeyNeverTouchesAnotherRow(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $screen = Product::insertArray(['name' => 'screen']);
+            $mouse = Product::insertArray(['name' => 'mouse']);
+
+            $screen->id = $mouse->id;
+            $screen->name = 'renamed screen';
+            try {
+                $screen->save();
+            } catch (\PDOException) {
+            }
+
+            $this->assertEquals('mouse', Product::find($mouse->id)->name);
+        });
+    }
+
+    /**
+     * save() picks an UPDATE as soon as the primary key is filled, so the row is never inserted
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testInsertingWithAnExplicitPrimaryKey(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            Product::insertArray(['id' => 10, 'name' => 'keyboard']);
+
+            $this->assertEquals('keyboard', Product::find(10)?->name);
+        });
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testInsertingADateTime(Database $database)
+    {
+        $database->asGlobalInstance(function() use ($database) {
+            Product::insertArray(['name' => 'screen', 'created_at' => new \DateTime('2024-05-06 15:30:00')]);
+
+            $this->assertStringStartsWith(
+                '2024-05-06 15:30:00',
+                $database->query('SELECT created_at FROM product')[0]['created_at']
+            );
+        });
+    }
+
+    /**
+     * saveExisting() formats a DateTime with a time only for DATE fields, and with a 12-hour clock
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testUpdatingADateTimeKeepsItsTime(Database $database)
+    {
+        $database->asGlobalInstance(function() use ($database) {
+            $product = Product::insertArray(['name' => 'screen']);
+
+            $product->created_at = new \DateTime('2024-05-06 15:30:00');
+            $product->save();
+
+            $this->assertStringStartsWith(
+                '2024-05-06 15:30:00',
+                $database->query('SELECT created_at FROM product')[0]['created_at']
+            );
+        });
+    }
+
+    /**
+     * destroy() returns early through existsInDatabase(), which requires a primary key
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testDestroyAModelWithoutPrimaryKey(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $product = Product::insertArray(['name' => 'screen']);
+            $manager = ProductManager::insertArray(['product' => $product->id, 'manager' => 'Alice']);
+
+            $manager->destroy();
+
+            $this->assertEquals(0, ProductManager::select()->count());
+        });
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testLastOnAnEmptyTable(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $this->assertNull(Product::last());
+        });
+    }
+
     /*
 
     #[ DataProvider('getDatabases') ]

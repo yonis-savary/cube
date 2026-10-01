@@ -265,4 +265,47 @@ class MigrationTest extends TestCase
 
     }
 
+    /**
+     * PostgreSQL has no DATETIME type, create() maps it to TIMESTAMP but alterColumn() does not
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testAlterColumnToDatetime(Database $database)
+    {
+        $migration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create('delivery', [
+                    ModelField::id(),
+                    ModelField::date('delivered_at'),
+                ]);
+                $plan->alterColumn('delivery', 'delivered_at', ModelField::datetime('delivered_at'));
+            }
+        };
+
+        $thrown = $migration->execute($this->getDatabasePlan($database), $database);
+
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+    }
+
+    /**
+     * The PostgreSQL plan sends an `ALTER COLUMN` without any action for a unique field
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testAlterColumnToUnique(Database $database)
+    {
+        $migration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create('coupon', [
+                    ModelField::id(),
+                    ModelField::string('code', 50),
+                ]);
+                $plan->alterColumn('coupon', 'code', ModelField::string('code', 50)->unique());
+            }
+        };
+
+        $thrown = $migration->execute($this->getDatabasePlan($database), $database);
+
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+    }
 }

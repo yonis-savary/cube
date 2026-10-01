@@ -3,8 +3,10 @@
 namespace Cube\Tests\Units\Core;
 
 use Cube\Core\Injector;
+use Cube\Env\Logger\Logger;
 use Cube\Data\Bunch;
 use Cube\Tests\Units\Core\Classes\Bird;
+use Cube\Tests\Units\Core\Classes\Canary;
 use Cube\Tests\Units\Core\Classes\Cat;
 use Cube\Tests\Units\Core\Classes\Cattery;
 use Cube\Tests\Units\Core\Classes\Collar;
@@ -14,6 +16,7 @@ use Cube\Tests\Units\Core\Classes\Dog;
 use Cube\Tests\Units\Core\Classes\Dragon;
 use Cube\Tests\Units\Core\Classes\Home;
 use Cube\Tests\Units\Core\Classes\Kennel;
+use Cube\Tests\Units\Core\Classes\Logbook;
 use Cube\Tests\Units\Core\Classes\RedCollar;
 use Cube\Tests\Units\Core\Classes\Shelter;
 use Cube\Tests\Units\Core\Classes\StrangeGroup;
@@ -21,6 +24,7 @@ use Cube\Tests\Units\Core\Classes\StrangeGroupVariadic;
 use Cube\Tests\Units\Core\Classes\Zombie;
 use Cube\Tests\Units\Core\Contracts\CanFitInAHouse;
 use Cube\Tests\Units\Core\Contracts\CanFly;
+use Cube\Tests\Units\Core\Contracts\CanSing;
 use Cube\Tests\Units\Core\Contracts\CanTalk;
 use Cube\Tests\Units\Core\Contracts\CanWalk;
 use Cube\Tests\Units\Core\Contracts\Pet;
@@ -237,5 +241,26 @@ class InjectorTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->injector->instanciate(Shelter::class);
+    }
+
+    /** The PSR LoggerInterface provision instanciates Logger, whose constructor needs a file name. */
+    public function test_a_psr_logger_interface_is_resolved_to_cube_logger() {
+        $this->assertInstanceOf(Logger::class, Injector::getInstance()->instanciate(Logbook::class)->logger);
+    }
+
+    /** A provided invokable object is called as if it were a resolving callback. */
+    public function test_a_provided_invokable_object_is_handed_as_is() {
+        $canary = new Canary();
+        $this->injector->provide(CanSing::class, $canary);
+
+        $this->assertSame($canary, $this->injector->instanciate(CanSing::class));
+    }
+
+    /** A provided scalar reaches $provided::class, which throws a TypeError on a non-object. */
+    public function test_a_provided_scalar_is_rejected_like_a_mismatching_object() {
+        $this->injector->provide(Pet::class, 42);
+
+        $this->expectException(RuntimeException::class);
+        $this->injector->instanciate(Pet::class);
     }
 }

@@ -8,6 +8,7 @@ use Cube\Tests\Units\Models\Product;
 use Cube\Web\Http\Rules\AnyParam;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
+use Cube\Web\Http\Rules\UploadRule;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -489,5 +490,52 @@ class ValidationTest extends TestCase
         $this->assertInstanceOf(Product::class, $model);
         $this->assertEquals('Painting', $model->name);
 
+    }
+
+    /** ObjectParam::validate() never ran its own checker steps, so a condition on the whole object was ignored. */
+    public function testAConditionOnAnObjectIsChecked()
+    {
+        $rule = Param::object(['password' => Param::string(), 'confirmation' => Param::string()])
+            ->withCondition(fn ($value) => $value['password'] === $value['confirmation'], 'passwords do not match');
+
+        $this->assertFalse($rule->validate(['password' => 'secret', 'confirmation' => 'other'])->isValid());
+    }
+
+    /** ArrayParam::validate() never ran its own checker steps, so a condition on the whole list was ignored. */
+    public function testAConditionOnAnArrayIsChecked()
+    {
+        $rule = Param::array(Param::integer())
+            ->withCondition(fn ($value) => array_sum($value) <= 10, 'total cannot exceed 10');
+
+        $this->assertFalse($rule->validate([8, 9])->isValid());
+    }
+
+    /** A null object was replaced by [] before the nullable check, so its children reported missing values. */
+    public function testANullableObjectAcceptsNull()
+    {
+        $result = Param::object(['street' => Param::string()], true)->validate(null);
+
+        $this->assertEquals([], $result->getErrors());
+        $this->assertNull($result->getResult());
+    }
+
+    public static function getMalformedValues(): array
+    {
+        return [
+            'string as object' => [Param::object(['street' => Param::string()]), 'main street'],
+            'string as list' => [Param::array(Param::string()), 'chair'],
+            'array as date' => [Param::date(), ['2024-01-01']],
+            'array as datetime' => [Param::datetime(), ['2024-01-01 10:00:00']],
+            'array as url' => [Param::url(), ['https://example.com']],
+            'array as uuid' => [Param::uuid(), ['x']],
+            'string as upload' => [new UploadRule(), 'avatar.png'],
+        ];
+    }
+
+    /** A value of the wrong type reached a typed closure and threw a TypeError instead of being refused. */
+    #[ DataProvider('getMalformedValues') ]
+    public function testAMalformedValueIsRefusedWithoutThrowing(Rule $rule, mixed $value)
+    {
+        $this->assertFalse($rule->validate($value)->isValid());
     }
 }
