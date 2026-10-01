@@ -30,6 +30,11 @@ class Postgres extends MySQL
         return ['"'];
     }
 
+    public function getUnboundedLimit(): string
+    {
+        return 'ALL';
+    }
+
     public function getTable(string $table): string
     {
         return "\"{$table}\"";

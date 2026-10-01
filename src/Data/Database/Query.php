@@ -282,7 +282,7 @@ class Query
     /**
      * @return self<TModel>
      */
-    public function order(?string $fieldOrAlias = null, string $type = 'DESC', ?string $table = null): self
+    public function order(string $fieldOrAlias, string $type = 'DESC', ?string $table = null): self
     {
         $table ??= $this->getFieldTable($fieldOrAlias);
         $this->orders[] = new Order($fieldOrAlias, $type, $table);
@@ -342,7 +342,9 @@ class Query
                 $alias = $field->alias ?? ($field->table.'.'.$field->field);
                 $model = $field->model;
 
-                list($scope, $column) = explode('.', $alias);
+                list($scope, $column) = str_contains($alias, '.')
+                    ? explode('.', $alias, 2)
+                    : [$this->base->table, $alias];
                 $scope = explode('&', $scope);
                 array_shift($scope);
                 foreach ($scope as $subscope) {

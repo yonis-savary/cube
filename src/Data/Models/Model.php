@@ -92,7 +92,7 @@ abstract class Model extends EventDispatcher
     {
         $primary = static::primaryKey();
 
-        return $this->{$primary} ?? false;
+        return $this->data->{$primary} ?? false;
     }
 
     public static function hasField(string $field): bool
@@ -588,9 +588,12 @@ abstract class Model extends EventDispatcher
             return;
         }
 
-        $newInstance = static::find($this->id(), database: $database);
+        if (!$newInstance = static::find($this->id(), database: $database)) {
+            throw new \RuntimeException('Cannot reload '.static::class.', no row has ['.static::primaryKey().'] = '.var_export($this->id(), true));
+        }
+
         $this->data = clone $newInstance->data;
-        $this->markAsOriginal();
+        $this->markAsOriginal()->markAsPersisted();
 
         foreach ($this->references as $referenceObject) {
             if (is_array($referenceObject)) {
@@ -712,7 +715,7 @@ abstract class Model extends EventDispatcher
                 ->fetch($database)
             ;
 
-            $this->markAsPersisted(true);
+            $this->persisted = true;
 
             if ($primaryKey = $this->primaryKey()) {
                 $this->data->{$primaryKey} = $data[$primaryKey] ?? $database->lastInsertId();

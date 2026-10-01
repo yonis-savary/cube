@@ -6,7 +6,6 @@ use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
-use Cube\Data\Database\Query\RawCondition;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -213,14 +212,9 @@ abstract class ModelAPI extends Controller
 
     protected static function makeSearchQuery(Query $query, string $fieldName, mixed $value, string $comparisonKeyword="LIKE")
     {
-        $database = Database::getInstance();
-
-        $conditions = Bunch::fromExplode(' ', (string) $value)
-            ->map(fn ($word) => "%{$word}%")
-            ->map(fn ($word) => $database->build("`{$fieldName}` $comparisonKeyword {}", [$word]))
-            ->join(' AND ')
-        ;
-
-        $query->conditions[] = new RawCondition($conditions);
+        $query->whereGroup(fn (Query $query) =>
+            Bunch::fromExplode(' ', (string) $value)
+                ->forEach(fn ($word) => $query->where($fieldName, "%{$word}%", $comparisonKeyword))
+        );
     }
 }

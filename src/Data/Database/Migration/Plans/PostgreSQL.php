@@ -97,7 +97,7 @@ class PostgreSQL extends Plan
         if (!$this->database->hasTable($table))
             throw new RuntimeException("Given database does not contains the $table table");
 
-        $this->database->query('ALTER TABLE "{}" DROP CONSTRAINT {}', [$table, $constraintName]);
+        $this->database->query('ALTER TABLE "{}" DROP CONSTRAINT "{}"', [$table, $constraintName]);
     }
 
     public function dropColumn(string $table, string $field) {
@@ -122,9 +122,9 @@ class PostgreSQL extends Plan
                 ModelField::INTEGER   => "INTEGER",
                 ModelField::FLOAT     => "FLOAT",
                 ModelField::BOOLEAN   => "BOOLEAN",
-                ModelField::DECIMAL   => "DECIMAL(".($field->decimalMaximumDigits ?? 10).",".($field->decimalDigitsToTheRight ?? 5).")",
+                ModelField::DECIMAL   => "DECIMAL(".($newProperties->decimalMaximumDigits ?? 10).",".($newProperties->decimalDigitsToTheRight ?? 5).")",
                 ModelField::DATE      => "DATE",
-                ModelField::DATETIME  => "DATETIME",
+                ModelField::DATETIME  => "TIMESTAMP",
                 ModelField::TIMESTAMP => "TIMESTAMP",
             };
 
@@ -136,7 +136,7 @@ class PostgreSQL extends Plan
             $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" DROP NOT NULL', [$table, $newProperties->name]);
 
         if ($newProperties->isUnique && (!$newProperties->isPrimaryKey))
-            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" ', [$table, $newProperties->name]);
+            $this->database->query('ALTER TABLE "{}" ADD UNIQUE ("{}")', [$table, $newProperties->name]);
 
         if ($newProperties->hasDefault)
             $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" SET DEFAULT {}', [$table, $newProperties->name, $newProperties->default]);

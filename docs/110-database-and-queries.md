@@ -168,6 +168,9 @@ $query->build();  // the SQL string, for debugging
 $query->fetch();  // execute
 ```
 
+An aliased field or expression lands on each row under its alias (`$row->total` above), and
+`limit(null, 20)` skips 20 rows without capping the result.
+
 A `Query` is a tree of small objects (fields, conditions, joins, orders), and the SQL string only
 exists when a builder renders it — that is why the same query works on MySQL, PostgreSQL and
 SQLite.

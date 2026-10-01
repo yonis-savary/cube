@@ -32,6 +32,11 @@ class MySQL extends QueryBuilder
         return ['`'];
     }
 
+    public function getUnboundedLimit(): string
+    {
+        return '18446744073709551615';
+    }
+
     public function getTable(string $table): string
     {
         return "`{$table}`";
@@ -190,7 +195,7 @@ class MySQL extends QueryBuilder
             return $baseConditions;
         }
         if ($updateConditions) {
-            return $updateConditions;
+            return "WHERE {$updateConditions}";
         }
 
         return '';
@@ -221,7 +226,7 @@ class MySQL extends QueryBuilder
         $limit = $limit->limit;
 
         return
-            ($limit ? ('LIMIT '.$limit) : '')
+            'LIMIT '.($limit ?? $this->getUnboundedLimit())
             .($offset ? (' OFFSET '.$offset) : '');
     }
 

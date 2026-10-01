@@ -30,6 +30,11 @@ class SQLite extends MySQL
         return ['`', '"'];
     }
 
+    public function getUnboundedLimit(): string
+    {
+        return '-1';
+    }
+
     public function getTable(string $table): string
     {
         return $table;
@@ -166,7 +171,7 @@ class SQLite extends MySQL
         $limit = $limit->limit;
 
         return
-            ($limit ? ('LIMIT '.$limit) : '')
+            'LIMIT '.($limit ?? $this->getUnboundedLimit())
             .($offset ? (' OFFSET '.$offset) : '');
     }
 

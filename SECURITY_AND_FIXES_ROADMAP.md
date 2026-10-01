@@ -30,18 +30,23 @@ Order : exploitable flaws first, then data integrity, then functional correctnes
 
 ## 2. Query builder and migrations
 
-- [ ] **2.1 Alias without a dot in `fetch()`** — warning and lost value.
+- [x] **2.1 Alias without a dot in `fetch()`** — warning and lost value.
   - `QueryTest::testFetchAnAliasedExpression`, `QueryTest::testFetchAnAliasedField`
-- [ ] **2.2 `OFFSET` without `LIMIT`** — syntax error on MySQL and SQLite.
+- [x] **2.2 `OFFSET` without `LIMIT`** — syntax error on MySQL and SQLite.
   - `QueryTest::testOffsetWithoutLimit`
-- [ ] **2.3 UPDATE with a join and no `where()`** — join conditions written without `WHERE`.
+- [x] **2.3 UPDATE with a join and no `where()`** — join conditions written without `WHERE`.
   - `QueryTest::testUpdateWithAJoinAndNoConditionKeepsItsWhereKeyword`
-- [ ] **2.4 Postgres plan** — `alterColumn` emits `DATETIME` and an empty `ALTER COLUMN` for a
+- [x] **2.4 Postgres plan** — `alterColumn` emits `DATETIME` and an empty `ALTER COLUMN` for a
   unique field, ignores DECIMAL precision ; `dropConstraint` quotes the name as a string.
   - `MigrationTest::testAlterColumnToDatetime`, `MigrationTest::testAlterColumnToUnique`
-- [ ] **2.5 Untested** — `ModelAPI` text search hard-codes backticks (breaks Postgres),
-  `HasOne::bind` calls `reload()` before `save()`, `reload()` of a never-saved model, `order()`
-  without argument.
+- [x] **2.5 Smaller fixes** — `ModelAPI` text search hard-coded backticks (broke Postgres),
+  `reload()` of a missing row crashed on `null`, `id()` threw on a model without its primary key,
+  `order()` accepted a `null` field it could not handle, a reloaded model stayed unpersisted so
+  `save()` inserted it again. `HasOne::bind` reloading before saving is intended : it loads the row
+  the foreign key points to.
+  - `ModelAPITest::testReadingSearchesOnEveryDriver`, `ModelTest::testIdOfAModelWithoutItsPrimaryKey`,
+    `ModelTest::testReloadingAMissingRowIsRefused`,
+    `ModelTest::testSavingAReloadedModelUpdatesItsRow`
 
 ## 3. Files and path traversal
 

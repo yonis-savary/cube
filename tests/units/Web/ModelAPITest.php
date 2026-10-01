@@ -5,6 +5,7 @@ namespace Cube\Tests\Units\Web;
 use Cube\Data\Database\Database;
 use Cube\Env\Configuration;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
+use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
 use Cube\Tests\Units\Web\Classes\ProductAPI;
@@ -15,6 +16,7 @@ use Cube\Web\ModelAPI\ModelAPI;
 use Cube\Web\ModelAPI\ModelAPIConfiguration;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -25,6 +27,8 @@ use PHPUnit\Framework\TestCase;
  */
 class ModelAPITest extends TestCase
 {
+    use TestMultipleDrivers;
+
     protected Database $database;
 
     protected function setUp(): void
@@ -82,6 +86,22 @@ class ModelAPITest extends TestCase
         $rows = $response->getJSON();
         $this->assertCount(1, $rows);
         $this->assertEquals('Office Screen', $rows[0]['name']);
+    }
+
+    /**
+     * The search used to quote its column with backticks, which Postgres refuses
+     */
+    #[DataProvider('getDatabases')]
+    public function testReadingSearchesOnEveryDriver(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            Product::insertArray(['name' => 'Office Screen']);
+            Product::insertArray(['name' => 'Mouse']);
+
+            $rows = $this->route(new Request('GET', '/product', ['name' => 'Screen']))->getJSON();
+
+            $this->assertEquals(['Office Screen'], array_column($rows ?? [], 'name'));
+        });
     }
 
     public function testCreatingAnswersCreated()

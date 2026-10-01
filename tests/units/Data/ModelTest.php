@@ -431,6 +431,44 @@ class ModelTest extends TestCase
         });
     }
 
+    #[ DataProvider('getDatabases') ]
+    public function testIdOfAModelWithoutItsPrimaryKey(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $this->assertFalse((new Product(['name' => 'screen']))->id());
+        });
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testReloadingAMissingRowIsRefused(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessageMatches('/no row has \[id\]/');
+
+            (new Product(['id' => 404, 'name' => 'screen']))->reload();
+        });
+    }
+
+    /**
+     * reload() used to leave the model unpersisted, so the next save() inserted the row again
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testSavingAReloadedModelUpdatesItsRow(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $screen = Product::insertArray(['name' => 'screen']);
+
+            $copy = new Product(['id' => $screen->id, 'name' => 'screen']);
+            $copy->reload();
+            $copy->name = 'monitor';
+            $copy->save();
+
+            $this->assertEquals(1, Product::select()->count());
+            $this->assertEquals('monitor', Product::find($screen->id)->name);
+        });
+    }
+
     /*
 
     #[ DataProvider('getDatabases') ]
