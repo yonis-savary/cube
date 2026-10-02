@@ -45,9 +45,7 @@ trait Component
     }
 
     /**
-     * @var static
-     * @var callable Callback
-     *
+     * @param \Closure(static,static):void $callback
      * @param mixed $scopedInstance
      */
     public static function withInstance($scopedInstance, callable $callback): void
@@ -64,6 +62,7 @@ trait Component
         }
     }
 
+    /** @param \Closure(static,static):void $callback */
     public function asGlobalInstance(callable $callback): void
     {
         static::withInstance($this, $callback);

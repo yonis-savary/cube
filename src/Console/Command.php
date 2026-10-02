@@ -3,6 +3,7 @@
 namespace Cube\Console;
 
 use Cube\Core\Injector;
+use Cube\Utils\Console;
 
 abstract class Command
 {
@@ -10,6 +11,11 @@ abstract class Command
     {
         return Injector::getInstance()->instanciate(static::class)
             ->execute($args ?? new Args);
+    }
+
+    public function abort(string $errorMessage, int $returnCode = 1): int {
+        Console::print($errorMessage);
+        return $returnCode;
     }
 
     public function getHelp(): string

@@ -2,12 +2,11 @@
 
 use Cube\Core\Injector;
 use Cube\Env\Logger\Logger;
+use Cube\Event\EventDispatcher;
+use Cube\Event\Events;
 use Psr\Log\LoggerInterface;
 
-/**
- * When asked for a PSR LoggerInterface, we provide Cube's logger
- */
-Injector::getInstance()->provide(
-    LoggerInterface::class,
-    Logger::class
-);
+Injector::getInstance()->asGlobalInstance(function($i) {
+    $i->provide(LoggerInterface::class, Logger::class);
+    $i->provide(EventDispatcher::class, Events::class);
+});

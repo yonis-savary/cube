@@ -83,6 +83,7 @@ class CommandTest extends TestCase
         $this->assertEquals([
             'cache:clear',
             'configuration:cache',
+            'cube:dispatch',
             'cube:hello-world',
             'cube:help',
             'cube:queue',
