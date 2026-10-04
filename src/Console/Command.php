@@ -9,7 +9,8 @@ abstract class Command
 {
     public static function call(?Args $args = null): int
     {
-        return Injector::getInstance()->instanciate(static::class)
+        return Injector::getInstance()
+            ->instanciate(static::class)
             ->execute($args ?? new Args);
     }
 
