@@ -583,6 +583,31 @@ class QueryTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
+    public function testExists(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(3);
+
+            $this->assertTrue(Product::select()->where('name', 'product-2')->exists());
+            $this->assertTrue(Product::select()->where('id', 1, '>=')->exists());
+            $this->assertFalse(Product::select()->where('name', 'unknown')->exists());
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testExistsLeavesTheQueryUntouched(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(3);
+
+            $query = Product::select();
+            $query->exists();
+
+            $this->assertCount(3, $query->fetch());
+        });
+    }
+
+    #[DataProvider('getDatabases')]
     public function testDeleteWithWhereGroup(Database $database)
     {
         $database->asGlobalInstance(function () {

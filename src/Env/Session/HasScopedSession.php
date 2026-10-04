@@ -8,8 +8,14 @@ trait HasScopedSession
 {
     private ?Session $session = null;
 
-    protected function session() {
-        return $this->session ??= new Session($this->getScope());
+    protected function getSessionConfiguration(): SessionConfiguration
+    {
+        return SessionConfiguration::resolve();
+    }
+
+    protected function session(): Session
+    {
+        return $this->session ??= new Session($this->getSessionConfiguration(), $this->getScope());
     }
 
     public function getScope(): string

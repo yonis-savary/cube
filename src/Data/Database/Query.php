@@ -317,6 +317,11 @@ class Query
         return $builder->count($this, $database);
     }
 
+    public function exists(?Database $database = null): bool
+    {
+        return (clone $this)->limit(1)->count($database) > 0;
+    }
+
     /**
      * @return TModel[]
      */

@@ -45,7 +45,7 @@ when nobody is logged in — guard with `isLogged()` rather than catching.
 
 `login()` and `logout()` give the session a new id, so an id planted before login is worth nothing
 after it. The session cookie is `HttpOnly`, `Secure` over HTTPS, and `SameSite=Lax` — change the
-latter with `new SessionConfiguration(sameSite: 'Strict')`.
+latter with `new SessionConfiguration(driver: new PHPGlobalSession(sameSite: 'Strict'))`.
 
 | Method | Does |
 |---|---|
