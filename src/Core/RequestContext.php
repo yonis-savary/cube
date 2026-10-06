@@ -3,9 +3,12 @@
 namespace Cube\Core;
 
 use Cube\Data\Bunch;
+use RuntimeException;
 
 class RequestContext
 {
+    use Component;
+
     /** @var array<class-string<Component>> */
     protected array $componentsToReset;
 
@@ -59,9 +62,24 @@ class RequestContext
     {
         $this->snapshotInstances();
         try {
-            return $callback();
+            return $this->asGlobalInstance($callback);
         } finally {
             $this->resetComponents();
         }
+    }
+
+    /**
+     * @template TComponent of Component
+     * @param class-string<TComponent> $component
+     * @return TComponent
+     */
+    public function get(string $component): mixed {
+        $count = count($this->instancesStack);
+        if (!$count)
+            throw new RuntimeException('get() can only be called while running a context callback, see run()');
+
+        $activeStack = &$this->instancesStack[$count-1];
+
+        return $activeStack[$component] ??= $component::getInstance();
     }
 }

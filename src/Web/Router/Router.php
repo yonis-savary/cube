@@ -121,13 +121,15 @@ class Router
      * @param array<class-string<Middleware>> $middlewares
      * @param Route[]|null $routes
      * @param \Closure(Router,RouteGroup) $function
+     * @param string[] $requires Routes files loaded into the group, see require()
      */
     public function group(
         string $prefix="/",
         array $middlewares=[],
         array $extras=[],
         ?array $routes=null,
-        ?callable $function=null
+        ?callable $function=null,
+        array $requires=[]
     ): void
     {
         $subGroup = new RouteGroup($prefix,$middlewares,$extras);
@@ -140,6 +142,9 @@ class Router
 
         if ($routes)
             $this->addRoutes(...$routes);
+
+        foreach ($requires as $file)
+            $this->require($file);
 
         $this->currentGroup = $parentGroup;
     }

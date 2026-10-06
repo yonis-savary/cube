@@ -44,10 +44,10 @@ class PostgresProvider extends DatabaseProvider
         return __DIR__.'/../Dumps/postgres.sql';
     }
 
-    public function databaseExists(string $name): bool
+    public function listDatabases(): array
     {
         $statement = $this->rootConnection()->query('SELECT datname FROM pg_database');
 
-        return Bunch::of($statement->fetchAll())->key('datname')->has($name);
+        return Bunch::of($statement->fetchAll())->key('datname')->get();
     }
 }

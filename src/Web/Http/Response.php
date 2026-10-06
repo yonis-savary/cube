@@ -10,6 +10,8 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use React\Http\Message\Response as ReactResponse;
 
+use function Cube\isDebug;
+
 class Response extends HttpMessage
 {
     protected int $statusCode;
@@ -401,6 +403,18 @@ class Response extends HttpMessage
             $value,
             ['Content-Type' => 'text/html']
         );
+    }
+
+    public static function fromThrowable(\Throwable $thrown): static
+    {
+        $message = 'Internal Server Error';
+
+        if (isDebug()) {
+            $message .= "\n\n".$thrown->getMessage();
+            $message .= "\n".$thrown->getTraceAsString();
+        }
+
+        return static::text($message, StatusCode::INTERNAL_SERVER_ERROR);
     }
 
     public function logSelf(?LoggerInterface $logger = null): void

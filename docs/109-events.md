@@ -30,6 +30,18 @@ Events::getInstance()
 The event name is the class name, so type-hint the parameter and your IDE knows what it holds.
 Several callbacks can subscribe to the same event ; they run in registration order.
 
+An event class can also subscribe for itself with its static `on()`, on `Events` unless you pass
+another dispatcher.
+
+```php
+LoggedInUser::on(function (LoggedInUser $event) {
+    info('{user} signed in', ['user' => $event->userId]);
+});
+```
+
+This does not work for `CustomEvent` : it subscribes to the class name, while a `CustomEvent` is
+dispatched under its own name.
+
 ## Dispatching your own
 
 Extend `Event`, put what listeners need in the constructor, and call `dispatch()`.
@@ -113,6 +125,7 @@ On the `Events` component
 | `FailedAuthentication` | credentials were rejected | — |
 | `RememberedUser` | a user was restored from a remember-me token | `userData`, `userPrimaryKeyValue` |
 | `GeneratedModels` | `php do models:generate` finished | — |
+| `SocketServerSetup` | the [unix socket server](./207-unix-socket-server.md) is about to listen | `router` |
 
 On the object itself
 

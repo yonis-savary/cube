@@ -15,4 +15,5 @@
 - [Http client](./204-http-client.md)
 - [Schedule and queues](./205-schedule-and-queues.md)
 - [Websockets](./206-websockets.md)
+- [Unix socket server](./207-unix-socket-server.md)
 - [Large upload](./999-large-upload.md)

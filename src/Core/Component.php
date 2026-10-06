@@ -45,10 +45,11 @@ trait Component
     }
 
     /**
-     * @param \Closure(static,static):void $callback
+     * @param \Closure(static,static) $callback
      * @param mixed $scopedInstance
+     * @return mixed Return value of callback
      */
-    public static function withInstance($scopedInstance, callable $callback): void
+    public static function withInstance($scopedInstance, callable $callback): mixed
     {
         // Read the slot instead of getInstance() : building a default one only to
         // restore it would leave a component instanciated that nobody asked for
@@ -56,15 +57,18 @@ trait Component
 
         static::setInstance($scopedInstance);
         try {
-            $callback($scopedInstance, $oldInstance);
+            return $callback($scopedInstance, $oldInstance);
         } finally {
             static::setInstance($oldInstance);
         }
     }
 
-    /** @param \Closure(static,static):void $callback */
-    public function asGlobalInstance(callable $callback): void
+    /**
+     * @param \Closure(static,static) $callback
+     * @return mixed Return value of callback
+    */
+    public function asGlobalInstance(callable $callback): mixed
     {
-        static::withInstance($this, $callback);
+        return static::withInstance($this, $callback);
     }
 }

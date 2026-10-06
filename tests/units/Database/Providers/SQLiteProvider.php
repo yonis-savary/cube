@@ -32,9 +32,9 @@ class SQLiteProvider extends DatabaseProvider
         return __DIR__.'/../Dumps/sqlite.sql';
     }
 
-    public function databaseExists(string $name): bool
+    public function listDatabases(): array
     {
-        return false;
+        return array_map(basename(...), $this->storage()->files());
     }
 
     protected function storage(): Storage

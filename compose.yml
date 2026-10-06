@@ -30,7 +30,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${CUBE_TEST_DATABASE_PASSWORD:-root}
     # A data-provided test keeps its connection for the whole process, whatever the number of workers
-    command: ["--max-connections=500"]
+    # Without --skip-log-bin, every test database and dump is kept in the binary log on the tmpfs for 30 days
+    command: ["--max-connections=500", "--skip-log-bin"]
   postgres:
     image: postgres
     restart: always

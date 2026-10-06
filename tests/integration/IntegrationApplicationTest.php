@@ -56,4 +56,42 @@ class IntegrationApplicationTest extends TestCase
         $this->assertStringContainsString("DISPLAY : 0", $logs);
         $this->assertStringContainsString("DISPLAY : 29", $logs);
     }
+
+    public function testTheApplicationAnswersOnAUnixSocket() {
+        $storage = Utils::getDummyApplicationStorage();
+        $socketPath = sys_get_temp_dir().'/'.uniqid('cube-').'.sock';
+
+        $proc = Shell::launchInDirectory("exec php do web:serve --socket={$socketPath}", $storage->getRoot());
+
+        try {
+            for ($i = 0; $i < 50 && !file_exists($socketPath); $i++)
+                usleep(100_000);
+
+            $this->assertFileExists($socketPath, $proc->getOutput().$proc->getErrorOutput());
+
+            [$pingStatus, $pingBody] = $this->fetchThroughSocket($socketPath, '/internal/ping');
+            [$discoveredStatus] = $this->fetchThroughSocket($socketPath, '/ping');
+
+            $this->assertEquals(200, $pingStatus);
+            $this->assertEquals('"OK"', $pingBody);
+            $this->assertEquals(404, $discoveredStatus, 'Controllers must not be discovered by the socket router');
+        } finally {
+            $proc->stop();
+        }
+
+        $this->assertFileDoesNotExist($socketPath, 'The socket file outlived the server');
+    }
+
+    /** @return array{int,string} */
+    protected function fetchThroughSocket(string $socketPath, string $path): array {
+        $handle = curl_init("http://localhost{$path}");
+        curl_setopt_array($handle, [
+            CURLOPT_UNIX_SOCKET_PATH => $socketPath,
+            CURLOPT_RETURNTRANSFER => true,
+        ]);
+
+        $body = curl_exec($handle);
+
+        return [curl_getinfo($handle, CURLINFO_RESPONSE_CODE), $body];
+    }
 }

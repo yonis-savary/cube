@@ -364,6 +364,23 @@ class RouterTest extends TestCase
         }
     }
 
+    public function testAGroupLoadsItsRequiredFiles()
+    {
+        $this->setUpTemporaryStorage('router-group-require-test-');
+
+        try {
+            $this->storage->write('socket.php', '<?php $router->addRoutes(\Cube\Web\Router\Route::get("/status", fn () => \Cube\Web\Http\Response::ok("up")));');
+
+            $router = $this->newRouter();
+            $router->group('/internal', requires: [Path::toRelative($this->storage->path('socket.php'))]);
+
+            $this->assertEquals(StatusCode::NOT_FOUND, $router->route(new Request('GET', '/status'))->getStatusCode());
+            $this->assertEquals('up', $router->route(new Request('GET', '/internal/status'))->getBody());
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
     public function testRequiringAMissingFileThrows()
     {
         $this->expectException(InvalidArgumentException::class);

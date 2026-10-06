@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Database;
 
+use Cube\Core\Autoloader;
 use Cube\Data\Database\Database;
 use Cube\Env\Logger\Logger;
 
@@ -14,6 +15,8 @@ use Cube\Env\Logger\Logger;
  */
 abstract class DatabaseProvider
 {
+    public const RANDOM_NAME_LENGTH = 10;
+
     /**
      * Databases created during this process, as name => the provider class that made it.
      * Class names rather than instances : holding a provider would also hold its
@@ -33,24 +36,50 @@ abstract class DatabaseProvider
 
     abstract public function dropDatabase(string $dbName): void;
 
-    abstract public function databaseExists(string $name): bool;
+    /** @return string[] */
+    abstract public function listDatabases(): array;
 
-    /**
-     * Drops every database this process created, one provider per driver.
-     *
-     * Signals are out of reach — nothing runs on SIGINT or SIGKILL. Restarting the
-     * services is what covers those, the data directories being tmpfs.
-     */
+    public function databaseExists(string $name): bool
+    {
+        return in_array($name, $this->listDatabases());
+    }
+
     public static function dropPendingDatabases(): void
     {
         $droppers = [];
 
         foreach (self::$pendingDatabases as $name => $providerClass) {
-            $dropper = $droppers[$providerClass] ??= new $providerClass();
-            $dropper->dropDatabase($name);
+            try {
+                $dropper = $droppers[$providerClass] ??= new $providerClass();
+                $dropper->dropDatabase($name);
+            } catch (\Throwable $thrown) {
+                Logger::getInstance()->error('Could not drop test database {name} with {provider}', ['name' => $name, 'provider' => $providerClass]);
+                Logger::getInstance()->logThrowable($thrown);
+            }
         }
 
         self::$pendingDatabases = [];
+    }
+
+    /**
+     * Drops every database a provider could have made, whatever process made it : this is what
+     * catches the runs that were killed before their shutdown sweep. Only call it while no test runs.
+     */
+    public static function dropLeftoverDatabases(): void
+    {
+        foreach (Autoloader::classesThatExtends(self::class) as $providerClass) {
+            $provider = new $providerClass();
+
+            foreach ($provider->listDatabases() as $name) {
+                if (self::isRandomDatabaseName($name))
+                    $provider->dropDatabase($name);
+            }
+        }
+    }
+
+    public static function isRandomDatabaseName(string $name): bool
+    {
+        return 1 === preg_match('/^[a-z]{'.self::RANDOM_NAME_LENGTH.'}$/', $name);
     }
 
     public function getDumpPath(): ?string
@@ -104,7 +133,7 @@ abstract class DatabaseProvider
     protected function getRandomDatabaseName(): string
     {
         do {
-            $name = strtolower(substr(preg_replace('/[^a-z]/i', '', base64_encode(random_bytes(50))), 0, 10));
+            $name = strtolower(substr(preg_replace('/[^a-z]/i', '', base64_encode(random_bytes(50))), 0, self::RANDOM_NAME_LENGTH));
         } while ($this->databaseExists($name));
 
         return $name;

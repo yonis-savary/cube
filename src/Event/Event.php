@@ -9,6 +9,13 @@ abstract class Event
         return static::class;
     }
 
+    /** @param \Closure(static) $callback */
+    public static function on(callable $callback, ?EventDispatcher $dispatcher = null): void
+    {
+        $dispatcher ??= Events::getInstance();
+        $dispatcher->on(static::class, $callback);
+    }
+
     public function dispatch(?EventDispatcher $dispatcher = null): self
     {
         $dispatcher ??= Events::getInstance();

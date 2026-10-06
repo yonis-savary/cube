@@ -38,10 +38,10 @@ class MySQLProvider extends DatabaseProvider
         return __DIR__.'/../Dumps/mysql.sql';
     }
 
-    public function databaseExists(string $name): bool
+    public function listDatabases(): array
     {
         $statement = $this->rootConnection()->query('SHOW DATABASES');
 
-        return Bunch::of($statement->fetchAll())->key('Database')->has($name);
+        return Bunch::of($statement->fetchAll())->key('Database')->get();
     }
 }

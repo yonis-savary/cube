@@ -190,6 +190,14 @@ class ResponseTest extends TestCase
         $this->assertEquals('from the callback', (string) $psrResponse->getBody());
     }
 
+    public function testFromThrowableAnswersAnInternalServerError()
+    {
+        $response = Response::fromThrowable(new \RuntimeException('boom'));
+
+        $this->assertEquals(StatusCode::INTERNAL_SERVER_ERROR, $response->getStatusCode());
+        $this->assertStringStartsWith('Internal Server Error', $response->getBody());
+    }
+
     /**
      * `server/Public/index.php` closes every request with `$response->logSelf()` : losing the
      * method turns each one into a 500, and only a test going through a real entry point

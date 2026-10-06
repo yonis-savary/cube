@@ -4,10 +4,11 @@ jobs=
 processes=$(if $(jobs),--processes $(jobs),)
 
 cleanup:
+	@php tests/drop-leftover-databases.php || echo 'Could not drop leftover test databases, are the services up ?'
 	@[ -d 'tests/integration-apps' ] && rm -r tests/integration-apps || true
 	@[ -d 'tests/Storage/Database' ] && rm -r tests/Storage/Database || true
 	@[ -d 'tests/Storage/Cache' ] && rm -r tests/Storage/Cache || true
-	@[ -d 'Storage/Cache' ] && rm -r Storage/Cache || true
+	@[ -d 'Storage/' ] && rm -r Storage/ || true
 
 test:
 	@make --no-print-directory test-dirty; \

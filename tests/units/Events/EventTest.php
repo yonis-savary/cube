@@ -62,6 +62,37 @@ class EventTest extends TestCase
         $this->assertEquals(1, $localCalls);
     }
 
+    public function test_on_subscribes_to_the_global_dispatcher()
+    {
+        $received = null;
+
+        Events::withInstance(new Events(), function () use (&$received) {
+            ProductWasShipped::on(function (ProductWasShipped $event) use (&$received) {
+                $received = $event->reference;
+            });
+
+            (new ProductWasShipped('PRD-1'))->dispatch();
+        });
+
+        $this->assertEquals('PRD-1', $received);
+    }
+
+    public function test_on_can_target_another_dispatcher()
+    {
+        $global = new Events();
+        $local = new Events();
+
+        $calls = 0;
+        $countCall = function () use (&$calls) { ++$calls; };
+        $global->asGlobalInstance(fn () => ProductWasShipped::on($countCall, $local));
+
+        (new ProductWasShipped('PRD-1'))->dispatch($global);
+        $this->assertEquals(0, $calls);
+
+        (new ProductWasShipped('PRD-1'))->dispatch($local);
+        $this->assertEquals(1, $calls);
+    }
+
     public function test_dispatch_gives_the_event_back()
     {
         $event = new ProductWasShipped('PRD-1');

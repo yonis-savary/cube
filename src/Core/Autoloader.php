@@ -17,8 +17,6 @@ use ErrorException;
 use Exception;
 use RuntimeException;
 
-use function Cube\isDebug;
-
 class Autoloader
 {
     protected static array $knownApplications = [];
@@ -195,14 +193,7 @@ class Autoloader
                     );
                 }
 
-                $errorMessage = 'Internal Server Error';
-
-                if (isDebug()) {
-                    $errorMessage .= "\n\n".$exception->getMessage();
-                    $errorMessage .= "\n".$exception->getTraceAsString();
-                }
-
-                $response = Response::text($errorMessage, 500);
+                $response = Response::fromThrowable($exception);
                 Shell::logRequestAndResponseToStdOut(Request::fromGlobals(), $response);
                 $response->exit();
             } catch (\Throwable $_) {

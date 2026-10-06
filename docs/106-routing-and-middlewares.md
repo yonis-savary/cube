@@ -118,9 +118,28 @@ $router->group('/api', [ApiKeyMiddleware::class], function: function (Router $ro
 });
 ```
 
-The signature is `group(string $prefix, array $middlewares, array $extras, ?array $routes, ?callable $function)`,
+The signature is `group(string $prefix, array $middlewares, array $extras, ?array $routes, ?callable $function, array $requires)`,
 so use named arguments when you only need some of them. Prefixes are joined, middlewares and
 extras are merged with the parent group's.
+
+### Loading a routes file into a group
+
+`require()` loads a PHP file into the group being declared, with `$router` in scope like any routes
+file. `group()` takes the same files through `requires`. Paths are relative to your project root, and
+a missing file throws an `InvalidArgumentException`.
+
+```php
+$router->group('/internal', [InternalTokenMiddleware::class], requires: ['App/Internal/routes.php']);
+
+// same as
+$router->group('/internal', [InternalTokenMiddleware::class], function: function (Router $router) {
+    $router->require('App/Internal/routes.php');
+});
+```
+
+Inside a group, `function` runs first, then `routes`, then `requires`. Files of the `Routes/` and
+`Router/` directories are already loaded for you : keep the files you `require()` elsewhere, or their
+routes are declared twice.
 
 ## Extras
 

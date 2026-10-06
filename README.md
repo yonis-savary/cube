@@ -17,6 +17,7 @@ Tests can be automatically written by Agents
   - Middleware
   - Request Validation
   - Static File Serving
+  - Unix Socket Server (for internal APIs)
 
 - 🔩 Framework
   - PHP Configuration (With Caching)
