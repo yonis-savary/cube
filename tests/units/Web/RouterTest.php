@@ -19,6 +19,7 @@ use Cube\Web\Router\Route;
 use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
+use Cube\Utils\Path;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -343,6 +344,31 @@ class RouterTest extends TestCase
         } finally {
             $this->tearDownTemporaryStorage();
         }
+    }
+
+    public function testARequiredFileAddsItsRoutesToTheCurrentGroup()
+    {
+        $this->setUpTemporaryStorage('router-require-test-');
+
+        try {
+            $this->storage->write('socket.php', '<?php $router->addRoutes(\Cube\Web\Router\Route::get("/status", fn () => \Cube\Web\Http\Response::ok("up")));');
+            $file = Path::toRelative($this->storage->path('socket.php'));
+
+            $router = $this->newRouter();
+            $router->group('/internal', function: fn (Router $router) => $router->require($file));
+
+            $this->assertEquals(StatusCode::NOT_FOUND, $router->route(new Request('GET', '/status'))->getStatusCode());
+            $this->assertEquals('up', $router->route(new Request('GET', '/internal/status'))->getBody());
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
+    public function testRequiringAMissingFileThrows()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->newRouter()->require('App/routes/missing.php');
     }
 
     protected function newRouter(): Router

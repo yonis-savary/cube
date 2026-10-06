@@ -16,6 +16,7 @@ use Cube\Utils\Path;
 use Cube\Web\Controller;
 use Cube\Web\Helpers\WebAPI;
 use Cube\Web\Middleware;
+use InvalidArgumentException;
 
 class Router
 {
@@ -79,11 +80,18 @@ class Router
     public function loadRoutesFiles(): void
     {
         Bunch::of(Autoloader::getRoutesFiles())
-        ->forEach(function(string $file) {
-            /** @var Router `$router` variable can be used in routes file */
-            $router = $this;
-            require Path::relative($file);
-        });
+        ->forEach(fn(string $file) => $this->require($file));
+    }
+
+    public function require(string $file): void
+    {
+        $path = Path::relative($file);
+        if (!is_file($path))
+            throw new InvalidArgumentException("Could not find routes file [{$path}]");
+
+        /** @var Router `$router` variable can be used in routes file */
+        $router = $this;
+        require $path;
     }
 
     public function addService(WebAPI $api): void
