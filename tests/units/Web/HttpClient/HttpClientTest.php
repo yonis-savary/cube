@@ -55,6 +55,16 @@ class HttpClientTest extends TestCase
         $this->assertEquals('http://some-api.org/products', $client->publicPath(new Request('GET', 'http://some-api.org/products')));
     }
 
+    /** The Request constructor normalizes outgoing requests the same way it does incoming ones. */
+    public function testOutgoingParametersAndPathAreNormalized()
+    {
+        $client = new ExposedHttpClient();
+
+        $handle = $client->toCurlHandle(new Request('GET', 'http://some-api.org/items/', ['status' => 'off', 'deleted' => 'null']));
+
+        $this->assertEquals('http://some-api.org/items?status=0', curl_getinfo($handle, CURLINFO_EFFECTIVE_URL));
+    }
+
     /**
      * baseUserAgent() and baseLogger() are what a subclass declares for its own requests, and
      * they were resolved after the handle was built — which is the only thing that carries them.

@@ -5,6 +5,7 @@ namespace Cube\Web\Http;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Path;
+use Psr\Http\Message\UploadedFileInterface;
 
 class Upload
 {
@@ -49,6 +50,25 @@ class Upload
         // Extras info
         $this->inputName = $inputName;
         $this->extension = pathinfo($this->filename, PATHINFO_EXTENSION);
+    }
+
+    public static function fromPsrUploadedFile(UploadedFileInterface $file, string $inputName = 'uploads'): static
+    {
+        $tempName = '';
+
+        // An Upload moves a file from disk, as PHP does with $_FILES : the PSR stream is written to a temporary one
+        if (UPLOAD_ERR_OK === $file->getError()) {
+            $tempName = tempnam(sys_get_temp_dir(), 'cube-upload-');
+            file_put_contents($tempName, (string) $file->getStream());
+        }
+
+        return new static([
+            'name' => $file->getClientFilename() ?? '',
+            'type' => $file->getClientMediaType() ?? '',
+            'tmp_name' => $tempName,
+            'error' => $file->getError(),
+            'size' => $file->getSize() ?? 0,
+        ], $inputName);
     }
 
     public function fail(string $reason, Storage $destination): false

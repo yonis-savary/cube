@@ -48,7 +48,7 @@ class Shell
 
         $lineToLog = join(' ', [
             date('[D M j G:i:s Y]'),
-            ($request->getIp() ?? '?.?.?.?').':'.$_SERVER['REMOTE_PORT'],
+            ($request->getIp() ?? '?.?.?.?').':'.($_SERVER['REMOTE_PORT'] ?? '?'),
             "[{$status}]:",
             $request->getMethod(),
             $request->getPath(),

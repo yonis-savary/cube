@@ -6,6 +6,8 @@ use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Web\Http\Rules\UploadRule;
 use Cube\Web\Http\Upload;
 use PHPUnit\Framework\TestCase;
+use React\Http\Io\BufferedBody;
+use React\Http\Io\UploadedFile;
 
 /**
  * @internal
@@ -115,6 +117,42 @@ class UploadTest extends TestCase
 
         $this->assertTrue((new UploadRule())->withMaxSize(Upload::MB)->validate($upload)->isValid());
         $this->assertFalse((new UploadRule())->withMaxSize(2)->validate($upload)->isValid());
+    }
+
+    public function testAPsrUploadedFileIsWrittenToATemporaryFile()
+    {
+        $upload = Upload::fromPsrUploadedFile(
+            new UploadedFile(new BufferedBody('invoice content'), 15, UPLOAD_ERR_OK, 'invoice.pdf', 'application/pdf'),
+            'documents'
+        );
+
+        try {
+            $this->assertEquals('invoice.pdf', $upload->filename);
+            $this->assertEquals('pdf', $upload->extension);
+            $this->assertEquals('application/pdf', $upload->type);
+            $this->assertEquals(15, $upload->size);
+            $this->assertEquals('documents', $upload->inputName);
+            $this->assertEquals('invoice content', file_get_contents($upload->tempName));
+        } finally {
+            unlink($upload->tempName);
+        }
+    }
+
+    public function testAFailedPsrUploadedFileHasNoTemporaryFile()
+    {
+        $upload = Upload::fromPsrUploadedFile(new UploadedFile(new BufferedBody(''), 0, UPLOAD_ERR_NO_FILE, null, null), 'documents');
+
+        $this->assertEquals(UPLOAD_ERR_NO_FILE, $upload->error);
+        $this->assertEquals('', $upload->tempName);
+    }
+
+    public function testAPsrUploadedFileCanBeMoved()
+    {
+        $upload = Upload::fromPsrUploadedFile(new UploadedFile(new BufferedBody('invoice content'), 15, UPLOAD_ERR_OK, 'invoice.pdf', 'application/pdf'));
+
+        $newPath = $upload->move($this->storage->child('moved'), 'invoice.pdf');
+
+        $this->assertEquals('invoice content', file_get_contents($newPath));
     }
 
     protected function newUpload(string $filename, string $inputName, int $error = UPLOAD_ERR_OK): Upload

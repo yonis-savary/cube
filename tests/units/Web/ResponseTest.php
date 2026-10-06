@@ -158,6 +158,38 @@ class ResponseTest extends TestCase
         $this->assertEquals('from the callback', $response->getBody());
     }
 
+    public function testToPsrResponseCarriesStatusHeadersAndBody()
+    {
+        $psrResponse = Response::json(['name' => 'screen'], StatusCode::CREATED)->toPsrResponse();
+
+        $this->assertEquals(StatusCode::CREATED, $psrResponse->getStatusCode());
+        $this->assertEquals('application/json', $psrResponse->getHeaderLine('content-type'));
+        $this->assertEquals('{"name":"screen"}', (string) $psrResponse->getBody());
+    }
+
+    public function testToPsrResponseAddsDefaultCorsHeaders()
+    {
+        $psrResponse = Response::ok()->toPsrResponse();
+
+        $this->assertEquals('*', $psrResponse->getHeaderLine('access-control-allow-methods'));
+    }
+
+    public function testToPsrResponseKeepsExplicitCorsHeaders()
+    {
+        $psrResponse = Response::ok()->withCORSHeaders(['GET'])->toPsrResponse();
+
+        $this->assertEquals('GET', $psrResponse->getHeaderLine('access-control-allow-methods'));
+    }
+
+    public function testToPsrResponseRendersTheResponseCallback()
+    {
+        $psrResponse = (new Response(StatusCode::OK))
+            ->withResponseCallback(function () { echo 'from the callback'; })
+            ->toPsrResponse();
+
+        $this->assertEquals('from the callback', (string) $psrResponse->getBody());
+    }
+
     /**
      * `server/Public/index.php` closes every request with `$response->logSelf()` : losing the
      * method turns each one into a 500, and only a test going through a real entry point

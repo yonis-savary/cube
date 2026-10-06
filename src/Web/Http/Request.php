@@ -11,6 +11,8 @@ use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\ValidationReturn;
 use Cube\Web\Router\Route;
 use InvalidArgumentException;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UploadedFileInterface;
 use Psr\Log\LoggerInterface;
 
 class Request extends HttpMessage
@@ -46,9 +48,9 @@ class Request extends HttpMessage
         array $cookies = []
     ) {
         $this->method = $method;
-        $this->path = explode('?', $path, 2)[0];
-        $this->get = $get;
-        $this->post = $post;
+        $this->path = self::normalizePath($path);
+        $this->get = self::parseDictionaryValues($get);
+        $this->post = self::parseDictionaryValues($post);
         $this->setHeaders($headers);
         $this->uploads = $uploads;
         $this->setBody($body);
@@ -97,26 +99,38 @@ class Request extends HttpMessage
             ? getallheaders()
             : [];
 
-        $get = self::parseDictionaryValues($_GET);
-        $post = self::parseDictionaryValues($_POST);
-
-        $uploads = self::getUploadsArray($_FILES);
-
-        $uri = explode('?', $_SERVER['REQUEST_URI'] ?? '/', 2)[0];
-        if ('/' != $uri) {
-            $uri = Text::dontEndsWith($uri, '/');
-        }
-
         return new static(
             $_SERVER['REQUEST_METHOD'] ?? php_sapi_name(),
-            $uri,
-            $get,
-            $post,
+            $_SERVER['REQUEST_URI'] ?? '/',
+            $_GET,
+            $_POST,
             $headers,
-            $uploads,
+            self::getUploadsArray($_FILES),
             file_get_contents('php://input'),
             $_SERVER['REMOTE_ADDR'] ?? null,
             $_COOKIE
+        );
+    }
+
+    public static function fromPsrRequest(ServerRequestInterface $request): static
+    {
+        $headers = $request->getHeaders();
+        foreach ($headers as &$header) {
+            $header = join(', ', $header);
+        }
+
+        $parsedBody = $request->getParsedBody();
+
+        return new static(
+            $request->getMethod(),
+            $request->getUri()->getPath(),
+            $request->getQueryParams(),
+            is_array($parsedBody) ? $parsedBody : [],
+            $headers,
+            self::getUploadsFromPsrFiles($request->getUploadedFiles()),
+            (string) $request->getBody(),
+            $request->getServerParams()['REMOTE_ADDR'] ?? null,
+            $request->getCookieParams()
         );
     }
 
@@ -353,6 +367,15 @@ class Request extends HttpMessage
         );
     }
 
+    protected static function normalizePath(string $uri): string
+    {
+        $path = explode('?', $uri, 2)[0];
+
+        return '/' === $path
+            ? $path
+            : Text::dontEndsWith($path, '/');
+    }
+
     protected static function parseDictionaryValues(array $data): array
     {
         foreach ($data as &$value) {
@@ -400,5 +423,25 @@ class Request extends HttpMessage
         }
 
         return $cleanedUploads;
+    }
+
+    /**
+     * @param array<string,UploadedFileInterface|UploadedFileInterface[]> $files
+     *
+     * @return Upload[]
+     */
+    protected static function getUploadsFromPsrFiles(array $files): array
+    {
+        $uploads = [];
+
+        foreach ($files as $inputName => $fileOrFiles) {
+            if (!is_array($fileOrFiles))
+                $fileOrFiles = [$fileOrFiles];
+
+            foreach ($fileOrFiles as $file)
+                $uploads[] = Upload::fromPsrUploadedFile($file, $inputName);
+        }
+
+        return $uploads;
     }
 }

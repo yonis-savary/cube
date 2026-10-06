@@ -6,7 +6,9 @@ use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
 use Cube\Web\Http\Configuration\CORSConfiguration;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use React\Http\Message\Response as ReactResponse;
 
 class Response extends HttpMessage
 {
@@ -467,10 +469,17 @@ class Response extends HttpMessage
         ]);
     }
 
+    protected function withDefaultCORSHeaders(): static
+    {
+        if ($this->corsDefined)
+            return $this;
+
+        return $this->withCORSHeaders();
+    }
+
     public function display(bool $sendHeaders = true): void
     {
-        if ($this->corsDefined == false)
-            $this->withCORSHeaders();
+        $this->withDefaultCORSHeaders();
 
         if ($sendHeaders) {
             http_response_code($this->statusCode);
@@ -485,6 +494,13 @@ class Response extends HttpMessage
         }
 
         echo $this->getBody();
+    }
+
+    public function toPsrResponse(): ResponseInterface
+    {
+        $this->withDefaultCORSHeaders();
+
+        return new ReactResponse($this->statusCode, $this->headers, $this->getBody());
     }
 
     /**
