@@ -5,6 +5,7 @@ namespace Cube\Tests\Units\Events;
 use Cube\Event\CustomEvent;
 use Cube\Event\EventDispatcher;
 use Cube\Event\Events;
+use Cube\Event\Events\PreventedEvent;
 use Cube\Tests\Units\Events\Classes\ProductWasShipped;
 use Cube\Tests\Units\Events\Classes\ProductWasShippedAbroad;
 use PHPUnit\Framework\TestCase;
@@ -140,5 +141,127 @@ class EventDispatcherTest extends TestCase
         $second->dispatch('product-was-shipped');
 
         $this->assertEquals(0, $calls);
+    }
+
+    public function test_preventing_an_event_skips_the_remaining_listeners()
+    {
+        $dispatcher = new Events();
+        $calls = [];
+
+        $dispatcher->on('product-was-shipped', function () use (&$calls) { $calls[] = 'first'; });
+        $dispatcher->on('product-was-shipped', function (CustomEvent $event) use (&$calls) {
+            $calls[] = 'second';
+            $event->prevent();
+        });
+        $dispatcher->on('product-was-shipped', function () use (&$calls) { $calls[] = 'third'; });
+        $dispatcher->dispatch('product-was-shipped');
+
+        $this->assertEquals(['first', 'second'], $calls);
+    }
+
+
+    public function test_a_prevented_event_dispatches_a_prevented_event_wrapping_it()
+    {
+        $dispatcher = new Events();
+        $received = null;
+
+        $dispatcher->on(ProductWasShipped::class, fn (ProductWasShipped $event) => $event->prevent());
+        $dispatcher->on(PreventedEvent::class, function (PreventedEvent $event) use (&$received) {
+            $received = $event;
+        });
+
+        $shipped = new ProductWasShipped('PRD-1');
+        $dispatcher->dispatch($shipped);
+
+        $this->assertInstanceOf(PreventedEvent::class, $received);
+        $this->assertSame($shipped, $received->event);
+    }
+
+    public function test_a_prevented_custom_event_is_wrapped_too()
+    {
+        $dispatcher = new Events();
+        $received = null;
+
+        $dispatcher->on('product-was-shipped', fn (CustomEvent $event) => $event->prevent());
+        $dispatcher->on(PreventedEvent::class, function (PreventedEvent $event) use (&$received) {
+            $received = $event->event->getName();
+        });
+        $dispatcher->dispatch('product-was-shipped');
+
+        $this->assertEquals('product-was-shipped', $received);
+    }
+
+    public function test_an_event_going_through_every_listener_dispatches_nothing_more()
+    {
+        $dispatcher = new Events();
+        $calls = 0;
+
+        $dispatcher->on(ProductWasShipped::class, fn () => null);
+        $dispatcher->on(PreventedEvent::class, function () use (&$calls) { ++$calls; });
+        $dispatcher->dispatch(new ProductWasShipped('PRD-1'));
+
+        $this->assertEquals(0, $calls);
+    }
+
+    public function test_the_prevented_event_stays_on_the_dispatcher_that_prevented_it()
+    {
+        $global = new Events();
+        $local = new Events();
+        $globalCalls = 0;
+        $localCalls = 0;
+
+        $local->on(ProductWasShipped::class, fn (ProductWasShipped $event) => $event->prevent());
+        $global->on(PreventedEvent::class, function () use (&$globalCalls) { ++$globalCalls; });
+        $local->on(PreventedEvent::class, function () use (&$localCalls) { ++$localCalls; });
+
+        $global->asGlobalInstance(fn () => (new ProductWasShipped('PRD-1'))->dispatch($local));
+
+        $this->assertEquals(0, $globalCalls);
+        $this->assertEquals(1, $localCalls);
+    }
+
+    public function test_preventing_a_prevented_event_does_not_loop()
+    {
+        $dispatcher = new Events();
+        $calls = 0;
+
+        $dispatcher->on(ProductWasShipped::class, fn (ProductWasShipped $event) => $event->prevent());
+        $dispatcher->on(PreventedEvent::class, function (PreventedEvent $event) use (&$calls) {
+            ++$calls;
+            $event->prevent();
+        });
+        $dispatcher->dispatch(new ProductWasShipped('PRD-1'));
+
+        $this->assertEquals(1, $calls);
+    }
+
+    public function test_dispatch_succeeds_when_nobody_listens()
+    {
+        $this->assertTrue((new Events())->dispatch('nobody-listens-to-me'));
+    }
+
+    public function test_dispatch_succeeds_when_every_listener_ran()
+    {
+        $dispatcher = new Events();
+        $dispatcher->on('product-was-shipped', fn () => null);
+
+        $this->assertTrue($dispatcher->dispatch('product-was-shipped'));
+    }
+
+    public function test_dispatch_fails_when_a_listener_prevents_the_event()
+    {
+        $dispatcher = new Events();
+        $dispatcher->on('product-was-shipped', fn (CustomEvent $event) => $event->prevent());
+
+        $this->assertFalse($dispatcher->dispatch('product-was-shipped'));
+    }
+
+    public function test_a_prevented_event_fails_even_if_its_prevented_event_is_prevented_too()
+    {
+        $dispatcher = new Events();
+        $dispatcher->on('product-was-shipped', fn (CustomEvent $event) => $event->prevent());
+        $dispatcher->on(PreventedEvent::class, fn (PreventedEvent $event) => $event->prevent());
+
+        $this->assertFalse($dispatcher->dispatch('product-was-shipped'));
     }
 }

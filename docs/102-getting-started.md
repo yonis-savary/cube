@@ -58,7 +58,10 @@ env=debug
 | no key | `false` | `false` | `Internal Server Error` |
 
 `isProduction()` is also the default of `AutoloaderConfiguration(cached:)`, which caches the class
-index under the `composer.lock` hash and, when APCu is available, snapshots it there too.
+index and the applications files and, when APCu is available, snapshots them there too. This cache
+does not notice a new controller or route file by itself : dispatch `PostDeployment` after each
+deployment (`php do cube:dispatch --event PostDeployment`) to empty it, and restart php-fpm so its
+APCu copy goes away as well.
 
 Values are read as written, so `APP_KEY=c2VjcmV0==` or `PASSWORD=abc!def` need no quotes. `true`,
 `on`, `yes` read as `"1"`, and `false`, `off`, `no`, `none`, `null` as `""`. Variables of the process

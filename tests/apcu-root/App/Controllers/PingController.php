@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use Cube\Core\Autoloader;
+use Cube\Event\Events\ApplicationsLoaded;
+use Cube\Event\Events\FrameworkLoaded;
 use Cube\Web\Controller;
 use Cube\Web\Http\Response;
 use Cube\Web\Router\Route;
@@ -27,7 +29,9 @@ class PingController extends Controller
     public static function ping() {
         return Response::json([
             'message' => "OK",
-            'loaded_with_apcu' => Autoloader::$loadedThroughApcu
+            'loaded_with_apcu' => Autoloader::$loadedThroughApcu,
+            'framework_loaded' => $GLOBALS['heard'][FrameworkLoaded::class] ?? false,
+            'applications_loaded' => $GLOBALS['heard'][ApplicationsLoaded::class] ?? null,
         ]);
     }
 }

@@ -93,10 +93,29 @@ class EventTest extends TestCase
         $this->assertEquals(1, $calls);
     }
 
-    public function test_dispatch_gives_the_event_back()
+    public function test_an_event_is_not_prevented_by_default()
+    {
+        $this->assertFalse((new ProductWasShipped('PRD-1'))->isPrevented());
+    }
+
+    public function test_prevent_marks_the_event_and_gives_it_back()
     {
         $event = new ProductWasShipped('PRD-1');
 
-        $this->assertSame($event, $event->dispatch(new Events()));
+        $this->assertSame($event, $event->prevent());
+        $this->assertTrue($event->isPrevented());
+    }
+
+    public function test_dispatch_tells_whether_the_event_went_through()
+    {
+        $dispatcher = new Events();
+
+        $this->assertTrue((new ProductWasShipped('PRD-1'))->dispatch($dispatcher));
+
+        $dispatcher->on(ProductWasShipped::class, fn (ProductWasShipped $event) => $event->prevent());
+        $event = new ProductWasShipped('PRD-1');
+
+        $this->assertFalse($event->dispatch($dispatcher));
+        $this->assertTrue($event->isPrevented());
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Cube\Event;
 
+use Cube\Event\Events\PreventedEvent;
+
 abstract class EventDispatcher
 {
     /** @var array<string,callable[]> */
@@ -24,14 +26,27 @@ abstract class EventDispatcher
         return $this;
     }
 
-    public function dispatch(Event|string $event): void
+    /** @return bool Was the Event dispatched successfully ? */
+    public function dispatch(Event|string $event): bool
     {
         if (is_string($event)) {
             $event = new CustomEvent($event);
         }
 
+        if (!array_key_exists($event->getName(), $this->subscriptions)) {
+            return true;
+        }
+
         foreach ($this->subscriptions[$event->getName()] ?? [] as $callback) {
             $callback($event);
+
+            if ($event->isPrevented()) {
+                if ($event::class !== PreventedEvent::class)
+                    (new PreventedEvent($event))->dispatch($this);
+                return false;
+            }
         }
+
+        return true;
     }
 }

@@ -26,6 +26,17 @@ class RequestContext
     }
 
 
+    /**
+     * @template TReturn
+     * @param \Closure(self):TReturn $callback
+     * @param class-string<Component>[] $persistentComponents
+     * @return TReturn
+     */
+    public static function oneShot(callable $callback, array $persistentComponents = []): mixed {
+        $instance = new static($persistentComponents);
+        return $instance->run($callback);
+    }
+
     protected function snapshotInstances(): void
     {
         $instances = [];
@@ -40,7 +51,7 @@ class RequestContext
         $this->instancesStack[] = $instances;
     }
 
-    protected function resetComponents(): void
+    protected function resetToLastSnapshot(): void
     {
         $lastInstances = count($this->instancesStack)
             ? array_pop($this->instancesStack)
@@ -53,6 +64,13 @@ class RequestContext
         }
     }
 
+    protected function freshInstances(): void
+    {
+        foreach ($this->componentsToReset as $class) {
+            $class::removeInstance();
+        }
+    }
+
     /**
      * @template TReturn
      * @param callable():TReturn $callback
@@ -61,25 +79,11 @@ class RequestContext
     public function run(callable $callback): mixed
     {
         $this->snapshotInstances();
+        $this->freshInstances();
         try {
             return $this->asGlobalInstance($callback);
         } finally {
-            $this->resetComponents();
+            $this->resetToLastSnapshot();
         }
-    }
-
-    /**
-     * @template TComponent of Component
-     * @param class-string<TComponent> $component
-     * @return TComponent
-     */
-    public function get(string $component): mixed {
-        $count = count($this->instancesStack);
-        if (!$count)
-            throw new RuntimeException('get() can only be called while running a context callback, see run()');
-
-        $activeStack = &$this->instancesStack[$count-1];
-
-        return $activeStack[$component] ??= $component::getInstance();
     }
 }

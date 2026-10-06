@@ -5,6 +5,7 @@ namespace Cube\Web\Http;
 use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
+use Cube\Event\Events\DisplayingResponse;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
@@ -417,13 +418,15 @@ class Response extends HttpMessage
         return static::text($message, StatusCode::INTERNAL_SERVER_ERROR);
     }
 
-    public function logSelf(?LoggerInterface $logger = null): void
+    public function logSelf(?LoggerInterface $logger = null): static
     {
         $logger ??= Logger::getInstance();
         $logger->log('info', '{code} {content-type}', [
             'code' => $this->getStatusCode(),
             'content-type' => $this->getHeader('content-type') ?? 'unknown mime type',
         ]);
+
+        return $this;
     }
 
     public function getStatusCode(): int
@@ -491,8 +494,11 @@ class Response extends HttpMessage
         return $this->withCORSHeaders();
     }
 
-    public function display(bool $sendHeaders = true): void
+    public function display(bool $sendHeaders = true): static
     {
+        if (!(new DisplayingResponse($this))->dispatch())
+            return $this;
+
         $this->withDefaultCORSHeaders();
 
         if ($sendHeaders) {
@@ -508,6 +514,7 @@ class Response extends HttpMessage
         }
 
         echo $this->getBody();
+        return $this;
     }
 
     public function toPsrResponse(): ResponseInterface

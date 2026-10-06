@@ -138,4 +138,36 @@ class RequestContextTest extends TestCase
         $this->assertSame($inner, $seenAfterInnerRun);
         $this->assertSame($outer, Counter::getInstance());
     }
+
+    public function test_one_shot_runs_the_callback_with_a_fresh_context()
+    {
+        $received = null;
+
+        $result = RequestContext::oneShot(function (RequestContext $context) use (&$received) {
+            $received = $context;
+
+            return 'result';
+        });
+
+        $this->assertEquals('result', $result);
+        $this->assertInstanceOf(RequestContext::class, $received);
+    }
+
+    public function test_one_shot_gives_components_back_their_previous_instance()
+    {
+        $before = new Counter('before');
+        Counter::setInstance($before);
+
+        $seenInside = RequestContext::oneShot(fn () => Counter::getInstance());
+
+        $this->assertNotSame($before, $seenInside);
+        $this->assertSame($before, Counter::getInstance());
+    }
+
+    public function test_one_shot_keeps_persistent_components()
+    {
+        $instance = RequestContext::oneShot(fn () => Counter::getInstance(), [Counter::class]);
+
+        $this->assertSame($instance, Counter::getInstance());
+    }
 }

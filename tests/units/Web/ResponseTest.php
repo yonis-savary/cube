@@ -3,6 +3,8 @@
 namespace Cube\Tests\Units\Web;
 
 use Cube\Env\Storage;
+use Cube\Event\Events;
+use Cube\Event\Events\DisplayingResponse;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Env\Classes\SpyLogger;
 use Cube\Web\Http\Configuration\CORSConfiguration;
@@ -207,10 +209,56 @@ class ResponseTest extends TestCase
     {
         $logger = new SpyLogger();
 
-        Response::json(['name' => 'screen'])->logSelf($logger);
+        $response = Response::json(['name' => 'screen']);
+
+        $this->assertSame($response, $response->logSelf($logger));
 
         $this->assertEquals(['info'], $logger->levels());
         $this->assertEquals('{code} {content-type}', $logger->records[0][1]);
+    }
+
+    public function testDisplayEchoesTheBodyAndGivesTheResponseBack()
+    {
+        $response = Response::text('Hello');
+
+        ob_start();
+        $returned = $response->display(false);
+        $output = ob_get_clean();
+
+        $this->assertSame($response, $returned);
+        $this->assertEquals('Hello', $output);
+    }
+
+    public function testDisplayingResponseListenersReceiveTheResponse()
+    {
+        $response = Response::text('Hello');
+        $received = null;
+
+        $events = new Events();
+        $events->on(DisplayingResponse::class, function (DisplayingResponse $event) use (&$received) {
+            $received = $event->response;
+        });
+
+        ob_start();
+        Events::withInstance($events, fn () => $response->display(false));
+        ob_end_clean();
+
+        $this->assertSame($response, $received);
+    }
+
+    public function testPreventingDisplayingResponseSkipsTheDisplay()
+    {
+        $response = Response::text('Hello');
+
+        $events = new Events();
+        $events->on(DisplayingResponse::class, fn (DisplayingResponse $event) => $event->prevent());
+
+        ob_start();
+        $returned = Events::withInstance($events, fn () => $response->display(false));
+        $output = ob_get_clean();
+
+        $this->assertSame($response, $returned);
+        $this->assertEquals('', $output);
     }
 
     public function testToObjectRefusesAFailedResponse()

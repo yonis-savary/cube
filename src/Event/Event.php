@@ -4,6 +4,8 @@ namespace Cube\Event;
 
 abstract class Event
 {
+    protected bool $prevented = false;
+
     public function getName(): string
     {
         return static::class;
@@ -16,11 +18,19 @@ abstract class Event
         $dispatcher->on(static::class, $callback);
     }
 
-    public function dispatch(?EventDispatcher $dispatcher = null): self
+    /** @return bool Was the event dispatched successfully ? */
+    public function dispatch(?EventDispatcher $dispatcher = null): bool
     {
         $dispatcher ??= Events::getInstance();
-        $dispatcher->dispatch($this);
+        return $dispatcher->dispatch($this);
+    }
 
+    public function prevent(): static {
+        $this->prevented = true;
         return $this;
+    }
+
+    public function isPrevented(): bool {
+        return $this->prevented;
     }
 }

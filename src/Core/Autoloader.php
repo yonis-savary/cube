@@ -11,14 +11,16 @@ use Cube\Env\Storage;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Env\Logger\Logger;
+use Cube\Event\Events\ApplicationsLoaded;
+use Cube\Event\Events\FrameworkLoaded;
 use Cube\Utils\Path;
 use Cube\Utils\Shell;
-use ErrorException;
-use Exception;
 use RuntimeException;
 
 class Autoloader
 {
+    protected static AutoloaderConfiguration $configuration;
+
     protected static array $knownApplications = [];
     protected static array $assetsFiles = [];
     protected static array $requireFiles = [];
@@ -31,25 +33,31 @@ class Autoloader
     protected static ?ClassLoader $loader;
     protected static mixed $classIndex = [];
     protected static Cache $autoloadCache;
-    protected static ?string $apcuKey = null;
 
     public static bool $loadedThroughApcu = false;
+    protected static bool $booted = false;
+
+    protected const APCU_KEY = __DIR__.'.autoload';
 
     public static function clearApcuCache(): void 
     {
-        if (!function_exists('apcu_fetch'))
-            return;
+        if (function_exists('apcu_fetch'))
+            apcu_delete(self::APCU_KEY);
+    }
 
-        apcu_delete(new \APCUIterator('/^'.preg_quote(__DIR__.'.autoload-data', '/').'/'));
+    public static function cleanCache(): void
+    {
+        self::$autoloadCache->clear();
+        self::clearApcuCache();
     }
 
     public static function tryToLoadThroughApcu(): bool
     {
-        if (!self::$apcuKey || !function_exists('apcu_fetch'))
+        if (!function_exists('apcu_fetch'))
             return false;
 
         $success = false;
-        $autoloadFullData = apcu_fetch(self::$apcuKey, $success);
+        $autoloadFullData = apcu_fetch(self::APCU_KEY, $success);
 
         if (!$success)
             return false;
@@ -76,10 +84,10 @@ class Autoloader
 
     public static function saveToApcu(): void
     {
-        if (!self::$apcuKey || !function_exists('apcu_fetch'))
+        if (!(self::$booted && self::$configuration->cached && function_exists('apcu_fetch')))
             return;
 
-        apcu_store(self::$apcuKey, [
+        apcu_store(self::APCU_KEY, [
             self::$knownApplications,
             self::$assetsFiles,
             self::$requireFiles,
@@ -93,6 +101,7 @@ class Autoloader
 
     public static function initialize(?string $forceProjectPath = null, ?AutoloaderConfiguration $configuration = null)
     {
+        self::$booted = false;
         self::registerErrorHandlers();
         self::$loader = self::findClassLoader();
 
@@ -104,30 +113,38 @@ class Autoloader
 
         Path::resolveProjectPath($forceProjectPath);
 
-        $configuration ??= AutoloaderConfiguration::resolve();
+        self::$configuration = $configuration ??= AutoloaderConfiguration::resolve();
+
+        self::$autoloadCache = Cache::getInstance()->child("autoloader");
 
         if ($configuration->cached) {
-            $lockFile = Path::relative('composer.lock');
-            $cacheIdentifier = is_file($lockFile) ? md5_file($lockFile) : 'default';
-            self::$apcuKey = __DIR__.".autoload-data-$cacheIdentifier";
+            if (self::tryToLoadThroughApcu()) {
+                (new FrameworkLoaded)->dispatch();
+                self::includeRequireFiles();
+                self::$booted = true;
+                (new ApplicationsLoaded(self::$knownApplications))->dispatch();
+                return;
+            }
 
-            if (self::tryToLoadThroughApcu())
-                return self::includeRequireFiles();
+            self::$classIndex = &self::$autoloadCache->getReference('classes', []);
 
-            self::$autoloadCache = Cache::getInstance();
-            self::$classIndex = &self::$autoloadCache->getReference($cacheIdentifier, []);
-
-            self::$knownApplications = &self::$autoloadCache->getReference("cube:$cacheIdentifier:apps", []);
-            self::$assetsFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:assets", []);
-            self::$requireFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:require", []);
-            self::$routesFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:routes", []);
-            self::$viewFiles = &self::$autoloadCache->getReference("cube:$cacheIdentifier:views", []);
+            self::$knownApplications = &self::$autoloadCache->getReference('apps', []);
+            self::$assetsFiles = &self::$autoloadCache->getReference('assets', []);
+            self::$requireFiles = &self::$autoloadCache->getReference('require', []);
+            self::$routesFiles = &self::$autoloadCache->getReference('routes', []);
+            self::$viewFiles = &self::$autoloadCache->getReference('views', []);
         } else {
             self::$classIndex = [];
         }
 
+        (new FrameworkLoaded)->dispatch();
+
         self::loadApplications();
         self::includeRequireFiles();
+        self::$booted = true;
+
+        (new ApplicationsLoaded(self::$knownApplications))->dispatch();
+
         self::saveToApcu();
     }
 
@@ -470,7 +487,7 @@ class Autoloader
         }
     }
 
-    protected static function loadApplications()
+    protected static function loadApplications(): void
     {
         $apps = Applications::resolve();
 

@@ -76,10 +76,12 @@ reads its own with `MyConfiguration::resolve()`, whose fallback chain is: elemen
 collaborators (a `LocalDiskCache`, a `StaticServer`), not strings to interpret later.
 They get serialized by `configuration:cache`, so **no closures inside a configuration element**.
 
-**Memoization keyed by identity.** The class index and the applications file lists are cached
-under `md5_file('composer.lock')` (`AutoloaderConfiguration(cached: true)`), snapshotted into
-APCu when available, and the configuration has its own cache identified by name. Invalidate with
-`php do cache:clear` / `php do configuration:cache`.
+**Memoization invalidated on deployment.** The class index and the applications file lists are
+cached under fixed keys (`AutoloaderConfiguration(cached: true)`, on by default in production),
+snapshotted into APCu when available, and the configuration has its own cache identified by name.
+`Autoloader::cleanCache()` listens to `PostDeployment` and drops both copies (the CLI cannot reach
+php-fpm's APCu, a php-fpm restart does). Invalidate the configuration with
+`php do configuration:cache`.
 
 ## Applications
 

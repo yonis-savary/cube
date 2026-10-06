@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Web;
 
 use Cube\Data\Database\Database;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
+use Cube\Tests\Units\Env\Classes\SpyLogger;
 use Cube\Tests\Units\Models\Module;
 use Cube\Tests\Units\Web\Examples\PriceRequest;
 use Cube\Web\Http\Request;
@@ -109,6 +110,16 @@ class RequestTest extends TestCase
 
         $this->assertEquals([], $request->post());
         $this->assertEquals('{not json', $request->getBody());
+    }
+
+    public function testARequestCanLogItselfAndGivesItselfBack()
+    {
+        $logger = new SpyLogger();
+        $request = new Request('GET', '/product');
+
+        $this->assertSame($request, $request->logSelf($logger));
+        $this->assertEquals(['info'], $logger->levels());
+        $this->assertEquals('{method} {path}', $logger->records[0][1]);
     }
 
     public function testQueryStringIsStrippedFromThePath()

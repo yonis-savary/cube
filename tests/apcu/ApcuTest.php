@@ -22,4 +22,21 @@ class ApcuTest extends TestCase
         $this->assertEquals("OK", $secondMessage['message']);
         $this->assertTrue($secondMessage['loaded_with_apcu']);
     }
+
+    public function test_loading_events_are_dispatched_with_and_without_apcu()
+    {
+        $port = env('CUBE_TEST_NGINX_APCU_PORT', 9903);
+
+        (new Request("GET", "localhost:$port/"))->fetch();
+        $request = new Request("GET", "localhost:$port/ping");
+
+        foreach ([false, true] as $expectedApcu) {
+            $message = $request->fetch()->getJSON();
+
+            $this->assertEquals($expectedApcu, $message['loaded_with_apcu']);
+            $this->assertTrue($message['framework_loaded']);
+            $this->assertCount(1, $message['applications_loaded']);
+            $this->assertMatchesRegularExpression('~(^|/)App$~', $message['applications_loaded'][0]);
+        }
+    }
 }

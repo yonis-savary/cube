@@ -84,13 +84,15 @@ class Request extends HttpMessage
         return $newReq;
     }
 
-    public function logSelf(?LoggerInterface $logger = null): void
+    public function logSelf(?LoggerInterface $logger = null): static
     {
         $logger ??= Logger::getInstance();
         $logger->log('info', '{method} {path}', [
             'method' => $this->getMethod(),
             'path' => $this->getPath(),
         ]);
+
+        return $this;
     }
 
     public static function fromGlobals(): static
