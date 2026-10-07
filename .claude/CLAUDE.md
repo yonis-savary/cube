@@ -29,15 +29,15 @@ These four rules decide every design argument in this repository:
 
 ## Where things are
 
-@.claude/architecture.md
+@architecture.md
 
 ## How to write code here
 
-@.claude/guidelines.md
+@guidelines.md
 
 ## How to write documentation here
 
-@.claude/documentation.md
+@documentation.md
 
 ## Commands
 

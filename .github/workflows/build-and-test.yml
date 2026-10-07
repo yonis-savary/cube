@@ -10,93 +10,84 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
-    services:
-      mysql:
-        image: mysql
-        ports:
-          - 8001:3306
-        env:
-          MYSQL_DATABASE: cubetest
-          MYSQL_ROOT_PASSWORD: root
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-      postgres:
-        image: postgres
-        ports:
-          - 8002:5432
-        env:
-          POSTGRES_PASSWORD: root
-      redis:
-        image: redis
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set upcompose for APCu tests
-        run: docker compose up -d --build php-apcu-test nginx-apcu-test
+      # Same services as a local `make test` : compose.yml holds their ports and tuning
+      - name: Start test services
+        run: docker compose up -d --build
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
+          extensions: pdo_mysql, pdo_pgsql, pdo_sqlite, redis, curl, pcntl
           coverage: none
 
-      - name: Wait for MySQL to be up
-        run: |
-          for i in {1..15}; do
-            if mysqladmin ping -h127.0.0.1 -uroot -proot --port=8001 --silent; then
-              break
-            fi
-            echo "($i / 15) Waiting for MySQL..."
-            sleep 5
-          done
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for Nginx to be ready
-        run: |
-          for i in {1..15}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8003/)
-            if [ "$STATUS" != "502" ] && [ "$STATUS" != "000" ]; then
-              echo "Nginx is ready with status $STATUS"
-              break
-            fi
-            echo "($i / 15) Waiting for Nginx... Current status: $STATUS"
-            sleep 5
-          done
-
-      - name: Wait for PostgreSQL to be up
-        run: |
-          for i in {1..15}; do
-            if pg_isready -h 127.0.0.1 -p 8002 -U postgres; then
-              echo "PostgreSQL is up!"
-              exit 0
-            fi
-            echo "($i / 15) Waiting for PostgreSQL..."
-            sleep 5
-          done
-          echo "PostgreSQL did not start in time"
-          exit 1
-        env:
-          PGPASSWORD: root
-
-
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y make
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ hashFiles('composer.json') }}
+          restore-keys: composer-
 
       - name: Install framework dependencies
         run: composer install
 
-      - name: Launch worflow tests (with make)
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h127.0.0.1 --port=9901 -uroot -proot --silent; then
+              exit 0
+            fi
+            echo "($i / 30) Waiting for MySQL..."
+            sleep 2
+          done
+          echo "MySQL did not start in time"
+          exit 1
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 9902 -U postgres; then
+              exit 0
+            fi
+            echo "($i / 30) Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL did not start in time"
+          exit 1
+
+      - name: Wait for Redis
+        run: |
+          for i in {1..30}; do
+            if docker compose exec -T redis redis-cli ping | grep -q PONG; then
+              exit 0
+            fi
+            echo "($i / 30) Waiting for Redis..."
+            sleep 2
+          done
+          echo "Redis did not start in time"
+          exit 1
+
+      - name: Wait for the APCu server
+        run: |
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:9903/ || true)
+            if [ "$STATUS" != "502" ] && [ "$STATUS" != "000" ]; then
+              echo "APCu server answers with status $STATUS"
+              exit 0
+            fi
+            echo "($i / 30) Waiting for the APCu server... Current status: $STATUS"
+            sleep 2
+          done
+          echo "APCu server did not start in time"
+          exit 1
+
+      - name: Run the test suites
         run: make workflow-test
