@@ -19,6 +19,7 @@ use Cube\Web\Controller;
 use Cube\Web\Helpers\WebAPI;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 
 class AutoloaderTest extends TestCase
 {
@@ -177,5 +178,20 @@ class AutoloaderTest extends TestCase
             unlink($directory->path('Invoice.php'));
             rmdir($directory->getRoot());
         }
+    }
+
+    /** A CLI usually loads the apcu extension with apc.enable_cli=0, where every APCu call throws. */
+    public function test_a_disabled_apcu_extension_is_ignored()
+    {
+        if (!extension_loaded('apcu'))
+            $this->markTestSkipped('Needs the apcu extension loaded');
+
+        $process = new Process([
+            PHP_BINARY, '-d', 'apc.enable_cli=0', '-r',
+            'require "vendor/autoload.php"; Cube\Core\Autoloader::clearApcuCache(); echo "cleared";',
+        ], timeout: 30);
+        $process->run();
+
+        $this->assertEquals('cleared', $process->getOutput(), $process->getErrorOutput());
     }
 }

@@ -47,9 +47,14 @@ class Autoloader
 
     protected const APCU_KEY = __DIR__.'.autoload';
 
-    public static function clearApcuCache(): void 
+    public static function hasApcu(): bool
     {
-        if (function_exists('apcu_fetch'))
+        return function_exists('apcu_enabled') && apcu_enabled();
+    }
+
+    public static function clearApcuCache(): void
+    {
+        if (self::hasApcu())
             apcu_delete(new \APCUIterator('/^'.preg_quote(self::APCU_KEY, '/').'/'));
     }
 
@@ -66,7 +71,7 @@ class Autoloader
 
     public static function tryToLoadThroughApcu(): bool
     {
-        if (!function_exists('apcu_fetch'))
+        if (!self::hasApcu())
             return false;
 
         $success = false;
@@ -95,7 +100,7 @@ class Autoloader
 
     public static function saveToApcu(): void
     {
-        if (!(self::$booted && self::$configuration->cached && function_exists('apcu_fetch')))
+        if (!(self::$booted && self::$configuration->cached && self::hasApcu()))
             return;
 
         apcu_store(self::APCU_KEY, [
@@ -303,7 +308,7 @@ class Autoloader
         }
 
         $key = self::exploredDirectoriesKey();
-        $hasApcu = function_exists('apcu_fetch');
+        $hasApcu = self::hasApcu();
         $success = false;
         $index = $hasApcu ? apcu_fetch(self::APCU_KEY.'.classes.'.$key, $success) : null;
         if ($success) {
@@ -317,7 +322,7 @@ class Autoloader
 
     protected static function saveClassIndexToApcu(): void
     {
-        if (!(self::$configuration?->cached && function_exists('apcu_store')))
+        if (!(self::$configuration?->cached && self::hasApcu()))
             return;
 
         apcu_store(self::APCU_KEY.'.classes.'.self::exploredDirectoriesKey(), self::$classIndex);
@@ -339,7 +344,7 @@ class Autoloader
             return self::scanClassesList();
 
         $key = self::exploredDirectoriesKey();
-        $hasApcu = function_exists('apcu_fetch');
+        $hasApcu = self::hasApcu();
         $success = false;
         $list = $hasApcu ? apcu_fetch(self::APCU_KEY.'.classes-list.'.$key, $success) : null;
         if ($success)
