@@ -71,7 +71,7 @@ $response = (new Request('GET', 'http://localhost/internal/ping'))->fetch(
 
 ## What survives between requests
 
-Each request runs in a `RequestContext` : every component created during the request is removed
+Each request runs in a [`RequestContext`](./102-getting-started.md#running-code-with-fresh-components) : every component created during the request is removed
 when it ends, so nothing leaks from one request into the next. A few components are kept for the
 whole life of the process
 

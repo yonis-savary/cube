@@ -121,5 +121,43 @@ Most notable components are
 - `Database`
 - `Authentication`
 
+### Running code with fresh components
+
+`RequestContext::oneShot()` runs a callback where every component starts from scratch, then gives
+each component back the instance it had before. Components created inside the callback do not
+survive it.
+
+```php
+$database = Database::getInstance();
+
+$report = RequestContext::oneShot(function (RequestContext $context) {
+    // Database::getInstance() builds a new instance here
+    return Product::select()->fetch();
+});
+
+Database::getInstance(); // $database again
+```
+
+The second parameter lists the components the callback shares with the outside, untouched
+
+```php
+RequestContext::oneShot(fn () => $this->handle($message), [Configuration::class, Logger::class]);
+```
+
+The callback receives the context, which is also the global `RequestContext` while it runs. It returns
+whatever the callback returns.
+
+`oneShot()` scans your classes to know every component each time it is called. To run many callbacks
+with the same persistent components, build the context once and call `run()` on it
+
+```php
+$context = new RequestContext([Configuration::class, Logger::class]);
+
+foreach ($messages as $message)
+    $context->run(fn () => $this->handle($message));
+```
+
+Static properties are not components : they are left as they are.
+
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./101-introduction.md">Previous : Introduction</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./103-applications.md">Next : Applications</a></div></td></tr></table>
