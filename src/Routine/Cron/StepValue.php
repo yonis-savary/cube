@@ -10,7 +10,7 @@ class StepValue implements CronValue
 
     public function __construct(string $rawSet)
     {
-        list($step) = Bunch::fromExplode('/', $rawSet)->asIntegers()->get();
+        $step = Bunch::fromExplode('/', $rawSet)->asIntegers()->first();
 
         if ($step < 1) {
             throw new \InvalidArgumentException("A step must be greater than zero (got [{$rawSet}])");

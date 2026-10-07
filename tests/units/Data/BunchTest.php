@@ -77,23 +77,26 @@ class BunchTest extends TestCase
 
     public function testAsIntegers()
     {
-        $this->assertEquals([1, -2, 3], Bunch::of(['1', '-2', '3.1416'])->asIntegers()->get());
-        $this->assertEquals([1, -2, 3], Bunch::of(['1', null, '-2', '3.1416'])->asIntegers()->get());
-        $this->assertEquals([1, -2, 3], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asIntegers()->get());
-        $this->assertEquals([1, 12, -2, 3], Bunch::of(['1', 12, '-2', '3.1416'])->asIntegers()->get());
+        $this->assertEquals([1, -2, 3], Bunch::of(['1', '-2', '3.1416'])->asIntegers()->values()->get());
+        $this->assertEquals([1, -2, 3], Bunch::of(['1', null, '-2', '3.1416'])->asIntegers()->values()->get());
+        $this->assertEquals([1, -2, 3], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asIntegers()->values()->get());
+        $this->assertEquals([1, 12, -2, 3], Bunch::of(['1', 12, '-2', '3.1416'])->asIntegers()->values()->get());
     }
 
     public function testAsFloats()
     {
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', '-2', '3.1416'])->asFloats()->get());
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', null, '-2', '3.1416'])->asFloats()->get());
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asFloats()->get());
-        $this->assertEquals([1, 12, -2, 3.1416], Bunch::of(['1', 12, '-2', '3.1416'])->asFloats()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', '-2', '3.1416'])->asFloats()->values()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', null, '-2', '3.1416'])->asFloats()->values()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asFloats()->values()->get());
+        $this->assertEquals([1, 12, -2, 3.1416], Bunch::of(['1', 12, '-2', '3.1416'])->asFloats()->values()->get());
     }
 
     public function testFilter()
     {
-        $this->assertEquals([0, 2, 4, 6, 8], Bunch::of([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])->filter(fn ($x) => 0 == $x % 2)->get());
+        $evens = Bunch::of([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])->filter(fn ($x) => 0 == $x % 2);
+
+        $this->assertSame([0 => 0, 2 => 2, 4 => 4, 6 => 6, 8 => 8], $evens->get());
+        $this->assertSame([0, 2, 4, 6, 8], $evens->values()->get());
     }
 
     public function testPartitionFilter()
@@ -187,7 +190,7 @@ class BunchTest extends TestCase
     {
         $this->assertEquals(
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-            Bunch::of([0, 1, 2, 1, 1, 3, 4, 5, 6, 7, 5, 5, 8, 0, 9])->uniques()->get()
+            Bunch::of([0, 1, 2, 1, 1, 3, 4, 5, 6, 7, 5, 5, 8, 0, 9])->uniques()->values()->get()
         );
     }
 
@@ -629,7 +632,7 @@ class BunchTest extends TestCase
             ['label' => 'Screen', 'inStock' => true],
         ];
 
-        $this->assertEquals(['Keyboard', 'Screen'], Bunch::of($rows)->filter('inStock')->map('label')->get());
+        $this->assertEquals(['Keyboard', 'Screen'], Bunch::of($rows)->filter('inStock')->map('label')->values()->get());
     }
 
     public function testMapWithAKeyReadsArraysAndObjects()
@@ -720,9 +723,62 @@ class BunchTest extends TestCase
         $this->assertEquals([1, 2], Bunch::of([['first' => 1], ['second' => 2]])->flat()->get());
     }
 
+    public function testFlatOnNestedBunches()
+    {
+        $this->assertEquals([1, 2, 3], Bunch::of([Bunch::of([1, 2]), [3]])->flat()->get());
+    }
+
+    public function testFlatMap()
+    {
+        $this->assertEquals(
+            ['Lyon', 'Villeurbanne', 'Brest'],
+            Bunch::of([['Lyon', 'Villeurbanne'], ['Brest']])
+                ->flatMap(fn (array $cities) => Bunch::of($cities))
+                ->get()
+        );
+    }
+
     /** first() requires a strict true while any() accepts a truthy result. */
     public function testFirstAcceptsATruthyResult()
     {
         $this->assertEquals('apple', Bunch::of(['pear', 'apple'])->first(fn ($fruit) => preg_match('/a.p/', $fruit)));
+    }
+
+    public function testValuesReindexesKeyedData()
+    {
+        $prices = new Bunch(['keyboard' => 40, 'mouse' => 15]);
+
+        $this->assertSame([40, 15], $prices->values()->get());
+    }
+
+    public function testMapKeepsTheKeys()
+    {
+        $prices = new Bunch(['keyboard' => 40, 'mouse' => 15]);
+
+        $this->assertSame(['keyboard' => 80, 'mouse' => 30], $prices->map(fn (int $price) => $price * 2)->get());
+    }
+
+    public function testOfABunchWithGapsKeepsItsData()
+    {
+        $evens = Bunch::of([1, 2, 3, 4])->filter(fn ($x) => 0 == $x % 2);
+
+        $this->assertSame([1 => 2, 3 => 4], Bunch::of($evens)->get());
+    }
+
+    public function testPositionalReadsIgnoreGapsLeftByAFilter()
+    {
+        $evens = Bunch::of([1, 2, 3, 4])->filter(fn ($x) => 0 == $x % 2);
+
+        $this->assertSame(2, $evens->first());
+        $this->assertSame(0, $evens->firstIndex(fn ($x) => 2 === $x));
+        $this->assertSame(1, $evens->lastIndex(fn ($x) => 4 === $x));
+    }
+
+    public function testKeyAfterAFilter()
+    {
+        $rows = Bunch::of([['label' => 'Keyboard', 'inStock' => false], ['label' => 'Screen', 'inStock' => true]])
+            ->filter('inStock');
+
+        $this->assertSame(['Screen'], $rows->key('label')->values()->get());
     }
 }

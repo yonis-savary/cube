@@ -16,12 +16,8 @@ class Shell
      */
     public static function findCommand(string $identifier): array
     {
-        $commands = Autoloader::classesThatExtends(Command::class);
-        $commands = Bunch::of($commands);
-
-        return $commands
-            ->instanciates()
-            ->filter(fn (Command $command) => in_array($identifier, [$command->getFullIdentifier(), $command->getName()]))
+        return Bunch::fromExtends(Command::class)
+            ->filter(fn (Command $command) => in_array($identifier, [$command->getFullIdentifier(), $command->getName()]), true)
             ->get()
         ;
     }

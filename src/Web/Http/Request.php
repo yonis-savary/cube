@@ -174,7 +174,7 @@ class Request extends HttpMessage
     public function uploads(string $inputName): array
     {
         return Bunch::of($this->uploads)
-            ->filter(fn (Upload $upload) => $upload->inputName === $inputName)
+            ->filter(fn (Upload $upload) => $upload->inputName === $inputName, true)
             ->get()
         ;
     }

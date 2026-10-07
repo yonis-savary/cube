@@ -156,10 +156,11 @@ class SQLite extends DatabaseAdapter
 
         $fields = Bunch::of($db->query('PRAGMA table_xinfo({})', [$table]))
             ->filter(fn($x) => in_array($x['hidden'], ['0', '2'])) // 0 => visible column, 2 => generated column
-            ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); })
+            ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); }) // function() syntax is important, $primary is mutable
+            ->values()
             ->get()
         ;
 
-        return new Table($table, $fields, $primary, $relations);
+        return new Table($table, $fields, $primary);
     }
 }

@@ -76,7 +76,7 @@ class LocalDiskDriver extends StorageDriver
     public function scanDirectory(string $path): array
     {
         return Bunch::of(scandir($path))
-            ->filter(fn ($e) => !in_array($e, ['.', '..']))
+            ->diff(['.', '..'])
             ->get()
         ;
     }

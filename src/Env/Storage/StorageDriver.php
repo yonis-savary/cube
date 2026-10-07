@@ -57,7 +57,7 @@ abstract class StorageDriver
     {
         return Bunch::of($this->scanDirectory($path))
             ->map(fn ($el) => Path::join($path, $el))
-            ->filter(fn ($el) => $this->isFile($el))
+            ->filter(fn ($el) => $this->isFile($el), true)
             ->get()
         ;
     }
@@ -69,7 +69,7 @@ abstract class StorageDriver
     {
         return Bunch::of($this->scanDirectory($path))
             ->map(fn ($el) => Path::join($path, $el))
-            ->filter(fn ($el) => $this->isDirectory($el))
+            ->filter(fn ($el) => $this->isDirectory($el), true)
             ->get()
         ;
     }

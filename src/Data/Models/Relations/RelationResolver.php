@@ -38,7 +38,8 @@ class RelationResolver
         $keys = $owners
             ->key($fromKey)
             ->filter()
-            ->uniques();
+            ->uniques()
+            ->values();
 
         $targetData = $toModel::select()
             ->exploreTree($toModel, $this->treeToExplore, $toModel::table())

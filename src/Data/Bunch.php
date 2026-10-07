@@ -42,12 +42,12 @@ class Bunch implements Countable
      *
      * @param TType[]|Bunch<TTypeKey,TType>|TType $element
      *
-     * @return self<int,TType>
+     * @return self<int,TType>|self<TTypeKey,TType>
      */
     public static function of(mixed $element): self
     {
         if ($element instanceof Bunch) {
-            $element = $element->get();
+            return new static($element->get());
         }
 
         if (!(is_array($element) && Utils::isList($element))) {
@@ -292,12 +292,13 @@ class Bunch implements Countable
     }
 
     /** @param TNullableCallback $callback */
-    public function filter(callable|string|null $callback = null): static
+    public function filter(callable|string|null $callback = null, bool $keepValues = false): static
     {
         return $this->withNewData(array_filter(
             $this->data,
             $this->normalizeSingleCallback($callback)
-        ));
+        ))
+        ->when($keepValues, fn($bunch) => $bunch->values());
     }
 
     /**
@@ -336,6 +337,11 @@ class Bunch implements Countable
         return $this->withNewData(array_map($callback, $this->data));
     }
 
+    public function flatMap(callable|string $callback): self
+    {
+        return $this->map($callback)->flat();
+    }
+
     public function instanciates(array $args=[])
     {
         return $this->map(fn($class) => Injector::getInstance()->instanciate($class, $args));
@@ -368,7 +374,7 @@ class Bunch implements Countable
 
         $keys = Utils::toArray($keys);
 
-        $arrayMode = is_array($this->data[0] ?? false);
+        $arrayMode = is_array($this->first() ?? false);
         $valueGetter = $arrayMode
             ? fn ($object, $key) => array_key_exists($key, $object) ? $object[$key] : new NoValue()
             : fn ($object, $key) => property_exists($object, $key) ? $object->{$key} : ($object->{$key} ?? new NoValue());
@@ -416,6 +422,9 @@ class Bunch implements Countable
     {
         $data = [];
         foreach ($this->data as $array) {
+            if ($array instanceof Bunch)
+                $array = $array->toArray();
+
             array_push($data, ...array_values($array));
         }
 
@@ -549,7 +558,9 @@ class Bunch implements Countable
     public function first(?callable $callback=null): mixed
     {
         if ($callback === null) {
-            return $this->data[0] ?? null;
+            return count($this->data)
+                ? $this->data[array_key_first($this->data)]
+                : null;
         }
 
         foreach ($this->data as $element) {
@@ -566,9 +577,10 @@ class Bunch implements Countable
      */
     public function firstIndex(callable $callback): int
     {
-        $dataCount = count($this->data);
+        $data = array_values($this->data);
+        $dataCount = count($data);
         for ($i = 0; $i < $dataCount; ++$i) {
-            $element = $this->data[$i];
+            $element = $data[$i];
             if ($callback($element)) {
                 return $i;
             }
@@ -605,9 +617,10 @@ class Bunch implements Countable
      */
     public function lastIndex(callable $callback): int
     {
-        $dataCount = count($this->data);
+        $data = array_values($this->data);
+        $dataCount = count($data);
         for ($i = $dataCount-1; $i >= 0; --$i) {
-            $element = $this->data[$i];
+            $element = $data[$i];
             if ($callback($element)) {
                 return $i;
             }
@@ -679,16 +692,22 @@ class Bunch implements Countable
         }
     }
 
+    /** @return self<int,TValue> */
+    public function values(): self
+    {
+        return $this->withNewData(array_values($this->data));
+    }
+
     /**
      * @template TNKey
      * @template TNValues
      *
      * @param array<TNKey,TNValues> $data
-     * @return self<int,TNValues>
+     * @return self<TNKey,TNValues>
      */
     protected function withNewData(array $data): self
     {
-        return new static(array_values($data));
+        return new static($data);
     }
 
     protected function getValueFromCompoundKey($object, string $compoundKey, callable $valueGetter, string $compoundKeySeparator = '.')
