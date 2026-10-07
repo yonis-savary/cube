@@ -36,7 +36,7 @@ class UnixSocketServer
     public function __construct(
         protected string $socketPath,
         ?Router $router = null,
-        array $persistentComponents = [Events::class, Configuration::class],
+        array $persistentComponents = [Events::class, Configuration::class, Logger::class],
     ) {
         $persistentComponents = [Router::class, ...$persistentComponents];
         $this->context = new RequestContext($persistentComponents);

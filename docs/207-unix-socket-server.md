@@ -78,6 +78,7 @@ whole life of the process
 | Component | Why it is kept |
 |---|---|
 | `Router` | the routes declared at setup |
+| `Logger` | the server logs to `socket.csv` |
 | `Events` | the listeners your `Requires/` files registered at boot |
 | `Configuration` | your `cube.php` |
 

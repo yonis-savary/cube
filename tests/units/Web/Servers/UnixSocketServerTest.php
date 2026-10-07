@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Web\Servers;
 
+use Cube\Env\Logger\Logger;
 use Cube\Event\Events;
 use Cube\Tests\Units\Core\Classes\Counter;
 use Cube\Web\Http\Request;
@@ -111,6 +112,20 @@ class UnixSocketServerTest extends TestCase
 
         $this->assertCount(1, $tempNames);
         $this->assertFileDoesNotExist($tempNames[0]);
+    }
+
+    public function testRequestsUseTheLoggerOfTheServer()
+    {
+        $seen = null;
+        $server = $this->newServer(Route::get('/log', function () use (&$seen) {
+            $seen = Logger::getInstance();
+            return Response::ok();
+        }));
+
+        $logger = Logger::forFile('socket-test.csv');
+        Logger::withInstance($logger, fn () => $server->handle(new ServerRequest('GET', 'http://localhost/log')));
+
+        $this->assertSame($logger, $seen);
     }
 
     protected function newServer(Route ...$routes): UnixSocketServer
