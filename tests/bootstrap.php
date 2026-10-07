@@ -14,6 +14,8 @@ chdir("..");
 include './vendor/autoload.php';
 
 Autoloader::initialize(realpath('.'));
+Autoloader::addToExploreMap('tests/units');
+Autoloader::addToExploreMap('tests/integration-root/App');
 
 $env = new Environment(null);
 $env->set('QUEUE_REDIS_HOST', 'localhost');

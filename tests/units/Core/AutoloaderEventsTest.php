@@ -13,6 +13,7 @@ use Cube\Event\Events;
 use Cube\Event\Events\ApplicationsLoaded;
 use Cube\Event\Events\FrameworkLoaded;
 use Cube\Event\Events\PostDeployment;
+use Cube\Console\Command;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use PHPUnit\Framework\TestCase;
 
@@ -139,5 +140,34 @@ class AutoloaderEventsTest extends TestCase
 
         foreach (['classes', 'apps', 'assets', 'require', 'routes', 'views'] as $key)
             $this->assertFalse($autoloaderCache->has($key), "[$key] should be gone from the autoloader cache");
+    }
+
+    public function test_a_cached_query_is_answered_without_reading_the_classes_list()
+    {
+        $cacheStorage = $this->storage->child('Cache');
+        $bootAndQuery = function () use ($cacheStorage) {
+            $driver = new LocalDiskCache($cacheStorage);
+            $commands = Cache::withInstance(new Cache(new CacheConfiguration($driver)), function () {
+                Autoloader::initialize(realpath('.'), new AutoloaderConfiguration(true));
+                restore_error_handler();
+                restore_exception_handler();
+
+                return Autoloader::classesThatExtends(Command::class);
+            });
+            $driver->save();
+
+            return $commands;
+        };
+
+        $commands = $bootAndQuery();
+        $classesListFiles = glob($cacheStorage->path('*_autoloader-class-list-*'));
+        $this->assertCount(1, $classesListFiles);
+        unlink($classesListFiles[0]);
+
+        $this->assertEquals($commands, $bootAndQuery());
+        $this->assertEmpty(glob($cacheStorage->path('*_autoloader-class-list-*')), 'The classes list should not be scanned again');
+
+        // Back to an uncached autoloader : the next tests would otherwise write into the removed storage
+        $this->initializeAndListen();
     }
 }

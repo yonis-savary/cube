@@ -15,11 +15,15 @@ use Cube\Event\Events\ApplicationsLoaded;
 use Cube\Event\Events\FrameworkLoaded;
 use Cube\Utils\Path;
 use Cube\Utils\Shell;
+use InvalidArgumentException;
 use RuntimeException;
 
+/**
+ * @template Classmap of array<string,class-string>
+ */
 class Autoloader
 {
-    protected static AutoloaderConfiguration $configuration;
+    protected static ?AutoloaderConfiguration $configuration = null;
 
     protected static array $knownApplications = [];
     protected static array $assetsFiles = [];
@@ -27,11 +31,15 @@ class Autoloader
     protected static array $routesFiles = [];
     protected static array $viewFiles = [];
 
-    protected static ?array $cachedClassesList = null;
+    /** @var array<int,string> */
+    protected static array $addedExploredDirectories = [];
+
+    /** @var array<class-string>|null */
+    protected static ?array $classesList = null;
     protected static ?string $projectPath = null;
 
     protected static ?ClassLoader $loader;
-    protected static mixed $classIndex = [];
+    protected static ?array $classIndex = null;
     protected static ?Cache $autoloadCache = null;
 
     public static bool $loadedThroughApcu = false;
@@ -42,7 +50,7 @@ class Autoloader
     public static function clearApcuCache(): void 
     {
         if (function_exists('apcu_fetch'))
-            apcu_delete(self::APCU_KEY);
+            apcu_delete(new \APCUIterator('/^'.preg_quote(self::APCU_KEY, '/').'/'));
     }
 
     protected static function autoloadCache(): Cache
@@ -76,9 +84,7 @@ class Autoloader
             self::$requireFiles,
             self::$routesFiles,
             self::$viewFiles,
-            self::$cachedClassesList,
             self::$projectPath,
-            self::$classIndex,
         ) = $autoloadFullData;
 
         Path::resolveProjectPath(self::$projectPath);
@@ -98,17 +104,18 @@ class Autoloader
             self::$requireFiles,
             self::$routesFiles,
             self::$viewFiles,
-            self::$cachedClassesList,
             Path::getProjectPath(),
-            self::$classIndex,
         ]);
     }
 
     public static function initialize(?string $forceProjectPath = null, ?AutoloaderConfiguration $configuration = null)
     {
         self::$booted = false;
+        self::$configuration = null;
+        self::forgetClassIndex();
         self::registerErrorHandlers();
         self::$loader = self::findClassLoader();
+
 
         $cubeSrc = (new Storage(__DIR__))->parent();
         $cubeHelpers = $cubeSrc->child('Helpers');
@@ -123,6 +130,7 @@ class Autoloader
 
         if ($configuration->cached) {
             if (self::tryToLoadThroughApcu()) {
+                self::forgetClassIndex();
                 (new FrameworkLoaded)->dispatch();
                 self::includeRequireFiles();
                 self::$booted = true;
@@ -130,20 +138,17 @@ class Autoloader
                 return;
             }
 
-            self::$classIndex = &self::autoloadCache()->getReference('classes', []);
-
             self::$knownApplications = &self::autoloadCache()->getReference('apps', []);
             self::$assetsFiles = &self::autoloadCache()->getReference('assets', []);
             self::$requireFiles = &self::autoloadCache()->getReference('require', []);
             self::$routesFiles = &self::autoloadCache()->getReference('routes', []);
             self::$viewFiles = &self::autoloadCache()->getReference('views', []);
-        } else {
-            self::$classIndex = [];
         }
 
         (new FrameworkLoaded)->dispatch();
 
         self::loadApplications();
+        self::forgetClassIndex();
         self::includeRequireFiles();
         self::$booted = true;
 
@@ -254,78 +259,172 @@ class Autoloader
         return self::$loader;
     }
 
+    public static function addToExploreMap(string $path): void
+    {
+        $directory = realpath(is_dir($path) ? $path : Path::relative($path));
+        if (!($directory && is_dir($directory)))
+            throw new InvalidArgumentException("Cannot explore [{$path}] : it is not a directory");
+
+        self::$addedExploredDirectories[] = $directory;
+        self::forgetClassIndex();
+    }
+
+    /** @return array<int,string> */
+    public static function getExploredDirectories(): array
+    {
+        return Bunch::of([dirname(__DIR__), ...self::$knownApplications, ...self::$addedExploredDirectories])
+            ->map(realpath(...))
+            ->filter()
+            ->uniques()
+            ->sort()
+            ->get();
+    }
+
+    protected static function exploredDirectoriesKey(): string
+    {
+        return md5(implode("\n", self::getExploredDirectories()));
+    }
+
+    protected static function forgetClassIndex(): void
+    {
+        $forgotten = null;
+        self::$classIndex = &$forgotten;
+        self::$classesList = null;
+    }
+
+    protected static function loadClassIndex(): void
+    {
+        if (self::$classIndex !== null)
+            return;
+
+        if (!self::$configuration?->cached) {
+            self::$classIndex = [];
+            return;
+        }
+
+        $key = self::exploredDirectoriesKey();
+        $hasApcu = function_exists('apcu_fetch');
+        $success = false;
+        $index = $hasApcu ? apcu_fetch(self::APCU_KEY.'.classes.'.$key, $success) : null;
+        if ($success) {
+            self::$classIndex = $index;
+            return;
+        }
+
+        self::$classIndex = &self::autoloadCache()->getReference('classes-'.$key, []);
+        self::saveClassIndexToApcu();
+    }
+
+    protected static function saveClassIndexToApcu(): void
+    {
+        if (!(self::$configuration?->cached && function_exists('apcu_store')))
+            return;
+
+        apcu_store(self::APCU_KEY.'.classes.'.self::exploredDirectoriesKey(), self::$classIndex);
+    }
+
     /**
      * @return array<class-string>
      */
     public static function classesList(): array
     {
-        if (isset(self::$classIndex['list'])) {
-            return self::$classIndex['list'];
-        }
+        return self::$classesList ??= self::loadClassesList();
+    }
 
-        $loader = self::getClassLoader();
-        $classes = Bunch::fromKeys($loader->getClassMap());
+    /** @return array<class-string> */
+    protected static function loadClassesList(): array
+    {
+        // The configuration being loaded can already query classes, before it says whether to cache them
+        if (!self::$configuration?->cached)
+            return self::scanClassesList();
 
-        if (!$loader->isClassMapAuthoritative()) {
-            $classes->push(...self::classesInPsr4Directories($loader));
-        }
+        $key = self::exploredDirectoriesKey();
+        $hasApcu = function_exists('apcu_fetch');
+        $success = false;
+        $list = $hasApcu ? apcu_fetch(self::APCU_KEY.'.classes-list.'.$key, $success) : null;
+        if ($success)
+            return $list;
 
-        self::$classIndex['list'] = $list = $classes->uniques()->get();
-        self::saveToApcu();
+        $list = self::autoloadCache()->getOrSet('class-list-'.$key, self::scanClassesList(...));
+        if ($hasApcu)
+            apcu_store(self::APCU_KEY.'.classes-list.'.$key, $list);
 
         return $list;
     }
 
-    /** @return array<class-string> */
-    protected static function classesInPsr4Directories(ClassLoader $loader): array
+    /** @return class-string[] */
+    protected static function scanClassesList(): array
     {
-        $classMapFiles = array_flip(
-            Bunch::fromValues($loader->getClassMap())
-                ->map(realpath(...))
-                ->filter()
-                ->get()
-        );
+        $loader = self::getClassLoader();
+        $exploredDirectories = self::getExploredDirectories();
 
-        $vendorDirectory = Path::relative('vendor');
-        $vendorDirectory = realpath($vendorDirectory) ?: $vendorDirectory;
-        $cubeDirectory = realpath(Path::relative('vendor/yonis-savary/cube/src'));
+        $classMapFiles = (new Bunch($loader->getClassMap()))
+            ->map(realpath(...))
+            ->filter()
+            ->toArray();
 
-        $classes = Bunch::of([]);
-        foreach ($loader->getPrefixesPsr4() as $namespace => $directories) {
-            $realDirectories = Bunch::of($directories)->map(realpath(...))->get();
-            $isCubeNamespace = in_array($cubeDirectory, $realDirectories, true);
+        $isExplored = fn (string $file) => Bunch::of($exploredDirectories)
+            ->any(fn ($directory) => Path::isInside($file, $directory));
 
-            foreach ($directories as $directory) {
-                if (!is_dir($directory)) {
-                    Logger::getInstance()->warning('Could not read PSR4 directory [{dir}]', ['dir' => $directory]);
-                    continue;
-                }
+        $classes = Bunch::fromKeys((new Bunch($classMapFiles))->filter($isExplored)->get());
 
-                $directory = realpath($directory);
-                if (!$isCubeNamespace && str_starts_with($directory, $vendorDirectory)) {
-                    continue;
-                }
-
-                $classes->push(...self::classesInPsr4Directory($namespace, $directory, $classMapFiles));
-            }
+        if (!$loader->isClassMapAuthoritative()) {
+            $classes->push(...self::classesInPsr4Directories($loader, $exploredDirectories, array_flip($classMapFiles)));
         }
 
-        return $classes->get();
+        return $classes->uniques()->values()->get();
     }
 
     /**
-     * @param array<string,int> $classMapFiles
-     * @return array<class-string>
+     * @param string[] $exploredDirectories
+     * @param Classmap $classMapFiles
+     * @return class-string[]
      */
-    protected static function classesInPsr4Directory(string $namespace, string $directory, array $classMapFiles): array
+    protected static function classesInPsr4Directories(ClassLoader $loader, array $exploredDirectories, array $classMapFiles): array
     {
-        return Bunch::of((new Storage($directory))->exploreFiles())
+        return Bunch::unzip($loader->getPrefixesPsr4())
+        ->flatMap(function($pair) use ($exploredDirectories, $classMapFiles) {
+            [$namespace, $prefixDirectories] = $pair;
+
+            return Bunch::of($prefixDirectories)->map(realpath(...))
+                ->filter()
+                ->flatMap(fn($prefixDirectory) => self::classesOfPsr4Prefix($namespace, $prefixDirectory, $exploredDirectories, $classMapFiles));
+        })
+        ->get();
+    }
+
+    /**
+     * @param string[] $exploredDirectories
+     * @param Classmap $classMapFiles
+     * @return class-string[]
+     */
+    protected static function classesOfPsr4Prefix(string $namespace, string $prefixDirectory, array $exploredDirectories, array $classMapFiles): array
+    {
+        return Bunch::of($exploredDirectories)
+            ->map(fn($directory) => match (true) {
+                Path::isInside($prefixDirectory, $directory) => $prefixDirectory,
+                Path::isInside($directory, $prefixDirectory) => $directory,
+                default => null,
+            })
+            ->filter()
+            ->flatMap(fn($root) => self::classesInPsr4Directory($namespace, $prefixDirectory, $root, $classMapFiles))
+            ->get();
+    }
+
+    /**
+     * @param Classmap $classMapFiles
+     * @return class-string[]
+     */
+    protected static function classesInPsr4Directory(string $namespace, string $prefixDirectory, string $root, array $classMapFiles): array
+    {
+        return Bunch::of((new Storage($root))->exploreFiles())
             ->filter(fn ($file) => str_ends_with($file, '.php'))
             ->filter(fn ($file) => !isset($classMapFiles[$file]))
             ->filter(self::declaresTypeNamedAfterFile(...))
-            ->map(fn ($path) => $namespace.Path::toRelative($path, $directory))
+            ->map(fn ($path) => $namespace.Path::toRelative($path, $prefixDirectory))
             ->map(fn ($path) => str_replace('/', '\\', $path))
             ->map(fn ($path) => preg_replace('/\.php$/', '', $path))
+            ->values()
             ->get()
         ;
     }
@@ -337,13 +436,15 @@ class Autoloader
         return (bool) preg_match("/\\b(class|interface|trait|enum)\\s+{$expectedName}\\b/", file_get_contents($file));
     }
 
-    public static function extends($class, $parentClass, bool $considerSelfAsExtending = true): bool
+    public static function extends(mixed $class, string $parentClass, bool $considerSelfAsExtending = true): bool
     {
         if (is_string($class) && (!self::classExists($class))) {
             return false;
         }
 
-        if ($considerSelfAsExtending && ($parentClass === $class)) {
+        $className = is_string($class) ? $class: $class::class;
+
+        if ($considerSelfAsExtending && ($parentClass === $className)) {
             return true;
         }
 
@@ -354,7 +455,7 @@ class Autoloader
         return false;
     }
 
-    public static function implements($class, $interface): bool
+    public static function implements(mixed $class, string $interface): bool
     {
         if (!self::classExists($class)) {
             return false;
@@ -367,7 +468,7 @@ class Autoloader
         return false;
     }
 
-    public static function uses($class, $trait): bool
+    public static function uses(mixed $class, string $trait): bool
     {
         if (!self::classExists($class)) {
             return false;
@@ -389,6 +490,7 @@ class Autoloader
      */
     public static function classesThatExtends(string $parentClass, bool $rejectAbstracts = true): array
     {
+        self::loadClassIndex();
         self::$classIndex['extends'] ??= [];
 
         return self::filterClassesWithCache(
@@ -408,6 +510,7 @@ class Autoloader
      */
     public static function classesThatImplements(string $interface, bool $rejectAbstracts = true): array
     {
+        self::loadClassIndex();
         self::$classIndex['implements'] ??= [];
 
         return self::filterClassesWithCache(
@@ -427,6 +530,7 @@ class Autoloader
      */
     public static function classesThatUses(string $trait, bool $rejectAbstracts = true): array
     {
+        self::loadClassIndex();
         self::$classIndex['uses'] ??= [];
 
         return self::filterClassesWithCache(
@@ -439,14 +543,10 @@ class Autoloader
 
     public static function classExists(string $class, bool $autoload = true): bool
     {
-        self::$classIndex['lookup'] ??= array_flip(self::classesList());
-
-        if (isset(self::$classIndex['lookup'][$class])) {
-            return true;
-        }
-
         try {
-            return class_exists($class, $autoload);
+            return class_exists($class, $autoload)
+                || interface_exists($class, $autoload)
+                || trait_exists($class, $autoload);
         } catch (\Throwable $_) {
             return false;
         }
@@ -554,8 +654,8 @@ class Autoloader
             });
         }
 
-        $holder[$identifier] = $classes->get();
-        self::saveToApcu();
+        $holder[$identifier] = $classes->values()->get();
+        self::saveClassIndexToApcu();
 
         return $holder[$identifier];
     }

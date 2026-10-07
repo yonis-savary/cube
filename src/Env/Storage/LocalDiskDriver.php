@@ -77,6 +77,7 @@ class LocalDiskDriver extends StorageDriver
     {
         return Bunch::of(scandir($path))
             ->diff(['.', '..'])
+            ->values()
             ->get()
         ;
     }

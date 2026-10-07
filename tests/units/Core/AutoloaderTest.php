@@ -5,6 +5,8 @@ namespace Cube\Tests\Units\Core;
 use Composer\Autoload\ClassLoader;
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
+use Cube\Env\Storage;
+use Cube\Tests\Integration\IntegrationApplicationTest;
 use Cube\Tests\Units\Core\Classes\Bird;
 use Cube\Tests\Units\Core\Classes\Common;
 use Cube\Tests\Units\Core\Classes\Counter;
@@ -15,6 +17,7 @@ use Cube\Tests\Units\Core\Classes\Zombie;
 use Cube\Tests\Units\Core\Contracts\CanFly;
 use Cube\Web\Controller;
 use Cube\Web\Helpers\WebAPI;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class AutoloaderTest extends TestCase
@@ -30,6 +33,11 @@ class AutoloaderTest extends TestCase
 
         $this->assertContains(Autoloader::class, $classes);
         $this->assertContains(Bird::class, $classes);
+    }
+
+    public function test_classes_list_leaves_out_vendor_classes()
+    {
+        $this->assertNotContains(TestCase::class, Autoloader::classesList());
     }
 
     public function test_classes_list_holds_enums()
@@ -79,6 +87,13 @@ class AutoloaderTest extends TestCase
         $this->assertFalse(Autoloader::extends('Cube\Tests\NotAClass', Common::class));
     }
 
+    public function test_extends_predicate_accepts_an_instance()
+    {
+        $this->assertTrue(Autoloader::extends(new Bird(), Common::class));
+        $this->assertTrue(Autoloader::extends(new Bird(), Bird::class));
+        $this->assertFalse(Autoloader::extends(new Bird(), Bird::class, false));
+    }
+
     public function test_implements_predicate()
     {
         $this->assertTrue(Autoloader::implements(Bird::class, CanFly::class));
@@ -125,6 +140,42 @@ class AutoloaderTest extends TestCase
                 $files,
                 "The {$label} file list holds duplicated entries"
             );
+        }
+    }
+
+    public function test_classes_outside_the_explored_directories_are_left_out_until_added()
+    {
+        $this->assertNotContains(IntegrationApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
+
+        Autoloader::addToExploreMap('tests/integration');
+
+        $this->assertContains(IntegrationApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
+    }
+
+    public function test_only_a_directory_can_be_explored()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        Autoloader::addToExploreMap('tests/bootstrap.php');
+    }
+
+    public function test_classes_found_through_the_classmap_are_listed_by_name()
+    {
+        $directory = Storage::getInstance()->child(uniqid('autoloader-classmap-test-'));
+        $directory->write('Invoice.php', "<?php\n\nnamespace Acme\\Billing;\n\nclass Invoice {}\n");
+
+        try {
+            Autoloader::getClassLoader()->addClassMap(['Acme\\Billing\\Invoice' => $directory->path('Invoice.php')]);
+            Autoloader::addToExploreMap($directory->getRoot());
+
+            $this->assertContains('Acme\\Billing\\Invoice', Autoloader::classesList());
+            $this->assertNotContains($directory->path('Invoice.php'), Autoloader::classesList());
+
+            // The classmap entry outlives the file : loading the class now keeps later discoveries from including it
+            class_exists('Acme\\Billing\\Invoice');
+        } finally {
+            unlink($directory->path('Invoice.php'));
+            rmdir($directory->getRoot());
         }
     }
 }
