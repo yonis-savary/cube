@@ -63,6 +63,51 @@ class LocalDiskCacheTest extends TestCase
         $this->assertEquals('preferences', $reloaded->get('user/42'));
     }
 
+    public function test_an_element_nobody_reads_is_neither_loaded_nor_rewritten()
+    {
+        $this->storage->write('0_0_broken-invoices', 'not a serialized value');
+
+        $driver = new LocalDiskCache($this->storage);
+        $driver->initialize();
+        $driver->set('invoices', ['first']);
+        $driver->save();
+
+        $this->assertEquals('not a serialized value', file_get_contents($this->storage->path('0_0_broken-invoices')));
+    }
+
+    public function test_an_element_removed_by_another_process_is_missing()
+    {
+        $driver = new LocalDiskCache($this->storage);
+        $driver->set('invoices', ['first']);
+        $driver->save();
+
+        $reloaded = new LocalDiskCache($this->storage);
+        $reloaded->initialize();
+        $driver->clear();
+
+        $this->assertFalse($reloaded->has('invoices'));
+        $this->assertNull($reloaded->get('invoices'));
+    }
+
+    public function test_an_element_read_then_changed_through_its_reference_is_saved()
+    {
+        $driver = new LocalDiskCache($this->storage);
+        $driver->set('invoices', ['first']);
+        $driver->save();
+
+        $reloaded = new LocalDiskCache($this->storage);
+        $reloaded->initialize();
+        $cache = new Cache(new CacheConfiguration($reloaded));
+        $invoices = &$cache->getReference('invoices', []);
+        $invoices[] = 'second';
+        $reloaded->save();
+
+        $fresh = new LocalDiskCache($this->storage);
+        $fresh->initialize();
+
+        $this->assertEquals(['first', 'second'], $fresh->get('invoices'));
+    }
+
     /** get() falls back on the default when the stored value is null. */
     public function test_a_stored_null_is_not_replaced_by_the_default()
     {

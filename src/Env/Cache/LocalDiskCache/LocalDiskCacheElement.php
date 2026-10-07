@@ -15,11 +15,9 @@ class LocalDiskCacheElement
         protected mixed $value,
         protected int $timeToLive,
         protected ?int $creationDate = null,
-        protected ?string $file = null
+        protected ?string $file = null,
+        protected bool $loaded = true
     ) {
-        if ($file) {
-            $this->contentHash = md5_file($file);
-        }
     }
 
     public static function fromFile(string $file): ?self
@@ -32,19 +30,35 @@ class LocalDiskCacheElement
 
         list($creationDate, $timeToLive, $key) = explode('_', $filename, 3);
 
-        $element = new self(
-            rawurldecode($key),
-            null,
-            (int) $timeToLive,
-            (int) $creationDate
-        );
+        $element = new self(rawurldecode($key), null, (int) $timeToLive, (int) $creationDate, $file, false);
         if ($element->isExpired()) {
             unlink($file);
 
             return null;
         }
 
-        return new self($element->key, unserialize(file_get_contents($file)), $element->timeToLive, $element->creationDate, $file);
+        return $element;
+    }
+
+    public function isLoaded(): bool
+    {
+        return $this->loaded;
+    }
+
+    public function load(): bool
+    {
+        $content = @file_get_contents($this->file);
+        if (false === $content) {
+            $this->file = null;
+
+            return false;
+        }
+
+        $this->value = unserialize($content);
+        $this->contentHash = md5($content);
+        $this->loaded = true;
+
+        return true;
     }
 
     public function isExpired(): bool
@@ -92,6 +106,10 @@ class LocalDiskCacheElement
 
     public function save(Storage $directory)
     {
+        if (!$this->loaded) {
+            return;
+        }
+
         $newSerialized = serialize($this->value);
         $newMD5 = md5($newSerialized);
         $newName = $this->creationDate.'_'.$this->timeToLive.'_'.rawurlencode($this->key);

@@ -32,7 +32,7 @@ class Autoloader
 
     protected static ?ClassLoader $loader;
     protected static mixed $classIndex = [];
-    protected static Cache $autoloadCache;
+    protected static ?Cache $autoloadCache = null;
 
     public static bool $loadedThroughApcu = false;
     protected static bool $booted = false;
@@ -45,9 +45,14 @@ class Autoloader
             apcu_delete(self::APCU_KEY);
     }
 
+    protected static function autoloadCache(): Cache
+    {
+        return self::$autoloadCache ??= Cache::getInstance()->child('autoloader');
+    }
+
     public static function cleanCache(): void
     {
-        self::$autoloadCache->clear();
+        self::autoloadCache()->clear();
         self::clearApcuCache();
     }
 
@@ -114,8 +119,7 @@ class Autoloader
         Path::resolveProjectPath($forceProjectPath);
 
         self::$configuration = $configuration ??= AutoloaderConfiguration::resolve();
-
-        self::$autoloadCache = Cache::getInstance()->child("autoloader");
+        self::$autoloadCache = null;
 
         if ($configuration->cached) {
             if (self::tryToLoadThroughApcu()) {
@@ -126,13 +130,13 @@ class Autoloader
                 return;
             }
 
-            self::$classIndex = &self::$autoloadCache->getReference('classes', []);
+            self::$classIndex = &self::autoloadCache()->getReference('classes', []);
 
-            self::$knownApplications = &self::$autoloadCache->getReference('apps', []);
-            self::$assetsFiles = &self::$autoloadCache->getReference('assets', []);
-            self::$requireFiles = &self::$autoloadCache->getReference('require', []);
-            self::$routesFiles = &self::$autoloadCache->getReference('routes', []);
-            self::$viewFiles = &self::$autoloadCache->getReference('views', []);
+            self::$knownApplications = &self::autoloadCache()->getReference('apps', []);
+            self::$assetsFiles = &self::autoloadCache()->getReference('assets', []);
+            self::$requireFiles = &self::autoloadCache()->getReference('require', []);
+            self::$routesFiles = &self::autoloadCache()->getReference('routes', []);
+            self::$viewFiles = &self::autoloadCache()->getReference('views', []);
         } else {
             self::$classIndex = [];
         }

@@ -64,10 +64,16 @@ class LocalDiskCache implements CacheDriverInterface
         if (!array_key_exists($key, $this->index))
             return false;
 
-        if (!$this->index[$key]->isExpired())
+        $element = $this->index[$key];
+        if ($element->isExpired()) {
+            $this->delete($key);
+            return false;
+        }
+
+        if ($element->isLoaded() || $element->load())
             return true;
 
-        $this->delete($key);
+        unset($this->index[$key]);
         return false;
     }
 
