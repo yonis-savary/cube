@@ -56,4 +56,9 @@ class AnyKeyObjectParam extends Rule
         $this->param->nullable($nullable);
         return $this;
     }
+
+    public function isNullable(): bool
+    {
+        return $this->param->isNullable();
+    }
 }

@@ -465,6 +465,17 @@ class ValidationTest extends TestCase
         $this->assertTrue($results->isValid());
     }
 
+    public function testCompositeRulesReportTheirNullability()
+    {
+        $this->assertTrue(Param::object([], true)->isNullable());
+        $this->assertTrue(Param::array(Param::integer(), true)->isNullable());
+        $this->assertTrue(Param::anyKeyObject(Param::integer(), true)->isNullable());
+
+        $this->assertFalse(Param::object([], true)->nullable(false)->isNullable());
+        $this->assertFalse(Param::array(Param::integer())->isNullable());
+        $this->assertFalse(Param::anyKeyObject(Param::integer())->isNullable());
+    }
+
     public function testModelValidation()
     {
         $rule = Product::toObjectParam();

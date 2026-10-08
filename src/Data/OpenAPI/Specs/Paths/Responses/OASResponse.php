@@ -13,20 +13,15 @@ class OASResponse extends AutoDataToObject
     use ModelRef;
     use MakesSchemas;
 
-    public ?string $description = null;
+    public string $description = '';
     public array $content = [];
 
     public function __construct()
     {}
 
-    public function skipOnEmpty(): array
-    {
-        return ['description'];
-    }
-
     public function modelResponse(ModelResponse $modelResponse)
     {
-        $this->description = $modelResponse->description;
+        $this->description = $modelResponse->description ?? '';
         $ref = ['$ref' => $this->getRefForClass($modelResponse->modelClass)];
         $this->content[$modelResponse->mimeType] =  $modelResponse->isArray
             ? ['schema' => ['type' => 'array', 'items' => $ref]]
@@ -34,7 +29,7 @@ class OASResponse extends AutoDataToObject
     }
 
     public function rawResponse(RawResponse $rawResponse) {
-        $this->description = $rawResponse->description;
+        $this->description = $rawResponse->description ?? '';
         $schema = [ 'schema' => [] ];
         $this->mutateParameterFromRawData($rawResponse->data, $schema['schema']);
         $this->content[$rawResponse->mimeType] = $schema;

@@ -6,6 +6,7 @@ use Cube\Data\OpenAPI\Attributes\Endpoint;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\CustomRequestFormat;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\QueryRequestFormat;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Web\Controller;
@@ -35,6 +36,10 @@ class SampleController extends Controller
 
     }
 
+    public function getEndpointWithQueryRequest(QueryRequestFormat $request) {
+
+    }
+
     #[ModelResponse(Product::class)]
     public function endpointReturningAProduct(Request $request, int $product) {
 
@@ -58,6 +63,11 @@ class SampleController extends Controller
 
     #[RawResponse(file: __DIR__ . '/../Fixtures/RawResponseSource.json')]
     public function endpointReturningAFileDataType() {
+
+    }
+
+    #[RawResponse(['items' => []])]
+    public function endpointReturningAnEmptyList() {
 
     }
 

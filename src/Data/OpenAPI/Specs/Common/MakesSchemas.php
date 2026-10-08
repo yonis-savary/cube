@@ -10,6 +10,7 @@ use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\ArrayParam;
 use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Http\Rules\Rule;
+use Cube\Web\Router\Route;
 use DateTime;
 use ReflectionIntersectionType;
 use ReflectionNamedType;
@@ -22,8 +23,7 @@ trait MakesSchemas
             return;
 
         if (Autoloader::extends($type, Model::class)) {
-            $schema ??= [];
-            $this->mutateParameterForModel($type, $schema);
+            $schema = $this->getModelKeySchema($type);
             return;
         }
 
@@ -42,115 +42,115 @@ trait MakesSchemas
             'float'    => ['type' => 'number', 'format' => 'float',],
             'any'      => [],
             'date'     => ['type' => 'string', 'format' => 'date'],
-            'time'     => ['type' => 'integer', 'pattern' => '\d{2}\-\d{2}\-\d{2}'],
+            'time'     => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['time']],
             'datetime' => ['type' => 'string', 'format' => 'date-time'],
-            'hex'      => ['type' => 'integer', 'pattern' => '[a-f0-9]+'],
-            'uuid'     => ['type' => 'integer', 'format' => 'uuid'],
+            'hex'      => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
+            'uuid'     => ['type' => 'string', 'format' => 'uuid'],
             default    => ['type' => 'string', 'pattern' => $slugType]
         };
     }
 
     protected function mutateParameterWithRule(Rule $rule, array &$schema) {
-        if ($rule instanceof ObjectParam) {
-            $schema['type'] = 'object';
-            $schema['properties'] ??= [];
-            foreach ($rule->getRules() as $key => $subrule) {
-                $schema['properties'][$key] = [];
-                $this->mutateParameterWithRule($subrule, $schema['properties'][$key]);
-            }
-        }
-        else if ($rule instanceof ArrayParam) {
-            $schema['type'] = 'array';
-            $schema['items'] = [];
-            $this->mutateParameterWithRule(
-                $rule->getChildRule(),
-                $schema['items']
-            );
-        }
+        match (true) {
+            $rule instanceof ObjectParam => $this->mutateParameterWithObjectRule($rule, $schema),
+            $rule instanceof ArrayParam  => $this->mutateParameterWithArrayRule($rule, $schema),
+            default                      => $this->mutateParameterWithValueRule($rule, $schema),
+        };
 
+        if (!$rule->isNullable() || !isset($schema['type']))
+            return;
+
+        $schema['type'] = [$schema['type'], 'null'];
+        if (isset($schema['enum']))
+            $schema['enum'][] = null;
+    }
+
+    private function mutateParameterWithArrayRule(ArrayParam $rule, array &$schema) {
+        $schema['type'] = 'array';
+        $schema['items'] = [];
+        $this->mutateParameterWithRule($rule->getChildRule(), $schema['items']);
+    }
+
+    private function mutateParameterWithValueRule(Rule $rule, array &$schema) {
         $meta = $rule->getMetadata();
         $type = $meta[Rule::META_TYPE] ?? false;
-        if (!$type) {
+        if (!$type)
             return;
-        }
-
-        if ($type === 'model') {
-            $model = $meta[Rule::META_MODEL] ?? false;
-            if (!$model)
-                return;
-
-            $this->mutateParameterForModel($model, $schema);
-        }
 
         $schema = match ($type) {
+            'model'    => $this->getModelKeySchema($meta[Rule::META_MODEL]),
             'integer'  => ['type' => 'integer'],
             'float'    => ['type' => 'number', 'format' => 'float',],
             'any'      => [],
             'string'   => ['type' => 'string'],
-            'email'    => ['type' => 'email'],
+            'email'    => ['type' => 'string', 'format' => 'email'],
             'boolean'  => ['type' => 'boolean'],
             'date'     => ['type' => 'string', 'format' => 'date'],
-            'time'     => ['type' => 'integer', 'pattern' => '\d{2}\-\d{2}\-\d{2}'],
+            'time'     => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['time']],
             'date-time'=> ['type' => 'string', 'format' => 'date-time'],
-            'hex'      => ['type' => 'integer', 'pattern' => '[a-f0-9]+'],
-            'uuid'     => ['type' => 'integer', 'format' => 'uuid'],
+            'hex'      => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
+            'uuid'     => ['type' => 'string', 'format' => 'uuid'],
         };
 
-        if (in_array($schema['type'] ?? '', ['number', 'integer'])) {
-            if ($min = $meta[Rule::META_MIN] ?? false)
-                $schema['minimum'] = $min;
-            if ($max = $meta[Rule::META_MAX] ?? false)
-                $schema['maximum'] = $max;
-        } else {
-            if ($min = $meta[Rule::META_MIN] ?? false)
-                $schema['format_minimum'] = $min;
-            if ($max = $meta[Rule::META_MAX] ?? false)
-                $schema['format_maximum'] = $max;
-        }
-
+        $isNumeric = in_array($schema['type'] ?? '', ['number', 'integer']);
+        if (null !== ($min = $meta[Rule::META_MIN] ?? null))
+            $schema[$isNumeric ? 'minimum' : 'format_minimum'] = $min;
+        if (null !== ($max = $meta[Rule::META_MAX] ?? null))
+            $schema[$isNumeric ? 'maximum' : 'format_maximum'] = $max;
 
         if ($enum = $meta[Rule::META_ENUM] ?? false)
             $schema['enum'] = $enum;
     }
 
+    private function mutateParameterWithObjectRule(ObjectParam $rule, array &$schema) {
+        $schema['type'] = 'object';
+        $schema['properties'] ??= [];
+        $required = [];
+
+        foreach ($rule->getRules() as $key => $subrule) {
+            $schema['properties'][$key] = [];
+            $this->mutateParameterWithRule($subrule, $schema['properties'][$key]);
+
+            if (!$subrule->isNullable())
+                $required[] = $key;
+        }
+
+        if (count($required))
+            $schema['required'] = $required;
+    }
+
     /**
      * @param class-string<Model> $modelClass
      */
-    protected function mutateParameterForModel(string $modelClass, array &$schema) {
-
+    protected function getModelKeySchema(string $modelClass): array {
         if (! $primaryKey = $modelClass::primaryKey())
-            return;
+            return [];
 
-        /** @var ModelField $primaryField */
+        /** @var ModelField|false $primaryField */
         $primaryField = $modelClass::fields()[$primaryKey] ?? false;
         if (! $primaryField)
-            return;
+            return [];
 
-        $rule = $primaryField->toRule();
-        return $this->mutateParameterWithRule($rule, $schema);
+        $schema = [];
+        $this->mutateParameterWithRule($primaryField->toRule(false), $schema);
+        return $schema;
     }
 
     protected function mutateParameterFromRawData(mixed $data, array &$schema) {
-        if (is_array($data)) {
-            if (empty($data)) {
-                OpenAPIGenerationContext::getInstance()->log(" - Warning: used empty array data type on parameter");
-                $schema['type'] = 'array';
+        if ($data === []) {
+            OpenAPIGenerationContext::getInstance()->log(" - Warning: used empty array data type on parameter");
+            $schema = ['type' => 'array'];
+        } else if (is_array($data) && Utils::isAssoc($data)) {
+            $schema['type'] = 'object';
+            $schema['properties'] ??= [];
+            foreach ($data as $key => $subvalue) {
+                $schema['properties'][$key] = [];
+                $this->mutateParameterFromRawData($subvalue, $schema['properties'][$key]);
             }
-            if (Utils::isAssoc($data))
-            {
-                $schema['type'] = 'object';
-                $schema['properties'] ??= [];
-                foreach ($data as $key => $subvalue) {
-                    $schema['properties'][$key] = [];
-                    $this->mutateParameterFromRawData($subvalue, $schema['properties'][$key]);
-                }
-            }
-            else
-            {
-                $schema['type'] = 'array';
-                $schema['items'] = [ [] ];
-                $this->mutateParameterFromRawData($data[0], $schema['items'][0]);
-            }
+        } else if (is_array($data)) {
+            $schema['type'] = 'array';
+            $schema['items'] = [];
+            $this->mutateParameterFromRawData($data[0], $schema['items']);
         } else if (is_string($data)) {
             $schema = ['type' => 'string'];
         } else if (is_float($data)) {

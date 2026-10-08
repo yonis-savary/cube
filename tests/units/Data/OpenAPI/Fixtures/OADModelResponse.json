@@ -12,7 +12,7 @@
                 "operationId": "endpointReturningAListOfProducts",
                 "responses": {
                     "200": {
-                        "description": null,
+                        "description": "",
                         "content": {
                             "application\/json": {
                                 "schema": {
@@ -44,7 +44,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": null,
+                        "description": "",
                         "content": {
                             "application\/json": {
                                 "schema": {
@@ -63,33 +63,57 @@
                 "type": "object",
                 "properties": {
                     "id": {
-                        "type": "integer"
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     },
                     "created_at": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
                         "format": "date-time"
                     },
                     "name": {
                         "type": "string"
                     },
                     "price_dollar": {
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "managers": {
-                        "type": "array",
+                        "type": [
+                            "array",
+                            "null"
+                        ],
                         "items": {
-                            "type": "object",
+                            "type": [
+                                "object",
+                                "null"
+                            ],
                             "properties": {
                                 "product": {
-                                    "type": "integer"
+                                    "type": [
+                                        "integer",
+                                        "null"
+                                    ]
                                 },
                                 "manager": {
                                     "type": "string"
                                 }
-                            }
+                            },
+                            "required": [
+                                "manager"
+                            ]
                         }
                     }
-                }
+                },
+                "required": [
+                    "name"
+                ]
             }
         }
     }

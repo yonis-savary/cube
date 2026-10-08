@@ -30,13 +30,20 @@
                                                 },
                                                 "age": {
                                                     "type": "integer",
+                                                    "minimum": 0,
                                                     "maximum": 120
                                                 },
                                                 "last_login": {
                                                     "type": "string",
                                                     "format": "date-time"
                                                 }
-                                            }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "age",
+                                                "last_login"
+                                            ]
                                         }
                                     },
                                     "some-boolean": {
@@ -52,7 +59,13 @@
                                         "format_minimum": "2000-01-01",
                                         "format_maximum": "2099-12-31"
                                     }
-                                }
+                                },
+                                "required": [
+                                    "some-array",
+                                    "some-boolean",
+                                    "some-float",
+                                    "some-date"
+                                ]
                             }
                         }
                     }
@@ -84,13 +97,20 @@
                                                 },
                                                 "age": {
                                                     "type": "integer",
+                                                    "minimum": 0,
                                                     "maximum": 120
                                                 },
                                                 "last_login": {
                                                     "type": "string",
                                                     "format": "date-time"
                                                 }
-                                            }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "age",
+                                                "last_login"
+                                            ]
                                         }
                                     },
                                     "some-boolean": {
@@ -106,7 +126,13 @@
                                         "format_minimum": "2000-01-01",
                                         "format_maximum": "2099-12-31"
                                     }
-                                }
+                                },
+                                "required": [
+                                    "some-array",
+                                    "some-boolean",
+                                    "some-float",
+                                    "some-date"
+                                ]
                             }
                         }
                     }
@@ -138,13 +164,20 @@
                                                 },
                                                 "age": {
                                                     "type": "integer",
+                                                    "minimum": 0,
                                                     "maximum": 120
                                                 },
                                                 "last_login": {
                                                     "type": "string",
                                                     "format": "date-time"
                                                 }
-                                            }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "name",
+                                                "age",
+                                                "last_login"
+                                            ]
                                         }
                                     },
                                     "some-boolean": {
@@ -160,7 +193,13 @@
                                         "format_minimum": "2000-01-01",
                                         "format_maximum": "2099-12-31"
                                     }
-                                }
+                                },
+                                "required": [
+                                    "some-array",
+                                    "some-boolean",
+                                    "some-float",
+                                    "some-date"
+                                ]
                             }
                         }
                     }

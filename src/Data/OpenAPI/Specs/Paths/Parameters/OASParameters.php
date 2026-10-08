@@ -22,7 +22,9 @@ class OASParameters extends AutoDataToObject
 
     public function toArray(): array
     {
-        return $this->parameters;
+        return Bunch::of($this->parameters)
+            ->map(fn(OASParameter $parameter) => $parameter->toArray())
+            ->toArray();
     }
 
     public function __construct(Route $route)
@@ -67,15 +69,11 @@ class OASParameters extends AutoDataToObject
                 $parameters = Bunch::of($method->getParameters());
                 $slugParameter = $parameters->first(fn($param) => $param->getName() === $name);
                 $parameter = new OASParameter($name, OASParameter::IN_PATH, true, []);
-                if (!$slugParameter) {
-                    return $parameter;
-                }
-
-                $type = $slugParameter->getType();
-                $this->mutateParameterWithMethodType(
-                    $this->getReflectionTypeName($type), 
-                    $parameter->schema
-                );
+                if ($slugParameter)
+                    $this->mutateParameterWithMethodType(
+                        $this->getReflectionTypeName($slugParameter->getType()),
+                        $parameter->schema
+                    );
             }
 
             $this->context->log(" - Adding [" . $parameter->name . "] slug");
@@ -109,8 +107,9 @@ class OASParameters extends AutoDataToObject
         foreach ($rules->getRules() as $key => $rule)
         {
             $this->context->log(" - Adding query [$key] param");
-            $parameter = new OASParameter($key, 'query', $rule->isNullable());
+            $parameter = new OASParameter($key, 'query', !$rule->isNullable());
             $this->mutateParameterWithRule($rule, $parameter->schema);
+            $this->parameters[] = $parameter;
         }
     }
 

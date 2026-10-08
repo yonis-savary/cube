@@ -62,6 +62,11 @@ class ArrayParam extends Rule
         return $this;
     }
 
+    public function isNullable(): bool
+    {
+        return $this->param->isNullable();
+    }
+
     public function getChildRule(): Rule
     {
         return $this->childRule;

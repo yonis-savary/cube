@@ -3,6 +3,8 @@
 namespace Cube\Tests\Units\Data\OpenAPI;
 
 use Cube\Core\Injector;
+use Cube\Data\OpenAPI\Configuration\Authentication\BearerToken;
+use Cube\Data\OpenAPI\Configuration\Authentication\OpenApiAuthScheme;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
 use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Env\Storage;
@@ -24,16 +26,23 @@ class OpenAPIGenerationTest extends TestCase
         return file_get_contents($path);
     }
 
-    protected function getSimpleGenerator(): OpenAPIGenerator
+    protected function getSimpleGenerator(?OpenApiAuthScheme $authenticationScheme=null): OpenAPIGenerator
     {
         return new OpenAPIGenerator(
             new OpenAPIConfiguration(
                 Storage::getInstance()->path(uniqid() . ".json"),
                 'My Test Application',
                 '0.1.0',
+                $authenticationScheme,
                 displayLogs: false
             )
         );
+    }
+
+    protected function generateAsArray(Router $router, ?OpenAPIGenerator $generator=null): array
+    {
+        $generator ??= $this->getSimpleGenerator();
+        return json_decode(file_get_contents($generator->generate($router)), true, flags: JSON_THROW_ON_ERROR);
     }
 
     protected function getStandaloneRouter(): Router
@@ -145,4 +154,83 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADRawResponseFile.json fixture");
     }
 
+    public function testQueryParametersGeneration() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/query-route", [SampleController::class, "getEndpointWithQueryRequest"]),
+        );
+
+        $generator = $this->getSimpleGenerator();
+
+        $file = $generator->generate($router);
+        $fixture = $this->readFixture("OADQueryParameters.json");
+
+        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADQueryParameters.json fixture");
+    }
+
+    public function testSlugTypesGeneration() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/untyped/{first}/{second}", [SampleController::class, "simpleRoute"]),
+            Route::get("/typed/{hex:color}/{uuid:token}/{time:at}", [SampleController::class, "simpleRoute"]),
+        );
+
+        $generator = $this->getSimpleGenerator();
+
+        $file = $generator->generate($router);
+        $fixture = $this->readFixture("OADSlugTypes.json");
+
+        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADSlugTypes.json fixture");
+    }
+
+    public function testEmptyRawListGeneration() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/empty", [SampleController::class, "endpointReturningAnEmptyList"]),
+        );
+
+        $document = $this->generateAsArray($router);
+        $schema = $document['paths']['/empty']['get']['responses'][200]['content']['application/json']['schema'];
+
+        $this->assertEquals(['type' => 'array'], $schema['properties']['items']);
+    }
+
+    public function testClosureRoutesAreIgnored() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/closure-route", fn() => null),
+            Route::get("/simple-route", [SampleController::class, "simpleRoute"]),
+        );
+
+        $document = $this->generateAsArray($router);
+
+        $this->assertEquals(['/simple-route'], array_keys($document['paths']));
+    }
+
+    public function testGenerationDoesNotAlterRoutes() {
+        $router = $this->getStandaloneRouter();
+        $router->group('/api', routes: [
+            Route::get("/products", [SampleController::class, "simpleRoute"]),
+        ]);
+
+        $first = $this->generateAsArray($router);
+        $second = $this->generateAsArray($router);
+
+        $this->assertEquals(['/api/products'], array_keys($first['paths']));
+        $this->assertEquals($first, $second);
+        $this->assertEquals('/api/products', $router->getRoutes()[0]->getPath());
+    }
+
+    public function testSecuritySchemeGeneration() {
+        $router = $this->getStandaloneRouter();
+        $generator = $this->getSimpleGenerator(new BearerToken());
+
+        $document = $this->generateAsArray($router, $generator);
+
+        $this->assertEquals(
+            ['BearerAuth' => ['type' => 'http', 'scheme' => 'bearer', 'bearerFormat' => 'JWT']],
+            $document['components']['securitySchemes']
+        );
+        $this->assertEquals([['BearerAuth' => []]], $document['security']);
+    }
 }

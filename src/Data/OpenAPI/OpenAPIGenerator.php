@@ -23,22 +23,23 @@ class OpenAPIGenerator
         $router ??= Router::getInstance();
         $config = &$this->configuration;
 
-        $context = new OpenAPIGenerationContext($config);
-        OpenAPIGenerationContext::setInstance($context);
+        return (new OpenAPIGenerationContext($config))
+        ->asGlobalInstance(function($context) use ($config, $router) {
+            $infos = new OASInfo($config->title, $config->version);
+            $root = new OASRoot('3.1.0', $infos);
+            $root->processPaths($router);
+            $root->generateModelSchemas();
+            $root->generateSecurityScheme($config);
 
-        $infos = new OASInfo($config->title, $config->version);
-        $root = new OASRoot('3.1.0', $infos);
-        $root->processPaths($router);
-        $root->generateModelSchemas();
+            $outputFile = $config->outputFile;
 
-        $outputFile = $config->outputFile;
-
-        $context->log(
-            str_repeat("-", 40),
-            "    Generating file " . Path::toRelative($outputFile),
-            str_repeat("-", 40),
-        );
-        file_put_contents($outputFile, $root->toJSON($config->jsonFlags));
-        return $outputFile;
+            $context->log(
+                str_repeat("-", 40),
+                "    Generating file " . Path::toRelative($outputFile),
+                str_repeat("-", 40),
+            );
+            file_put_contents($outputFile, $root->toJSON($config->jsonFlags));
+            return $outputFile;
+        });
     }
 }

@@ -12,7 +12,7 @@
                 "operationId": "endpointReturningARawDataType",
                 "responses": {
                     "200": {
-                        "description": null,
+                        "description": "",
                         "content": {
                             "application\/json": {
                                 "schema": {
@@ -20,22 +20,18 @@
                                     "properties": {
                                         "first-key": {
                                             "type": "array",
-                                            "items": [
-                                                {
-                                                    "type": "integer"
-                                                }
-                                            ]
+                                            "items": {
+                                                "type": "integer"
+                                            }
                                         },
                                         "second-key": {
                                             "type": "object",
                                             "properties": {
                                                 "some": {
                                                     "type": "array",
-                                                    "items": [
-                                                        {
-                                                            "type": "string"
-                                                        }
-                                                    ]
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
                                                 }
                                             }
                                         },

@@ -7,10 +7,8 @@ use Cube\Data\Bunch;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Paths\OASEndPoint;
 use Cube\Utils\Console;
-use Cube\Utils\Path;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
-use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
 
 class OASPaths extends AutoDataToObject
@@ -43,10 +41,9 @@ class OASPaths extends AutoDataToObject
     {
         // Make sure apis/controllers are loaded
         $router->loadRoutes();
-        $root = $router->getRootHolder();
 
-        $groupedRoutes = Bunch::of($this->compileRootHolder($root))
-            ->groupBy(fn(Route $route) => $route->getPath());
+        $groupedRoutes = Bunch::of($router->getRoutes())
+            ->groupBy(fn(Route $route) => $this->getTemplatedPath($route));
 
         $context = OpenAPIGenerationContext::getInstance();
         $context->log(
@@ -55,10 +52,9 @@ class OASPaths extends AutoDataToObject
 
         /** @var Route[] $routes */
         foreach ($groupedRoutes as $path => $routes) {
-            $this->groups[$path] = [];
             foreach ($routes as $route) {
-                if (!is_array($route->getMethods())) {
-                    $context->log("Ignored non array route : $path");
+                if (!is_array($route->getCallback())) {
+                    $context->log("Ignored closure route : $path");
                     continue;
                 }
 
@@ -75,27 +71,10 @@ class OASPaths extends AutoDataToObject
         }
     }
 
-    /**
-     * @return array<string, Route>
-     */
-    protected function compileRootHolder(RouteGroup $group, string $parentPrefix="/"): array
+    protected function getTemplatedPath(Route $route): string
     {
-        $compiled = [];
-        foreach ($group->getElements() as $routeOrGroup) {
-            if ($routeOrGroup instanceof RouteGroup) {
-                $routePrefix = Path::join($parentPrefix, $routeOrGroup->prefix);
-                array_push($compiled, ...$this->compileRootHolder($routeOrGroup, $routePrefix));
-            }
-            else
-            {
-                $route = &$routeOrGroup;
-
-                $newPath = Path::join($parentPrefix, $route->getPath());
-                $route->setPath($newPath);
-                $compiled[] = $route;
-            }
-        }
-
-        return $compiled;
+        return Bunch::fromExplode('/', $route->getPath())
+            ->map(fn(string $part) => preg_match('/^\{.+:(.+)\}$/U', $part, $match) ? '{' . $match[1] . '}' : $part)
+            ->join('/');
     }
 }

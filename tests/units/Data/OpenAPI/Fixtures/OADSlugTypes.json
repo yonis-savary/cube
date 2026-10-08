@@ -1,0 +1,66 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/untyped\/{first}\/{second}": {
+            "get": {
+                "summary": "simpleRoute",
+                "description": "SampleController.simpleRoute",
+                "operationId": "simpleRoute",
+                "parameters": [
+                    {
+                        "name": "first",
+                        "in": "path",
+                        "required": true,
+                        "schema": {}
+                    },
+                    {
+                        "name": "second",
+                        "in": "path",
+                        "required": true,
+                        "schema": {}
+                    }
+                ]
+            }
+        },
+        "\/typed\/{color}\/{token}\/{at}": {
+            "get": {
+                "summary": "simpleRoute",
+                "description": "SampleController.simpleRoute",
+                "operationId": "simpleRoute",
+                "parameters": [
+                    {
+                        "name": "color",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "[0-9a-fA-F]+"
+                        }
+                    },
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "at",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "\\d{2}\\:\\d{2}\\:\\d{2}"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

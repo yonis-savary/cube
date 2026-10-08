@@ -1,0 +1,81 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/query-route": {
+            "get": {
+                "summary": "getEndpointWithQueryRequest",
+                "description": "SampleController.getEndpointWithQueryRequest",
+                "operationId": "getEndpointWithQueryRequest",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "contact",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "email"
+                        }
+                    },
+                    {
+                        "name": "quantity",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 10
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": [
+                                "string",
+                                "null"
+                            ],
+                            "enum": [
+                                "draft",
+                                "sent",
+                                null
+                            ]
+                        }
+                    },
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "product",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

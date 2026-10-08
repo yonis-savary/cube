@@ -30,7 +30,7 @@ class OASRoot extends DataAutoDataToObject
 
     public function skipOnEmpty(): array
     {
-        return ['paths', 'components', 'security'];
+        return ['components', 'security'];
     }
 
     public function processPaths(Router $router): void
