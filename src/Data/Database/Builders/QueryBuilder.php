@@ -14,7 +14,7 @@ abstract class QueryBuilder
 
     abstract public function count(Query $query, Database $database): int;
 
-    abstract public function supports(string $pdoDriver): bool;
+    abstract public static function supports(string $pdoDriver): bool;
 
     /** @return string[] */
     abstract public function getIdentifierDelimiters(): array;

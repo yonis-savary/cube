@@ -2,7 +2,7 @@
 
 namespace Cube\Tests\Units\Database;
 
-use Cube\Data\Bunch;
+use Cube\Utils\Implementations;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\Plan;
@@ -11,7 +11,6 @@ use Cube\Data\Database\Migration\Plans\Exceptions\UnsupportedByDBMSException;
 use Cube\Data\Models\ModelField;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 class MigrationTest extends TestCase
 {
@@ -19,13 +18,7 @@ class MigrationTest extends TestCase
     protected function getDatabasePlan(Database $database): Plan
     {
         $databaseDriver = $database->getDriver();
-        $plan = Bunch::fromExtends(Plan::class, [$database])
-            ->first(fn($p) => $p->support($databaseDriver));
-
-        if ($plan)
-            return $plan;
-
-        throw new RuntimeException("Could not find any Plan class for database of type $databaseDriver");
+        return Implementations::findOrFail(Plan::class, fn (string $plan) => $plan::supports($databaseDriver), [$database], $databaseDriver);
     }
 
     #[ DataProvider('getDatabases') ]

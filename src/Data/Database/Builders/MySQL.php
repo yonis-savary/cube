@@ -22,7 +22,7 @@ class MySQL extends QueryBuilder
     protected Database $database;
     protected Query $query;
 
-    public function supports(string $pdoDriver): bool
+    public static function supports(string $pdoDriver): bool
     {
         return $pdoDriver === 'mysql';
     }

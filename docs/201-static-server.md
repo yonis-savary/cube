@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./111-models.md">Previous : Models</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./202-authentication.md">Next : Authentication</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./112-design-patterns.md">Previous : Design patterns</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./202-authentication.md">Next : Authentication</a></div></td></tr></table>
 
 # Static Server
 
@@ -116,4 +116,4 @@ A request for an unknown asset answers `404` with the name that was not found.
 | `$directory` | required | path relative to the project, or a `Storage` |
 | `$secure` | `true` | refuse symlinks escaping the directory, `.php` files and dotfiles |
 | `$supportsIndex` | `true` | answer `/` with `index.html` when it exists |
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./111-models.md">Previous : Models</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./202-authentication.md">Next : Authentication</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./112-design-patterns.md">Previous : Design patterns</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./202-authentication.md">Next : Authentication</a></div></td></tr></table>

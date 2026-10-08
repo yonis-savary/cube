@@ -9,7 +9,7 @@ use RuntimeException;
 
 class PostgreSQL extends Plan
 {
-    public function support(string $driver): bool
+    public static function supports(string $driver): bool
     {
         return strtolower($driver) === 'pgsql';
     }

@@ -252,7 +252,7 @@ A driver is one class extending `QueryBuilder`, declaring what it supports and r
 ```php
 class Oracle extends QueryBuilder
 {
-    public function supports(string $pdoDriver): bool
+    public static function supports(string $pdoDriver): bool
     {
         return 'oci' === $pdoDriver;
     }
@@ -262,8 +262,8 @@ class Oracle extends QueryBuilder
 ```
 
 Nothing else to register : the `Database` component asks every known builder which driver it
-supports and takes the first match. The same applies to migration plans
-(`Migration\Plan::support()`) and to model generation adapters
+supports and builds the first match, with [`Implementations::findOrFail()`](./112-design-patterns.md#strategy--driver).
+The same applies to migration plans (`Migration\Plan::supports()`) and to model generation adapters
 (`ModelGenerator\Adapters\DatabaseAdapter::supports()`), so a new DBMS means three classes and no
-edit anywhere else.
+edit anywhere else. `supports()` is static on all three.
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./109-events.md">Previous : Events</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./111-models.md">Next : Models</a></div></td></tr></table>

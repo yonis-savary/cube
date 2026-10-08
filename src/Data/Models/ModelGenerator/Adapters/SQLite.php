@@ -45,7 +45,7 @@ class SQLite extends DatabaseAdapter
 
     protected array $tablesWithSequence = [];
 
-    public function supports(string $driver): bool
+    public static function supports(string $driver): bool
     {
         return $driver === 'sqlite';
     }

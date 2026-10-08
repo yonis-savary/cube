@@ -10,7 +10,7 @@ use Cube\Data\Models\Relations\HasOne;
 
 class Postgres extends SQLite
 {
-    public function supports(string $driver): bool
+    public static function supports(string $driver): bool
     {
         return $driver === 'pgsql';
     }

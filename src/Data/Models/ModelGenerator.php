@@ -3,6 +3,7 @@
 namespace Cube\Data\Models;
 
 use Cube\Core\Component;
+use Cube\Utils\Implementations;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Env\Storage;
@@ -19,14 +20,13 @@ class ModelGenerator
     public function getAdapter(Database $database): DatabaseAdapter
     {
         $driver = $database->getDriver();
-        $adapter = Bunch::fromExtends(DatabaseAdapter::class, [$database])
-            ->first(fn($x) => $x->supports($driver))
-        ;
 
-        if (!$adapter) {
-            throw new \Exception("Could not find adapter for [{$driver}] database");
-        }
-        return $adapter;
+        return Implementations::findOrFail(
+            DatabaseAdapter::class,
+            fn ($adapter) => $adapter::supports($driver),
+            [$database],
+            $driver
+        );
     }
 
     public function processDatabase(Database $database, Storage $destination, ?string $namespace = null): array

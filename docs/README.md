@@ -9,6 +9,7 @@
 - [Events](./109-events.md)
 - [Database and queries](./110-database-and-queries.md)
 - [Models](./111-models.md)
+- [Design patterns](./112-design-patterns.md)
 - [Static server](./201-static-server.md)
 - [Authentication](./202-authentication.md)
 - [User component](./203-user-component.md)

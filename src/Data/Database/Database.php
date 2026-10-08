@@ -3,7 +3,7 @@
 namespace Cube\Data\Database;
 
 use Cube\Core\Component;
-use Cube\Data\Bunch;
+use Cube\Utils\Implementations;
 use Cube\Data\Database\Builders\QueryBuilder;
 use Cube\Env\Storage;
 use Throwable;
@@ -51,12 +51,11 @@ class Database
         if (!$this->queryBuilder) {
             $driver = $this->getDriver();
 
-            $this->queryBuilder = Bunch::fromExtends(QueryBuilder::class)
-                ->first(fn($builder) => $builder->supports($driver));
-
-            if (!$this->queryBuilder) {
-                throw new \InvalidArgumentException("Could not find a query builder that supports [{$driver}] database");
-            }
+            $this->queryBuilder = Implementations::findOrFail(
+                QueryBuilder::class,
+                fn ($builder) => $builder::supports($driver),
+                for: $driver
+            );
         }
     }
 

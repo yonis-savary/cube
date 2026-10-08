@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./110-database-and-queries.md">Previous : Database and queries</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./201-static-server.md">Next : Static server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./110-database-and-queries.md">Previous : Database and queries</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./112-design-patterns.md">Next : Design patterns</a></div></td></tr></table>
 
 # Models
 
@@ -290,4 +290,4 @@ php do models:to-types
 
 Generates a TypeScript file exporting one type per model, fields and relations included, so your
 front-end reads the same descriptions as your back-end.
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./110-database-and-queries.md">Previous : Database and queries</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./201-static-server.md">Next : Static server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./110-database-and-queries.md">Previous : Database and queries</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./112-design-patterns.md">Next : Design patterns</a></div></td></tr></table>

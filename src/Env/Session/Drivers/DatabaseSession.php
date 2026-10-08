@@ -2,12 +2,11 @@
 
 namespace Cube\Env\Session\Drivers;
 
-use Cube\Data\Bunch;
+use Cube\Utils\Implementations;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Query;
 use Cube\Data\Models\ModelField;
-use RuntimeException;
 use SessionHandlerInterface;
 use SessionUpdateTimestampHandlerInterface;
 
@@ -37,9 +36,12 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
             return;
 
         $driver = $this->database->getDriver();
-        $plan = Bunch::fromExtends(Plan::class, [$this->database])
-            ->first(fn(Plan $plan) => $plan->support($driver))
-            ?? throw new RuntimeException("Could not find any Plan class for database of type {$driver}");
+        $plan = Implementations::findOrFail(
+            Plan::class,
+            fn ($plan) => $plan::supports($driver),
+            [$this->database],
+            $driver
+        );
 
         $plan->create($this->table, [
             ModelField::string('id', 128)->primaryKey(),

@@ -4,6 +4,7 @@ namespace Cube\Data\Database;
 
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
+use Cube\Utils\Implementations;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
@@ -13,7 +14,6 @@ use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Console;
 use Cube\Utils\Text;
-use RuntimeException;
 use Throwable;
 
 abstract class MigrationManager
@@ -83,7 +83,7 @@ abstract class MigrationManager
 
     abstract public function listDoneMigrations(): array;
 
-    abstract public function supports(string $driver): bool;
+    abstract public static function supports(string $driver): bool;
 
     public function executeMigration(string $file): bool
     {
@@ -92,11 +92,12 @@ abstract class MigrationManager
         $migrationName = basename($file);
         $databaseDriver = $this->database->getDriver();
 
-        $plan = Bunch::fromExtends(Plan::class, [$this->database])
-            ->first(fn($p) => $p->support($databaseDriver));
-
-        if (!$plan)
-            throw new RuntimeException("Could not find any Plan class for database of type $databaseDriver");
+        $plan = Implementations::findOrFail(
+            Plan::class,
+            fn ($plan) => $plan::supports($databaseDriver),
+            [$this->database],
+            $databaseDriver
+        );
 
         if ($this->migrationWasMade($migrationName)) {
             return true;
@@ -185,13 +186,11 @@ abstract class MigrationManager
         $database = Database::getInstance();
         $databaseDriver = $database->getDriver();
 
-        $manager = Bunch::fromExtends(MigrationManager::class)
-            ->first(fn($manager) => $manager->supports($databaseDriver));
-
-        if (!$manager)
-            throw new \RuntimeException("No migration driver found for [{$databaseDriver}] database");
-
-        return $manager;
+        return Implementations::findOrFail(
+            MigrationManager::class,
+            fn ($manager) => $manager::supports($databaseDriver),
+            for: $databaseDriver
+        );
     }
 
     public function catchUpTo(string $name): array

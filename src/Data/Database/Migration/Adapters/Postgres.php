@@ -7,7 +7,7 @@ use Cube\Data\Database\MigrationManager;
 
 class Postgres extends MigrationManager
 {
-    public function supports(string $driver): bool
+    public static function supports(string $driver): bool
     {
         return strtolower($driver) === 'pgsql';
     }

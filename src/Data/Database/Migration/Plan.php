@@ -21,7 +21,7 @@ abstract class Plan
         protected Database $database
     ){}
 
-    abstract public function support(string $driver): bool;
+    abstract public static function supports(string $driver): bool;
 
     /**
      * Create a new table

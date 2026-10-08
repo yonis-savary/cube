@@ -20,7 +20,7 @@ class Postgres extends MySQL
     protected Database $database;
     protected Query $query;
 
-    public function supports(string $pdoDriver): bool
+    public static function supports(string $pdoDriver): bool
     {
         return $pdoDriver === 'pgsql';
     }

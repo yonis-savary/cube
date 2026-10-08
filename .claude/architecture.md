@@ -64,9 +64,11 @@ classmap plus every PSR-4 directory, then answers `classesThatExtends()` /
 controller, a command, a migration, a query builder, a migration plan or a channel.
 
 **Capability self-declaration over central dispatch.** Backends answer for themselves:
-`QueryBuilder::supports($driver)`, `Migration\Plan::support($driver)`,
+`QueryBuilder::supports($driver)`, `Migration\Plan::supports($driver)`,
 `ModelGenerator\Adapters\DatabaseAdapter::supports($driver)`, `WebAPI::handle($request)`. The
-selector loops over candidates and asks — there is no map from key to class to update.
+selector loops over candidates and asks — there is no map from key to class to update. When the
+check can be static, `Utils\Implementations::findOrFail()` is that selector : it asks each class and only
+builds the match, throwing `ImplementationNotFoundException` otherwise.
 
 **Configuration is typed objects.** `cube.php` returns a list of `ConfigurationElement`
 instances (`Applications`, `DatabaseConfiguration`, `RouterConfiguration`,

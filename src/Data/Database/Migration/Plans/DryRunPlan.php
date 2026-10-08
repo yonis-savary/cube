@@ -15,7 +15,7 @@ class DryRunPlan extends Plan
         protected Database $database
     ){}
 
-    public function support(string $driver): bool {
+    public static function supports(string $driver): bool {
         return false;
     }
 

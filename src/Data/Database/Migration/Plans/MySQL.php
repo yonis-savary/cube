@@ -9,7 +9,7 @@ use RuntimeException;
 
 class MySQL extends Plan
 {
-    public function support(string $driver): bool
+    public static function supports(string $driver): bool
     {
         return strtolower($driver) === 'mysql';
     }
