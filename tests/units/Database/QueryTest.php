@@ -9,6 +9,7 @@ use Cube\Data\Database\Query;
 use Cube\Data\Database\Query\FieldComparaison;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\ProductManager;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -678,5 +679,39 @@ class QueryTest extends TestCase
             ->build($database);
 
         $this->assertMatchesRegularExpression('/WHERE\s+\(`product`\.id = `product_manager`\.product\)/', $sql);
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testWhereAssocJoinsEveryConditionWithAnd(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(4);
+
+            $this->assertEquals(['product-2'], $this->fetchNames(Product::select()->whereAssoc(['id' => [1, 2, 3], 'name' => 'product-2'])));
+            $this->assertEquals([], $this->fetchNames(Product::select()->whereAssoc(['id' => 1, 'name' => 'product-2'])));
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testSetAssocUpdatesEveryGivenField(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $this->insertProducts(2);
+
+            Product::update()->where('id', 1)->setAssoc(['name' => 'renamed', 'price_dollar' => 5])->fetch();
+
+            $renamed = Product::find(1);
+            $this->assertEquals('renamed', $renamed->name);
+            $this->assertEquals(5, $renamed->price_dollar);
+            $this->assertEquals('product-2', Product::find(2)->name);
+        });
+    }
+
+    public function testAssocMethodsRefuseAList()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('whereAssoc() needs an associative array');
+
+        Product::select()->whereAssoc(['product-1']);
     }
 }

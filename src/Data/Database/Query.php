@@ -25,6 +25,8 @@ use Cube\Data\Models\Relations\Relation;
 use Cube\Data\Models\Relations\RelationResolver;
 use Cube\Data\Models\RelationTree;
 use Cube\Env\Logger\Logger;
+use Cube\Utils\Utils;
+use InvalidArgumentException;
 use stdClass;
 
 /**
@@ -159,6 +161,20 @@ class Query
         return $this;
     }
 
+    /**
+     * @param array<string,mixed> $conditions
+     * @return self<TModel>
+     */
+    public function whereAssoc(array $conditions, ?string $table = null): self
+    {
+        $this->assertAssoc($conditions, __FUNCTION__);
+
+        foreach ($conditions as $field => $value)
+            $this->where($field, $value, '=', $table);
+
+        return $this;
+    }
+
     public function whereIn(string $field, array|Bunch|Query $value, ?string $table = null): self
     {
         return $this->where($field, $value, 'IN', $table);
@@ -180,12 +196,15 @@ class Query
 
     /**
      * @param \Closure(self<TModel>) $callback
+     * @param ?\Closure(self<TModel>) $elseCallback
      * @return self<TModel>
      */
-    public function when(mixed $condition, callable|\Closure $callback): self
+    public function when(mixed $condition, callable|\Closure $callback, callable|\Closure|null $elseCallback = null): self
     {
         if ($condition)
             ($callback)($this);
+        elseif ($elseCallback)
+            ($elseCallback)($this);
 
         return $this;
     }
@@ -299,6 +318,26 @@ class Query
         $this->updateFields[] = new UpdateField($table, $field, $newValue);
 
         return $this;
+    }
+
+    /**
+     * @param array<string,mixed> $newValues
+     * @return self<TModel>
+     */
+    public function setAssoc(array $newValues, ?string $table = null): self
+    {
+        $this->assertAssoc($newValues, __FUNCTION__);
+
+        foreach ($newValues as $field => $newValue)
+            $this->set($field, $newValue, $table);
+
+        return $this;
+    }
+
+    protected function assertAssoc(array $array, string $method): void
+    {
+        if (!Utils::isAssoc($array))
+            throw new InvalidArgumentException("{$method}() needs an associative array of field => value, got a list");
     }
 
     public function build(?Database $database = null): string
