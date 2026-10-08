@@ -3,6 +3,9 @@
 namespace Cube\Tests\Units\Data;
 
 use Cube\Data\Database\Database;
+use Cube\Data\Models\Model;
+use Cube\Data\Models\ModelField;
+use Cube\Data\Models\Exceptions\MissingModelPrimaryKeyException;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Module;
 use Cube\Tests\Units\Models\ModuleUser;
@@ -36,6 +39,32 @@ class ModelTest extends TestCase
             $this->assertCount(1, $loaded->managers);
             $this->assertEquals('Alice', $loaded->managers[0]->manager);
         });
+    }
+
+    /** toArray() wrote every date with a time, which the DATE field's own rule then refused. */
+    public function testADateFieldSurvivesARoundTripThroughAnArray()
+    {
+        $event = new class(['day' => new \DateTime('2024-03-01 15:30:00')]) extends Model {
+            public static function table(): string { return 'event'; }
+            public static function fields(): array { return ['day' => ModelField::date('day')]; }
+            public static function relations(): array { return []; }
+            protected function allowNonTableAttributeSet(): bool { return true; }
+        };
+        $event->note = new \DateTime('2024-03-01 15:30:00');
+
+        $array = $event->toArray();
+
+        $this->assertEquals('2024-03-01', $array['day']);
+        $this->assertEquals('2024-03-01 15:30:00', $array['note']);
+        $this->assertEquals('2024-03-01', $event::fromArray(['day' => $array['day']])->toArray()['day']);
+    }
+
+    public function testAPrimaryKeyMethodNamesTheModelMissingIt()
+    {
+        $this->expectException(MissingModelPrimaryKeyException::class);
+        $this->expectExceptionMessage(ModuleUser::class.' does not have a primary key, deleteId() needs one');
+
+        ModuleUser::deleteId(1);
     }
 
     #[ DataProvider('getDatabases') ]

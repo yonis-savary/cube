@@ -194,6 +194,15 @@ Conditions are joined with `AND` by default. `or()` changes the operator between
 before it and the one after it. `when()` only applies its callback when the condition is truthy,
 which keeps optional filters out of `if` blocks.
 
+When the conditions come as an associative array, `whereAssoc()` adds one `where()` per entry
+
+```php
+Product::select()->whereAssoc(['name' => 'screen', 'id' => [1, 2, 3]]); // name = 'screen' AND id IN (1,2,3)
+```
+
+It takes the same optional table as `where()`, and throws an `InvalidArgumentException` when given a
+list.
+
 ### Joins
 
 ```php
@@ -223,6 +232,7 @@ the same way
 
 ```php
 Product::update()->where('name', 'screen')->set('name', 'monitor')->fetch();
+Product::update()->where('id', 4)->setAssoc(['name' => 'monitor', 'price_dollar' => 150])->fetch();
 Product::delete()->where('name', 'mouse')->limit(1)->fetch();
 Product::insert()->insertField(['name'])->values(['screen'], ['mouse'])->fetch();
 ```

@@ -10,12 +10,12 @@ use Cube\Event\EventDispatcher;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Rules\Param;
 use Cube\Data\Models\Events\SavedModel;
+use Cube\Data\Models\Exceptions\MissingModelPrimaryKeyException;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
 use Cube\Data\Models\Relations\Relation;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\ObjectParam;
-use DateTime;
 use InvalidArgumentException;
 
 abstract class Model extends EventDispatcher
@@ -33,29 +33,14 @@ abstract class Model extends EventDispatcher
         if ($data instanceof Model)
             $data = $data->toArray();
 
-        $fields = $this->fields();
+        $modelData = array_filter(
+            array_intersect_key($data, static::fields()),
+            fn ($value) => !is_array($value)
+        );
 
-        $modelData = [];
-
-        foreach ($fields as $key => $field) {
-            if (!array_key_exists($key, $data)) {
-                continue;
-            }
-
-            if (is_array($data[$key])) {
-                continue;
-            }
-
-            $modelData[$key] = $data[$key];
-        }
-
-        foreach ($modelData as $key => $_) {
-            unset($data[$key]);
-        }
-
-        $this->data = empty($modelData) ? new \stdClass() : (object) $modelData;
+        $this->data = (object) $modelData;
         $this->markAsOriginal();
-        $this->completeModelDataWithRelations($data, $relationAccumulator);
+        $this->completeModelDataWithRelations(array_diff_key($data, $modelData), $relationAccumulator);
     }
 
     protected function getAttributeDefaultValue(string $name): mixed {
@@ -86,6 +71,12 @@ abstract class Model extends EventDispatcher
     public static function primaryKey(): ?string
     {
         return null;
+    }
+
+    protected static function assertPrimaryKey(string $method): string
+    {
+        return static::primaryKey()
+            ?: throw new MissingModelPrimaryKeyException(static::class, $method);
     }
 
     public function id(): mixed
@@ -127,17 +118,12 @@ abstract class Model extends EventDispatcher
 
     public static function updateRow(mixed $id, array $newData): self
     {
-        if (!static::primaryKey()) {
-            throw new \RuntimeException('cannot call updateRow static function without a primary key');
-        } // TODO Add a custom exception for needed primary key
+        $primaryKey = static::assertPrimaryKey(__FUNCTION__);
 
-        $query = static::update()->where(static::primaryKey(), $id);
-
-        foreach ($newData as $column => $value) {
-            $query->set($column, $value);
-        }
-
-        $query->fetch();
+        static::update()
+            ->where($primaryKey, $id)
+            ->setAssoc($newData)
+            ->fetch();
 
         return static::find($id);
     }
@@ -158,12 +144,8 @@ abstract class Model extends EventDispatcher
             return $this;
         }
 
-        foreach ($this->references as $reference) {
-            Bunch::of($reference)
-                ->onlyInstancesOf(Model::class)
-                ->forEach(fn (Model $model) => $model->markAsPersisted(true))
-            ;
-        }
+        foreach ($this->referencedModels() as $model)
+            $model->markAsPersisted(true);
 
         return $this;
     }
@@ -176,14 +158,28 @@ abstract class Model extends EventDispatcher
             return $this;
         }
 
-        foreach ($this->references as $reference) {
-            Bunch::of($reference)
-                ->onlyInstancesOf(Model::class)
-                ->forEach(fn (Model $model) => $model->markAsOriginal(true))
-            ;
-        }
+        foreach ($this->referencedModels() as $model)
+            $model->markAsOriginal(true);
 
         return $this;
+    }
+
+    /** @return Model[] */
+    protected static function modelsOf(Model|array|null $reference): array
+    {
+        $models = is_array($reference)
+            ? array_values($reference)
+            : [$reference];
+
+        return Bunch::of($models)->onlyInstancesOf(Model::class)->get();
+    }
+
+    /** @return Model[] */
+    protected function referencedModels(): array
+    {
+        return Bunch::fromValues($this->references)
+            ->flatMap(fn ($reference) => self::modelsOf($reference))
+            ->get();
     }
 
     /**
@@ -197,11 +193,7 @@ abstract class Model extends EventDispatcher
     public static function last(?string $key=null, ?Database $database = null): ?static
     {
         $database ??= Database::getInstance();
-        $key ??= static::primaryKey();
-
-        if (!$key) {
-            throw new \Exception('Use of last() method without primary key (or any given key) is not supported');
-        }
+        $key ??= static::assertPrimaryKey(__FUNCTION__);
 
         return static::select()
             ->order($key, 'DESC')
@@ -213,10 +205,7 @@ abstract class Model extends EventDispatcher
     {
         $database ??= Database::getInstance();
 
-        $instance = new static($data);
-        $instance->save($database);
-
-        return $instance;
+        return (new static($data))->save($database);
     }
 
     public static function existsWhere(array $conditions, ?Database $database = null): bool
@@ -228,9 +217,7 @@ abstract class Model extends EventDispatcher
     public static function exists(mixed $primaryKeyValue, ?Database $database = null): bool
     {
         $database ??= Database::getInstance();
-        if (!$primaryKey = static::primaryKey()) {
-            throw new \RuntimeException( static::class . " model does not have a primary key, cannot use the exists method");
-        }
+        $primaryKey = static::assertPrimaryKey(__FUNCTION__);
 
         return static::existsWhere([$primaryKey => $primaryKeyValue], $database);
     }
@@ -241,12 +228,9 @@ abstract class Model extends EventDispatcher
     public static function findWhere(array $conditions, array $with = [], ?Database $database = null): ?self
     {
         $database ??= Database::getInstance();
-        $query = static::select($with)->withBaseModel(static::class);
-        foreach ($conditions as $column => $value) {
-            $query->where($column, $value, '=', static::table());
-        }
-
-        $query->limit(1);
+        $query = static::select($with)
+            ->whereAssoc($conditions, static::table())
+            ->limit(1);
 
         if ($model = $query->fetch($database)[0] ?? false) {
             $model->loadMissing(...$with);
@@ -263,9 +247,8 @@ abstract class Model extends EventDispatcher
         $fields = static::fields();
         $rules = [];
 
-        foreach ($fields as &$field) {
+        foreach ($fields as $field) {
             if ($field->autoIncrement) {
-                $field = null;
                 continue;
             }
 
@@ -304,9 +287,7 @@ abstract class Model extends EventDispatcher
     public static function find(mixed $primaryKeyValue, array $with = [], ?Database $database = null): ?static
     {
         $database ??= Database::getInstance();
-        if (!$primaryKey = static::primaryKey()) {
-            throw new \RuntimeException( static::class . " model does not have a primary key, cannot use the exists method");
-        }
+        $primaryKey = static::assertPrimaryKey(__FUNCTION__);
 
         return static::findWhere([$primaryKey => $primaryKeyValue], $with, $database);
     }
@@ -334,9 +315,7 @@ abstract class Model extends EventDispatcher
 
     public static function deleteId(mixed $id): ?static
     {
-        if (!static::primaryKey()) {
-            throw new \InvalidArgumentException('Cannot call deleteId on a model without a primary key');
-        }
+        static::assertPrimaryKey(__FUNCTION__);
 
         if ($toDelete = static::find($id)) {
             $toDelete->destroy();
@@ -350,16 +329,8 @@ abstract class Model extends EventDispatcher
      */
     public static function deleteWhere(array $conditions, ?Database $database = null): array
     {
-        $select = static::select();
-        $delete = static::delete();
-
-        foreach ($conditions as $field => $value) {
-            $select->where($field, $value);
-            $delete->where($field, $value);
-        }
-
-        $deleted = $select->fetch($database);
-        $delete->fetch($database);
+        $deleted = static::select()->whereAssoc($conditions)->fetch($database);
+        static::delete()->whereAssoc($conditions)->fetch($database);
 
         return $deleted;
     }
@@ -441,6 +412,7 @@ abstract class Model extends EventDispatcher
             throw new \InvalidArgumentException('$model must extends Model');
         }
 
+        # Two line syntax is needed, this function returns a reference
         $this->references[$referenceName] ??= new $class();
 
         return $this->references[$referenceName];
@@ -474,20 +446,27 @@ abstract class Model extends EventDispatcher
 
     public function toArray(): array
     {
-        $array = (array) $this->data;
+        $fields = static::fields();
 
-        // @var Model $model
-        foreach ($this->references as $key => $modelOrCollection) {
-            if (is_array($modelOrCollection)) {
-                $array[$key] = Bunch::of($modelOrCollection)->map(fn(Model $model) => $model->toArray())->toArray();
-            } elseif ($modelOrCollection instanceof Model) {
-                $array[$key] = $modelOrCollection->toArray();
-            }
+        $data = (array) $this->data;
+        $array = [];
+        foreach ($data as $name => $value)
+        {
+            $field = $fields[$name] ?? new ModelField($name);
+            $array[$name] = $field->format($value);
         }
 
-        foreach ($array as &$value) {
-            if ($value instanceof DateTime)
-                $value = $value->format("Y-m-d H:i:s");
+        foreach ($this->references as $key => $modelOrCollection)
+        {
+            $array[$key] = match(true) {
+                is_array($modelOrCollection) =>
+                    Bunch::of($modelOrCollection)->map(fn(Model $model) => $model->toArray())->toArray(),
+
+                ($modelOrCollection instanceof Model) =>
+                    $modelOrCollection->toArray(),
+
+                default => null
+            };
         }
 
         return $array;
@@ -509,9 +488,9 @@ abstract class Model extends EventDispatcher
         return new HasMany($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
 
-    protected function loadTree(array $tree, bool $skipLoaded=false) 
+    protected function loadTree(array $tree, bool $skipLoaded=false)
     {
-        foreach ($tree as $relation => $subtree) 
+        foreach ($tree as $relation => $subtree)
         {
             $skip = $skipLoaded && array_key_exists($relation, $this->references);
             if (!$skip)
@@ -522,12 +501,8 @@ abstract class Model extends EventDispatcher
 
             $relationInstance = &$this->references[$relation];
 
-            if (is_array($relationInstance)) {
-                foreach ($relationInstance as $child)
-                    $child->loadTree($subtree);
-            } else if ($relationInstance) {
-                $relationInstance->loadTree($subtree);
-            }
+            foreach (self::modelsOf($relationInstance) as $child)
+                $child->loadTree($subtree);
         }
     }
 
@@ -555,11 +530,9 @@ abstract class Model extends EventDispatcher
 
     public function save(?Database $database = null): self
     {
-        if ($this->existsInDatabase()) {
-            $this->saveExisting($database);
-        } else {
-            $this->saveNew($database);
-        }
+        $this->existsInDatabase()
+            ? $this->saveExisting($database)
+            : $this->saveNew($database);
 
         return $this;
     }
@@ -569,16 +542,15 @@ abstract class Model extends EventDispatcher
         if (!$this->existsInDatabase()) {
             return;
         }
-        $query = static::delete();
 
-        if ($primaryKey = static::primaryKey()) {
-            $query->where($primaryKey, $this->original->{$primaryKey});
-        } else {
-            foreach ($this->original as $key => $value) {
-                $query->where($key, $value);
-            }
-        }
-        $query->limit(1)->fetch($database);
+        $primaryKey = static::primaryKey();
+        $data = $primaryKey
+            ? [$primaryKey => $this->original->{$primaryKey}]
+            : (array) $this->original;
+
+        static::delete()
+            ->whereAssoc($data)
+            ->first($database);
 
         $this->persisted = false;
     }
@@ -596,15 +568,8 @@ abstract class Model extends EventDispatcher
         $this->data = clone $newInstance->data;
         $this->markAsOriginal()->markAsPersisted();
 
-        foreach ($this->references as $referenceObject) {
-            if (is_array($referenceObject)) {
-                foreach ($referenceObject as $model) {
-                    $model->reload($database);
-                }
-            } else {
-                $referenceObject->reload($database);
-            }
-        }
+        foreach ($this->referencedModels() as $model)
+            $model->reload($database);
     }
 
     public function anonymize(): self
@@ -613,15 +578,8 @@ abstract class Model extends EventDispatcher
             unset($this->data->{$key});
         }
 
-        foreach ($this->references as $referenceObject) {
-            if (is_array($referenceObject)) {
-                foreach ($referenceObject as $model) {
-                    $model->anonymize();
-                }
-            } else {
-                $referenceObject->anonymize();
-            }
-        }
+        foreach ($this->referencedModels() as $model)
+            $model->anonymize();
 
         return $this;
     }
@@ -631,16 +589,18 @@ abstract class Model extends EventDispatcher
         $newInstance = new static();
         $newInstance->data = clone $this->data;
 
-        $newInstance->references = [];
-        foreach ($this->references as $refName => $referenceObject) {
+        foreach ($this->references as $refName => $referenceObject)
+        {
             /** @var Relation $relation */
             $relation = $newInstance->{$refName}();
 
-            if ($relation instanceof HasMany) {
-                foreach ($referenceObject as $model) {
+            if ($relation instanceof HasMany)
+            {
+                foreach ($referenceObject as $model)
                     $relation->bind($model->replicate());
-                }
-            } elseif ($relation instanceof HasOne) {
+            }
+            elseif ($relation instanceof HasOne)
+            {
                 $relation->bind($referenceObject->replicate());
             }
         }
@@ -657,30 +617,28 @@ abstract class Model extends EventDispatcher
 
     protected function saveExisting(?Database $database = null)
     {
-        $primaryKey = $this->primaryKey();
+        $fields = static::fields();
 
-        $query = static::update()->where($primaryKey, $this->original->{$primaryKey});
-
-        $gotAnyChange = false;
+        $patch = [];
         foreach ($this->data as $key => $value) {
-            $field = static::fields()[$key] ?? null;
+            $field = $fields[$key] ?? null;
 
-            if ($field?->isGenerated() ?? false) {
+            if ($field?->isGenerated())
                 continue;
-            }
 
-            if (property_exists($this->original, $key)) {
-                if ($this->original->{$key} === $value) {
-                    continue;
-                }
-            }
+            if (property_exists($this->original, $key) && $this->original->{$key} === $value)
+                continue;
 
-            $gotAnyChange = true;
-            $query->set($key, $field?->format($value) ?? $value);
+            $patch[$key] = $field?->format($value) ?? $value;
         }
 
-        if ($gotAnyChange) {
-            $query->fetch($database);
+        if (count($patch)) {
+            $primaryKey = $this->primaryKey();
+
+            static::update()
+                ->where($primaryKey, $this->original->{$primaryKey})
+                ->setAssoc($patch)
+                ->fetch($database);
         }
 
         $this->markAsOriginal();
@@ -690,43 +648,33 @@ abstract class Model extends EventDispatcher
     protected function saveNew(?Database $database = null)
     {
         $database ??= Database::getInstance();
+
         $data = [];
-        foreach ($this->fields() as $name => $field) {
-            if (!$field->isInsertable()) {
+        foreach (static::fields() as $name => $field) {
+            if (!$field->isInsertable() || $field->isGenerated() || !isset($this->data->{$name}))
                 continue;
-            }
 
-            if (isset($this->data->{$name})) {
-                $value = $this->data->{$name};
-                if ($field->hasDefault && null === $value) {
-                    continue;
-                }
-                if ($field->isGenerated()) {
-                    continue;
-                }
-
-                $data[$name] = $field->format($value);
-            }
+            $data[$name] = $field->format($this->data->{$name});
         }
 
-        if (count($data)) {
-            static::insert()
-                ->insertField(array_keys($data))
-                ->values(array_values($data))
-                ->fetch($database)
-            ;
+        if (!count($data))
+            return;
 
-            $this->persisted = true;
+        static::insert()
+            ->insertField(array_keys($data))
+            ->values(array_values($data))
+            ->fetch($database);
 
-            if ($primaryKey = $this->primaryKey()) {
-                $this->data->{$primaryKey} = $data[$primaryKey] ?? $database->lastInsertId();
-                $this->reload($database);
-            } else {
-                $this->markAsOriginal();
-            }
+        $this->persisted = true;
 
-            $this->dispatch(new SavedModel($this, $database));
+        if ($primaryKey = $this->primaryKey()) {
+            $this->data->{$primaryKey} = $data[$primaryKey] ?? $database->lastInsertId();
+            $this->reload($database);
+        } else {
+            $this->markAsOriginal();
         }
+
+        $this->dispatch(new SavedModel($this, $database));
     }
 
     /**

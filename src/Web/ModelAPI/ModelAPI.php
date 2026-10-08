@@ -170,15 +170,10 @@ abstract class ModelAPI extends Controller
             return Response::text('No '.$model::class." with {$primaryKey} = {$primaryKeyValue} found", StatusCode::UNPROCESSABLE_CONTENT);
         }
 
-        $query = $model::update()->where($primaryKey, $primaryKeyValue);
-
-        foreach ($request->all() as $key => $value) {
-            if ($instance::hasField($key)) {
-                $query->set($key, $value);
-            }
-        }
-
-        $query->fetch();
+        $model::update()
+            ->where($primaryKey, $primaryKeyValue)
+            ->setAssoc(array_filter($request->all(), $instance::hasField(...), ARRAY_FILTER_USE_KEY))
+            ->fetch();
 
         return $model::find($primaryKeyValue);
     }
