@@ -21,6 +21,10 @@ abstract class Rule
 
     protected bool $nullable = false;
 
+    protected bool $optional = false;
+
+    protected bool $hasDefault = false;
+
     /**
      * Add a condition to the Validator, if the callback return `true`, it is considered as valid,
      * otherwise the errorMessage will be displayed to the user.
@@ -70,7 +74,7 @@ abstract class Rule
     }
 
     /**
-     * Given value to replace any incoming `null` value
+     * Given value to replace an incoming `null` value, or a missing key inside an object
      */
     public function default(mixed $defaultValue): static
     {
@@ -79,7 +83,13 @@ abstract class Rule
             fn (mixed $value) => $value ?? $defaultValue
         ));
 
+        $this->hasDefault = true;
         return $this;
+    }
+
+    public function hasDefault(): bool
+    {
+        return $this->hasDefault;
     }
 
     public function validate(mixed $currentValue, ?string $key=null): ValidationReturn
@@ -111,6 +121,22 @@ abstract class Rule
     public function isNullable(): bool
     {
         return $this->nullable;
+    }
+
+    public function optional(bool $optional = true): static
+    {
+        $this->optional = $optional;
+        return $this;
+    }
+
+    public function required(): static
+    {
+        return $this->optional(false);
+    }
+
+    public function isOptional(): bool
+    {
+        return $this->optional;
     }
 
     public function withMetadata(array $metadata): static

@@ -72,7 +72,7 @@ class OASParameters extends AutoDataToObject
         foreach ($rules->getRules() as $key => $rule)
         {
             $this->context->log(" - Adding query [$key] param");
-            $parameter = new OASParameter($key, 'query', !$rule->isNullable());
+            $parameter = new OASParameter($key, 'query', !$rule->isOptional());
             $this->mutateParameterWithRule($rule, $parameter->schema);
             $this->parameters[] = $parameter;
         }

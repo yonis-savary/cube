@@ -256,7 +256,8 @@ abstract class Model extends EventDispatcher
                 ? true
                 : null;
 
-            $rules[$field->name] = $field->toRule($forceNullable);
+            $rules[$field->name] = $field->toRule($forceNullable)
+                ->optional($field->nullable || $field->hasDefault || $forceNullable);
         }
 
         if ($withRelations) {
@@ -269,13 +270,13 @@ abstract class Model extends EventDispatcher
 
                 /** @var ObjectParam $baseRule */
                 $baseRule = $toModel::toObjectParam(true, false);
-                $baseRule->optional($relation->toColumn);
+                $baseRule->withOptionalKeys($relation->toColumn);
 
                 if ($relation instanceof HasMany) {
-                    $rules[$relationName] = Param::array($baseRule, true);
+                    $rules[$relationName] = Param::array($baseRule, true)->optional();
                 }
                 if ($relation instanceof HasOne) {
-                    $rules[$relationName] = $baseRule;
+                    $rules[$relationName] = $baseRule->optional();
                 }
             }
         }

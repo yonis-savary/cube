@@ -314,10 +314,13 @@ class Request extends HttpMessage
         if (!$key)
             return $result;
 
-        if (!array_key_exists($key, $result))
-            throw new InvalidArgumentException("$key key does not exists in validated values");
+        if (array_key_exists($key, $result))
+            return $result[$key];
 
-        return $result[$key];
+        if ($validator instanceof ObjectParam && array_key_exists($key, $validator->getRules()))
+            return null;
+
+        throw new InvalidArgumentException("$key key does not exists in validated values");
     }
 
     /**

@@ -184,7 +184,7 @@ class ValidationTest extends TestCase
 
         $this->testRule($rule, ['age' => 5, 'option' => true]);
         $this->testRule($rule, ['age' => 5, 'option' => null]);
-        $this->testRule($rule, ['age' => 5], true, ['age' => 5, 'option' => null]);
+        $this->testRule($rule, ['age' => 5], false);
         $this->testRule($rule, ['age' => 'invalid'], false);
         $this->testRule($rule, ['age' => 'invalid', 'option' => 'invalid'], false);
 
@@ -391,7 +391,7 @@ class ValidationTest extends TestCase
         $this->testRule($rule, ['name' => 'screen', 'quantity' => 12], true, ['name' => 'screen', 'quantity' => 12]);
     }
 
-    public function testOptionalAndMandatoryEditTheSameRules()
+    public function testOptionalAndRequiredKeysEditTheSameRules()
     {
         $rule = Param::object([
             'name' => Param::string(),
@@ -400,11 +400,34 @@ class ValidationTest extends TestCase
 
         $this->testRule($rule, ['name' => 'screen'], false);
 
-        $rule->optional('price');
-        $this->testRule($rule, ['name' => 'screen'], true, ['name' => 'screen', 'price' => null]);
+        $rule->withOptionalKeys('price');
+        $this->testRule($rule, ['name' => 'screen'], true, ['name' => 'screen']);
 
-        $rule->mandatory('price');
+        $rule->withRequiredKeys('price');
         $this->testRule($rule, ['name' => 'screen'], false);
+    }
+
+    public function testARequiredKeyCanHoldNull()
+    {
+        $rule = Param::object(['comment' => Param::string(nullable: true)]);
+
+        $this->assertEquals(['comment' => ['comment is required']], $rule->validate([])->getErrors());
+        $this->testRule($rule, ['comment' => null]);
+    }
+
+    public function testAnOptionalKeyIsLeftOutWhenMissing()
+    {
+        $rule = Param::object(['name' => Param::string(), 'comment' => Param::string()->optional()]);
+
+        $this->testRule($rule, ['name' => 'screen'], true, ['name' => 'screen']);
+        $this->testRule($rule, ['name' => 'screen', 'comment' => null], false);
+    }
+
+    public function testADefaultFillsAMissingKey()
+    {
+        $rule = Param::object(['quantity' => Param::integer()->default(1)]);
+
+        $this->testRule($rule, [], true, ['quantity' => 1]);
     }
 
     public function testObjectRulesCanBeAddedAndRemoved()
@@ -487,7 +510,7 @@ class ValidationTest extends TestCase
         $this->assertTrue($results->isValid());
 
         $rule = Product::toObjectParam(false, true)
-            ->mandatory('managers');
+            ->withRequiredKeys('managers');
 
         $result = $rule->validate(['name' => 'Painting']);
         $this->assertFalse($result->isValid()); // Manager is now mandatory
@@ -575,7 +598,7 @@ class ValidationTest extends TestCase
         $rule = Param::object(['password' => Param::string()])
             ->withCondition(fn (array $value) => strlen($value['password']) > 8, 'password too short');
 
-        $this->assertEquals(['password' => ['password cannot be null']], $rule->validate([])->getErrors());
+        $this->assertEquals(['password' => ['password is required']], $rule->validate([])->getErrors());
     }
 
     /** integer() used to accept anything is_numeric() accepts, truncating it on the way. */

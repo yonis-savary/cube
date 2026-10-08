@@ -78,7 +78,7 @@ class StoreProductRequest extends Request
     {
         return [
             'name' => Param::string(),
-            'price_dollar' => Param::float(nullable: true),
+            'price_dollar' => Param::float(nullable: true)->optional(),
             'managers' => Param::array(Param::object()),
         ];
     }
@@ -93,6 +93,25 @@ public static function storeProduct(StoreProductRequest $request)
     $name = $request->validated('name');   // trimmed string
     $all = $request->validated();          // every validated value
 }
+```
+
+A key and its value are checked separately : a rule is **required** unless you call
+`optional()`, and refuses `null` unless it is `nullable`
+
+| Rule | Missing key | `null` value |
+|---|---|---|
+| `Param::string()` | refused, `name is required` | refused, `name cannot be null` |
+| `Param::string(nullable: true)` | refused | accepted |
+| `Param::string()->optional()` | accepted | refused |
+| `Param::string(nullable: true)->optional()` | accepted | accepted |
+
+A missing optional key is left out of `validated()`, so patching a model with
+`$product->merge($request)` only touches the fields that were sent. `validated('price_dollar')`
+still answers `null` for it. A rule with a `default()` fills a missing key instead. On a whole
+object, `withOptionalKeys()` and `withRequiredKeys()` switch several keys at once
+
+```php
+Product::toObjectParam()->withOptionalKeys(['name', 'price_dollar']);
 ```
 
 `Param` composes the shape ; each factory takes a `nullable` flag as its last argument

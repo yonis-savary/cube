@@ -65,7 +65,8 @@ class ProductController extends Controller
 ```
 
 Every model a response refers to is described once in `components.schemas`, from its fields and
-relations. A rule's nullability becomes a nullable type, and a non-nullable rule a required key.
+relations. A `nullable` rule becomes a nullable type, and a rule that is not `optional()` a
+required key or parameter.
 
 ## Describing an endpoint
 

@@ -12,7 +12,7 @@ class QueryRequestFormat extends Request
     public function getRules(): array|Rule
     {
         return [
-            'search' => Param::string(nullable: true),
+            'search' => Param::string(nullable: true)->optional(),
             'contact' => Param::email(),
             'quantity' => Param::integer()->isBetween(0, 10),
             'status' => Param::string(nullable: true)->inArray(['draft', 'sent']),

@@ -13,6 +13,7 @@ use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\ProductManager;
 use Cube\Tests\Units\Models\User;
 use Cube\Web\Http\Request;
+use Cube\Web\Http\Rules\Param;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -354,6 +355,25 @@ class ModelTest extends TestCase
 
         $this->assertEquals('monitor', $product->name);
         $this->assertEquals(99, $product->price_dollar);
+    }
+
+    public function testMergeWithRequestLeavesMissingOptionalFieldsUntouched()
+    {
+        $product = new Product(['id' => 1, 'name' => 'screen', 'price_dollar' => 10]);
+
+        $request = new class('POST', '/', [], ['name' => 'monitor']) extends Request {
+            public function getRules(): array
+            {
+                return [
+                    'name' => Param::string()->optional(),
+                    'price_dollar' => Param::float()->optional(),
+                ];
+            }
+        };
+        $product->merge($request);
+
+        $this->assertEquals('monitor', $product->name);
+        $this->assertEquals(10, $product->price_dollar);
     }
 
     /**

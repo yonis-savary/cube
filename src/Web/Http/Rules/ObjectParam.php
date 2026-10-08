@@ -3,6 +3,7 @@
 namespace Cube\Web\Http\Rules;
 
 use Cube\Data\Bunch;
+use Cube\Utils\Text;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Request;
 use InvalidArgumentException;
@@ -48,6 +49,15 @@ class ObjectParam extends Rule
             if (is_array($rule))
                 $rule = Param::object($rule, false);
 
+            $isMissing = !array_key_exists($ruleKey, $value) && !$rule->hasDefault();
+            if ($isMissing && $rule->isOptional())
+                continue;
+
+            if ($isMissing) {
+                $return->addErrorKey($ruleKey, [Text::interpolate('{key} is required', ['key' => $ruleKey])]);
+                continue;
+            }
+
             $valueReturn = $rule->validate($value[$ruleKey] ?? null, $ruleKey);
 
             if ($valueReturn->isValid())
@@ -69,18 +79,18 @@ class ObjectParam extends Rule
         return $this;
     }
 
-    public function optional(string|array $keys): static {
+    public function withOptionalKeys(string|array $keys): static {
         Bunch::of($keys)
         ->filter(fn($key) => array_key_exists($key, $this->rules))
-        ->forEach(fn($key) => $this->rules[$key]->nullable(true));
+        ->forEach(fn($key) => $this->rules[$key]->optional());
 
         return $this;
     }
 
-    public function mandatory(string|array $keys): static {
+    public function withRequiredKeys(string|array $keys): static {
         Bunch::of($keys)
         ->filter(fn($key) => array_key_exists($key, $this->rules))
-        ->forEach(fn($key) => $this->rules[$key]->nullable(false));
+        ->forEach(fn($key) => $this->rules[$key]->required());
 
         return $this;
     }

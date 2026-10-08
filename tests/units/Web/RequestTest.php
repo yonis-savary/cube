@@ -301,6 +301,15 @@ class RequestTest extends TestCase
         (new Request('GET', '/', ['price' => '50']))->validated('unknown', Param::object(['price' => Param::integer()]));
     }
 
+    public function testValidatedAnswersNullForAMissingOptionalKey()
+    {
+        $validator = Param::object(['price' => Param::integer(), 'discount' => Param::integer()->optional()]);
+        $request = new Request('GET', '/', ['price' => '50']);
+
+        $this->assertSame(['price' => 50], $request->validated(validator: $validator));
+        $this->assertNull($request->validated('discount', $validator));
+    }
+
     public function testARequestWithoutRulesAcceptsAnything()
     {
         $request = new Request('GET', '/', ['anything' => 'goes']);

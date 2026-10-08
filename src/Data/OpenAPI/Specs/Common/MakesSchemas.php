@@ -113,7 +113,7 @@ trait MakesSchemas
             $schema['properties'][$key] = [];
             $this->mutateParameterWithRule($subrule, $schema['properties'][$key]);
 
-            if (!$subrule->isNullable())
+            if (!$subrule->isOptional())
                 $required[] = $key;
         }
 

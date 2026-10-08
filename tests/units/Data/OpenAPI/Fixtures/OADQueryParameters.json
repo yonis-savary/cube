@@ -44,7 +44,7 @@
                     {
                         "name": "status",
                         "in": "query",
-                        "required": false,
+                        "required": true,
                         "schema": {
                             "type": [
                                 "string",

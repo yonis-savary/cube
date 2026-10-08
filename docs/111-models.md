@@ -265,6 +265,9 @@ Product::toObjectParam();                               // fields + relations
 Product::toObjectParam(nullable: true, withRelations: false);
 ```
 
+In those rules a field is optional when its column is nullable or has a database default, and so
+are the relations : only the columns an insert cannot do without are required.
+
 Returning a model (or a `Bunch` of models) from a controller is enough : the router converts it to
 JSON with `toArray()`. And a `Model`-typed parameter in a route callback is fetched from the slug
 automatically — see [Routing and middlewares](./106-routing-and-middlewares.md).
