@@ -3,25 +3,20 @@
 namespace Cube\Tests\Units\Web;
 
 use Cube\Data\Database\Database;
-use Cube\Env\Configuration;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Product;
-use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
+use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Web\Classes\ProductAPI;
 use Cube\Web\Http\Request;
-use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\ModelAPI\ModelAPI;
-use Cube\Web\ModelAPI\ModelAPIConfiguration;
-use Cube\Web\Router\RouteGroup;
-use Cube\Web\Router\Router;
-use Cube\Web\Router\RouterConfiguration;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * ModelAPI only ever talks to the model layer, one driver is enough to pin its routing
+ * ModelAPI only ever talks to the model layer, one driver is enough to pin its behaviour
  * and its status codes : the multi-driver ground is covered by ModelTest.
  *
  * @internal
@@ -43,38 +38,12 @@ class ModelAPITest extends TestCase
         Database::removeInstance();
     }
 
-    public function testTheTableNameBecomesTheRoutePrefix()
-    {
-        $paths = array_map(fn ($route) => $route->getPath(), $this->newRouter()->getRoutes());
-
-        $this->assertEquals(['/product', '/product', '/product', '/product'], $paths);
-    }
-
-    public function testOnlyTheDeclaredModesAreRegistered()
-    {
-        $readOnly = new class() extends ProductAPI {
-            public function getModes(): array
-            {
-                return [ModelAPI::READ];
-            }
-        };
-
-        $router = new Router(new RouterConfiguration(false, false, false, [$readOnly], [], '/'));
-        $router->loadRoutes();
-
-        $this->assertCount(1, $router->getRoutes());
-        $this->assertEquals(['GET'], $router->getRoutes()[0]->getMethods());
-    }
-
     public function testReadingAnswersEveryRow()
     {
         Product::insertArray(['name' => 'Screen']);
         Product::insertArray(['name' => 'Mouse']);
 
-        $response = $this->route(new Request('GET', '/product'));
-
-        $this->assertEquals(StatusCode::OK, $response->getStatusCode());
-        $this->assertCount(2, $response->getJSON());
+        $this->assertCount(2, (new ProductAPI())->readItems(new Request('GET', '/product')));
     }
 
     public function testReadingSearchesInsideAStringColumn()
@@ -82,11 +51,10 @@ class ModelAPITest extends TestCase
         Product::insertArray(['name' => 'Office Screen']);
         Product::insertArray(['name' => 'Mouse']);
 
-        $response = $this->route(new Request('GET', '/product', ['name' => 'Screen']));
+        $products = (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => 'Screen']));
 
-        $rows = $response->getJSON();
-        $this->assertCount(1, $rows);
-        $this->assertEquals('Office Screen', $rows[0]['name']);
+        $this->assertCount(1, $products);
+        $this->assertEquals('Office Screen', $products[0]->name);
     }
 
     /**
@@ -99,15 +67,15 @@ class ModelAPITest extends TestCase
             Product::insertArray(['name' => 'Office Screen']);
             Product::insertArray(['name' => 'Mouse']);
 
-            $rows = $this->route(new Request('GET', '/product', ['name' => 'Screen']))->getJSON();
+            $products = (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => 'Screen']));
 
-            $this->assertEquals(['Office Screen'], array_column($rows ?? [], 'name'));
+            $this->assertEquals(['Office Screen'], array_map(fn (Product $product) => $product->name, $products));
         });
     }
 
     public function testCreatingAnswersCreated()
     {
-        $response = $this->route(new Request('POST', '/product', [], ['name' => 'Keyboard']));
+        $response = (new ProductAPI())->createItems(new Request('POST', '/product', [], ['name' => 'Keyboard']));
 
         $this->assertEquals(StatusCode::CREATED, $response->getStatusCode());
         $this->assertEquals('Keyboard', Product::findWhere(['name' => 'Keyboard'])->name);
@@ -125,7 +93,7 @@ class ModelAPITest extends TestCase
             json_encode([['name' => 'Desk'], ['name' => 'Chair']])
         );
 
-        $response = $this->route($request);
+        $response = (new ProductAPI())->createItems($request);
 
         $this->assertEquals(StatusCode::CREATED, $response->getStatusCode());
         $this->assertCount(2, $response->getJSON());
@@ -136,80 +104,49 @@ class ModelAPITest extends TestCase
     {
         $product = Product::insertArray(['name' => 'Screen']);
 
-        $response = $this->route(new Request('PUT', '/product', [], ['id' => $product->id(), 'name' => 'Bigger screen']));
+        $updated = (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['name' => 'Bigger screen']));
 
-        $this->assertEquals('Bigger screen', $response->getJSON()['name']);
+        $this->assertEquals('Bigger screen', $updated->name);
         $this->assertEquals('Bigger screen', Product::find($product->id())->name);
     }
 
-    public function testUpdatingWithoutAPrimaryKeyIsRefused()
+    public function testUpdatingCannotChangeThePrimaryKey()
     {
-        $response = $this->route(new Request('PUT', '/product', [], ['name' => 'Nameless']));
+        $product = Product::insertArray(['name' => 'Screen']);
 
-        $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
-    }
+        $updated = (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['id' => 404, 'name' => 'Moved']));
 
-    public function testUpdatingAnUnknownRowIsRefused()
-    {
-        $response = $this->route(new Request('PUT', '/product', [], ['id' => 404, 'name' => 'Ghost']));
-
-        $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
-        $this->assertEquals('text/plain', $response->getHeader('content-type'));
+        $this->assertEquals($product->id(), $updated->id());
+        $this->assertNull(Product::find(404));
     }
 
     public function testDeleting()
     {
         $product = Product::insertArray(['name' => 'Screen']);
 
-        $response = $this->route(new Request('DELETE', '/product', [], ['id' => $product->id()]));
+        $response = (new ProductAPI())->deleteItem($product);
 
         $this->assertEquals(StatusCode::OK, $response->getStatusCode());
         $this->assertNull(Product::find($product->id()));
     }
 
-    public function testDeletingAnUnknownRowIsRefused()
+    public function testAnItemOfAnotherModelIsRefused()
     {
-        $response = $this->route(new Request('DELETE', '/product', [], ['id' => 404]));
+        $this->expectException(InvalidArgumentException::class);
 
-        $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $response->getStatusCode());
+        (new ProductAPI())->deleteItem(new User(['id' => 1]));
     }
 
-    /** ModelAPIConfiguration is never read, so the middlewares it declares never guard the API. */
-    public function testConfiguredMiddlewaresGuardTheApi()
+    public function testForModelBuildsAnApiWithoutASubclass()
     {
-        Configuration::withInstance(new Configuration(new ModelAPIConfiguration([BlockingMiddleware::class])), function () {
-            $response = $this->route(new Request('GET', '/product'));
+        Product::insertArray(['name' => 'Screen']);
 
-            $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
-        });
-    }
+        $api = ModelAPI::forModel(Product::class);
 
-    public function testConfiguredMiddlewaresWrapAnOverriddenRouteGroup()
-    {
-        $api = new class() extends ProductAPI {
-            public function getRouteGroup(): RouteGroup
-            {
-                return new RouteGroup('/api');
-            }
-        };
+        $this->assertEquals(Product::class, $api->getModelClass());
+        $this->assertCount(1, $api->readItems(new Request('GET', '/product')));
 
-        Configuration::withInstance(new Configuration(new ModelAPIConfiguration([BlockingMiddleware::class])), function () use ($api) {
-            $router = new Router(new RouterConfiguration(false, false, false, [$api], [], '/'));
-
-            $this->assertEquals(StatusCode::FORBIDDEN, $router->route(new Request('GET', '/api/product'))->getStatusCode());
-        });
-    }
-
-    protected function route(Request $request): Response
-    {
-        return $this->newRouter()->route($request);
-    }
-
-    protected function newRouter(): Router
-    {
-        $router = new Router(new RouterConfiguration(false, false, false, [new ProductAPI()], [], '/'));
-        $router->loadRoutes();
-
-        return $router;
+        $this->expectExceptionMessage('This ModelAPI handles '.Product::class.' items, got '.User::class);
+        $api->deleteItem(new User(['id' => 1]));
     }
 }

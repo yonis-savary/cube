@@ -45,6 +45,11 @@ class SampleController extends Controller
 
     }
 
+    #[ModelResponse(Product::class)]
+    public function endpointReadingAProductSlug(Request $request, Product $product) {
+
+    }
+
     #[ModelResponse(Product::class, true)]
     public function endpointReturningAListOfProducts() {
 

@@ -208,10 +208,14 @@ A `WebAPI` that is not a `Controller` is not discovered — register it in the `
 
 ## A CRUD API from a model
 
-`ModelAPI` turns a model into a REST resource. Name the model class and you are done
+`ModelAPI` does the CRUD work over one model. It declares no route : your controller declares
+them, receives the `ModelAPI` by injection and delegates to it. Extend it once per model
 
 ```php
-class ProductAPI extends ModelAPI
+/**
+ * @extends ModelAPI<Product>
+ */
+class ProductModelAPI extends ModelAPI
 {
     public function getModelClass(): string
     {
@@ -220,45 +224,74 @@ class ProductAPI extends ModelAPI
 }
 ```
 
-The routes are derived from the model's table name, here `product`
-
-| Route | Does |
-|---|---|
-| `POST /product` | creates one row, or several when the JSON body is a list |
-| `GET /product` | reads rows, filtered by any field given as a parameter |
-| `PUT` / `PATCH /product` | updates the row matching the primary key sent in the request |
-| `DELETE /product` | deletes the row matching the primary key sent in the request |
-
-Two methods let you narrow it down. `getModes()` restricts the verbs, and `getRouteGroup()` wraps
-the whole resource in a group — a prefix, middlewares, extras
+Then wire it in a controller. Its constructor receives the `ModelAPI`, so its route methods are
+instance methods
 
 ```php
-class ProductAPI extends ModelAPI
+class ProductController extends Controller
 {
-    public function getModelClass(): string
+    public function __construct(
+        protected ProductModelAPI $products
+    ) {}
+
+    public function routes(Router $router): void
     {
-        return Product::class;
+        $router->group('/product', routes: [
+            Route::post('/', [self::class, 'create']),
+            Route::get('/', [self::class, 'read']),
+            new Route('/{product}', [self::class, 'update'], ['PUT', 'PATCH']),
+            Route::delete('/{product}', [self::class, 'delete']),
+        ]);
     }
 
-    public function getModes(): array
+    public function create(Request $request): Response
     {
-        return [self::READ, self::UPDATE];
+        return $this->products->createItems($request);
     }
 
-    public function getRouteGroup(): RouteGroup
+    /** @return Product[] */
+    public function read(Request $request): array
     {
-        return new RouteGroup('/api', [AuthMiddleware::class]);
+        return $this->products->readItems($request);
+    }
+
+    // The slug becomes the Product, Cube answers 404 when it does not exist
+    public function update(Request $request, Product $product): Product
+    {
+        return $this->products->updateItem($product, $request);
+    }
+
+    public function delete(Request $request, Product $product): Response
+    {
+        return $this->products->deleteItem($product);
     }
 }
 ```
 
-Middlewares and extras declared in a `ModelAPIConfiguration` wrap every `ModelAPI` of the
-application, around the group `getRouteGroup()` returns
+Since the routes are yours, so is everything around them : expose only the verbs you need, put them
+behind a middleware, add OpenAPI attributes or a typed `Request` like on any other route.
+
+When you have nothing to override, `forModel()` builds a `ModelAPI` without writing a class
 
 ```php
-// cube.php
-new ModelAPIConfiguration(middlewares: [AuthMiddleware::class]),
+public function read(Request $request): array
+{
+    return ModelAPI::forModel(Product::class)->readItems($request);
+}
 ```
+
+Prefer the subclass as soon as you want to inject it : the `Injector` resolves a class by its type,
+which an anonymous class does not have.
+
+| Method | Does | Answers |
+|---|---|---|
+| `createItems(Request)` | creates one row, or several when the JSON body is a list | `201` with the created rows, `422` (plain text) when the JSON body is not an object or a list |
+| `readItems(Request)` | reads rows, filtered by any field given as a parameter | the matching models |
+| `updateItem(Model, Request)` | updates the given row with the request fields, the primary key excepted | the updated model |
+| `deleteItem(Model)` | deletes the given row | `200` |
+
+`updateItem()` and `deleteItem()` throw an `InvalidArgumentException` when the item is not an
+instance of the class `getModelClass()` returns.
 
 Reading deserves a note : a parameter matching a `STRING` field becomes a `LIKE` search, split on
 spaces, every word having to match. Any other field type is compared for equality.
@@ -267,7 +300,4 @@ spaces, every word having to match. Any other field type is compared for equalit
 GET /product?name=blue screen   ->  name LIKE '%blue%' AND name LIKE '%screen%'
 GET /product?id=12              ->  id = 12
 ```
-
-`POST` answers `201` with the created rows, `DELETE` answers `200`, and a missing or unknown primary
-key on update and delete answers `422`.
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./106-routing-and-middlewares.md">Previous : Routing and middlewares</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./108-storage-and-caching.md">Next : Storage and caching</a></div></td></tr></table>

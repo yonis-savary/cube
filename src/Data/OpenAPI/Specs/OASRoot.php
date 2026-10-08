@@ -42,10 +42,8 @@ class OASRoot extends DataAutoDataToObject
     {
         $context = OpenAPIGenerationContext::getInstance();
 
-        if (!count($context->usedModelRefs))
-            return;
-
-        $this->components['schemas'] ??= [];
+        foreach ($context->sharedSchemas as $name => $schema)
+            $this->components['schemas'][$name] = $schema;
 
         $modelsToAdd = Bunch::of($context->usedModelRefs)->uniques()->toArray();
         foreach ($modelsToAdd as $model) {

@@ -261,7 +261,8 @@ Returning a model (or a `Bunch` of models) from a controller is enough : the rou
 JSON with `toArray()`. And a `Model`-typed parameter in a route callback is fetched from the slug
 automatically — see [Routing and middlewares](./106-routing-and-middlewares.md).
 
-For a full CRUD API over a model, extend `ModelAPI` instead of writing the routes by hand.
+For a full CRUD API over a model, let your controller delegate to a `ModelAPI` instead of writing
+the queries by hand — see [Controller and APIs](./107-controller-and-apis.md).
 
 ## Reacting to a save
 

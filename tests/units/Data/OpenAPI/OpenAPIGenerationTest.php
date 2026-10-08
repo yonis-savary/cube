@@ -233,4 +233,39 @@ class OpenAPIGenerationTest extends TestCase
         );
         $this->assertEquals([['BearerAuth' => []]], $document['security']);
     }
+
+    public function testValidatedRequestAnswersUnprocessableContent() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::post("/post-route", [SampleController::class, "postEndpointWithCustomRequest"]),
+            Route::get("/simple-route", [SampleController::class, "simpleRoute"]),
+        );
+
+        $document = $this->generateAsArray($router);
+
+        $this->assertEquals(
+            ['$ref' => '#/components/schemas/ValidationErrors'],
+            $document['paths']['/post-route']['post']['responses'][422]['content']['application/json']['schema']
+        );
+        $this->assertArrayHasKey('ValidationErrors', $document['components']['schemas']);
+        $this->assertArrayNotHasKey('responses', $document['paths']['/simple-route']['get']);
+    }
+
+    public function testModelSlugAnswersNotFound() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/product-model/{product}", [SampleController::class, "endpointReadingAProductSlug"]),
+            Route::get("/product-id/{product}", [SampleController::class, "endpointReturningAProduct"]),
+            Route::get("/user-union/{user}", [SampleController::class, "modelSlugEndpoint"]),
+        );
+
+        $document = $this->generateAsArray($router);
+
+        $this->assertEquals(
+            ['description' => 'No item matches the given slug'],
+            $document['paths']['/product-model/{product}']['get']['responses'][404]
+        );
+        $this->assertArrayNotHasKey(404, $document['paths']['/product-id/{product}']['get']['responses']);
+        $this->assertArrayNotHasKey('responses', $document['paths']['/user-union/{user}']['get']);
+    }
 }

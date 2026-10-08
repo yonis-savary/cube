@@ -7,8 +7,10 @@ use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Utils\Utils;
+use Cube\Web\Http\Request;
 use Cube\Web\Http\Rules\ArrayParam;
 use Cube\Web\Http\Rules\ObjectParam;
+use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Router\Route;
 use DateTime;
@@ -165,6 +167,21 @@ trait MakesSchemas
             OpenAPIGenerationContext::getInstance()->log(" - Warning: used 'any' data type on parameter");
             $schema = [];
         }
+    }
+
+    protected function getRequestRules(Route $route): ?ObjectParam
+    {
+        $requestParameter = $route->getReflectionMethod()->getParameters()[0] ?? null;
+        if (!$requestParameter)
+            return null;
+
+        $requestType = $this->getReflectionTypeName($requestParameter->getType());
+        if (!$requestType || !Autoloader::extends($requestType, Request::class))
+            return null;
+
+        /** @var class-string<Request> $requestType */
+        $rules = Param::from((new $requestType())->getRules());
+        return $rules instanceof ObjectParam ? $rules : null;
     }
 
     protected function getReflectionTypeName(ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType|null $type): ?string

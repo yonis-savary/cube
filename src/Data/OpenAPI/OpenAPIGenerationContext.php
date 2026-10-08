@@ -13,6 +13,11 @@ class OpenAPIGenerationContext
      */
     public array $usedModelRefs = [];
 
+    /**
+     * @var array<string,array> $sharedSchemas Schemas that are not models, by component name
+     */
+    public array $sharedSchemas = [];
+
     public function __construct(
         public readonly OpenAPIConfiguration $configuration
     )

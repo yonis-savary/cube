@@ -16,8 +16,32 @@ class OASResponse extends AutoDataToObject
     public string $description = '';
     public array $content = [];
 
+    const VALIDATION_ERRORS_SCHEMA = [
+        'anyOf' => [
+            ['type' => 'array', 'items' => ['type' => 'string']],
+            ['type' => 'object', 'additionalProperties' => ['$ref' => '#/components/schemas/ValidationErrors']],
+        ],
+    ];
+
     public function __construct()
     {}
+
+    public function skipOnEmpty(): array
+    {
+        return ['content'];
+    }
+
+    public function validationErrorsResponse()
+    {
+        $this->description = 'The request does not follow its rules, errors are keyed by field';
+        $ref = ['$ref' => $this->getRefForSchema('ValidationErrors', self::VALIDATION_ERRORS_SCHEMA)];
+        $this->content['application/json'] = ['schema' => $ref];
+    }
+
+    public function notFoundResponse()
+    {
+        $this->description = 'No item matches the given slug';
+    }
 
     public function modelResponse(ModelResponse $modelResponse)
     {

@@ -2,16 +2,11 @@
 
 namespace Cube\Data\OpenAPI\Specs\Paths\Parameters;
 
-use Cube\Core\Autoloader;
 use Cube\Data\AutoDataToObject;
 use Cube\Data\Bunch;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
-use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
-use Cube\Web\Http\Request;
-use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Router\Route;
-use ReflectionClass;
 
 class OASParameters extends AutoDataToObject
 {
@@ -82,26 +77,7 @@ class OASParameters extends AutoDataToObject
     }
     public function processQueryParameters(Route $route) 
     {
-        list($controllerName, $methodName) = $route->getCallback();
-        $controller = new ReflectionClass($controllerName);
-        $method = $controller->getMethod($methodName);
-
-        $requestParameter = array_values($method->getParameters())[0] ?? false;
-        if (!$requestParameter) {
-            return;
-        }
-        $requestType = $this->getReflectionTypeName($requestParameter->getType());
-        if (!Autoloader::extends($requestType, Request::class))
-            return;
-
-        /** @var class-string<Request> $requestType */
-        $request = new $requestType();
-        $rules = $request->getRules();
-
-        if (is_array($rules))
-            $rules = new ObjectParam($rules);
-
-        if (! $rules instanceof ObjectParam)
+        if (!$rules = $this->getRequestRules($route))
             return;
 
         foreach ($rules->getRules() as $key => $rule)

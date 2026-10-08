@@ -16,4 +16,10 @@ trait ModelRef
         $basename = preg_replace("~.+\\\\~", "", $modelClass);
         return "#/components/schemas/$basename";
     }
+
+    public function getRefForSchema(string $name, array $schema): string
+    {
+        OpenAPIGenerationContext::getInstance()->sharedSchemas[$name] = $schema;
+        return "#/components/schemas/$name";
+    }
 }

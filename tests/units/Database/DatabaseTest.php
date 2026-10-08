@@ -4,7 +4,7 @@ namespace Cube\Tests\Units\Database;
 
 use Cube\Data\Database\Database;
 use Cube\Tests\Units\Models\Product;
-use Cube\Web\ModelAPI\ModelAPIModes;
+use Cube\Tests\Units\Core\Classes\Habitat;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -92,7 +92,7 @@ class DatabaseTest extends TestCase
     #[ DataProvider('getDatabases') ]
     public function testBuildEnumBecomesItsValue(Database $database)
     {
-        $this->assertSame("SELECT 'create'", $database->build('SELECT {}', [ModelAPIModes::CREATE]));
+        $this->assertSame("SELECT 'sky'", $database->build('SELECT {}', [Habitat::Sky]));
     }
 
     #[ DataProvider('getDatabases') ]

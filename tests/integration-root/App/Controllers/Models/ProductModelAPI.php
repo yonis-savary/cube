@@ -1,14 +1,14 @@
 <?php
 
-namespace Cube\Tests\Units\Web\Classes;
+namespace App\Controllers\Models;
 
-use Cube\Tests\Units\Models\Product;
+use App\Models\Product;
 use Cube\Web\ModelAPI\ModelAPI;
 
 /**
  * @extends ModelAPI<Product>
  */
-class ProductAPI extends ModelAPI
+class ProductModelAPI extends ModelAPI
 {
     public function getModelClass(): string
     {

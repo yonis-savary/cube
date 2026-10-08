@@ -701,6 +701,11 @@ class Bunch implements Countable
         return $this->withNewData(array_values($this->data));
     }
 
+    public function slice(int $offset, ?int $length = null, bool $preserveKey = false)
+    {
+        return $this->withNewData(array_slice($this->data, $offset, $length, $preserveKey));
+    }
+
     /**
      * @template TNKey
      * @template TNValues

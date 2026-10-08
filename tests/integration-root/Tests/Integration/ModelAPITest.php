@@ -109,7 +109,7 @@ class ModelAPITest extends CubeTestCase
         $this->assertCount(1, $products);
         $this->assertEquals('Chair', $products[0]['name']);
 
-        $this->put('/auto-api/product', ['id' => 2, 'name' => 'Frog Chair'])->assertOk()->json();
+        $this->put('/auto-api/product/2', [], ['name' => 'Frog Chair'])->assertOk()->json();
 
         $products = $this->get('/auto-api/product', ['id' => 2])->assertOk()->json();
         $this->assertCount(1, $products);
@@ -142,14 +142,11 @@ class ModelAPITest extends CubeTestCase
 
         $this->assertCount(4, $this->get('/auto-api/product')->json());
 
-        $products = $this->delete('/auto-api/product')->assertUnprocessableContent();
+        $this->delete('/auto-api/product/404')->assertNotFound();
 
         $this->assertCount(4, $this->get('/auto-api/product')->json());
 
-        $this->delete('/auto-api/product', ['id' => 1]);
+        $this->delete('/auto-api/product/1')->assertOk();
         $this->assertCount(3, $this->get('/auto-api/product')->json());
-
-        $this->delete('/auto-api/product', ['id' => [2, 3]]);
-        $this->assertCount(1, $this->get('/auto-api/product')->json());
     }
 }
