@@ -488,10 +488,11 @@ class Autoloader
 
     /**
      * @template TClass
+     * @template TClassString of class-string<TClass>
      *
-     * @param class-string<TClass> $parentClass
+     * @param TClassString $parentClass
      *
-     * @return array<class-string<TClass>>
+     * @return TClassString[]
      */
     public static function classesThatExtends(string $parentClass, bool $rejectAbstracts = true): array
     {
@@ -508,10 +509,11 @@ class Autoloader
 
     /**
      * @template TInterface
+     * @template TClassString of class-string<TInterface>
      *
-     * @param class-string<TInterface> $interface
+     * @param TClassString $interface
      *
-     * @return array<TInterface>
+     * @return TClassString[]
      */
     public static function classesThatImplements(string $interface, bool $rejectAbstracts = true): array
     {
@@ -528,10 +530,11 @@ class Autoloader
 
     /**
      * @template TTrait
+     * @template TClassString of class-string<TTrait>
      *
-     * @param class-string<TTrait> $trait
+     * @param TClassString $trait
      *
-     * @return array<TTrait>
+     * @return TClassString[]
      */
     public static function classesThatUses(string $trait, bool $rejectAbstracts = true): array
     {
