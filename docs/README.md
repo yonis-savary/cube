@@ -17,4 +17,5 @@
 - [Schedule and queues](./205-schedule-and-queues.md)
 - [Websockets](./206-websockets.md)
 - [Unix socket server](./207-unix-socket-server.md)
+- [Api documentation](./208-api-documentation.md)
 - [Large upload](./999-large-upload.md)

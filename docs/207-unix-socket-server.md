@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./206-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./999-large-upload.md">Next : Large upload</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./206-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./208-api-documentation.md">Next : Api documentation</a></div></td></tr></table>
 
 # Unix socket server
 
@@ -143,4 +143,4 @@ same response as the HTTP entry point).
 | Event | Fired when | Carries |
 |---|---|---|
 | `SocketServerSetup` | before the socket server starts listening | `router`, the empty router to fill |
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./206-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./999-large-upload.md">Next : Large upload</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./206-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./208-api-documentation.md">Next : Api documentation</a></div></td></tr></table>
