@@ -28,6 +28,13 @@ abstract class DatabaseProvider
 
     private static bool $shutdownHookInstalled = false;
 
+    /**
+     * Filled database each provider copies instead of replaying its dump, one per process.
+     *
+     * @var array<class-string<DatabaseProvider>,string>
+     */
+    private static array $templates = [];
+
     protected ?\PDO $connection = null;
 
     abstract public function getDriver(): string;
@@ -93,13 +100,9 @@ abstract class DatabaseProvider
     {
         try {
             $name = $this->getRandomDatabaseName();
-            $connection = $this->createDatabase($name);
+            $connection = $this->createFilledDatabase($name);
 
             $this->rememberCreatedDatabase($name);
-
-            if ($file = $this->getDumpPath()) {
-                $connection->exec(file_get_contents($file));
-            }
 
             return Database::fromPDO($connection, $name);
         } catch (\Throwable $err) {
@@ -109,6 +112,32 @@ abstract class DatabaseProvider
 
             throw $err;
         }
+    }
+
+    protected function createFilledDatabase(string $dbName): \PDO
+    {
+        return $this->fillFromDump($this->createDatabase($dbName));
+    }
+
+    protected function fillFromDump(\PDO $connection): \PDO
+    {
+        if ($file = $this->getDumpPath())
+            $connection->exec(file_get_contents($file));
+
+        return $connection;
+    }
+
+    /** Its name looks random, so that a killed run leaves nothing `dropLeftoverDatabases()` misses. */
+    protected function getTemplateDatabase(): string
+    {
+        if ($template = self::$templates[static::class] ?? null)
+            return $template;
+
+        $template = $this->getRandomDatabaseName();
+        $this->fillFromDump($this->createDatabase($template));
+        $this->rememberCreatedDatabase($template);
+
+        return self::$templates[static::class] = $template;
     }
 
     /**

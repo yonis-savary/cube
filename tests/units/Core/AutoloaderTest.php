@@ -6,7 +6,7 @@ use Composer\Autoload\ClassLoader;
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Env\Storage;
-use Cube\Tests\Integration\IntegrationApplicationTest;
+use Cube\Tests\Integration\Application\ApplicationTest;
 use Cube\Tests\Units\Core\Classes\Bird;
 use Cube\Tests\Units\Core\Classes\Common;
 use Cube\Tests\Units\Core\Classes\Counter;
@@ -146,11 +146,11 @@ class AutoloaderTest extends TestCase
 
     public function test_classes_outside_the_explored_directories_are_left_out_until_added()
     {
-        $this->assertNotContains(IntegrationApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
+        $this->assertNotContains(ApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
 
         Autoloader::addToExploreMap('tests/integration');
 
-        $this->assertContains(IntegrationApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
+        $this->assertContains(ApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
     }
 
     public function test_only_a_directory_can_be_explored()

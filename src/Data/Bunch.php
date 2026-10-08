@@ -59,6 +59,9 @@ class Bunch implements Countable
 
 
     /**
+     * Loads a Bunch of non-abstract classes that extends a given parent Class (Instanciates classes).
+     * To perform this action without instanciating, call `Bunch::of(Autoloader::classesThatExtends($class))`
+     *
      * @template TClassname
      * @param class-string<TClassname> $class
      * @return self<int,TClassname>

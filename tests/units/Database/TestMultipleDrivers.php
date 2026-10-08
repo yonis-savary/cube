@@ -18,8 +18,7 @@ trait TestMultipleDrivers
     /** @return array<string,array{Database}> */
     public static function getDatabases(): array
     {
-        return Bunch::of(Autoloader::classesThatExtends(DatabaseProvider::class))
-            ->instanciates()
+        return Bunch::fromExtends(DatabaseProvider::class)
             ->map(fn (DatabaseProvider $provider) => [$provider->getDriver(), [self::lazyEmptyDatabase($provider)]])
             ->zip()
         ;

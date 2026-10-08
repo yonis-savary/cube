@@ -27,6 +27,13 @@ class SQLiteProvider extends DatabaseProvider
         return $this->getConnection($dbName);
     }
 
+    protected function createFilledDatabase(string $dbName): \PDO
+    {
+        copy($this->storage()->path($this->getTemplateDatabase()), $this->storage()->path($dbName));
+
+        return $this->getConnection($dbName);
+    }
+
     public function dropDatabase(string $dbName): void
     {
         $this->storage()->unlink($dbName);

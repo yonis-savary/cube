@@ -23,7 +23,22 @@ class WebsocketTest extends TestCase
         $this->process->start(fn() => $this->log());
         $this->assertTrue($this->process->isRunning());
 
-        sleep(1);
+        $this->waitForHttpPort();
+    }
+
+    protected function waitForHttpPort(): void
+    {
+        for ($i = 0; $i < 50; $i++) {
+            // A refused connection is the expected outcome until the server has bound its port
+            if ($connection = @fsockopen('127.0.0.1', 9992)) {
+                fclose($connection);
+                return;
+            }
+
+            usleep(100_000);
+        }
+
+        $this->fail('The websocket server never opened port 9992 : '.$this->process->getErrorOutput());
     }
 
     public function tearDown(): void

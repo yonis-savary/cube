@@ -33,6 +33,14 @@ class PostgresProvider extends DatabaseProvider
         return $this->getConnection($dbName);
     }
 
+    /** Postgres refuses to copy a template that still has a session on it, hence one template per process. */
+    protected function createFilledDatabase(string $dbName): \PDO
+    {
+        $this->rootConnection()->exec("CREATE DATABASE {$dbName} TEMPLATE {$this->getTemplateDatabase()}");
+
+        return $this->getConnection($dbName);
+    }
+
     public function dropDatabase(string $dbName): void
     {
         $connection = $this->rootConnection();
