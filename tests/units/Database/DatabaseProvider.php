@@ -10,7 +10,7 @@ use Cube\Env\Logger\Logger;
  * Creates a throwaway database for one test, on one DBMS, and remembers it so that
  * nothing survives the process that made it.
  *
- * Subclasses only answer for their DBMS : `getConnection()`, `createDatabase()`,
+ * Subclasses only answer for their DBMS : `getDriver()`, `getConnection()`, `createDatabase()`,
  * `dropDatabase()` and `databaseExists()`. The bookkeeping below is shared.
  */
 abstract class DatabaseProvider
@@ -29,6 +29,8 @@ abstract class DatabaseProvider
     private static bool $shutdownHookInstalled = false;
 
     protected ?\PDO $connection = null;
+
+    abstract public function getDriver(): string;
 
     abstract public function getConnection(?string $dbName = null): \PDO;
 

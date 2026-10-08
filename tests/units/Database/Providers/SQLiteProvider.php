@@ -7,6 +7,11 @@ use Cube\Tests\Units\Database\DatabaseProvider;
 
 class SQLiteProvider extends DatabaseProvider
 {
+    public function getDriver(): string
+    {
+        return 'sqlite';
+    }
+
     public function getConnection(?string $dbName = null): \PDO
     {
         $connection = $dbName

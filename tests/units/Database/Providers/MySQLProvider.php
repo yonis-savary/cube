@@ -9,6 +9,11 @@ use function Cube\env;
 
 class MySQLProvider extends DatabaseProvider
 {
+    public function getDriver(): string
+    {
+        return 'mysql';
+    }
+
     public function getConnection(?string $dbName = null): \PDO
     {
         $port = env('CUBE_TEST_MYSQL_PORT', 9901);

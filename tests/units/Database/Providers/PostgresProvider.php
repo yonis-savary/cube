@@ -9,6 +9,11 @@ use function Cube\env;
 
 class PostgresProvider extends DatabaseProvider
 {
+    public function getDriver(): string
+    {
+        return 'pgsql';
+    }
+
     public function getConnection(?string $dbName = null): \PDO
     {
         $port = env('CUBE_TEST_POSTGRES_PORT', 9902);

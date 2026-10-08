@@ -20,9 +20,14 @@ trait TestMultipleDrivers
     {
         return Bunch::of(Autoloader::classesThatExtends(DatabaseProvider::class))
             ->instanciates()
-            ->map(fn (DatabaseProvider $provider) => $provider->getEmptyDatabase())
-            ->map(fn (Database $database) => [$database->getDriver(), [$database]])
+            ->map(fn (DatabaseProvider $provider) => [$provider->getDriver(), [self::lazyEmptyDatabase($provider)]])
             ->zip()
         ;
+    }
+
+    /** PHPUnit runs data providers while listing the tests : the database is only created once a test touches it. */
+    private static function lazyEmptyDatabase(DatabaseProvider $provider): Database
+    {
+        return new \ReflectionClass(Database::class)->newLazyProxy(fn () => $provider->getEmptyDatabase());
     }
 }
