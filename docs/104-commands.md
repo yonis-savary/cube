@@ -77,6 +77,7 @@ The Cube framework contains a bunch of commands you can use out-of-the-box !, wh
 | `cube:queue --queue=<QUEUE>` | Run a queue, or flush it with `-f` |
 | `cube:test` | Run the PHPUnit suite of your project |
 | `web:serve [PORT]` | Start PHP Builtin Webserver to serve your app |
+| `unix:serve <SOCKET_PATH>` | Serve your socket routes on a unix socket |
 | `configuration:cache` | Cache your app configuration |
 | `cache:clear` | Clear every cache items |
 | `make:dto` | Can create a DTO object from a JSON user input |

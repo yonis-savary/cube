@@ -96,6 +96,7 @@ class CommandTest extends TestCase
             'models:to-types',
             'routine:generate',
             'routine:launch',
+            'unix:serve',
             'web:serve',
             'websocket:serve',
         ], $identifiers);

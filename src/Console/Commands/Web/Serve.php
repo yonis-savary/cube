@@ -6,7 +6,6 @@ use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Utils\Console;
 use Cube\Utils\Path;
-use Cube\Web\Servers\UnixSocketServer;
 use Symfony\Component\Process\Process;
 
 class Serve extends Command
@@ -32,14 +31,11 @@ class Serve extends Command
 
     public function getHelp(): string
     {
-        return "Launch integrated web server to serve your app (--socket=<path> to listen on a unix socket)";
+        return "Launch integrated web server to serve your app";
     }
 
     public function execute(Args $args): int
     {
-        if ($args->has(long: '--socket'))
-            return $this->serveOnSocket($args->getValue(long: '--socket'));
-
         $port = $args->getValues()[0] ?? '8000';
         $url = "localhost:{$port}";
         $publicDirectory = Path::relative('Public');
@@ -72,17 +68,5 @@ class Serve extends Command
         Console::log("Process ended with exit code {$code}");
 
         return $code;
-    }
-
-    protected function serveOnSocket(?string $socketPath): int
-    {
-        if (!$socketPath) {
-            Console::log('--socket needs a path, e.g. --socket=/run/my-app.sock');
-            return 1;
-        }
-
-        (new UnixSocketServer($socketPath))->serve();
-
-        return 0;
     }
 }
