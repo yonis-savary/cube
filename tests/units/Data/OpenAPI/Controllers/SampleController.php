@@ -11,6 +11,7 @@ use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Web\Controller;
 use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
 
 class SampleController extends Controller
 {
@@ -48,6 +49,27 @@ class SampleController extends Controller
     #[ModelResponse(Product::class)]
     public function endpointReadingAProductSlug(Request $request, Product $product) {
 
+    }
+
+    public function endpointTypedAsAProduct(): Product {
+        return new Product();
+    }
+
+    public function endpointTypedAsAnOptionalProduct(): ?Product {
+        return null;
+    }
+
+    public function endpointTypedAsVoid(): void {
+
+    }
+
+    public function endpointTypedAsAResponse(): Response {
+        return Response::ok();
+    }
+
+    #[ModelResponse(Product::class, description: 'A product from its attribute')]
+    public function endpointTypedAndDescribedAsAProduct(): Product {
+        return new Product();
     }
 
     #[ModelResponse(Product::class, true)]

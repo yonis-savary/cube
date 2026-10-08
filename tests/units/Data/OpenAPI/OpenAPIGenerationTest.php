@@ -268,4 +268,30 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertArrayNotHasKey(404, $document['paths']['/product-id/{product}']['get']['responses']);
         $this->assertArrayNotHasKey('responses', $document['paths']['/user-union/{user}']['get']);
     }
+
+    public function testReturnTypeDescribesTheResponse() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/product", [SampleController::class, "endpointTypedAsAProduct"]),
+            Route::get("/optional-product", [SampleController::class, "endpointTypedAsAnOptionalProduct"]),
+            Route::get("/void", [SampleController::class, "endpointTypedAsVoid"]),
+            Route::get("/response", [SampleController::class, "endpointTypedAsAResponse"]),
+            Route::get("/described-product", [SampleController::class, "endpointTypedAndDescribedAsAProduct"]),
+        );
+
+        $document = $this->generateAsArray($router);
+        $responsesOf = fn (string $path) => $document['paths'][$path]['get']['responses'] ?? [];
+        $productResponse = [
+            'description' => '',
+            'content' => ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Product']]],
+        ];
+        $noContentResponse = ['description' => 'No content'];
+
+        $this->assertEquals([200 => $productResponse], $responsesOf('/product'));
+        $this->assertEquals([200 => $productResponse, 204 => $noContentResponse], $responsesOf('/optional-product'));
+        $this->assertEquals([204 => $noContentResponse], $responsesOf('/void'));
+        $this->assertEquals([], $responsesOf('/response'));
+        $this->assertEquals('A product from its attribute', $responsesOf('/described-product')[200]['description']);
+        $this->assertArrayHasKey('Product', $document['components']['schemas']);
+    }
 }

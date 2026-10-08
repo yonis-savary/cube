@@ -11,6 +11,7 @@ use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Router\Route;
+use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
 
@@ -43,6 +44,8 @@ class OASResponses extends AutoDataToObject
             $this->responses[StatusCode::NOT_FOUND] = $response->toArray();
         }
 
+        $this->addReturnTypeResponses($method);
+
         $modelResponses = $method->getAttributes(ModelResponse::class);
         foreach ($modelResponses as $responseReflectionAttribute)
         {
@@ -60,6 +63,36 @@ class OASResponses extends AutoDataToObject
             $response->rawResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
+    }
+
+    protected function addReturnTypeResponses(ReflectionMethod $method): void
+    {
+        $type = $method->getReturnType();
+        if (!$type instanceof ReflectionNamedType)
+            return;
+
+        if ($type->getName() === 'void')
+        {
+            $this->addNoContentResponse();
+            return;
+        }
+
+        if (!Autoloader::extends($type->getName(), Model::class))
+            return;
+
+        $response = new OASResponse();
+        $response->modelResponse(new ModelResponse($type->getName()));
+        $this->responses[StatusCode::OK] = $response->toArray();
+
+        if ($type->allowsNull())
+            $this->addNoContentResponse();
+    }
+
+    protected function addNoContentResponse(): void
+    {
+        $response = new OASResponse();
+        $response->noContentResponse();
+        $this->responses[StatusCode::NO_CONTENT] = $response->toArray();
     }
 
     protected function receivesAModelSlug(Route $route): bool

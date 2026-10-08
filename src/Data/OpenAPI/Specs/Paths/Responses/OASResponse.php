@@ -43,6 +43,11 @@ class OASResponse extends AutoDataToObject
         $this->description = 'No item matches the given slug';
     }
 
+    public function noContentResponse()
+    {
+        $this->description = 'No content';
+    }
+
     public function modelResponse(ModelResponse $modelResponse)
     {
         $this->description = $modelResponse->description ?? '';
