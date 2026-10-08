@@ -15,6 +15,7 @@ use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class OpenAPIGenerationTest extends TestCase
 {
@@ -98,8 +99,8 @@ class OpenAPIGenerationTest extends TestCase
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
             Route::post("/post-route", [SampleController::class, "postEndpointWithCustomRequest"]),
-            Route::patch("/patch-route", [SampleController::class, "postEndpointWithCustomRequest"]),
-            Route::put("/put-route", [SampleController::class, "postEndpointWithCustomRequest"]),
+            Route::patch("/patch-route", [SampleController::class, "patchEndpointWithCustomRequest"]),
+            Route::put("/put-route", [SampleController::class, "putEndpointWithCustomRequest"]),
         );
 
         $generator = $this->getSimpleGenerator();
@@ -172,7 +173,7 @@ class OpenAPIGenerationTest extends TestCase
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
             Route::get("/untyped/{first}/{second}", [SampleController::class, "simpleRoute"]),
-            Route::get("/typed/{hex:color}/{uuid:token}/{time:at}", [SampleController::class, "simpleRoute"]),
+            Route::get("/typed/{hex:color}/{uuid:token}/{time:at}", [SampleController::class, "typedSlugsEndpoint"]),
         );
 
         $generator = $this->getSimpleGenerator();
@@ -293,5 +294,31 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals([], $responsesOf('/response'));
         $this->assertEquals('A product from its attribute', $responsesOf('/described-product')[200]['description']);
         $this->assertArrayHasKey('Product', $document['components']['schemas']);
+    }
+
+    public function testUntypedSlugIsTypedByPosition() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/positional/{product}", [SampleController::class, "slugNamedDifferentlyEndpoint"]),
+        );
+
+        $document = $this->generateAsArray($router);
+
+        $this->assertEquals(
+            ["type" => "integer"],
+            $document["paths"]["/positional/{product}"]["get"]["parameters"][0]["schema"]
+        );
+    }
+
+    public function testDuplicateOperationIdIsRefused() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            new Route("/product/{id}", [SampleController::class, "simpleRoute"], ["PUT", "PATCH"]),
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("Duplicate operationId [simpleRoute] for PUT /product/{id} and PATCH /product/{id}");
+
+        $this->generateAsArray($router);
     }
 }

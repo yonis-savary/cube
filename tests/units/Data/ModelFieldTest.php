@@ -103,4 +103,11 @@ class ModelFieldTest extends TestCase
 
         $this->assertEquals($field, $rebuilt);
     }
+
+    public function testABooleanRuleFollowsTheFieldNullability()
+    {
+        $this->assertTrue(ModelField::boolean('active')->nullable()->toRule()->validate(null)->isValid());
+        $this->assertFalse(ModelField::boolean('active')->notNull()->toRule()->validate(null)->isValid());
+        $this->assertTrue(ModelField::boolean('active')->notNull()->toRule(true)->validate(null)->isValid());
+    }
 }

@@ -37,6 +37,22 @@ class SampleController extends Controller
 
     }
 
+    public function patchEndpointWithCustomRequest(CustomRequestFormat $request) {
+
+    }
+
+    public function putEndpointWithCustomRequest(CustomRequestFormat $request) {
+
+    }
+
+    public function typedSlugsEndpoint() {
+
+    }
+
+    public function slugNamedDifferentlyEndpoint(Request $request, int $identifier) {
+
+    }
+
     public function getEndpointWithQueryRequest(QueryRequestFormat $request) {
 
     }

@@ -76,6 +76,7 @@ class Utils
 
         $installProcess = Shell::executeInDirectory('composer install', $storage->getRoot());
         $migrateProcess = Shell::executeInDirectory('php do migrate', $storage->getRoot());
+        $apisProcess = Shell::executeInDirectory('php do models:generate --apis', $storage->getRoot());
 
         if (!$storage->isFile('do')) {
             trigger_error('Could not install integration app at '.$storage->getRoot().' => '.$installProcess->getOutput());
@@ -83,6 +84,10 @@ class Utils
 
         if (!$storage->isFile('App/Models/User.php')) {
             trigger_error('Could not generate models in integration app at '.$storage->getRoot().' => '.$migrateProcess->getOutput());
+        }
+
+        if (!$storage->isFile('App/Http/Apis/ProductAPI.php')) {
+            trigger_error('Could not generate model APIs in integration app at '.$storage->getRoot().' => '.$apisProcess->getOutput());
         }
 
         return self::$storage = $storage;

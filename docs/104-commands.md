@@ -84,7 +84,7 @@ The Cube framework contains a bunch of commands you can use out-of-the-box !, wh
 | `make:migration <MIGRATION_NAME>` | Create a migration file |
 | `make:openapi` | Generate the OpenAPI document of your API |
 | `migrate:migrate` | Apply migrations to your database |
-| `models:generate` | Generate Models Classes from your database tables |
+| `models:generate [--apis]` | Generate Models Classes from your database tables, and with `--apis` a `ModelAPI` subclass per model |
 | `models:to-types` | Generate a Typescript file exporting your database types (useful to make bridge between front and back-end) |
 | `routine:generate` | Generate a CRON command to launch Cube routine script |
 | `routine:launch` | Launch the Cube routine script |

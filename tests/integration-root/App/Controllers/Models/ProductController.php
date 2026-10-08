@@ -20,7 +20,7 @@ class ProductController extends Controller
         $router->group('/auto-api/product', routes: [
             Route::post('/', [self::class, 'create']),
             Route::get('/', [self::class, 'read']),
-            new Route('/{product}', [self::class, 'update'], ['PUT', 'PATCH']),
+            Route::put('/{product}', [self::class, 'update']),
             Route::delete('/{product}', [self::class, 'delete']),
         ]);
     }

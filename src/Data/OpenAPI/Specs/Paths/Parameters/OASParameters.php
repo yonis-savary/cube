@@ -34,36 +34,25 @@ class OASParameters extends AutoDataToObject
 
     private function processSlugsParameters(Route $route)
     {
-        $routePath = $route->getPath();
-        if (!str_contains($routePath, '{'))
-            return;
+        $slugs = Bunch::fromExplode('/', $route->getPath())
+            ->filter(fn ($part) => preg_match('/^\{.+\}$/', $part), true)
+            ->toArray();
 
-        $parts = explode('/', $routePath);
+        $methodParameters = $route->getReflectionMethod()->getParameters();
 
-        foreach ($parts as &$part) {
-            if (!$part)
-                continue;
+        foreach ($slugs as $index => $slug) {
+            $slug = substr($slug, 1, -1);
 
-            if (!preg_match('/^\{.+\}$/', $part))
-                continue;
-
-            $part = substr($part, 1, strlen($part) - 2);
-
-            $name = $part;
-            $type = "any";
-
-            if (str_contains($part, ':')) {
-                list($type, $name) = explode(':', $part, 2);
+            if (str_contains($slug, ':')) {
+                list($type, $name) = explode(':', $slug, 2);
                 $parameter = new OASParameter($name, OASParameter::IN_PATH, true, []);
                 $this->mutateParameterWithSlugType($type, $parameter->schema);
             }
             else
             {
-                $method = $route->getReflectionMethod();
-
-                $parameters = Bunch::of($method->getParameters());
-                $slugParameter = $parameters->first(fn($param) => $param->getName() === $name);
-                $parameter = new OASParameter($name, OASParameter::IN_PATH, true, []);
+                // Mirrors the Injector: slug values fill the parameters after the request, by position
+                $slugParameter = $methodParameters[$index + 1] ?? null;
+                $parameter = new OASParameter($slug, OASParameter::IN_PATH, true, []);
                 if ($slugParameter)
                     $this->mutateParameterWithMethodType(
                         $this->getReflectionTypeName($slugParameter->getType()),

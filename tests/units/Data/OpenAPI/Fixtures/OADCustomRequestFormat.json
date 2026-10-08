@@ -86,9 +86,9 @@
         },
         "\/patch-route": {
             "patch": {
-                "summary": "postEndpointWithCustomRequest",
-                "description": "SampleController.postEndpointWithCustomRequest",
-                "operationId": "postEndpointWithCustomRequest",
+                "summary": "patchEndpointWithCustomRequest",
+                "description": "SampleController.patchEndpointWithCustomRequest",
+                "operationId": "patchEndpointWithCustomRequest",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -165,9 +165,9 @@
         },
         "\/put-route": {
             "put": {
-                "summary": "postEndpointWithCustomRequest",
-                "description": "SampleController.postEndpointWithCustomRequest",
-                "operationId": "postEndpointWithCustomRequest",
+                "summary": "putEndpointWithCustomRequest",
+                "description": "SampleController.putEndpointWithCustomRequest",
+                "operationId": "putEndpointWithCustomRequest",
                 "requestBody": {
                     "required": true,
                     "content": {

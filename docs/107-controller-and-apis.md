@@ -209,7 +209,8 @@ A `WebAPI` that is not a `Controller` is not discovered — register it in the `
 ## A CRUD API from a model
 
 `ModelAPI` does the CRUD work over one model. It declares no route : your controller declares
-them, receives the `ModelAPI` by injection and delegates to it. Extend it once per model
+them, receives the `ModelAPI` by injection and delegates to it. Extend it once per model, or let
+`php do models:generate --apis` write these classes for every model in `Http/Apis`
 
 ```php
 /**
@@ -239,7 +240,7 @@ class ProductController extends Controller
         $router->group('/product', routes: [
             Route::post('/', [self::class, 'create']),
             Route::get('/', [self::class, 'read']),
-            new Route('/{product}', [self::class, 'update'], ['PUT', 'PATCH']),
+            Route::put('/{product}', [self::class, 'update']),
             Route::delete('/{product}', [self::class, 'delete']),
         ]);
     }

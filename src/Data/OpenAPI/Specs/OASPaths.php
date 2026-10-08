@@ -10,10 +10,14 @@ use Cube\Utils\Console;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
+use RuntimeException;
 
 class OASPaths extends AutoDataToObject
 {
     public array $groups = [];
+
+    /** @var array<string,string> $operationIds Location of each operation, by operationId */
+    protected array $operationIds = [];
 
     public function toArray(): array
     {
@@ -63,12 +67,25 @@ class OASPaths extends AutoDataToObject
 
                     $context->log($this->getRouteLogString($method, $route));
 
-                    $this->groups[$path][$method] = (new OASEndPoint($route))->toArray();
+                    $this->addOperation($path, $method, $route);
 
                     $context->log('');
                 }
             }
         }
+    }
+
+    protected function addOperation(string $path, string $method, Route $route): void
+    {
+        $operation = (new OASEndPoint($route))->toArray();
+        $operationId = $operation['operationId'];
+        $location = strtoupper($method).' '.$path;
+
+        if ($existingLocation = $this->operationIds[$operationId] ?? null)
+            throw new RuntimeException("Duplicate operationId [{$operationId}] for {$existingLocation} and {$location}, give each its own callback method or #[Endpoint(operationId: ...)]");
+
+        $this->operationIds[$operationId] = $location;
+        $this->groups[$path][$method] = $operation;
     }
 
     protected function getTemplatedPath(Route $route): string

@@ -285,7 +285,7 @@ class ModelField
             self::STRING => Param::string(false, $nullable),
             self::INTEGER => Param::integer($nullable),
             self::FLOAT => Param::float($nullable),
-            self::BOOLEAN => Param::boolean(),
+            self::BOOLEAN => Param::boolean($nullable),
             self::DECIMAL => Param::string(true, $nullable),
             self::DATE => Param::date($nullable),
             self::DATETIME => Param::datetime($nullable),

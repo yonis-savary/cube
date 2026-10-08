@@ -2,6 +2,10 @@
 
 namespace Tests\Integration;
 
+use App\Http\Apis\AgencyAPI;
+use App\Http\Apis\ProductAPI;
+use App\Http\Apis\UserAPI;
+use App\Models\Agency;
 use App\Models\ModelTrait;
 use App\Models\Product;
 use App\Models\User;
@@ -23,5 +27,18 @@ class ModelGenerationTest extends TestCase
 
     public function testRelationPluralForm() {
         $this->assertContains('agencies', User::relations());
+    }
+
+    public function testAnApiIsGeneratedPerModel() {
+        $this->assertEquals(Product::class, (new ProductAPI())->getModelClass());
+        $this->assertEquals(Agency::class, (new AgencyAPI())->getModelClass());
+    }
+
+    public function testAnExistingApiIsKept() {
+        $this->assertTrue((new UserAPI())->isWrittenByHand());
+    }
+
+    public function testFrameworkTablesHaveNoApi() {
+        $this->assertFalse(class_exists('App\\Http\\Apis\\__cubeMigrationAPI'));
     }
 }

@@ -28,9 +28,9 @@
         },
         "\/typed\/{color}\/{token}\/{at}": {
             "get": {
-                "summary": "simpleRoute",
-                "description": "SampleController.simpleRoute",
-                "operationId": "simpleRoute",
+                "summary": "typedSlugsEndpoint",
+                "description": "SampleController.typedSlugsEndpoint",
+                "operationId": "typedSlugsEndpoint",
                 "parameters": [
                     {
                         "name": "color",

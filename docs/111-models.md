@@ -30,6 +30,14 @@ php do models:generate                  # regenerate the models only
 `migrate:migrate` regenerates your models once the migrations are applied, so your classes never
 drift from your schema. Use `php do migrate:migrate -s` (or `--skip-generation`) to skip that step.
 
+Add `--apis` (or `-a`) to also write a [`ModelAPI`](./107-controller-and-apis.md) subclass per
+model in `Http/Apis`, `ProductAPI` for `Product`. An API file that already exists is never
+rewritten, so your overrides are safe, and the framework's own tables (prefixed with `__`) get none
+
+```bash
+php do models:generate --apis
+```
+
 Everything the generator owns is marked with the `#[Generated]` attribute, and **your own methods
 are preserved** : on regeneration, methods without that attribute are copied over, along with the
 `use` statements of the file. So you can safely add behaviour to a generated model, as long as you
