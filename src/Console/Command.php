@@ -39,18 +39,18 @@ abstract class Command
 
     public function getName(): string
     {
-        $class = preg_replace('/.+\\\/', '', static::class);
-        $class = preg_replace_callback('/([a-z])([A-Z])/', fn ($m) => $m[1].'-'.$m[2], $class);
-
-        return strtolower($class);
+        return static::class
+            |> (fn ($class) => preg_replace('/.+\\\/', '', $class))
+            |> (fn ($class) => preg_replace_callback('/([a-z])([A-Z])/', fn ($m) => $m[1].'-'.$m[2], $class))
+            |> strtolower(...);
     }
 
     public function getScope(): string
     {
-        $class = preg_replace('/\\\.+/', '', static::class);
-        $class = preg_replace_callback('/([a-z])([A-Z])/', fn ($m) => $m[1].'-'.$m[2], $class);
-
-        return strtolower($class);
+        return static::class
+            |> (fn ($class) => preg_replace('/\\\.+/', '', $class))
+            |> (fn ($class) => preg_replace_callback('/([a-z])([A-Z])/', fn ($m) => $m[1].'-'.$m[2], $class))
+            |> strtolower(...);
     }
 
     abstract public function execute(Args $args): int;

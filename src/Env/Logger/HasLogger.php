@@ -12,9 +12,9 @@ trait HasLogger
             return $this->logger;
         }
 
-        $classname = static::class;
-        $classname = preg_replace('/.+\\\/', '', $classname);
-        $classname = strtolower($classname);
+        $classname = static::class
+            |> (fn ($class) => preg_replace('/.+\\\/', '', $class))
+            |> strtolower(...);
 
         return $this->logger = Logger::forFile($classname.'.csv');
     }

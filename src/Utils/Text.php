@@ -86,10 +86,8 @@ class Text
     }
 
     public static function camelCaseString(string $string) {
-        $result = $string;
-        $result = preg_replace_callback("/[ _-](.)/", fn($match) => strtoupper($match[1]), $result);
-        $result = lcfirst($result);
-
-        return $result;
+        return $string
+            |> (fn ($s) => preg_replace_callback("/[ _-](.)/", fn($match) => strtoupper($match[1]), $s))
+            |> lcfirst(...);
     }
 }
