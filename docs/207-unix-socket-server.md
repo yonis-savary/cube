@@ -2,7 +2,7 @@
 
 # Unix socket server
 
-`php do web:serve --socket=<path>` serves an HTTP API on a unix socket instead of a TCP port, for APIs
+`php do unix:serve <path>` serves an HTTP API on a unix socket instead of a TCP port, for APIs
 that are internal to a system : only processes of the same machine that can open the socket file
 reach it. `UnixSocketServer` runs it in a single long-lived process and starts each request from a
 clean set of components.
@@ -27,7 +27,7 @@ $router->addRoutes(
 Then start the server and call it
 
 ```sh
-php do web:serve --socket=/run/my-app.sock
+php do unix:serve /run/my-app.sock
 curl --unix-socket /run/my-app.sock http://localhost/internal/ping
 ```
 
@@ -60,14 +60,27 @@ router of your application, so the routes would be served over HTTP too.
 
 ## Calling the socket from PHP
 
-`HttpClient` connects through curl, which only needs the socket path. Use any host in the URL, the
-socket decides where the request goes.
+Write a [connector](./204-http-client.md#a-connector) whose `baseUnixSocket()` returns the socket
+path : every request it sends goes through the socket, `fetch()` and `fetchAsync()` alike.
 
 ```php
-$response = (new Request('GET', 'http://localhost/internal/ping'))->fetch(
-    curlMutator: fn (\CurlHandle $handle) => curl_setopt($handle, CURLOPT_UNIX_SOCKET_PATH, '/run/my-app.sock')
-);
+class InternalApiConnector extends HttpClient
+{
+    public function baseUnixSocket(): ?string
+    {
+        return '/run/my-app.sock';
+    }
+
+    public function ping(): Response
+    {
+        return $this->get('/internal/ping');
+    }
+}
 ```
+
+The path needs no host : Cube sends it to `http://localhost`, since the socket decides where the
+request goes anyway. A redirection is followed through the same socket when it stays on that host,
+and over the network otherwise.
 
 ## What survives between requests
 
@@ -125,8 +138,7 @@ same response as the HTTP entry point).
 
 | Command | Description |
 |---|---|
-| `php do web:serve --socket=<path>` | Serve the socket routes on `<path>` |
-| `php do web:serve [port]` | Unchanged : the PHP built-in server on `localhost:<port>` (8000 by default) |
+| `php do unix:serve <path>` | Serve the socket routes on `<path>` |
 
 | Event | Fired when | Carries |
 |---|---|---|

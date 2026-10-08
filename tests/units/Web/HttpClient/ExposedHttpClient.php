@@ -16,12 +16,18 @@ class ExposedHttpClient extends HttpClient
     public int $baseUserAgentCalls = 0;
 
     public function __construct(
-        protected ?string $base = null
+        protected ?string $base = null,
+        protected ?string $socket = null
     ) {}
 
     public function baseURL(): ?string
     {
         return $this->base;
+    }
+
+    public function baseUnixSocket(): ?string
+    {
+        return $this->socket;
     }
 
     public function baseLogger(): Logger

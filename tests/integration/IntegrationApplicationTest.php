@@ -4,6 +4,7 @@ namespace Cube\Tests\Integration;
 
 use Cube\Data\Bunch;
 use Cube\Utils\Shell;
+use Cube\Web\Http\HttpClient;
 use PHPUnit\Framework\TestCase;
 
 class IntegrationApplicationTest extends TestCase
@@ -61,7 +62,7 @@ class IntegrationApplicationTest extends TestCase
         $storage = Utils::getDummyApplicationStorage();
         $socketPath = sys_get_temp_dir().'/'.uniqid('cube-').'.sock';
 
-        $proc = Shell::launchInDirectory("exec php do web:serve --socket={$socketPath}", $storage->getRoot());
+        $proc = Shell::launchInDirectory("exec php do unix:serve {$socketPath}", $storage->getRoot());
 
         try {
             for ($i = 0; $i < 50 && !file_exists($socketPath); $i++)
@@ -84,14 +85,17 @@ class IntegrationApplicationTest extends TestCase
 
     /** @return array{int,string} */
     protected function fetchThroughSocket(string $socketPath, string $path): array {
-        $handle = curl_init("http://localhost{$path}");
-        curl_setopt_array($handle, [
-            CURLOPT_UNIX_SOCKET_PATH => $socketPath,
-            CURLOPT_RETURNTRANSFER => true,
-        ]);
+        $client = new class($socketPath) extends HttpClient {
+            public function __construct(protected string $socketPath) {}
 
-        $body = curl_exec($handle);
+            public function baseUnixSocket(): ?string
+            {
+                return $this->socketPath;
+            }
+        };
 
-        return [curl_getinfo($handle, CURLINFO_RESPONSE_CODE), $body];
+        $response = $client->get($path);
+
+        return [$response->getStatusCode(), $response->getBody()];
     }
 }

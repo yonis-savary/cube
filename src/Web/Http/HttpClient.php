@@ -61,6 +61,11 @@ class HttpClient
         return null;
     }
 
+    public function baseUnixSocket(): ?string
+    {
+        return null;
+    }
+
     public function baseHeaders(): array
     {
         return [];
@@ -241,7 +246,11 @@ class HttpClient
 
     protected function path(Request $request): string {
         $path = $request->getPath();
-        if (str_contains($path, '://') || !$base = $this->baseURL())
+        if (str_contains($path, '://'))
+            return $path;
+
+        // curl needs a host in the URL even when the unix socket decides where the request goes
+        if (!$base = $this->baseURL() ?? ($this->baseUnixSocket() ? 'http://localhost' : null))
             return $path;
 
         if (!str_starts_with($base, "http"))
@@ -282,6 +291,11 @@ class HttpClient
         $logger->info("CURL URL [{$url}]");
         $handle = curl_init($url);
         $options = [];
+
+        if ($socket = $this->baseUnixSocket()) {
+            $logger->info('Setting CURLOPT_UNIX_SOCKET_PATH to {socket}', ['socket' => $socket]);
+            $options[CURLOPT_UNIX_SOCKET_PATH] = $socket;
+        }
 
         $method = $request->getMethod();
         switch (strtoupper($method)) {
@@ -527,9 +541,12 @@ class HttpClient
         $headersString = Bunch::unzip($headers)->map(fn($pair) => join(": ", $pair))->toArray();
         array_unshift($headersString, strtoupper($request->getMethod()) . " " . $path . " HTTP/1.1");
 
-        $fp = ($port === 443)
-            ? fsockopen("ssl://$host", $port, $errno, $errstr, 1)
-            : fsockopen($host, $port, $errno, $errstr, 1);
+        $socket = $this->baseUnixSocket();
+        $fp = match (true) {
+            (bool) $socket => fsockopen("unix://$socket", -1, $errno, $errstr, 1),
+            $port === 443 => fsockopen("ssl://$host", $port, $errno, $errstr, 1),
+            default => fsockopen($host, $port, $errno, $errstr, 1),
+        };
 
         if ($fp) {
             fwrite($fp, implode("\r\n", $headersString) . "\r\n\r\n");

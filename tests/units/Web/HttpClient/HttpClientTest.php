@@ -7,6 +7,7 @@ use Cube\Web\Http\MockServers;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 
 /**
  * @internal
@@ -159,5 +160,43 @@ class HttpClientTest extends TestCase
 
         fclose($connection);
         fclose($server);
+    }
+
+    public function testAUnixSocketClientNeedsNoHost()
+    {
+        $client = new ExposedHttpClient(socket: '/run/some-app.sock');
+
+        $this->assertEquals('http://localhost/products', $client->publicPath(new Request('GET', '/products')));
+    }
+
+    public function testFetchGoesThroughTheUnixSocket()
+    {
+        $socket = sys_get_temp_dir().'/cube-http-client-'.uniqid().'.sock';
+        $server = new Process(['php', __DIR__.'/UnixSocketServer/answer-once.php', $socket]);
+        $server->start();
+
+        $deadline = microtime(true) + 5;
+        while (!file_exists($socket) && microtime(true) < $deadline)
+            usleep(10_000);
+
+        $response = (new ExposedHttpClient(socket: $socket))->get('/internal/ping', ['verbose' => 1]);
+        $server->wait();
+
+        $this->assertEquals('GET /internal/ping?verbose=1 HTTP/1.1', $response->getBody());
+    }
+
+    public function testAsyncFetchGoesThroughTheUnixSocket()
+    {
+        $socket = sys_get_temp_dir().'/cube-http-client-'.uniqid().'.sock';
+        $server = stream_socket_server("unix://{$socket}");
+
+        $this->assertTrue((new ExposedHttpClient(socket: $socket))->postJsonAsync('/events', ['name' => 'created']));
+
+        $connection = stream_socket_accept($server, 1);
+        $this->assertStringStartsWith('POST /events HTTP/1.1', stream_get_contents($connection));
+
+        fclose($connection);
+        fclose($server);
+        unlink($socket);
     }
 }

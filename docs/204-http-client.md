@@ -45,6 +45,7 @@ Everything a connector answers for is a method you may override
 | Method | Default | Applies to |
 |---|---|---|
 | `baseURL()` | `null` | prefixed to every path |
+| `baseUnixSocket()` | `null` | the unix socket every request goes through ([Unix socket server](./207-unix-socket-server.md#calling-the-socket-from-php)) |
 | `baseHeaders()` | `[]` | merged into every request's headers |
 | `baseUserAgent()` | a Firefox user agent | the `User-Agent` header |
 | `baseURLParameters()` | `[]` | merged into every query string |
