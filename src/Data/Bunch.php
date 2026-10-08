@@ -13,8 +13,8 @@ use Cube\Utils\Utils;
 /**
  * @template TKey
  * @template TValue
- * @template TCallback of \Closure|string
- * @template TNullableCallback of \Closure|string|null
+ * @template TCallback of \Closure(TValue)|string
+ * @template TNullableCallback of ?TCallback
  * @template TCallbacks of TCallback|TCallback[]
  * @template TNullableCallbacks of TNullableCallback|TNullableCallback[]
  */
@@ -24,11 +24,12 @@ class Bunch implements Countable
     protected array $data;
 
     /**
-     * @template TType
+     * @template TCKey
+     * @template TCValue
      *
-     * @param array<TType> $initialData
+     * @param array<TCKey,TCValue> $initialData
      *
-     * @return self<int,TType>
+     * @return self<TCKey,TCValue>
      */
     public function __construct(array $initialData = [])
     {
@@ -37,12 +38,11 @@ class Bunch implements Countable
 
 
     /**
-     * @template TType
-     * @template TTypeKey
+     * @template TElement
      *
-     * @param TType[]|Bunch<TTypeKey,TType>|TType $element
+     * @param TElement $element
      *
-     * @return self<int,TType>|self<TTypeKey,TType>
+     * @return (TElement is Bunch ? TElement : (TElement is list ? self<int,value-of<TElement>> : self<int,TElement>))
      */
     public static function of(mixed $element): self
     {

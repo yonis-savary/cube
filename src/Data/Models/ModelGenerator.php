@@ -7,6 +7,7 @@ use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Env\Storage;
 use Cube\Data\Models\ModelGenerator\Adapters\DatabaseAdapter;
+use Cube\Data\Models\ModelGenerator\Table;
 use Cube\Utils\Path;
 
 class ModelGenerator
@@ -19,7 +20,7 @@ class ModelGenerator
     {
         $driver = $database->getDriver();
         $adapter = Bunch::fromExtends(DatabaseAdapter::class, [$database])
-            ->first(fn (DatabaseAdapter $x) => $x->supports($driver))
+            ->first(fn($x) => $x->supports($driver))
         ;
 
         if (!$adapter) {
@@ -28,22 +29,16 @@ class ModelGenerator
         return $adapter;
     }
 
-    public function processDatabase(Database $database, Storage $destination, ?string $forceNamespace = null): array
+    public function processDatabase(Database $database, Storage $destination, ?string $namespace = null): array
     {
         $adapter = $this->getAdapter($database);
-
-        // @var DatabaseAdapter $adapter
         $adapter->process();
 
-        $namespace = $forceNamespace ?? Path::pathToNamespace($destination->getRoot());
-
-        $files = [];
-
+        $namespace ??= Path::pathToNamespace($destination->getRoot());
         $relations = $adapter->getRelations();
-        foreach ($adapter->getTables() as $table) {
-            $files[] = $table->generateInto($destination, $namespace, $relations);
-        }
 
-        return $files;
+        return Bunch::of($adapter->getTables())
+            ->map(fn($table) => $table->generateInto($destination, $namespace, $relations))
+            ->get();
     }
 }
