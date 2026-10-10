@@ -21,6 +21,8 @@ use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
 use Cube\Utils\Path;
 use InvalidArgumentException;
+use Cube\Env\Configuration;
+use Cube\Web\Http\Configuration\CORSConfiguration;
 use PHPUnit\Framework\TestCase;
 
 use function Cube\measureTimeOf;
@@ -138,13 +140,30 @@ class RouterTest extends TestCase
             new Route('/products', fn () => Response::ok(), ['PUT']),
         );
 
-        $response = $router->route(new Request('OPTIONS', '/products'));
+        $configuration = new Configuration(new CORSConfiguration(['https://shop.example.org']));
+        $response = $configuration->asGlobalInstance(fn () => $router->route(
+            new Request('OPTIONS', '/products', headers: ['Origin' => 'https://shop.example.org'])
+        ));
 
         $this->assertEquals(StatusCode::NO_CONTENT, $response->getStatusCode());
+        $this->assertEquals('https://shop.example.org', $response->getHeader('access-control-allow-origin'));
 
         $allowed = $response->getHeader('access-control-allow-methods');
         $this->assertStringContainsString('POST', $allowed);
         $this->assertStringContainsString('PUT', $allowed);
+    }
+
+    /** Every response used to carry `Access-Control-Allow-Origin: *`, exposing it to any web page. */
+    public function testNoCorsHeaderIsSentWithoutConfiguration()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/products', fn () => Response::ok()));
+
+        $response = (new Configuration())->asGlobalInstance(fn () => $router->route(
+            new Request('GET', '/products', headers: ['Origin' => 'https://evil.example.org'])
+        ));
+
+        $this->assertNull($response->getHeader('access-control-allow-origin'));
     }
 
     /**

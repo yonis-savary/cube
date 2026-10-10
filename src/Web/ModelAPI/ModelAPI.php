@@ -42,30 +42,14 @@ abstract class ModelAPI
     public function createItems(Request $request): Response
     {
         $model = $this->getModelClass();
+        $validated = $request->validated();
 
-        /** @var Model[] $instances */
-        $instances = [];
+        if (!is_array($validated))
+            return Response::text('Array expected got '.gettype($validated), StatusCode::UNPROCESSABLE_CONTENT);
 
-        if ($request->isJSON()) {
-            $body = $request->all();
-
-            if (!is_array($body)) {
-                return Response::text('Array expected got '.gettype($body), StatusCode::UNPROCESSABLE_CONTENT);
-            }
-
-            $instances = Utils::isList($body)
-                ? Bunch::of($body)
-                    ->map(fn (array $row) => $model::fromArray($row))
-                    ->toArray()
-                : [$model::fromArray($body)];
-        } else {
-            $instances[] = $model::fromRequest($request);
-        }
-
-        foreach ($instances as &$instance) {
-            $instance->save();
-            $instance = $instance->toArray();
-        }
+        $instances = Bunch::of($validated)
+            ->map(fn (array $row) => $model::fromArray($row)->save()->toArray())
+            ->toArray();
 
         return Response::json($instances, StatusCode::CREATED);
     }
@@ -106,11 +90,10 @@ abstract class ModelAPI
     {
         $this->assertHandles($item);
 
-        $data = $request->all();
-        if ($primaryKey = $item::primaryKey())
-            unset($data[$primaryKey]);
+        $data = $request->validated();
+        unset($data[$item::primaryKey()]);
 
-        $item->patch($data);
+        $item->merge($data)->save();
 
         return $item::find($item->id());
     }

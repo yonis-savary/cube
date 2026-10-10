@@ -11,6 +11,7 @@ use Cube\Web\Router\Route;
 use Cube\Web\Websocket\Broadcast\Broadcast;
 use Cube\Web\Websocket\Broadcast\BroadcastConfiguration;
 use Cube\Web\Websocket\Channel\ChannelSubscriber;
+use Psr\Http\Message\RequestInterface;
 use Ratchet\ConnectionInterface;
 
 abstract class Channel implements ChannelInterface
@@ -40,9 +41,11 @@ abstract class Channel implements ChannelInterface
      * This method act as a middleware called
      * before a connection subscribes to the channel
      *
+     * @param array<string,string> $slugs Slug values of the subscribed path
+     * @param RequestInterface $request Handshake request : read the client's cookies, headers or query string from it
      * @return ?string null => the subscription is authorized, string => error returned to the client through the socket
      */
-    public function authorize(array $slugs=[]): ?string {
+    public function authorize(array $slugs, RequestInterface $request): ?string {
         return null;
     }
 

@@ -302,13 +302,39 @@ new RouterConfiguration(
 | `commonPrefix` | prefix applied to every route |
 | `cached` | remember, in the `Cache` component, which route answers each method and path ; only routes whose callback is a `[Controller::class, 'method']` array are cached |
 
+## Cross-origin requests (CORS)
+
+Cube sends no CORS header until you list the origins allowed to read your responses. With a
+`CORSConfiguration`, the router answers the request's `Origin` when it is listed, and nothing
+otherwise.
+
+```php
+new CORSConfiguration(
+    allowedOrigins: ['https://shop.example.org', 'https://admin.example.org'],
+    allowHeaders: 'Content-Type, Authorization',
+    // lets the browser send cookies, never paired with '*'
+    allowCredentials: true,
+    maxAge: 86400,
+)
+```
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `allowedOrigins` | `CORS_ALLOWED_ORIGINS` (comma separated), else none | full origins answered, `['*']` for any origin without credentials |
+| `allowHeaders` | `CORS_ALLOWED_HEADERS`, else `Content-Type, x-requested-with` | request headers the browser may send |
+| `allowCredentials` | `CORS_ALLOWED_CREDENTIALS`, else `false` | sends `Access-Control-Allow-Credentials: true`, ignored with `*` |
+| `maxAge` | `86400` | seconds a browser may cache a preflight answer |
+
+With a list of origins, every response also carries `Vary: Origin`, so a cache never serves one
+origin's answer to another.
+
 ## Responses the router produces on its own
 
 | Situation | Response |
 |-----------|----------|
 | no route matched the path | `404 Not Found` |
 | the path matched but not the method | `405 Method Not Allowed`, listing the allowed methods |
-| an `OPTIONS` request on a known path | `204 No Content` with the CORS headers of the allowed methods |
+| an `OPTIONS` request on a known path | `204 No Content`, with the CORS headers of the allowed methods when the origin is allowed |
 | an injected request was invalid | `422 Unprocessable Content` with the validation errors |
 | an injected model was not found | `404 Not Found` |
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./105-logging.md">Previous : Logging</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./107-controller-and-apis.md">Next : Controller and apis</a></div></td></tr></table>

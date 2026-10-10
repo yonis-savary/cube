@@ -195,7 +195,7 @@ class Database
      */
     public function query(string $query, array $context = [], int $fetchMode = \PDO::FETCH_ASSOC): array
     {
-        $queryWithContext = $this->build($query, $context);
+        $queryWithContext = $this->withContext($query, $context);
 
         if ($this->dryRunMode)
             return [];
@@ -218,11 +218,23 @@ class Database
      */
     public function exec(string $query, array $context = []): int
     {
-        $queryWithContext = $this->build($query, $context);
+        $queryWithContext = $this->withContext($query, $context);
         if ($this->dryRunMode)
             return 0;
 
         return $this->connection->exec($queryWithContext);
+    }
+
+    /**
+     * Without a context, `$query` is taken as finished SQL : `Query` hands over statements whose
+     * values are already quoted, and interpolating them again would turn a `{}` inside a value into `NULL`
+     */
+    protected function withContext(string $query, array $context): string
+    {
+        if (!count($context))
+            return $query;
+
+        return $this->build($query, $context);
     }
 
     /**

@@ -8,6 +8,7 @@ use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Web\Classes\ProductAPI;
+use Cube\Tests\Units\Web\Examples\ProductNameRequest;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\ModelAPI\ModelAPI;
@@ -118,6 +119,23 @@ class ModelAPITest extends TestCase
 
         $this->assertEquals($product->id(), $updated->id());
         $this->assertNull(Product::find(404));
+    }
+
+    public function testCreatingOnlyWritesWhatTheRequestValidates()
+    {
+        (new ProductAPI())->createItems(new ProductNameRequest('POST', '/product', [], ['name' => 'Keyboard', 'price_dollar' => 999]));
+
+        $this->assertNull(Product::findWhere(['name' => 'Keyboard'])->price_dollar);
+    }
+
+    public function testUpdatingOnlyWritesWhatTheRequestValidates()
+    {
+        $product = Product::insertArray(['name' => 'Screen', 'price_dollar' => 10]);
+
+        $updated = (new ProductAPI())->updateItem($product, new ProductNameRequest('PUT', '/product', [], ['name' => 'Renamed', 'price_dollar' => 0]));
+
+        $this->assertEquals('Renamed', $updated->name);
+        $this->assertEquals(10, Product::find($product->id())->price_dollar);
     }
 
     public function testDeleting()

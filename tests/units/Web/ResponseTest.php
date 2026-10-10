@@ -8,6 +8,7 @@ use Cube\Event\Events\DisplayingResponse;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Env\Classes\SpyLogger;
 use Cube\Web\Http\Configuration\CORSConfiguration;
+use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
 use PHPUnit\Framework\TestCase;
@@ -113,21 +114,54 @@ class ResponseTest extends TestCase
         $this->assertEquals('max-age=3600', (new Response())->withClientCaching(3600)->getHeader('cache-control'));
     }
 
-    public function testCorsHeadersComeFromTheConfiguration()
+    public function testCorsHeadersAnswerAnAllowedOrigin()
     {
-        $configuration = new CORSConfiguration('https://example.org', 'Content-Type', 'false', 600);
+        $configuration = new CORSConfiguration(['https://example.org'], 'Content-Type', true, 600);
 
-        $response = (new Response())->withCORSHeaders(['GET', 'POST'], $configuration);
+        $response = (new Response())->withCORSHeaders($this->fromOrigin('https://example.org'), ['GET', 'POST'], $configuration);
 
         $this->assertEquals('https://example.org', $response->getHeader('access-control-allow-origin'));
         $this->assertEquals('GET, POST', $response->getHeader('access-control-allow-methods'));
         $this->assertEquals('Content-Type', $response->getHeader('access-control-allow-headers'));
+        $this->assertEquals('true', $response->getHeader('access-control-allow-credentials'));
         $this->assertEquals('600', $response->getHeader('access-control-max-age'));
+        $this->assertEquals('Origin', $response->getHeader('vary'));
     }
 
-    public function testCorsAllowsEveryMethodWhenNoneIsGiven()
+    public function testCorsHeadersAreLeftOutForAnotherOrigin()
     {
-        $this->assertEquals('*', (new Response())->withCORSHeaders()->getHeader('access-control-allow-methods'));
+        $configuration = new CORSConfiguration(['https://example.org'], allowCredentials: true);
+
+        $response = (new Response())->withCORSHeaders($this->fromOrigin('https://evil.example.org'), configuration: $configuration);
+
+        $this->assertNull($response->getHeader('access-control-allow-origin'));
+        $this->assertNull($response->getHeader('access-control-allow-credentials'));
+        $this->assertEquals('Origin', $response->getHeader('vary'));
+    }
+
+    public function testCorsHeadersAreLeftOutWithoutConfiguredOrigin()
+    {
+        $response = (new Response())->withCORSHeaders($this->fromOrigin('https://example.org'), configuration: new CORSConfiguration());
+
+        $this->assertNull($response->getHeader('access-control-allow-origin'));
+        $this->assertNull($response->getHeader('vary'));
+    }
+
+    /** Browsers refuse `*` with credentials : asking for both answers the wildcard alone. */
+    public function testAWildcardOriginNeverAllowsCredentials()
+    {
+        $configuration = new CORSConfiguration(['*'], allowCredentials: true);
+
+        $response = (new Response())->withCORSHeaders($this->fromOrigin('https://example.org'), configuration: $configuration);
+
+        $this->assertEquals('*', $response->getHeader('access-control-allow-origin'));
+        $this->assertNull($response->getHeader('access-control-allow-credentials'));
+        $this->assertEquals('*', $response->getHeader('access-control-allow-methods'));
+    }
+
+    protected function fromOrigin(string $origin): Request
+    {
+        return new Request('GET', '/', headers: ['Origin' => $origin]);
     }
 
     public function testFileAnswersTheFileContent()
@@ -169,16 +203,11 @@ class ResponseTest extends TestCase
         $this->assertEquals('{"name":"screen"}', (string) $psrResponse->getBody());
     }
 
-    public function testToPsrResponseAddsDefaultCorsHeaders()
-    {
-        $psrResponse = Response::ok()->toPsrResponse();
-
-        $this->assertEquals('*', $psrResponse->getHeaderLine('access-control-allow-methods'));
-    }
-
     public function testToPsrResponseKeepsExplicitCorsHeaders()
     {
-        $psrResponse = Response::ok()->withCORSHeaders(['GET'])->toPsrResponse();
+        $psrResponse = Response::ok()
+            ->withCORSHeaders($this->fromOrigin('https://example.org'), ['GET'], new CORSConfiguration(['https://example.org']))
+            ->toPsrResponse();
 
         $this->assertEquals('GET', $psrResponse->getHeaderLine('access-control-allow-methods'));
     }

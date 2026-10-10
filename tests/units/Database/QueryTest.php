@@ -707,6 +707,25 @@ class QueryTest extends TestCase
         });
     }
 
+    #[DataProvider('getDatabases')]
+    public function testValuesHoldingBracesAreKeptAsIs(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            foreach (['{"options":{}}', "it's {}", '{}'] as $name)
+                Product::insertArray(['name' => $name]);
+
+            $this->assertEquals(
+                ['{"options":{}}', "it's {}", '{}'],
+                $this->fetchNames(Product::select())
+            );
+
+            $this->assertEquals(['{}'], $this->fetchNames(Product::select()->where('name', '{}')));
+
+            Product::update()->where('name', '{}')->set('name', '{renamed}')->fetch();
+            $this->assertEquals('{renamed}', Product::find(3)->name);
+        });
+    }
+
     public function testAssocMethodsRefuseAList()
     {
         $this->expectException(InvalidArgumentException::class);

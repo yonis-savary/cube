@@ -189,7 +189,7 @@ And three fluent steps decorate a response
 |---|---|
 | `withHeaders(array $headers)` | adds response headers |
 | `withClientCaching(int $timeToLive)` | sets the caching headers, in seconds |
-| `withCORSHeaders(?array $allowedMethods = null)` | adds the CORS headers for this response |
+| `withCORSHeaders(Request $request, ?array $allowedMethods = null)` | adds the CORS headers answering the request's origin, when the configuration allows it (see [CORS](./106-routing-and-middlewares.md#cross-origin-requests-cors)) |
 
 Returning a `Model`, a `Bunch` or an array from a callback is enough — the router converts it to a
 JSON response for you, as described in
@@ -305,13 +305,36 @@ which an anonymous class does not have.
 
 | Method | Does | Answers |
 |---|---|---|
-| `createItems(Request)` | creates one row, or several when the JSON body is a list | `201` with the created rows, `422` (plain text) when the JSON body is not an object or a list |
+| `createItems(Request)` | creates one row from the validated request, or several when it is a list | `201` with the created rows, `422` (plain text) when the validated value is not an object or a list |
 | `readItems(Request)` | reads rows, filtered by any field given as a parameter | the matching models |
-| `updateItem(Model, Request)` | updates the given row with the request fields, the primary key excepted | the updated model |
+| `updateItem(Model, Request)` | updates the given row with the validated fields, the primary key excepted | the updated model |
 | `deleteItem(Model)` | deletes the given row | `200` |
 
 `updateItem()` and `deleteItem()` throw an `InvalidArgumentException` when the item is not an
 instance of the class `getModelClass()` returns.
+
+Writing methods only use `$request->validated()` : the request type decides what a client may
+write. A plain `Request` validates everything, so any column of the model can be set — type the
+parameter with a `Request` subclass listing the writable fields
+
+```php
+class UpdateProductRequest extends Request
+{
+    public function getRules(): array|Rule
+    {
+        return [
+            'name' => Param::string(),
+            'price_dollar' => Param::float(),
+        ];
+    }
+}
+
+// a client sending "id" or any other column is ignored
+public function update(UpdateProductRequest $request, Product $product): Product
+{
+    return $this->products->updateItem($product, $request);
+}
+```
 
 Reading deserves a note : a parameter matching a `STRING` field becomes a `LIKE` search, split on
 spaces, every word having to match. Any other field type is compared for equality.

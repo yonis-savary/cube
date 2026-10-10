@@ -45,7 +45,7 @@ class WebsocketRouter implements MessageComponentInterface
 
         foreach ($this->channels as $channel) {
             if ($slugValues = $channel->match($path)) {
-                if ($errorMessage = $channel->authorize($slugValues)) {
+                if ($errorMessage = $channel->authorize($slugValues, $connection->httpRequest)) {
                     $this->logger->info("Connection refused by channel to path [$path] => $errorMessage");
                     $connection->send(json_encode(['error' => $errorMessage], JSON_THROW_ON_ERROR));
                     $connection->close();
@@ -127,16 +127,7 @@ class WebsocketRouter implements MessageComponentInterface
             $logger = Logger::getInstance();
             $logger->info("{method} {path}", ['method' => $method, 'path' => $path]);
 
-            $response = ReactResponse::plaintext("OK")
-                ->withStatus(StatusCode::OK)
-                ->withHeader('Access-Control-Allow-Origin', '*')
-                ->withHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-                ->withHeader('Access-Control-Allow-Headers', '*')
-            ;
-
-            if ($method === 'OPTIONS') {
-                return $response;
-            }
+            $response = ReactResponse::plaintext("OK")->withStatus(StatusCode::OK);
 
             if ($method !== 'POST') {
                 return $response->withStatus(StatusCode::BAD_REQUEST);

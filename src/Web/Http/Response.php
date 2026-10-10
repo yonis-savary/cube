@@ -472,34 +472,45 @@ class Response extends HttpMessage
         }
     }
 
-    public function withCORSHeaders(?array $allowedMethods=null, ?CORSConfiguration $configuration=null): static
+    public function withCORSHeaders(Request $request, ?array $allowedMethods=null, ?CORSConfiguration $configuration=null): static
     {
         $this->corsDefined = true;
 
         $configuration ??= CORSConfiguration::resolve();
-        return $this->withHeaders([
-            'Access-Control-Allow-Origin' => $configuration->allowOrigin,
+        $anyOrigin = $configuration->allowsAnyOrigin();
+
+        // The answer depends on the Origin header : caches must not serve it to another origin
+        if (!$anyOrigin && count($configuration->allowedOrigins))
+            $this->setHeader('Vary', 'Origin');
+
+        if (!$origin = $configuration->getAllowedOrigin($request->getHeader('origin')))
+            return $this;
+
+        $this->withHeaders([
+            'Access-Control-Allow-Origin' => $origin,
             'Access-Control-Allow-Methods' => $allowedMethods ? join(", ", $allowedMethods) : "*",
             'Access-Control-Allow-Headers' => $configuration->allowHeaders,
-            'Access-Control-Allow-Credentials' => $configuration->allowCredentials,
-            'Access-Control-Max-Age' => $configuration->maxAge,
+            'Access-Control-Max-Age' => (string) $configuration->maxAge,
         ]);
+
+        if ($configuration->allowCredentials && !$anyOrigin)
+            $this->setHeader('Access-Control-Allow-Credentials', 'true');
+
+        return $this;
     }
 
-    protected function withDefaultCORSHeaders(): static
+    public function withDefaultCORSHeaders(Request $request): static
     {
         if ($this->corsDefined)
             return $this;
 
-        return $this->withCORSHeaders();
+        return $this->withCORSHeaders($request);
     }
 
     public function display(bool $sendHeaders = true): static
     {
         if (!(new DisplayingResponse($this))->dispatch())
             return $this;
-
-        $this->withDefaultCORSHeaders();
 
         if ($sendHeaders) {
             http_response_code($this->statusCode);
@@ -519,8 +530,6 @@ class Response extends HttpMessage
 
     public function toPsrResponse(): ResponseInterface
     {
-        $this->withDefaultCORSHeaders();
-
         return new ReactResponse($this->statusCode, $this->headers, $this->getBody());
     }
 

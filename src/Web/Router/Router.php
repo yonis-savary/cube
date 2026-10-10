@@ -209,7 +209,7 @@ class Router
             );
 
             if ($isOptionsRequest)
-                return Response::noContent()->withCORSHeaders($allowedMethods);
+                return Response::noContent()->withCORSHeaders($request, $allowedMethods);
 
             throw new InvalidRequestMethodException($request->getMethod(), $allowedMethods);
         }
@@ -218,6 +218,12 @@ class Router
     }
 
     public function route(Request $request): Response
+    {
+        return $this->resolveResponse($request)
+            ->withDefaultCORSHeaders($request);
+    }
+
+    protected function resolveResponse(Request $request): Response
     {
         $route = null;
 

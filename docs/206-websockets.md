@@ -33,7 +33,7 @@ new WebsocketConfiguration(
     // where the frontend connects
     websocketHost: '0.0.0.0',
     websocketPort: 8088,
-    // where the backend connects — keep this one private
+    // where the backend connects — defaults to 127.0.0.1, open it only to your backend
     httpHost: '0.0.0.0',
     httpPort: 8089,
     // shared by the socket process and Broadcast, which sends it with every signal
@@ -56,7 +56,8 @@ process binds, which is the normal case behind a reverse proxy.
 The HTTP side is what makes a signal appear on every browser. With a `broadcastSecret`, it answers
 `403` to any request that does not carry it in the `X-Broadcast-Secret` header — `Broadcast` adds it
 for you. Without one, anyone who can reach it can emit on any channel, and the server logs a warning
-when it starts. Either way, expose only the websocket port publicly.
+when it starts. It sends no CORS headers, so a web page cannot reach it through a browser. Either
+way, expose only the websocket port publicly.
 
 ## Creating a channel
 
@@ -77,8 +78,9 @@ Channels are discovered by class, so the file is enough — nothing to register.
 ### Deciding who may subscribe
 
 Override `authorize()` to accept or refuse a subscription. It runs before the connection joins, and
-receives the slug values of the path being subscribed to. Return `null` to allow, or a string, which
-is sent back to the client as the reason.
+receives the slug values of the path being subscribed to, plus the handshake request (a PSR-7
+`RequestInterface`) carrying the client's headers, cookies and query string. Return `null` to
+allow, or a string, which is sent back to the client as the reason.
 
 ```php
 class JobChannel extends Channel
@@ -88,20 +90,25 @@ class JobChannel extends Channel
         return '/job/{id}';
     }
 
-    public function authorize(array $slugs = []): ?string
+    public function authorize(array $slugs, RequestInterface $request): ?string
     {
-        [$jobId] = $slugs;
+        // ws://host:8088/job/12?token=... : browsers cannot set headers on a websocket
+        parse_str($request->getUri()->getQuery(), $query);
 
-        if (!Authentication::getInstance()->isLogged())
-            return 'Authentication required';
-
-        if (!Job::find($jobId))
+        if (!$job = Job::find($slugs['id']))
             return 'Unknown job';
+
+        if (!hash_equals($job->subscription_token, (string) ($query['token'] ?? '')))
+            return 'Invalid token';
 
         return null;
     }
 }
 ```
+
+The socket process is long-running and serves every client : it has no PHP session of its own, so
+`Authentication` cannot tell who subscribes. Authenticate from the request — a token your backend
+issued, or the session cookie read from the `Cookie` header and checked against your session storage.
 
 Without an override every subscription is accepted, so write this one before exposing anything
 sensitive.

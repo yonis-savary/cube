@@ -11,7 +11,7 @@ class WebsocketConfiguration extends ConfigurationElement
     public function __construct(
         public readonly string $websocketHost = "0.0.0.0",
         public readonly int $websocketPort = 8088,
-        public readonly string $httpHost = "0.0.0.0",
+        public readonly string $httpHost = "127.0.0.1",
         public readonly int $httpPort = 8089,
         public readonly ?string $broadcastSecret = null,
     ){}
