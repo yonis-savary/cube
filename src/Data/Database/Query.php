@@ -411,6 +411,9 @@ class Query
             $resolver->enrichData($results, $database);
         }
 
+        foreach ($results as $result)
+            $result->markAsOriginal(true);
+
         return $results;
     }
 

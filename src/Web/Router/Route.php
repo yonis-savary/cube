@@ -123,7 +123,7 @@ class Route
 
     public function isCachable(): bool
     {
-        return is_array($this->callback);
+        return is_array($this->callback) && !str_contains($this->path, '{');
     }
 
     public function getCallback(): callable|array

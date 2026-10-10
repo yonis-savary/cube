@@ -213,4 +213,12 @@ class QueueTest extends TestCase
         $this->assertTrue($queue->processNext());
         $this->assertEquals(['Alice'], GreetingQueue::$greeted);
     }
+
+    /** Jobs are unserialized : a Redis anyone can write to used to be the only option. */
+    public function testARedisQueueAuthenticatesWithItsPassword()
+    {
+        $this->expectExceptionMessage('refused the password');
+
+        new RedisQueue('127.0.0.1', 6379, 'a-wrong-password');
+    }
 }

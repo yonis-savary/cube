@@ -300,7 +300,7 @@ new RouterConfiguration(
 | `apis` | additional `WebAPI` services, as class names or instances |
 | `commonMiddlewares` | middlewares applied to every route |
 | `commonPrefix` | prefix applied to every route |
-| `cached` | remember, in the `Cache` component, which route answers each method and path ; only routes whose callback is a `[Controller::class, 'method']` array are cached |
+| `cached` | remember, in the `Cache` component, which route answers each method and path ; only routes without slugs whose callback is a `[Controller::class, 'method']` array are cached |
 
 ## Cross-origin requests (CORS)
 

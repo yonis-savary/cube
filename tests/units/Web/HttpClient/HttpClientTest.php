@@ -2,6 +2,8 @@
 
 namespace Cube\Tests\Units\Web\HttpClient;
 
+use Cube\Env\Logger\NullLogger;
+use Cube\Utils\Text;
 use Cube\Web\Http\HttpMockServer;
 use Cube\Web\Http\MockServers;
 use Cube\Web\Http\Request;
@@ -160,6 +162,83 @@ class HttpClientTest extends TestCase
 
         fclose($connection);
         fclose($server);
+    }
+
+    /** Every fetch logged its headers, so Authorization and API keys piled up in Storage/Logs. */
+    public function testCredentialsAreRedactedFromTheLogs()
+    {
+        $logger = new class extends NullLogger {
+            public string $written = '';
+
+            public function log($level, null|string|\Stringable $message, array $context = []): void
+            {
+                $this->written .= Text::interpolate($message, $context)."\n";
+            }
+        };
+
+        $client = new class('http://localhost') extends ExposedHttpClient {
+            public function baseHeaders(): array
+            {
+                return ['X-Api-Key' => 'k-123', 'X-Broadcast-Secret' => 's-456'];
+            }
+        };
+
+        $client->toCurlHandle(new Request('GET', '/', headers: ['Authorization' => 'Bearer t-789', 'Accept' => 'text/plain']), logger: $logger);
+
+        $this->assertStringContainsString('text/plain', $logger->written);
+        foreach (['k-123', 's-456', 't-789'] as $secret)
+            $this->assertStringNotContainsString($secret, $logger->written);
+    }
+
+    /** fetchAsync() writes on a raw socket : a line break in a value used to forge another header. */
+    public function testAsyncFetchStripsLineBreaksFromHeaders()
+    {
+        [$server, $port] = $this->listen();
+
+        (new ExposedHttpClient("http://127.0.0.1:{$port}"))->postJsonAsync('/events', [], ['X-Trace' => "abc\r\nX-Injected: 1"]);
+
+        $connection = stream_socket_accept($server, 1);
+        $raw = stream_get_contents($connection);
+
+        $this->assertStringContainsString('x-trace: abcX-Injected: 1', $raw);
+        $this->assertStringNotContainsString("\r\nX-Injected", $raw);
+
+        fclose($connection);
+        fclose($server);
+    }
+
+    /** TLS was picked from the port : https on any port but 443 went out in clear text. */
+    public function testAsyncFetchUsesTlsForHttpsOnAnyPort()
+    {
+        [$server, $port] = $this->listen();
+
+        // Nothing answers the handshake : it times out, and fsockopen() warns about it
+        $timeout = ini_set('default_socket_timeout', '1');
+        set_error_handler(fn () => true);
+        try {
+            (new ExposedHttpClient("https://127.0.0.1:{$port}"))->postJsonAsync('/events', ['name' => 'created']);
+        } finally {
+            restore_error_handler();
+            ini_set('default_socket_timeout', $timeout);
+        }
+
+        $connection = stream_socket_accept($server, 1);
+        $firstByte = fread($connection, 1);
+
+        // 0x16 opens a TLS handshake record, a clear request would start with "POST"
+        $this->assertEquals("\x16", $firstByte);
+
+        fclose($connection);
+        fclose($server);
+    }
+
+    /** @return array{resource,int} */
+    protected function listen(): array
+    {
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) substr(strrchr(stream_socket_get_name($server, false), ':'), 1);
+
+        return [$server, $port];
     }
 
     public function testAUnixSocketClientNeedsNoHost()

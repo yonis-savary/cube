@@ -21,6 +21,10 @@ class EnvironmentHelpersTest extends TestCase
             'environment prod' => [['environment' => 'prod'], true, false],
             'environment debug' => [['environment' => 'debug'], false, true],
             'env wins over environment' => [['env' => 'debug', 'environment' => 'production'], false, true],
+            'env development' => [['env' => 'Development'], false, true],
+            // Traces used to reach the clients of any environment not starting with "prod"
+            'env preprod' => [['env' => 'preprod'], false, false],
+            'env staging' => [['env' => 'staging'], false, false],
         ];
     }
 

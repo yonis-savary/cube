@@ -116,9 +116,10 @@ class MySQL extends Plan
             $this->renameField($table, $field, $newProperties->name);
         }
 
-        $this->database->query("ALTER TABLE `{}` MODIFY `{}` " . $this->getModelFieldSQLQuery($newProperties), [
-            $table, $newProperties->name
-        ]);
+        $this->database->exec(
+            $this->database->build("ALTER TABLE `{}` MODIFY `{}` ", [$table, $newProperties->name])
+            . $this->getModelFieldSQLQuery($newProperties)
+        );
     }
 
     public function addUniqueIndex(string $table, string|array $fields) {

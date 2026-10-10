@@ -58,6 +58,25 @@ class PHPGlobalSessionTest extends TestCase
         $this->assertTrue($backOffice->has('cart'));
     }
 
+    /** Behind a proxy terminating TLS, $_SERVER['HTTPS'] is empty : the cookie was never sent as Secure. */
+    public function test_the_cookie_is_secure_behind_a_tls_terminating_proxy()
+    {
+        $server = $_SERVER;
+        try {
+            unset($_SERVER['HTTPS']);
+            $this->assertFalse((new PHPGlobalSession())->isCookieSecure());
+
+            $_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+            $this->assertTrue((new PHPGlobalSession())->isCookieSecure());
+            $this->assertFalse((new PHPGlobalSession(secureCookie: false))->isCookieSecure());
+
+            unset($_SERVER['HTTP_X_FORWARDED_PROTO']);
+            $this->assertTrue((new PHPGlobalSession(secureCookie: true))->isCookieSecure());
+        } finally {
+            $_SERVER = $server;
+        }
+    }
+
     protected function newDriver(?string $namespace = null): PHPGlobalSession
     {
         $driver = new PHPGlobalSession();

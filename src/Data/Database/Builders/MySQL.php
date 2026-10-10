@@ -13,7 +13,6 @@ use Cube\Data\Database\Query\Order;
 use Cube\Data\Database\Query\QueryBase;
 use Cube\Data\Database\Query\RawCondition;
 use Cube\Data\Database\Query\UpdateField;
-use Cube\Utils\Text;
 use Exception;
 use Throwable;
 
@@ -135,27 +134,26 @@ class MySQL extends QueryBuilder
         return $body ? "WHERE $body" : '';
     }
 
+    /**
+     * @param array<array|FieldComparaison|FieldCondition|RawCondition> $conditions
+     */
     protected function getConditionsBody(array $conditions): string
     {
         $body = '';
-        for ($i = 0; $i < count($conditions); $i++)
+        $operator = 'AND';
+
+        foreach ($conditions as $index => $condition)
         {
-            $condition = $conditions[$i];
-            if (is_string($condition))
+            if (is_string($condition) || !$stringCondition = $this->getCondition($condition))
                 continue;
 
-            if (!$stringCondition = $this->getCondition($condition))
-                continue;
+            $body .= $body ? " $operator $stringCondition" : $stringCondition;
 
-            $nextElement = $conditions[$i+1] ?? 'AND';
-            if (!is_string($nextElement))
-                $nextElement = 'AND';
-
-            $body .= "$stringCondition $nextElement ";
+            $nextElement = $conditions[$index + 1] ?? null;
+            $operator = is_string($nextElement) ? $nextElement : 'AND';
         }
 
-        $body = trim(Text::dontEndsWith(trim($body), 'OR'));
-        return trim(Text::dontEndsWith($body, 'AND'));
+        return $body;
     }
 
     protected function getCondition(array|FieldComparaison|FieldCondition|RawCondition $condition): string

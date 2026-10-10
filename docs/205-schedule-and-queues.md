@@ -158,11 +158,13 @@ can succeed later, or the job cycles forever.
 | `LocalDiskQueueDriver` | a directory of your `Storage`, the default |
 | `RedisQueue` | a Redis server |
 
-`RedisQueue` reads its host from the `QUEUE_REDIS_HOST` environment variable, defaulting to `redis` —
-the constructor argument is currently ignored, so set the variable rather than passing a host.
+`RedisQueue` takes a host, a port and a password. Without them, it reads the `QUEUE_REDIS_HOST`
+(defaulting to `redis`) and `QUEUE_REDIS_PASSWORD` environment variables. Set a password in
+production : jobs are unserialized, so whoever can write to your Redis can run code in your workers.
 
 ```env
 QUEUE_REDIS_HOST=127.0.0.1
+QUEUE_REDIS_PASSWORD=a-long-random-secret
 ```
 
 A Redis service to develop against

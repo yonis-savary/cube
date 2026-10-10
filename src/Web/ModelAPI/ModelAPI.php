@@ -48,10 +48,19 @@ abstract class ModelAPI
             return Response::text('Array expected got '.gettype($validated), StatusCode::UNPROCESSABLE_CONTENT);
 
         $instances = Bunch::of($validated)
-            ->map(fn (array $row) => $model::fromArray($row)->save()->toArray())
+            ->map(fn (array $row) => $model::fromArray($row)->save())
+            ->map(fn (Model $newRow) => $this->withoutHiddenFields($newRow)->toArray())
             ->toArray();
 
         return Response::json($instances, StatusCode::CREATED);
+    }
+
+    /**
+     * @return string[] Columns never sent back nor accepted as a filter (password hashes, tokens...)
+     */
+    protected function getHiddenFields(): array
+    {
+        return [];
     }
 
     /**
@@ -61,10 +70,11 @@ abstract class ModelAPI
     {
         $model = $this->getModelClass();
         $fields = $model::fields();
+        $hiddenFields = $this->getHiddenFields();
 
         $query = $model::select();
-        foreach ($request->all() as $fieldName => $value) {
-            if (!($field = $fields[$fieldName] ?? false)) {
+        foreach ($request->validated() as $fieldName => $value) {
+            if (in_array($fieldName, $hiddenFields, true) || !($field = $fields[$fieldName] ?? false)) {
                 continue;
             }
 
@@ -79,7 +89,9 @@ abstract class ModelAPI
             }
         }
 
-        return $query->fetch();
+        return Bunch::of($query->fetch())
+            ->map(fn (Model $item) => $this->withoutHiddenFields($item))
+            ->get();
     }
 
     /**
@@ -95,7 +107,7 @@ abstract class ModelAPI
 
         $item->merge($data)->save();
 
-        return $item::find($item->id());
+        return $this->withoutHiddenFields($item::find($item->id()));
     }
 
     /**
@@ -108,6 +120,18 @@ abstract class ModelAPI
         $item->destroy();
 
         return Response::ok();
+    }
+
+    /**
+     * @param TModel $item
+     * @return TModel
+     */
+    protected function withoutHiddenFields(Model $item): Model
+    {
+        foreach ($this->getHiddenFields() as $field)
+            unset($item->data->{$field});
+
+        return $item;
     }
 
     protected function assertHandles(Model $item): void

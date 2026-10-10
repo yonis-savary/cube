@@ -17,9 +17,10 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
     public function __construct(
         public readonly string $table = '__cube_session',
         string $sameSite = 'Lax',
-        ?Database $database = null
+        ?Database $database = null,
+        ?bool $secureCookie = null,
     ) {
-        parent::__construct($sameSite);
+        parent::__construct($sameSite, $secureCookie);
         $this->database = $database ?? Database::getInstance();
     }
 

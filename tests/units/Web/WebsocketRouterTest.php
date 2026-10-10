@@ -63,6 +63,13 @@ class WebsocketRouterTest extends TestCase
         $this->assertEquals([json_encode(['error' => 'Invalid token'])], $refused->sent);
     }
 
+    /** A route without slugs matched with an empty array, which onOpen() took for no match at all. */
+    public function testAChannelWithoutSlugsAcceptsSubscribers()
+    {
+        $this->assertTrue($this->subscribe('/announcements', [])->closed);
+        $this->assertFalse($this->subscribe('/announcements', ['Authorization' => 'Bearer reader'])->closed);
+    }
+
     protected function subscribe(string $path, array $headers): ConnectionInterface
     {
         $connection = new class implements ConnectionInterface {

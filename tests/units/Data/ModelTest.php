@@ -412,6 +412,24 @@ class ModelTest extends TestCase
     }
 
     /**
+     * Only find() marked the fetched state as original : a model read through select() updated
+     * `WHERE id = NULL`, so its save() silently changed nothing
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testSavingAModelReadThroughASelect(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $screen = Product::insertArray(['name' => 'screen']);
+
+            $selected = Product::select()->where('name', 'screen')->first();
+            $selected->name = 'renamed screen';
+            $selected->save();
+
+            $this->assertEquals('renamed screen', Product::find($screen->id)->name);
+        });
+    }
+
+    /**
      * save() used to pick an UPDATE as soon as the primary key was filled, so the row was never inserted
      */
     #[ DataProvider('getDatabases') ]

@@ -56,7 +56,8 @@ $count = $database->exec('DELETE FROM product WHERE name = {}', ['mouse']);
 ```
 
 Values are **not** concatenated into the SQL : every `{}` placeholder is replaced, in order, by the
-value prepared by your driver's builder.
+value prepared by your driver's builder. Without any value, the query runs exactly as written, a
+`{}` included.
 
 | Value | Becomes |
 |---|---|
@@ -202,6 +203,19 @@ Product::select()->whereAssoc(['name' => 'screen', 'id' => [1, 2, 3]]); // name 
 
 It takes the same optional table as `where()`, and throws an `InvalidArgumentException` when given a
 list.
+
+Only **values** are escaped. Field names, operators, `whereRaw()` expressions and `order()` columns go
+into the SQL as written : never build them from request input without checking them against a fixed
+list first
+
+```php
+// ?sort=price_dollar — the column comes from the client, so it must be one the model declares
+$column = $request->param('sort');
+if (!array_key_exists($column, Product::fields()))
+    return Response::badRequest('Unknown column');
+
+Product::select()->order($column, 'ASC')->fetch();
+```
 
 ### Joins
 

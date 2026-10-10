@@ -16,8 +16,9 @@ class RedisQueue extends BasicQueueDriver
     protected Redis $connection;
     protected string $host;
     protected int $port;
+    protected ?string $password;
 
-    public function __construct(?string $host=null, int $port=6379)
+    public function __construct(?string $host=null, int $port=6379, ?string $password=null)
     {
         $host ??= env('QUEUE_REDIS_HOST', 'redis');
         if (!$host)
@@ -25,6 +26,7 @@ class RedisQueue extends BasicQueueDriver
 
         $this->host = $host;
         $this->port = $port;
+        $this->password = $password ?? (env('QUEUE_REDIS_PASSWORD') ?: null);
         $this->connection = new Redis();
         $this->reconnect();
     }
@@ -36,6 +38,18 @@ class RedisQueue extends BasicQueueDriver
 
         if (!$this->connection->connect($host, $port))
             throw new RuntimeException("Could not connect to redis service $host:$port");
+
+        if ($this->password && !$this->authenticate())
+            throw new RuntimeException("Redis service $host:$port refused the password");
+    }
+
+    protected function authenticate(): bool
+    {
+        try {
+            return $this->connection->auth($this->password);
+        } catch (RedisException) {
+            return false;
+        }
     }
 
     public function flush(): void

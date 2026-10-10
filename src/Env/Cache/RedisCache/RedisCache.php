@@ -6,6 +6,7 @@ use Cube\Env\Cache\CacheDriverInterface;
 use Cube\Env\Logger\Logger;
 use InvalidArgumentException;
 use Redis;
+use RedisException;
 use RuntimeException;
 
 use function Cube\env;
@@ -17,8 +18,9 @@ class RedisCache implements CacheDriverInterface
 
     protected string $host;
     protected int $port;
+    protected ?string $password;
 
-    public function __construct(string $identifier="cube", ?string $host=null, int $port=6379)
+    public function __construct(string $identifier="cube", ?string $host=null, int $port=6379, ?string $password=null)
     {
         $identifier = preg_replace('/[^a-z0-9]/i', '.', strtolower($identifier));
         $this->identifier = "cache:$identifier:";
@@ -29,6 +31,7 @@ class RedisCache implements CacheDriverInterface
 
         $this->host = $host;
         $this->port = $port;
+        $this->password = $password ?? (env('CACHE_REDIS_PASSWORD') ?: null);
     }
 
     public function initialize() {
@@ -36,7 +39,19 @@ class RedisCache implements CacheDriverInterface
         if (!$this->connection->connect($this->host, $this->port))
             throw new RuntimeException("[Cache] Could not connect to redis service $this->host:$this->port");
 
+        if ($this->password && !$this->authenticate())
+            throw new RuntimeException("[Cache] Redis service $this->host:$this->port refused the password");
+
         $this->connection->setOption(Redis::OPT_PREFIX, $this->identifier);
+    }
+
+    protected function authenticate(): bool
+    {
+        try {
+            return $this->connection->auth($this->password);
+        } catch (RedisException) {
+            return false;
+        }
     }
 
     public function get(string $key): mixed {

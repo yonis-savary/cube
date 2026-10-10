@@ -40,6 +40,9 @@ class HttpClient
     /** Debug every sent/received informations */
     public const DEBUG_ALL = 0b1111_1111;
 
+    /** Headers whose name matches are logged as `[redacted]` : credentials have no business in log files */
+    public const SENSITIVE_HEADERS = '~auth|cookie|token|secret|key|password|session~i';
+
     protected Request $request;
     protected Logger $logger;
     protected ?HttpMockServer $httpMockServer = null;
@@ -213,8 +216,12 @@ class HttpClient
 
         $logger->info('Got redirected to [{url}]', ['url' => $nextURL]);
 
-        // Base headers often carry credentials : they are only sent back to the same host
-        $client = parse_url($nextURL, PHP_URL_HOST) === parse_url($currentURL, PHP_URL_HOST)
+        // Base headers often carry credentials : they are only sent back to the same host, never over a downgraded scheme
+        $sameHost = parse_url($nextURL, PHP_URL_HOST) === parse_url($currentURL, PHP_URL_HOST);
+        $downgraded = 'https' === parse_url($currentURL, PHP_URL_SCHEME) &&
+            'https' !== parse_url($nextURL, PHP_URL_SCHEME);
+
+        $client = $sameHost && !$downgraded
             ? $this
             : new self();
 
@@ -385,7 +392,7 @@ class HttpClient
             ->toArray();
 
         $logger->info('Setting CURLOPT_HTTPHEADER to');
-        $logger->info('{headers}', ['headers' => $headersStrings]);
+        $logger->info('{headers}', ['headers' => $this->redactHeaders($headers)]);
         $options[CURLOPT_HTTPHEADER] = $headersStrings;
 
         curl_setopt_array($handle, $options);
@@ -429,7 +436,7 @@ class HttpClient
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_HEADERS)) {
             $logger->info('{method} {path}', ['method' => $request->getMethod(), 'path' => $request->getPath()]);
-            $logger->info('{headers}', ['headers' => $request->getHeaders()]);
+            $logger->info('{headers}', ['headers' => $this->redactHeaders($request->getHeaders())]);
         }
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_BODY)) {
@@ -459,7 +466,7 @@ class HttpClient
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_RESPONSE_HEADERS)) {
             $logger->info('Got Headers');
-            $logger->info('{headers}', ['headers' => $resHeaders]);
+            $logger->info('{headers}', ['headers' => $this->redactHeaders($resHeaders)]);
         }
 
         $location = $resHeaders['location'] ?? null;
@@ -532,19 +539,26 @@ class HttpClient
         $parsed = parse_url($url);
 
         $host = $parsed['host'];
-        $port = $parsed['port'] ?? ('https' === ($parsed['scheme'] ?? 'http') ? 443 : 80);
+        $secure = 'https' === ($parsed['scheme'] ?? 'http');
+        $port = $parsed['port'] ?? ($secure ? 443 : 80);
         $path = $parsed['path'] ?? '/';
 
         $headers["Connection"] = "close";
         $headers["Host"] = "$host:$port";
         $headers["Content-Length"] = strlen($body);
-        $headersString = Bunch::unzip($headers)->map(fn($pair) => join(": ", $pair))->toArray();
-        array_unshift($headersString, strtoupper($request->getMethod()) . " " . $path . " HTTP/1.1");
+
+        $oneLine = fn(string $string) => str_replace(["\r", "\n"], '', $string);
+
+        // Written on a raw socket : a line break inside a value would start a header of its own
+        $headersString = Bunch::unzip($headers)
+            ->map(fn($pair) => $oneLine(join(": ", $pair)))
+            ->unshift($oneLine(strtoupper($request->getMethod())) . " " . $oneLine($path) . " HTTP/1.1")
+            ->toArray();
 
         $socket = $this->baseUnixSocket();
         $fp = match (true) {
             (bool) $socket => fsockopen("unix://$socket", -1, $errno, $errstr, 1),
-            $port === 443 => fsockopen("ssl://$host", $port, $errno, $errstr, 1),
+            $secure => fsockopen("ssl://$host", $port, $errno, $errstr, 1),
             default => fsockopen($host, $port, $errno, $errstr, 1),
         };
 
@@ -566,6 +580,20 @@ class HttpClient
     public function lastDuration(): float
     {
         return $this->lastFetchDurationMilli;
+    }
+
+    /**
+     * @param array<string,string> $headers
+     * @return array<string,string>
+     */
+    protected function redactHeaders(array $headers): array
+    {
+        foreach ($headers as $name => &$value) {
+            if (preg_match(self::SENSITIVE_HEADERS, (string) $name))
+                $value = '[redacted]';
+        }
+
+        return $headers;
     }
 
     /**

@@ -306,7 +306,7 @@ which an anonymous class does not have.
 | Method | Does | Answers |
 |---|---|---|
 | `createItems(Request)` | creates one row from the validated request, or several when it is a list | `201` with the created rows, `422` (plain text) when the validated value is not an object or a list |
-| `readItems(Request)` | reads rows, filtered by any field given as a parameter | the matching models |
+| `readItems(Request)` | reads rows, filtered by the validated fields | the matching models |
 | `updateItem(Model, Request)` | updates the given row with the validated fields, the primary key excepted | the updated model |
 | `deleteItem(Model)` | deletes the given row | `200` |
 
@@ -336,11 +336,34 @@ public function update(UpdateProductRequest $request, Product $product): Product
 }
 ```
 
-Reading deserves a note : a parameter matching a `STRING` field becomes a `LIKE` search, split on
-spaces, every word having to match. Any other field type is compared for equality.
+Reading deserves a note : a validated parameter matching a `STRING` field becomes a `LIKE` search,
+split on spaces, every word having to match. Any other field type is compared for equality.
 
 ```
 GET /product?name=blue screen   ->  name LIKE '%blue%' AND name LIKE '%screen%'
 GET /product?id=12              ->  id = 12
 ```
+
+Columns a client must never see, nor search on, are declared by overriding `getHiddenFields()`.
+Every method leaves them out of the models and rows it answers, and `readItems()` ignores them as
+filters
+
+```php
+class UserModelAPI extends ModelAPI
+{
+    public function getModelClass(): string
+    {
+        return User::class;
+    }
+
+    // without it, GET /user?password=$2y$10$a answers whoever's hash starts that way
+    protected function getHiddenFields(): array
+    {
+        return ['password', 'reset_token'];
+    }
+}
+```
+
+The models `readItems()` and `updateItem()` answer no longer hold the hidden fields : read them
+again with `User::find()` if your own code needs them.
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./106-routing-and-middlewares.md">Previous : Routing and middlewares</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./108-storage-and-caching.md">Next : Storage and caching</a></div></td></tr></table>

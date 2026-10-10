@@ -8,6 +8,7 @@ use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Web\Classes\ProductAPI;
+use Cube\Tests\Units\Web\Classes\UserAPI;
 use Cube\Tests\Units\Web\Examples\ProductNameRequest;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\StatusCode;
@@ -136,6 +137,37 @@ class ModelAPITest extends TestCase
 
         $this->assertEquals('Renamed', $updated->name);
         $this->assertEquals(10, Product::find($product->id())->price_dollar);
+    }
+
+    public function testReadingOnlyFiltersOnWhatTheRequestValidates()
+    {
+        Product::insertArray(['name' => 'Screen', 'price_dollar' => 10]);
+        Product::insertArray(['name' => 'Mouse', 'price_dollar' => 20]);
+
+        $products = (new ProductAPI())->readItems(new ProductNameRequest('GET', '/product', ['price_dollar' => 10]));
+
+        $this->assertCount(2, $products);
+    }
+
+    /** readItems() used to answer every column, and to search inside any of them : an oracle on password hashes. */
+    public function testHiddenFieldsAreNeitherAnsweredNorSearched()
+    {
+        User::insertArray(['login' => 'alice', 'password' => 'hash-of-alice', 'type' => 1]);
+        $api = new UserAPI();
+
+        $users = $api->readItems(new Request('GET', '/user', ['login' => 'alice']));
+        $this->assertCount(1, $users);
+        $this->assertArrayNotHasKey('password', $users[0]->toArray());
+
+        $everyone = count($api->readItems(new Request('GET', '/user')));
+        $this->assertCount($everyone, $api->readItems(new Request('GET', '/user', ['password' => 'no-match'])));
+
+        $created = $api->createItems(new Request('POST', '/user', [], ['login' => 'bob', 'password' => 'hash-of-bob', 'type' => 1]))->getJSON();
+        $this->assertArrayNotHasKey('password', $created[0]);
+
+        $updated = $api->updateItem($users[0], new Request('PUT', '/user', [], ['login' => 'alicia']));
+        $this->assertArrayNotHasKey('password', $updated->toArray());
+        $this->assertEquals('hash-of-alice', User::find($users[0]->id())->password);
     }
 
     public function testDeleting()

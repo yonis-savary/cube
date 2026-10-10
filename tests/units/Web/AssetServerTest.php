@@ -69,6 +69,13 @@ class AssetServerTest extends TestCase
         $this->assertFalse($rendersMarkup, "The 404 is served as {$contentType} with the requested markup inside");
     }
 
+    /** Any suffix used to match : /assets/s served the first asset whose name ended with an "s". */
+    public function testAPartialNameIsNotServed()
+    {
+        $this->assertEquals(StatusCode::NOT_FOUND, $this->route('/assets/s')->getStatusCode());
+        $this->assertEquals(StatusCode::NOT_FOUND, $this->route('/assets/pp.css')->getStatusCode());
+    }
+
     protected function route(string $path, ?TemporaryAssetServer $server = null)
     {
         $server ??= new TemporaryAssetServer();

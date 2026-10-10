@@ -100,6 +100,7 @@ Nothing expires old transfers on its own. Each directory holds an `info.json` ca
 | `start()` | opens a transfer and returns the `LargeUpload` |
 | `find(string $identifier)` | returns the transfer, `null` when unknown |
 | `delete(string $identifier)` | removes it, `false` when unknown |
+| `deleteOlderThan(int $seconds)` | removes the transfers started more than `$seconds` ago, returns how many |
 
 | `LargeUpload` | Does |
 |---|---|
@@ -108,6 +109,13 @@ Nothing expires old transfers on its own. Each directory holds an `info.json` ca
 | `addChunk(int $chunkNumber, string $body)` | writes one chunk |
 | `wrap(Storage $destination, bool $cleanup = true)` | concatenates and returns the final path |
 | `delete()` | removes the chunks and the directory |
+
+A transfer its client abandons is never wrapped, so nothing frees its chunks : schedule a cleanup
+
+```php
+// App/Schedules/large-uploads.php
+Cube\schedule('0 * * * *', fn () => LargeUploadManager::getInstance()->deleteOlderThan(Cache::DAY));
+```
 
 Configure the working directory in your `cube.php`
 

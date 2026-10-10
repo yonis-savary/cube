@@ -726,6 +726,41 @@ class QueryTest extends TestCase
         });
     }
 
+    /**
+     * The trailing operator was appended, then trimmed with dontEndsWith('OR') and dontEndsWith('AND') :
+     * a last condition ending with those letters, like `name = BRAND`, lost them
+     */
+    #[DataProvider('getDatabases')]
+    public function testTheLastConditionKeepsItsEnding(Database $database)
+    {
+        $sql = Product::select()
+            ->where('name', 'screen')
+            ->or()
+            ->whereRaw('name = BRAND')
+            ->or()
+            ->build($database);
+
+        $this->assertStringContainsString('name = BRAND', $sql);
+        $this->assertDoesNotMatchRegularExpression('~\\b(OR|AND)\\s*$~', trim($sql));
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testAnEmptyGroupKeepsTheOperatorAroundIt(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            foreach (['screen', 'mouse', 'desk'] as $name)
+                Product::insertArray(['name' => $name]);
+
+            $query = Product::select()
+                ->where('name', 'screen')
+                ->or()
+                ->whereGroup(fn () => null)
+                ->where('name', 'mouse');
+
+            $this->assertEquals(['screen', 'mouse'], $this->fetchNames($query));
+        });
+    }
+
     public function testAssocMethodsRefuseAList()
     {
         $this->expectException(InvalidArgumentException::class);

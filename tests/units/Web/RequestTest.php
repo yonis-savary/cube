@@ -341,4 +341,35 @@ class RequestTest extends TestCase
             $this->assertEquals("product", $response->getJSON());
         });
     }
+
+    /** Keyed inputs (photos[front]) were read by position, and nested ones (files[a][b]) raised warnings. */
+    public function testUploadsFromKeyedAndNestedInputs()
+    {
+        $files = $_FILES;
+        try {
+            // What PHP builds for <input name="photos[front]"> + <input name="photos[back]"> + <input name="nested[a][b]">
+            $_FILES = [
+                'photos' => [
+                    'name' => ['front' => 'front.png', 'back' => 'back.png'],
+                    'type' => ['front' => 'image/png', 'back' => 'image/png'],
+                    'tmp_name' => ['front' => '/tmp/front', 'back' => '/tmp/back'],
+                    'error' => ['front' => UPLOAD_ERR_OK, 'back' => UPLOAD_ERR_OK],
+                    'size' => ['front' => 1, 'back' => 1],
+                ],
+                'nested' => [
+                    'name' => ['a' => ['b' => 'deep.png']],
+                    'type' => ['a' => ['b' => 'image/png']],
+                    'tmp_name' => ['a' => ['b' => '/tmp/deep']],
+                    'error' => ['a' => ['b' => UPLOAD_ERR_OK]],
+                    'size' => ['a' => ['b' => 1]],
+                ],
+            ];
+
+            $uploads = Request::fromGlobals()->getUploads();
+        } finally {
+            $_FILES = $files;
+        }
+
+        $this->assertEquals(['front.png', 'back.png'], array_map(fn (Upload $upload) => $upload->filename, $uploads));
+    }
 }

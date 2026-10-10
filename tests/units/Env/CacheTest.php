@@ -183,4 +183,12 @@ class CacheTest extends TestCase
 
         return $cache;
     }
+
+    /** Cached values are unserialized : a Redis anyone can write to used to be the only option. */
+    public function testARedisCacheAuthenticatesWithItsPassword()
+    {
+        $this->expectExceptionMessage('refused the password');
+
+        (new RedisCache(uniqid('cube-test-'), '127.0.0.1', 6379, 'a-wrong-password'))->initialize();
+    }
 }

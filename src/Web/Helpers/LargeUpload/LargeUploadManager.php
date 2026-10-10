@@ -3,6 +3,7 @@
 namespace Cube\Web\Helpers\LargeUpload;
 
 use Cube\Core\Component;
+use Cube\Data\Bunch;
 use Cube\Env\Storage;
 
 class LargeUploadManager
@@ -47,6 +48,22 @@ class LargeUploadManager
         $upload = new LargeUpload($identifier, $storage);
         $upload->delete();
         return true;
+    }
+
+    /**
+     * @return int Number of deleted transfers
+     */
+    public function deleteOlderThan(int $seconds): int
+    {
+        $storage = $this->getStorage();
+        $deadline = time() - $seconds;
+
+        return Bunch::of($storage->directories())
+            ->map(fn (string $directory) => basename($directory))
+            ->filter(fn (string $identifier) => $this->isIdentifier($identifier))
+            ->filter(fn (string $identifier) => (int) @filemtime($storage->path("{$identifier}/info.json")) < $deadline)
+            ->forEach(fn (string $identifier) => $this->delete($identifier))
+            ->count();
     }
 
     protected function isIdentifier(string $identifier): bool

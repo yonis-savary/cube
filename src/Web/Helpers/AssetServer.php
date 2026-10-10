@@ -34,12 +34,20 @@ class AssetServer extends WebAPI
         return Response::file($file);
     }
 
+    /** @return string[] */
+    protected static function getAssetsFiles(): array
+    {
+        return Autoloader::getAssetsFiles();
+    }
+
     protected static function findAssetFile(string $target): ?string
     {
-        $assets = Autoloader::getAssetsFiles();
+        $assets = static::getAssetsFiles();
+
+        $target = '/'.ltrim($target, '/');
 
         foreach ($assets as $file) {
-            if (str_ends_with($file, $target)) {
+            if (str_ends_with('/'.ltrim($file, '/'), $target)) {
                 return $file;
             }
         }

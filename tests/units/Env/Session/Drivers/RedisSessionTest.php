@@ -77,4 +77,10 @@ class RedisSessionTest extends TestCase
 
         return $redis;
     }
+
+    public function test_the_password_reaches_the_save_path()
+    {
+        $this->assertEquals('tcp://127.0.0.1:6379', (new RedisSession('127.0.0.1'))->getSavePath());
+        $this->assertEquals('tcp://127.0.0.1:6379?auth=p%40ss%26word', (new RedisSession('127.0.0.1', password: 'p@ss&word'))->getSavePath());
+    }
 }

@@ -41,11 +41,24 @@ $auth->user();       // the user Model
 ```
 
 `user()` rebuilds the model from what was stored in the session, so it costs no query. It **throws**
-when nobody is logged in — guard with `isLogged()` rather than catching.
+when nobody is logged in — guard with `isLogged()` rather than catching. Being a snapshot taken at
+login, it does not see later changes : read roles or permissions you may revoke from the database
+(`User::find($auth->userId())`), not from `user()`.
 
 `login()` and `logout()` give the session a new id, so an id planted before login is worth nothing
-after it. The session cookie is `HttpOnly`, `Secure` over HTTPS, and `SameSite=Lax` — change the
-latter with `new SessionConfiguration(driver: new PHPGlobalSession(sameSite: 'Strict'))`.
+after it — provided nothing was printed before the call, otherwise the id is kept and Cube logs a
+warning. The session cookie is `HttpOnly`, `Secure` over HTTPS (behind a proxy, when it sends
+`X-Forwarded-Proto: https`), and `SameSite=Lax`. Change them through the driver
+
+```php
+// force Secure when the proxy in front of you sends no X-Forwarded-Proto
+new SessionConfiguration(driver: new PHPGlobalSession(sameSite: 'Strict', secureCookie: true))
+```
+
+Cube has no CSRF token : cross-site requests are kept away by `SameSite=Lax`, which stops the
+browser from sending the session cookie with a `POST`, `PUT` or `DELETE` coming from another site.
+Two consequences : never change state on a `GET` route, and remember that subdomains of your site
+count as the *same* site — if they host content you do not control, add a token check of your own.
 
 | Method | Does |
 |---|---|
@@ -137,6 +150,13 @@ RememberMe::getInstance()->forget($request);
 ```
 
 `forget()` takes the `Request` — it reads the cookie itself — or the token directly.
+
+When a user changes their password, or asks to be signed out everywhere, revoke the tokens of
+every device at once
+
+```php
+RememberMe::getInstance()->forgetUser($user);
+```
 
 | Option of `UserRegisterConfiguration` | Default | Does |
 |---|---|---|

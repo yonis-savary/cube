@@ -100,4 +100,25 @@ class LargeUploadTest extends TestCase
             $this->tearDownTemporaryStorage();
         }
     }
+
+    /** A transfer its client abandoned was never wrapped, so its chunks stayed on disk forever. */
+    public function testAbandonedTransfersAreDeleted()
+    {
+        $this->setUpTemporaryStorage('large-upload-test-');
+        $manager = new LargeUploadManager(new LargeUploadManagerConfiguration($this->storage->child('uploads')->getRoot()));
+
+        try {
+            $abandoned = $manager->start();
+            $abandoned->addChunk(0, 'never finished');
+            touch($abandoned->storage->path('info.json'), time() - 7200);
+
+            $ongoing = $manager->start();
+
+            $this->assertEquals(1, $manager->deleteOlderThan(3600));
+            $this->assertNull($manager->find($abandoned->identifier));
+            $this->assertNotNull($manager->find($ongoing->identifier));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
 }

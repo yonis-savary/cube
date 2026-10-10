@@ -365,6 +365,30 @@ class RouterTest extends TestCase
         }
     }
 
+    /** Every slug value a client sent became a cache entry : the cache storage grew without bound. */
+    public function testOnlyRoutesWithoutSlugsAreCached()
+    {
+        $this->setUpTemporaryStorage('router-cache-bound-test-');
+
+        try {
+            Cache::withInstance(new Cache(new CacheConfiguration(new LocalDiskCache($this->storage))), function () {
+                $router = new Router(new RouterConfiguration(true, false, false, [], [], '/'));
+                $router->addRoutes(
+                    Route::get('/products/{int:id}', [ProductReader::class, 'read']),
+                    Route::get('/products', [ProductReader::class, 'list']),
+                );
+
+                $router->route($slugged = new Request('GET', '/products/5'));
+                $router->route($static = new Request('GET', '/products'));
+
+                $this->assertFalse($router->getCachedRouteForRequest($slugged));
+                $this->assertInstanceOf(Route::class, $router->getCachedRouteForRequest($static));
+            });
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
     public function testARequiredFileAddsItsRoutesToTheCurrentGroup()
     {
         $this->setUpTemporaryStorage('router-require-test-');

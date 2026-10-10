@@ -2,7 +2,6 @@
 
 namespace Cube\Tests\Units\Web\Classes;
 
-use Cube\Data\Bunch;
 use Cube\Env\Storage;
 use Cube\Web\Helpers\AssetServer;
 
@@ -18,9 +17,8 @@ class TemporaryAssetServer extends AssetServer
         self::$assetsStorage = $storage;
     }
 
-    protected static function findAssetFile(string $target): ?string
+    protected static function getAssetsFiles(): array
     {
-        return Bunch::of(array_values(self::$assetsStorage->exploreFiles()))
-            ->first(fn (string $file) => str_ends_with($file, $target));
+        return array_values(self::$assetsStorage->exploreFiles());
     }
 }

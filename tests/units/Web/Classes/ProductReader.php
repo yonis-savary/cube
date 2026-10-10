@@ -11,4 +11,9 @@ class ProductReader
     {
         return Response::ok("product {$id}");
     }
+
+    public static function list(Request $request): Response
+    {
+        return Response::ok('every product');
+    }
 }

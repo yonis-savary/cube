@@ -23,7 +23,12 @@ if (!function_exists('Cube\env')) {
         return str_starts_with(strtolower(environmentName() ?? 'debug'), 'prod');
     }
 
+    /**
+     * Only a development environment named as such shows errors to clients : a `staging` or a `preprod`
+     * often faces real users
+     */
     function isDebug(): bool {
-        return null !== environmentName() && !isProduction();
+        $debugEnvs = ['debug', 'dev', 'development', 'local', 'test', 'testing'];
+        return in_array(strtolower(environmentName() ?? ''), $debugEnvs, true);
     }
 }

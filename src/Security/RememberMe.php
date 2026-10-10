@@ -4,6 +4,7 @@ namespace Cube\Security;
 
 use Closure;
 use Cube\Core\Component;
+use Cube\Data\Bunch;
 use Cube\Env\Cache;
 use Cube\Env\Storage;
 use Cube\Web\Http\Request;
@@ -18,6 +19,8 @@ use Cube\Web\Middleware;
 class RememberMe implements Middleware
 {
     use Component;
+
+    protected ?string $issuedToken = null;
 
     public function __construct(
         protected Cache $cache,
@@ -50,8 +53,10 @@ class RememberMe implements Middleware
             return $request;
         }
 
+        $this->issuedToken = null;
+
         if (!$this->authentication->loginById($userId)) {
-            $this->cache->delete($token);
+            $this->dropToken($token, $userId);
             return $request;
         }
 
@@ -62,8 +67,11 @@ class RememberMe implements Middleware
             $userId
         ))->dispatch();
 
-        if ($this->configuration->refreshTokenOnRemember) {
-            $this->cache->delete($token);
+        if ($this->issuedToken || $this->configuration->refreshTokenOnRemember) {
+            $this->dropToken($token, $userId);
+        }
+
+        if ($this->configuration->refreshTokenOnRemember && !$this->issuedToken) {
             $this->register($userData);
         }
 
@@ -80,6 +88,9 @@ class RememberMe implements Middleware
         $duration = $this->configuration->cookieDuration;
 
         $this->cache->set($token, $userId, $duration);
+        $this->userTokens()->set((string) $userId, [...$this->liveTokensOf($userId), $token], $duration);
+
+        $this->issuedToken = $token;
         $this->sendCookie($token, time() + $duration);
     }
 
@@ -102,12 +113,49 @@ class RememberMe implements Middleware
             $token = $requestOrToken->getCookies()[$cookieName] ?? false;
         }
 
-        if ($token && $this->cache->has($token)) {
-            $this->cache->delete($token);
+        if ($this->isToken($token) && $userId = $this->cache->try($token)) {
+            $this->dropToken($token, $userId);
         }
 
         // Without this the browser keeps sending a token nothing answers to
         $this->sendCookie('', time() - 3600);
+    }
+
+    public function forgetUser(Model|int|string $user): void
+    {
+        $userId = $user instanceof Model ? $user->id() : $user;
+
+        foreach ($this->liveTokensOf($userId) as $token) {
+            $this->cache->delete($token);
+        }
+
+        $this->userTokens()->delete((string) $userId);
+    }
+
+    protected function dropToken(string $token, mixed $userId): void
+    {
+        $this->cache->delete($token);
+
+        $this->userTokens()->set(
+            (string) $userId,
+            array_values(array_diff($this->liveTokensOf($userId), [$token])),
+            $this->configuration->cookieDuration
+        );
+    }
+
+    /**
+     * @return string[] Tokens of the user that still point at them
+     */
+    protected function liveTokensOf(mixed $userId): array
+    {
+        return Bunch::of($this->userTokens()->get((string) $userId, []))
+            ->filter(fn (string $token) => $this->cache->get($token) == $userId, true)
+            ->get();
+    }
+
+    protected function userTokens(): Cache
+    {
+        return $this->cache->child('remember-me-users');
     }
 
     protected function sendCookie(string $value, int $expiresAt): void

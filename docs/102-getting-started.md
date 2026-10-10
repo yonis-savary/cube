@@ -54,7 +54,8 @@ env=debug
 | Value | `Cube\isProduction()` | `Cube\isDebug()` | An uncaught exception answers |
 |---|---|---|---|
 | starts with `prod` | `true` | `false` | `Internal Server Error` |
-| anything else | `false` | `true` | the message and the trace |
+| `debug`, `dev`, `development`, `local`, `test`, `testing` | `false` | `true` | the message and the trace |
+| anything else (`staging`, `preprod`...) | `false` | `false` | `Internal Server Error` |
 | no key | `false` | `false` | `Internal Server Error` |
 
 `isProduction()` is also the default of `AutoloaderConfiguration(cached:)`, which caches the class

@@ -360,6 +360,7 @@ class Response extends HttpMessage
         $response = (new static($code))
             ->withResponseCallback(function () use (&$path) { readfile($path); })
             ->setHeader('Content-Type', FileMIMETypes::getFileMIMEType($attachmentFile ?? $path))
+            ->setHeader('X-Content-Type-Options', 'nosniff')
         ;
 
         if ($attachmentFile) {

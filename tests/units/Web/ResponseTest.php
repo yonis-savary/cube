@@ -175,6 +175,14 @@ class ResponseTest extends TestCase
         $this->assertEquals('text/plain', $response->getHeader('content-type'));
     }
 
+    /** Without nosniff, a browser could guess HTML out of an uploaded file served as something else. */
+    public function testAFileForbidsContentSniffing()
+    {
+        $this->storage->write('avatar.png', '<script>alert(1)</script>');
+
+        $this->assertEquals('nosniff', Response::file($this->storage->path('avatar.png'))->getHeader('x-content-type-options'));
+    }
+
     public function testDownloadAsksTheBrowserToSaveTheFile()
     {
         $this->storage->write('report.txt', 'yearly report');

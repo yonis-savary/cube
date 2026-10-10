@@ -9,6 +9,7 @@ use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
 use Cube\Event\Events;
 use Cube\Security\Authentication;
 use Cube\Security\Authentication\AuthenticationConfiguration;
+use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\PasswordAuthentication;
 use Cube\Security\RememberMe\RememberedUser;
 use Cube\Security\RememberMe\UserRegisterConfiguration;
@@ -246,6 +247,58 @@ class RememberMeTest extends TestCase
         $this->newRememberMe()->handleRequest($this->requestWithToken('last-import'));
 
         $this->assertFalse($this->authentication->isLogged());
+    }
+
+    /**
+     * With the listener docs/202 suggests, a cookie login issued a token from the listener and another
+     * from the refresh : the first one was sent to the browser and stayed valid, out of forget()'s reach.
+     */
+    public function testALoginListenerIssuingATokenLeavesNoOrphan()
+    {
+        foreach ([true, false] as $refresh) {
+            $rememberMe = $this->newRememberMe(new UserRegisterConfiguration(refreshTokenOnRemember: $refresh));
+            $rememberMe->register(User::findWhere(['login' => 'alice']));
+            $firstToken = $rememberMe->lastCookie()['value'];
+            $cookiesBefore = count($rememberMe->sentCookies);
+
+            Events::withInstance(new Events(), function (Events $events) use ($rememberMe, $firstToken) {
+                $events->on(AuthenticatedUser::class, fn (AuthenticatedUser $event) => $rememberMe->register($event));
+
+                $rememberMe->handleRequest($this->requestWithToken($firstToken));
+            });
+
+            $this->assertCount($cookiesBefore + 1, $rememberMe->sentCookies);
+            $this->assertFalse($this->cache->has($firstToken));
+            $this->assertTrue($this->cache->has($rememberMe->lastCookie()['value']));
+
+            $this->authentication->logout();
+        }
+    }
+
+    public function testForgetUserRevokesEveryDevice()
+    {
+        $user = User::findWhere(['login' => 'alice']);
+        $rememberMe = $this->newRememberMe();
+
+        $rememberMe->register($user);
+        $laptop = $rememberMe->lastCookie()['value'];
+        $rememberMe->register($user);
+        $phone = $rememberMe->lastCookie()['value'];
+
+        $rememberMe->forgetUser($user);
+
+        $this->assertFalse($this->cache->has($laptop));
+        $this->assertFalse($this->cache->has($phone));
+    }
+
+    /** forget() deleted whatever cache entry the cookie named. */
+    public function testForgetLeavesOtherCacheEntriesAlone()
+    {
+        $this->cache->set('last-import', 'today');
+
+        $this->newRememberMe()->forget($this->requestWithToken('last-import'));
+
+        $this->assertEquals('today', $this->cache->get('last-import'));
     }
 
     protected function newRememberMe(?UserRegisterConfiguration $configuration = null): SpyRememberMe

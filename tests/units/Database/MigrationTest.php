@@ -259,6 +259,34 @@ class MigrationTest extends TestCase
     }
 
     /**
+     * MySQL concatenated the quoted default into a template holding placeholders : a `{}` inside
+     * the default was taken for one of them
+     */
+    #[ DataProvider('getDatabases') ]
+    public function testAlterColumnKeepsADefaultHoldingBraces(Database $database)
+    {
+        if ('sqlite' === $database->getDriver())
+            $this->markTestSkipped('SQLite cannot alter a column');
+
+        $migration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create('setting', [
+                    ModelField::id(),
+                    ModelField::string('value', 255),
+                ]);
+                $plan->alterColumn('setting', 'value', ModelField::string('value', 255)->default('{}'));
+            }
+        };
+
+        $thrown = $migration->execute($this->getDatabasePlan($database), $database);
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+
+        $database->exec('INSERT INTO setting (id) VALUES (1)');
+        $this->assertEquals('{}', $database->query('SELECT value FROM setting')[0]['value']);
+    }
+
+    /**
      * PostgreSQL has no DATETIME type, create() maps it to TIMESTAMP but alterColumn() does not
      */
     #[ DataProvider('getDatabases') ]

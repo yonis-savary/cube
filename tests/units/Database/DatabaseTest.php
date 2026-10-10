@@ -7,6 +7,8 @@ use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Core\Classes\Habitat;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+
+use function Cube\env;
 use RuntimeException;
 
 class DatabaseTest extends TestCase
@@ -328,5 +330,20 @@ class DatabaseTest extends TestCase
         $this->assertFalse($database->hasTable('product" -- '));
         $this->assertFalse($database->hasField('product', 'name` FROM product -- '));
         $this->assertFalse($database->hasField('product', 'name" FROM product -- '));
+    }
+
+    /** The DSN named no charset : PDO::quote() escaped values for whatever the server defaulted to. */
+    public function testAMySQLConnectionTalksUtf8mb4()
+    {
+        $database = new Database(
+            'mysql',
+            'mysql',
+            '127.0.0.1',
+            (int) env('CUBE_TEST_MYSQL_PORT', 9901),
+            'root',
+            env('CUBE_TEST_DATABASE_PASSWORD', 'root')
+        );
+
+        $this->assertEquals('utf8mb4', $database->query('SELECT @@character_set_client AS charset')[0]['charset']);
     }
 }

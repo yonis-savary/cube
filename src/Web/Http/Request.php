@@ -407,27 +407,33 @@ class Request extends HttpMessage
         $cleanedUploads = [];
 
         foreach ($data as $inputName => $fileData) {
-            $isMultiple = is_array($fileData['name']);
-            $uploadCount = $isMultiple ? count($fileData['name']) : null;
-            $toAdd = [];
-
-            if ($isMultiple) {
-                $keys = array_keys($fileData);
-                for ($i = 0; $i < $uploadCount; ++$i) {
-                    $toAdd[] = array_combine($keys, array_map(fn ($arr) => $arr[$i], $fileData));
-                }
-            } else {
-                $toAdd[] = $fileData;
-            }
-
-            foreach ($toAdd as &$upload) {
-                $upload = new Upload($upload, $inputName);
-            }
-
-            array_push($cleanedUploads, ...$toAdd);
+            foreach (self::splitUploads($fileData) as $upload)
+                $cleanedUploads[] = new Upload($upload, $inputName);
         }
 
         return $cleanedUploads;
+    }
+
+    /**
+     * @return array<int,array> One `$_FILES`-like entry per uploaded file of an input
+     */
+    protected static function splitUploads(array $fileData): array
+    {
+        if (!is_array($fileData['name']))
+            return [$fileData];
+
+        $uploads = [];
+        foreach (array_keys($fileData['name']) as $index) {
+            $upload = array_map(fn ($values) => $values[$index], $fileData);
+
+            // Deeper levels (files[a][b]) are not supported : left out rather than read as a broken upload
+            if (is_array($upload['name']))
+                continue;
+
+            $uploads[] = $upload;
+        }
+
+        return $uploads;
     }
 
     /**
