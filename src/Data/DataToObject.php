@@ -29,7 +29,7 @@ abstract class DataToObject
         return static::bunch($elements)->toArray();
     }
 
-    public static function fromData(array $rawData): static
+    public static function fromData(#[\SensitiveParameter] array $rawData): static
     {
         $specialKeys = static::keys();
 
@@ -71,7 +71,11 @@ abstract class DataToObject
             return new static(...array_values($constructorValues));
         } catch (\Throwable $err) {
             $logger = Logger::getInstance();
-            $logger->error("Could not create item of type {class} with data {data}", ['class' => static::class, 'data' => $constructorValues]);
+            // Only the shape is logged : the values are user input, passwords and tokens included
+            $logger->error("Could not create item of type {class} from fields {fields}", [
+                'class' => static::class,
+                'fields' => array_map(get_debug_type(...), $rawData),
+            ]);
             $logger->logThrowable($err);
 
             throw $err;

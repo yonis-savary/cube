@@ -282,6 +282,53 @@ automatically — see [Routing and middlewares](./106-routing-and-middlewares.md
 For a full CRUD API over a model, let your controller delegate to a `ModelAPI` instead of writing
 the queries by hand — see [Controller and APIs](./107-controller-and-apis.md).
 
+## Faking models
+
+`Model::factory()` builds models filled with fake values, from [Faker](https://fakerphp.org) : in your
+tests, a seeder, or wherever an example is needed
+
+```php
+$user = User::factory()->make();                         // not saved
+$user = User::factory()->create();                       // saved
+$user = User::factory()->create(['login' => 'alice']);   // what you give wins
+$users = User::factory()->createMany(10, ['agency' => $agency->id()]);
+```
+
+Every field gets a value of its type, cut to its `maximumLength` for a string. A field referencing
+another model gets a row created through that model's own factory with `create()`, so the foreign
+key holds. An auto-incremented or database-defaulted key is left to the database by `create()`,
+and made up by `make()`, since an example still needs one.
+
+A factory of your own only gives the fields a type alone cannot fake well. It is found by class
+discovery
+
+```php
+/**
+ * @extends ModelFactory<User>
+ */
+class UserFactory extends ModelFactory
+{
+    public static function getModelClass(): string
+    {
+        return User::class;
+    }
+
+    protected function definition(Generator $faker): array
+    {
+        return [
+            'login' => $faker->unique()->email(),
+            'password' => password_hash('secret', PASSWORD_DEFAULT),
+        ];
+    }
+}
+```
+
+| Method | Gives |
+|---|---|
+| `make(array $overrides = [])` | one model, not saved |
+| `create(array $overrides = [], ?Database $database = null)` | one saved model |
+| `makeMany(int $count, array $overrides = [])` / `createMany(...)` | a list of them |
+
 ## Reacting to a save
 
 Every model is an event dispatcher, and emits `SavedModel` after each successful save — insert or

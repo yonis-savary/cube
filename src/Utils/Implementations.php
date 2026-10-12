@@ -6,6 +6,7 @@ use Cube\Core\Autoloader;
 use Cube\Core\Exceptions\ImplementationNotFoundException;
 use Cube\Core\Injector;
 use Cube\Data\Bunch;
+use LogicException;
 
 /**
  * Picks the implementations of an abstraction that support a given case : each candidate class is
@@ -67,6 +68,30 @@ class Implementations
         return self::candidatesOf($base)
             ->filter($supports, true)
             ->map(fn($candidate) => $injector->instanciate($candidate, $constructorArgs));
+    }
+
+    /**
+     * Like `find()`, for a case only one implementation may answer : two of them is a mistake, not a choice
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $base
+     * @param callable(class-string<T>):bool $supports
+     *
+     * @return ?T
+     *
+     * @throws LogicException
+     */
+    public static function findSingle(string $base, callable $supports, array $constructorArgs = [], ?string $for = null): ?object
+    {
+        $candidates = self::candidatesOf($base)->filter($supports, true);
+
+        if ($candidates->count() > 1)
+            throw new LogicException('Several '.$base.' answer for '.($for ?? 'the same case').' : '.$candidates->join(', ').', only one may');
+
+        return ($candidate = $candidates->first())
+            ? Injector::getInstance()->instanciate($candidate, $constructorArgs)
+            : null;
     }
 
     /**

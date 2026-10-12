@@ -93,6 +93,14 @@ abstract class Model extends EventDispatcher
     }
 
     /**
+     * @return ModelFactory<static>
+     */
+    public static function factory(): ModelFactory
+    {
+        return ModelFactory::for(static::class);
+    }
+
+    /**
      * @return Query<static>
      */
     public static function select(array $with=[]): Query
@@ -448,7 +456,10 @@ abstract class Model extends EventDispatcher
         return $this->getAttributeDefaultValue($name);
     }
 
-    public function toArray(): array
+    /**
+     * @return array<string,mixed> The fields only, formatted, without the loaded relations
+     */
+    public function dataToArray(): array
     {
         $fields = static::fields();
 
@@ -459,6 +470,13 @@ abstract class Model extends EventDispatcher
             $field = $fields[$name] ?? new ModelField($name);
             $array[$name] = $field->format($value);
         }
+
+        return $array;
+    }
+
+    public function toArray(): array
+    {
+        $array = $this->dataToArray();
 
         foreach ($this->references as $key => $modelOrCollection)
         {
