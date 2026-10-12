@@ -79,6 +79,19 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADSimpleOperation.json fixture");
     }
 
+    public function testAResourceResponseDescribesWhatTheResourceAnswers() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/users", [SampleController::class, "usersAsResource"]));
+
+        $schema = $this->generateAsArray($router)['paths']['/users']['get']['responses'][200]['content']['application/json']['schema'];
+
+        $this->assertEquals('array', $schema['type']);
+        $this->assertEquals(['id', 'login'], array_keys($schema['items']['properties']));
+
+        $content = $this->generateAsArray($router)['paths']['/users']['get']['responses'][200]['content']['application/json'];
+        $this->assertEquals(['id', 'login'], array_keys($content['example'][0]));
+    }
+
     /** Every array-callback route was documented, internal ones included. */
     public function testAHiddenRouteIsLeftOut() {
         $router = $this->getStandaloneRouter();
@@ -139,6 +152,22 @@ class OpenAPIGenerationTest extends TestCase
         $fixture = $this->readFixture("OADModelResponse.json");
 
         $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADModelResponse.json fixture");
+    }
+
+    /** A model schema only gave types : its factory now fills an example, the same at every generation. */
+    public function testAModelSchemaHoldsAStableExampleFromItsFactory() {
+        $generate = function () {
+            $router = $this->getStandaloneRouter();
+            $router->addRoutes(Route::get("/product/{product}", [SampleController::class, "endpointReturningAProduct"]));
+
+            return $this->generateAsArray($router)['components']['schemas']['Product'];
+        };
+
+        $schema = $generate();
+
+        $this->assertEquals('9.99000', $schema['example']['price_dollar']);
+        $this->assertEmpty(array_diff(array_keys($schema['example']), array_keys($schema['properties'])));
+        $this->assertEquals($schema['example'], $generate()['example']);
     }
 
     public function testRawResponseGeneration() {

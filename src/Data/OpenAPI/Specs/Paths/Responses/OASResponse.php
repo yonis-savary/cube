@@ -5,6 +5,7 @@ namespace Cube\Data\OpenAPI\Specs\Paths\Responses;
 use Cube\Data\AutoDataToObject;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
+use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Data\OpenAPI\Specs\Common\ModelRef;
 
@@ -55,6 +56,19 @@ class OASResponse extends AutoDataToObject
         $this->content[$modelResponse->mimeType] =  $modelResponse->isArray
             ? ['schema' => ['type' => 'array', 'items' => $ref]]
             : ['schema' => $ref];
+    }
+
+    // A resource only has toArray() : its shape is read from what it answers for a model its factory made
+    public function resourceResponse(ResourceResponse $resourceResponse)
+    {
+        $resourceClass = $resourceResponse->resourceClass;
+        $modelClass = $resourceClass::getModelClass();
+
+        $data = $resourceClass::of($modelClass::factory()->withSeed(crc32($modelClass))->make());
+        $example = $resourceResponse->isArray ? [$data] : $data;
+
+        $this->rawResponse(new RawResponse($example, description: $resourceResponse->description, mimeType: $resourceResponse->mimeType));
+        $this->content[$resourceResponse->mimeType]['example'] = $example;
     }
 
     public function rawResponse(RawResponse $rawResponse) {

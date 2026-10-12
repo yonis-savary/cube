@@ -8,6 +8,7 @@ use Cube\Data\Bunch;
 use Cube\Data\Models\Model;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
+use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Router\Route;
@@ -52,6 +53,14 @@ class OASResponses extends AutoDataToObject
             $responseAttribute = $responseReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->modelResponse($responseAttribute);
+            $this->responses[$responseAttribute->responseCode] = $response->toArray();
+        }
+
+        foreach ($method->getAttributes(ResourceResponse::class) as $resourceReflectionAttribute)
+        {
+            $responseAttribute = $resourceReflectionAttribute->newInstance();
+            $response = new OASResponse();
+            $response->resourceResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
 

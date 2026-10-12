@@ -51,6 +51,7 @@ class OASRoot extends DataAutoDataToObject
             $this->components['schemas'][$basename] = [];
             $schema = &$this->components['schemas'][$basename];
             $this->mutateParameterWithRule($model::toObjectParam(), $schema);
+            $schema['example'] = $model::factory()->withSeed(crc32($model))->make()->toArray();
         }
     }
 

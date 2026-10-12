@@ -64,10 +64,10 @@ class ProductController extends Controller
 }
 ```
 
-Every model a response refers to is described once in `components.schemas`, from **all** its fields
-and relations : the hidden fields of a `ModelAPI` belong to that API, not to the model, so a password
-hash column appears in the schema. Read the document before publishing it. A `nullable` rule becomes a nullable type, and a rule that is not `optional()` a
-required key or parameter.
+Every model a response refers to is described once in `components.schemas`, from its fields and
+relations : that is what a model answered as is gives. A route answering through a `ModelResource`
+declares it with `#[ResourceResponse]`, described below. A `nullable` rule becomes a nullable type,
+and a rule that is not `optional()` a required key or parameter.
 
 ## Describing an endpoint
 
@@ -99,7 +99,7 @@ public function healthCheck(): Response
 
 ## Describing a response
 
-A response Cube cannot read from your return type is declared with an attribute. Both attributes
+A response Cube cannot read from your return type is declared with an attribute. These attributes
 can be repeated, one per status code, and win over what the return type says for the same status.
 
 `#[ModelResponse]` answers a model, or a list of models with `isArray`
@@ -120,6 +120,15 @@ public function stats(): array
 
 #[RawResponse(file: __DIR__.'/Examples/stats.json')]
 public function detailedStats(): array
+```
+
+`#[ResourceResponse]` answers what a `ModelResource` gives : Cube makes a model with its factory (see
+[Models](./111-models.md#faking-models)), passes it to the resource, and reads the shape of the
+result. Relations are not loaded on that example, so they do not appear
+
+```php
+#[ResourceResponse(UserProfileResource::class, isArray: true)]
+public function profiles(): array
 ```
 
 The example is only read for its shape : `120` becomes an integer, `[1, 2, 3]` a list of integers,

@@ -85,6 +85,17 @@ abstract class ModelFactory
         return array_map(fn () => $this->create($overrides, $database), range(1, $count));
     }
 
+    /**
+     * The same seed gives the same values : what a document or a fixture needs to stay stable
+     */
+    public function withSeed(int $seed): static
+    {
+        $this->faker()->seed($seed);
+        $this->faker()->unique(true);
+
+        return $this;
+    }
+
     protected function faker(): Generator
     {
         return $this->faker ??= Factory::create();
@@ -129,10 +140,9 @@ abstract class ModelFactory
             ModelField::FLOAT => $faker->randomFloat(2, 0, 1000),
             ModelField::BOOLEAN => $faker->boolean(),
             ModelField::DECIMAL => $this->fakeDecimal($field),
-            ModelField::DATE => $faker->date(),
-            // TIMESTAMP columns stop in 2038 : stay in the recent past
+            ModelField::DATE => $faker->dateTimeBetween('2000-01-01', '2030-12-31')->format('Y-m-d'),
             ModelField::DATETIME,
-            ModelField::TIMESTAMP => $faker->dateTimeBetween('-5 years')->format('Y-m-d H:i:s'),
+            ModelField::TIMESTAMP => $faker->dateTimeBetween('2000-01-01', '2030-12-31')->format('Y-m-d H:i:s'),
             default => mb_substr($faker->words(3, true), 0, $field->maximumLength ?? 50),
         };
     }

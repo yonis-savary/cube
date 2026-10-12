@@ -113,7 +113,13 @@
                 },
                 "required": [
                     "name"
-                ]
+                ],
+                "example": {
+                    "price_dollar": "9.99000",
+                    "id": 588,
+                    "created_at": "2003-10-19 18:06:12",
+                    "name": "natus sit consequatur"
+                }
             }
         }
     }

@@ -6,6 +6,8 @@ use Cube\Data\OpenAPI\Attributes\Endpoint;
 use Cube\Data\OpenAPI\Attributes\Hidden;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
+use Cube\Data\OpenAPI\Attributes\ResourceResponse;
+use Cube\Tests\Units\Web\Classes\UserResource;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\CustomRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\QueryRequestFormat;
 use Cube\Tests\Units\Models\Product;
@@ -27,6 +29,11 @@ class SampleController extends Controller
 
     #[Hidden]
     public function internalEndpoint() {
+
+    }
+
+    #[ResourceResponse(UserResource::class, isArray: true)]
+    public function usersAsResource() {
 
     }
 
