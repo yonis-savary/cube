@@ -3,6 +3,7 @@
 namespace Cube\Tests\Units\Utils;
 
 use Cube\Security\Encryption\Encryption;
+use Cube\Security\Encryption\LegacyEncryption;
 use PHPUnit\Framework\TestCase;
 
 use function Cube\decrypt;
@@ -52,12 +53,16 @@ class EncryptionTest extends TestCase
         $this->assertStringStartsWith(Encryption::PREFIX, encrypt('order #1024', 'app-key'));
     }
 
-    public function testAValueEncryptedWithTheFormerFormatIsStillRead()
+    /** The former format is unauthenticated : reading it implicitly gave a padding oracle on any value a client sends. */
+    public function testAValueEncryptedWithTheFormerFormatIsOnlyReadExplicitly()
     {
         $iv = random_bytes(16);
         $legacy = base64_encode($iv.openssl_encrypt('order #1024', 'aes-256-cbc', 'app-key', OPENSSL_RAW_DATA, $iv));
 
-        $this->assertEquals('order #1024', decrypt($legacy, 'app-key'));
+        $this->assertEquals('order #1024', LegacyEncryption::decrypt($legacy, 'app-key'));
+
+        $this->expectException(\Exception::class);
+        decrypt($legacy, 'app-key');
     }
 
     /** A tampered new value must not get a second chance through the unauthenticated former format. */

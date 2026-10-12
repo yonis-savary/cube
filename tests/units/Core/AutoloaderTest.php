@@ -194,4 +194,21 @@ class AutoloaderTest extends TestCase
 
         $this->assertEquals('cleared', $process->getOutput(), $process->getErrorOutput());
     }
+
+    /** PHP's own default is to print warnings, absolute paths included, into the response. */
+    public function test_php_errors_are_only_displayed_in_a_debug_environment()
+    {
+        $displayErrorsIn = function (string $environment): string {
+            $process = new Process([
+                PHP_BINARY, '-d', 'display_errors=1', '-r',
+                'require "vendor/autoload.php"; Cube\Core\Autoloader::initialize(getcwd()); echo ini_get("display_errors");',
+            ], env: ['env' => $environment], timeout: 30);
+            $process->run();
+
+            return $process->getOutput();
+        };
+
+        $this->assertEquals('0', $displayErrorsIn('staging'));
+        $this->assertEquals('1', $displayErrorsIn('dev'));
+    }
 }

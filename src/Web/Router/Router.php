@@ -184,9 +184,9 @@ class Router
         return $this->apis;
     }
 
-    protected function globalizeResponse(callable $responseGiver, Request $request): Response
+    protected function globalizeResponse(\Closure $responseGiver, Request $request): Response
     {
-        $callStack = new RouterCallStack($responseGiver, [], $this->rootHolder->getMiddlewares());
+        $callStack = new RouterCallStack($responseGiver, $this->rootHolder->getMiddlewares());
         return ($callStack)($request);
     }
 
@@ -265,26 +265,7 @@ class Router
 
         try
         {
-            $parameters = $this->injector->getDependencies(
-                $route->getCallback(),
-                [$request, ...array_values($request->getSlugValues())]
-            );
-
-            /** @var Request $request */
-            $request = &$parameters[0];
-
-            $parametersReflections = $this->injector->resolveClosureParameters($route->getCallback());
-
-            $slugValues = $request->getSlugValues();
-
-            for($i=0; $i<min(count($parametersReflections), count($parameters)); $i++) {
-                $parameterName = $parametersReflections[$i]->getName();
-                $slugValues[$parameterName] = $parameters[$i];
-            }
-
-            $request->setSlugObjects($slugValues);
-
-            $response = $route(...$parameters);
+            $response = $route($request, $this->injector);
         }
         catch(ResponseException $responseException)
         {

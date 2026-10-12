@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Router;
 
+use Cube\Core\Injector;
 use Cube\Data\Models\Model;
 use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
@@ -54,13 +55,41 @@ class Route
         $this->extras = $extras;
     }
 
-    public function __invoke(Request $request, mixed ...$params): mixed
+    public function __invoke(Request $request, ?Injector $injector = null): Response
     {
+        $injector ??= Injector::getInstance();
         $request->setRoute($this);
 
-        $callStack = new RouterCallStack($this->callback, $params, $this->middlewares);
+        $callStack = new RouterCallStack(
+            fn (Request $request) => $this->callWithDependencies($request, $injector), 
+            $this->middlewares
+        );
 
         return $callStack($request);
+    }
+
+    protected function callWithDependencies(Request $request, Injector $injector): mixed
+    {
+        $callback = $this->callback;
+        $parameters = $injector->getDependencies($callback, [$request, ...array_values($request->getSlugValues())]);
+
+        /** @var Request $request */
+        $request = $parameters[0];
+
+        $slugObjects = $request->getSlugValues();
+        $parametersReflections = $injector->resolveClosureParameters($callback);
+
+        for ($i = 0; $i < min(count($parametersReflections), count($parameters)); $i++)
+            $slugObjects[$parametersReflections[$i]->getName()] = $parameters[$i];
+
+        $request->setSlugObjects($slugObjects);
+
+        if (is_callable($callback))
+            return $callback(...$parameters);
+
+        [$controllerClass, $method] = $callback;
+
+        return $injector->instanciate($controllerClass)->$method(...$parameters);
     }
 
     public static function any(string $path, callable|array $callback, array $middlewares = [], array $extras = [])

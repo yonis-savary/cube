@@ -52,6 +52,11 @@ Everything a connector answers for is a method you may override
 | `basePostParameters()` | `[]` | merged into every body |
 | `baseLogger()` | the `Logger` component | where the exchange is logged |
 
+Base headers and parameters often carry credentials : with a `baseURL()`, they are only sent to its
+origin (scheme, host and port). An absolute URL to another origin is still fetched, without them.
+Only `http` and `https` are fetched, so a URL taken from user input cannot read `file://` or talk to
+another protocol.
+
 ## Sending a request
 
 The verb methods build the request and return the `Response`

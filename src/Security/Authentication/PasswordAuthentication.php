@@ -8,7 +8,8 @@ use Cube\Utils\Utils;
 
 class PasswordAuthentication implements AuthenticationProvider
 {
-    private static ?string $decoyHash = null;
+    // Hash of a random value nobody knows, with PHP's default bcrypt cost : an unknown login costs one verification, like a known one
+    protected const DECOY_HASH = '$2y$12$vBUoAnEM4IjmK9UXG/XQ0us4Q8iTt15U1gV4HPqSVC.58o6tWl0Za';
 
     /**
      * @param class-string<Model> $model
@@ -37,7 +38,7 @@ class PasswordAuthentication implements AuthenticationProvider
         }
 
         if (!$user = $query->first()) {
-            password_verify($password, self::decoyHash());
+            password_verify($password, self::DECOY_HASH);
             return false;
         }
 
@@ -45,7 +46,7 @@ class PasswordAuthentication implements AuthenticationProvider
 
         $storedHash = (string) $user->{$this->passwordField};
         if ('' === $storedHash) {
-            password_verify($password, self::decoyHash());
+            password_verify($password, self::DECOY_HASH);
             return false;
         }
 
@@ -54,16 +55,6 @@ class PasswordAuthentication implements AuthenticationProvider
         }
 
         return $this->withoutCredentials($user);
-    }
-
-    /**
-     * A hash of a value nobody can submit, built once per process with the algorithm
-     * `password_hash()` currently defaults to, so verifying against it costs what verifying a
-     * real password costs.
-     */
-    protected static function decoyHash(): string
-    {
-        return self::$decoyHash ??= password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
     }
 
     public function userById(mixed $id): Model|false 

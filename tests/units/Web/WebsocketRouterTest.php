@@ -3,6 +3,8 @@
 namespace Cube\Tests\Units\Web;
 
 use App\Channels\ProductChannel;
+use Cube\Env\Configuration;
+use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Websocket\Servers\WebsocketConfiguration;
 use Cube\Web\Websocket\Servers\WebsocketRouter;
@@ -70,7 +72,28 @@ class WebsocketRouterTest extends TestCase
         $this->assertFalse($this->subscribe('/announcements', ['Authorization' => 'Bearer reader'])->closed);
     }
 
-    protected function subscribe(string $path, array $headers): ConnectionInterface
+    /** A page on any site could open a connection carrying its visitor's cookies, and read their private events. */
+    public function testABrowserMustComeFromAnAllowedOrigin()
+    {
+        $configuration = new WebsocketConfiguration(broadcastSecret: 's3cret', allowedOrigins: ['https://shop.example.org']);
+        $authorized = ['Authorization' => 'Bearer token-7'];
+
+        $this->assertTrue($this->subscribe('/private/7', [...$authorized, 'Origin' => 'https://evil.example.org'], $configuration)->closed);
+        $this->assertFalse($this->subscribe('/private/7', [...$authorized, 'Origin' => 'https://shop.example.org'], $configuration)->closed);
+        $this->assertFalse($this->subscribe('/private/7', $authorized, $configuration)->closed);
+    }
+
+    public function testTheAllowedOriginsDefaultToTheCorsOnes()
+    {
+        $allowedOrigins = Configuration::withInstance(
+            new Configuration(new CORSConfiguration(['https://shop.example.org'])),
+            fn () => (new WebsocketConfiguration())->getAllowedOrigins()
+        );
+
+        $this->assertEquals(['https://shop.example.org'], $allowedOrigins);
+    }
+
+    protected function subscribe(string $path, array $headers, ?WebsocketConfiguration $configuration = null): ConnectionInterface
     {
         $connection = new class implements ConnectionInterface {
             public int $resourceId = 1;
@@ -91,7 +114,7 @@ class WebsocketRouterTest extends TestCase
         };
         $connection->httpRequest = new Request('GET', "ws://localhost:8088{$path}", $headers);
 
-        $this->router()->onOpen($connection);
+        $this->router($configuration)->onOpen($connection);
 
         return $connection;
     }

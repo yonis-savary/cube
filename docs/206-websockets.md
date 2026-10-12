@@ -38,6 +38,8 @@ new WebsocketConfiguration(
     httpPort: 8089,
     // shared by the socket process and Broadcast, which sends it with every signal
     broadcastSecret: env('WEBSOCKET_SECRET'),
+    // origins a browser may connect from, null re-uses CORSConfiguration's allowedOrigins
+    allowedOrigins: ['https://shop.example.org'],
 ),
 
 new BroadcastConfiguration(
@@ -112,6 +114,11 @@ issued, or the session cookie read from the `Cookie` header and checked against 
 
 Without an override every subscription is accepted, so write this one before exposing anything
 sensitive.
+
+A browser attaches the visitor's cookies to the handshake whatever page opens it, so the socket
+process first checks the `Origin` header against `allowedOrigins` (`['*']` accepts any). A browser
+connecting from another origin is closed before reaching `authorize()`. A client sending no `Origin`,
+which a browser never does, is not concerned.
 
 ## Emitting from your backend
 

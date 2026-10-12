@@ -490,6 +490,22 @@ class ModelTest extends TestCase
         });
     }
 
+    /** A relation name was called as a method without any check : `?with=destroy` deleted the row. */
+    #[ DataProvider('getDatabases') ]
+    public function testOnlyDeclaredRelationsAreLoaded(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $product = Product::insertArray(['name' => 'screen']);
+
+            Product::find($product->id(), ['destroy']);
+            $product->load('destroy');
+            $product->loadMissing('anonymize');
+
+            $this->assertNotNull(Product::find($product->id()));
+            $this->assertNotNull($product->id());
+        });
+    }
+
     #[ DataProvider('getDatabases') ]
     public function testLastOnAnEmptyTable(Database $database)
     {

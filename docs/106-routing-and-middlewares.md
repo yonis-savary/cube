@@ -3,8 +3,8 @@
 # Routing and middlewares
 
 The `Router` component is what turns a `Request` into a `Response` : it holds your routes, finds
-the one matching the incoming request, resolves the callback parameters and executes the
-middlewares around it.
+the one matching the incoming request, executes its middlewares, then resolves the callback
+parameters.
 
 ```
 Request ---> Router ---> [ middlewares ] ---> your callback ---> Response
@@ -248,6 +248,27 @@ class ApiKeyMiddleware implements Middleware
 Middlewares are executed in declaration order : the ones given to the route first, then those of
 each enclosing group from the innermost to the outermost, and finally the `commonMiddlewares` of
 your `RouterConfiguration`.
+
+They run before the callback parameters are resolved, so a client your middleware refuses never
+learns whether the slug model exists (`404`) or what the request rules expect (`422`). A middleware
+therefore sees the request as it came in : `getSlugValues()` gives the raw slugs, but there is no
+`Request` subclass, no `validated()` and no `getSlugObject()` yet. Load the model yourself when a
+middleware needs it
+
+```php
+class InvoiceOwnerMiddleware implements Middleware
+{
+    public static function handle(Request $request, Closure $next): Request|Response
+    {
+        $invoice = Invoice::find($request->getSlugValues()['invoice'] ?? null);
+
+        if ($invoice && $invoice->customer !== Authentication::getInstance()->user()->id())
+            return Response::forbidden();
+
+        return $next($request);
+    }
+}
+```
 
 ### Guarding a group with permissions
 

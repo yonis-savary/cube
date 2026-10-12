@@ -8,6 +8,8 @@ RUN apt-get update \
     && docker-php-ext-install zip \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
 RUN echo "apc.enable_cli=1" > /usr/local/etc/php/conf.d/apcu.ini \
     && echo "apc.enable=1"    >> /usr/local/etc/php/conf.d/apcu.ini \
     && echo "chdir = /var/www" >> /usr/local/etc/php-fpm.d/www.conf
@@ -16,11 +18,11 @@ WORKDIR /var/www
 
 COPY composer.json .
 COPY composer.lock .
-RUN composer install
+RUN composer install --no-dev --optimize-autoloader
 
 COPY . .
 
-RUN chown -R www-data:www-data /var/www
+RUN mkdir -p Storage && chown -R www-data:www-data Storage
 EXPOSE 9000
 
 CMD ["php-fpm"]

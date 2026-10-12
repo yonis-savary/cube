@@ -14,6 +14,7 @@ use Cube\Data\Models\Exceptions\MissingModelPrimaryKeyException;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
 use Cube\Data\Models\Relations\Relation;
+use Cube\Env\Logger\Logger;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\ObjectParam;
 use InvalidArgumentException;
@@ -493,8 +494,14 @@ abstract class Model extends EventDispatcher
 
     protected function loadTree(array $tree, bool $skipLoaded=false)
     {
+        $modelRelations = static::relations();
         foreach ($tree as $relation => $subtree)
         {
+            if (!in_array($relation, $modelRelations, true)) {
+                Logger::getInstance()->error('Cannot load {relation} on model {model}', ['relation' => $relation, 'model' => static::class]);
+                continue;
+            }
+
             $skip = $skipLoaded && array_key_exists($relation, $this->references);
             if (!$skip)
                 $this->{$relation}()->load();

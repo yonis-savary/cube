@@ -267,6 +267,36 @@ class HttpClient
         return "$protocol://" . Path::join($rest, $path);
     }
 
+    // Base values often carry credentials : an absolute URL to another origin than baseURL() never receives them
+    protected function mergeWithBase(string $url, array $baseValues, array $values): array
+    {
+        if (!$this->isBaseOrigin($url))
+            return $values;
+
+        return array_merge($baseValues, $values);
+    }
+
+    protected function isBaseOrigin(string $url): bool
+    {
+        if (!str_contains($url, '://') || !$base = $this->baseURL())
+            return true;
+
+        return self::originOf($url) === self::originOf($base);
+    }
+
+    protected static function originOf(string $url): string
+    {
+        $parts = parse_url($url) ?: [];
+        $scheme = strtolower($parts['scheme'] ?? '');
+        $port = $parts['port'] ?? match ($scheme) {
+            'https' => 443,
+            'http' => 80,
+            default => '',
+        };
+
+        return $scheme.'://'.strtolower($parts['host'] ?? '').':'.$port;
+    }
+
     /**
      * Build a cURL handle for the Request object.
      *
@@ -288,7 +318,7 @@ class HttpClient
 
         $path = $this->path($request);
 
-        $getParams = array_merge($this->baseURLParameters(), $request->get() ?? []);
+        $getParams = $this->mergeWithBase($path, $this->baseURLParameters(), $request->get() ?? []);
         $urlParams = count($getParams)
             ? '?'.http_build_query($getParams, '', '&')
             : '';
@@ -297,7 +327,10 @@ class HttpClient
 
         $logger->info("CURL URL [{$url}]");
         $handle = curl_init($url);
-        $options = [];
+        $options = [
+            CURLOPT_PROTOCOLS_STR => 'http,https',
+            CURLOPT_REDIR_PROTOCOLS_STR => 'http,https',
+        ];
 
         if ($socket = $this->baseUnixSocket()) {
             $logger->info('Setting CURLOPT_UNIX_SOCKET_PATH to {socket}', ['socket' => $socket]);
@@ -336,7 +369,7 @@ class HttpClient
         $options[CURLOPT_RETURNTRANSFER] = true;
         $options[CURLOPT_HEADER] = true;
 
-        $postParams = array_merge($this->basePostParameters(), $request->post() ?? []);
+        $postParams = $this->mergeWithBase($path, $this->basePostParameters(), $request->post() ?? []);
         $uploads = $request->getUploads();
         $body = $request->getBody();
 
@@ -380,7 +413,7 @@ class HttpClient
             $options[CURLOPT_TIMEOUT] = $timeout;
         }
 
-        $headers = array_merge($this->baseHeaders(), $request->getHeaders());
+        $headers = $this->mergeWithBase($path, $this->baseHeaders(), $request->getHeaders());
 
         if ($userAgent) {
             $logger->info("Using 'user-agent' : {useragent}", ['useragent' => $userAgent]);
@@ -515,14 +548,14 @@ class HttpClient
 
         $path = $this->path($request);
 
-        $getParams = array_merge($this->baseURLParameters(), $request->get() ?? []);
+        $getParams = $this->mergeWithBase($path, $this->baseURLParameters(), $request->get() ?? []);
         $urlParams = count($getParams)
             ? '?'.http_build_query($getParams, '', '&')
             : '';
 
         $url = trim($path.$urlParams);
 
-        $postParams = array_merge($this->basePostParameters(), $request->post() ?? []);
+        $postParams = $this->mergeWithBase($path, $this->basePostParameters(), $request->post() ?? []);
 
         $uploads = $request->getUploads();
         if (count($uploads))
@@ -531,7 +564,7 @@ class HttpClient
         $body = $request->getBody();
         $body = $body ? $body : json_encode($postParams, JSON_THROW_ON_ERROR);
 
-        $headers = array_merge($this->baseHeaders(), $request->getHeaders());
+        $headers = $this->mergeWithBase($path, $this->baseHeaders(), $request->getHeaders());
         if ($userAgent)
             $headers['User-Agent'] = $userAgent;
 

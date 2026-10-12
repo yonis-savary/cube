@@ -3,7 +3,6 @@
 namespace Cube;
 
 use Cube\Security\Encryption\Encryption;
-use Cube\Security\Encryption\LegacyEncryption;
 
 function encrypt(string $content, ?string $key=null): string {
     return Encryption::encrypt($content, $key);
@@ -11,7 +10,5 @@ function encrypt(string $content, ?string $key=null): string {
 
 function decrypt(string $encrypted, ?string $key=null): string
 {
-    return Encryption::supports($encrypted)
-        ? Encryption::decrypt($encrypted, $key)
-        : LegacyEncryption::decrypt($encrypted, $key);
+    return Encryption::decrypt($encrypted, $key);
 }

@@ -13,10 +13,13 @@ composer require yonis-savary/cube
 Then, copy the server files
 
 ```sh
-cp -r vendor/yonis-savary/cube/server/* .
+cp -r vendor/yonis-savary/cube/server/. .
 ```
 
-Server files are utilities such as the `Public/index.php` entrypoint, `do` script (used to launch commands)...etc. Files that are at the root directory of your project
+Server files are utilities such as the `Public/index.php` entrypoint, `do` script (used to launch commands)...etc. Files that are at the root directory of your project.
+The trailing `/.` also copies `.gitignore` and `.dockerignore`, which keep your `.env` out of git and
+out of the Docker image : `docker-compose.yml` mounts it into the container instead, so create it
+before the first `docker compose up` (Docker creates a directory in place of a missing file).
 
 ## Configuration / Env
 
@@ -63,6 +66,10 @@ index and the applications files and, when APCu is available, snapshots them the
 does not notice a new controller or route file by itself : dispatch `PostDeployment` after each
 deployment (`php do cube:dispatch --event PostDeployment`) to empty it, and restart php-fpm so its
 APCu copy goes away as well.
+
+`isDebug()` is the default of `AutoloaderConfiguration(displayErrors:)` : outside a debug environment,
+PHP warnings and notices go to the error log instead of being printed into the response, absolute
+paths included.
 
 Values are read as written, so `APP_KEY=c2VjcmV0==` or `PASSWORD=abc!def` need no quotes. `true`,
 `on`, `yes` read as `"1"`, and `false`, `off`, `no`, `none`, `null` as `""`. Variables of the process

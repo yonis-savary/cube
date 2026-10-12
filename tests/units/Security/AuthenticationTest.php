@@ -253,7 +253,7 @@ class AuthenticationTest extends TestCase
         $decoy = ExposedPasswordAuthentication::publicDecoyHash();
 
         $this->assertEquals(PASSWORD_DEFAULT, password_get_info($decoy)['algo']);
-        $this->assertSame($decoy, ExposedPasswordAuthentication::publicDecoyHash());
+        $this->assertFalse(password_needs_rehash($decoy, PASSWORD_DEFAULT));
     }
 
     /**
@@ -265,12 +265,12 @@ class AuthenticationTest extends TestCase
     public function testRejectingAnUnknownLoginCostsWhatARealOneCosts()
     {
         $authentication = $this->newAuthentication();
-        $authentication->attempt('warmup', 'x'); // the decoy is built on first use
 
         $knownLogin = $this->timeOf(fn () => $authentication->attempt('alice', 'wrong-password'));
         $unknownLogin = $this->timeOf(fn () => $authentication->attempt('nobody-here', 'wrong-password'));
 
         $this->assertGreaterThan($knownLogin * 0.2, $unknownLogin);
+        $this->assertLessThan($knownLogin * 1.6, $unknownLogin, 'Building the decoy on each request made an unknown login twice as slow');
     }
 
     public function testAProviderMustBeGivenAModelClass()

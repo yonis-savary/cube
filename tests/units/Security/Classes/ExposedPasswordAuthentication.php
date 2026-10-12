@@ -11,6 +11,6 @@ class ExposedPasswordAuthentication extends PasswordAuthentication
 {
     public static function publicDecoyHash(): string
     {
-        return self::decoyHash();
+        return self::DECOY_HASH;
     }
 }

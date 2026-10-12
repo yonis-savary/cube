@@ -131,6 +131,7 @@ class Autoloader
         Path::resolveProjectPath($forceProjectPath);
 
         self::$configuration = $configuration ??= AutoloaderConfiguration::resolve();
+        ini_set('display_errors', $configuration->displayErrors ? '1' : '0');
         self::$autoloadCache = null;
 
         if ($configuration->cached) {

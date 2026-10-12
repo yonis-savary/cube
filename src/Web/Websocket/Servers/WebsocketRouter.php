@@ -43,6 +43,13 @@ class WebsocketRouter implements MessageComponentInterface
         $path = $connection->httpRequest->getUri()->getPath();
         $this->logger->info("New connection : {id} ({path})", ['id' => $connection->resourceId, "path" => $path]);
 
+        $origin = $connection->httpRequest->getHeaderLine('Origin');
+        if (!$this->configuration->allowsOrigin($origin)) {
+            $this->logger->info('Connection refused for origin [{origin}]', ['origin' => $origin]);
+            $connection->close();
+            return;
+        }
+
         foreach ($this->channels as $channel) {
             if (null === $slugValues = $channel->match($path))
                 continue;

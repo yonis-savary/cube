@@ -164,6 +164,43 @@ class HttpClientTest extends TestCase
         fclose($server);
     }
 
+    /** A client built for one API sent its credentials to any absolute URL it was given. */
+    public function testBaseValuesStayOnTheBaseOrigin()
+    {
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) substr(strrchr(stream_socket_get_name($server, false), ':'), 1);
+
+        $client = new class('http://127.0.0.1:1') extends ExposedHttpClient {
+            public function baseHeaders(): array
+            {
+                return ['X-Api-Token' => 'abc'];
+            }
+
+            public function baseURLParameters(): array
+            {
+                return ['api_key' => 'abc'];
+            }
+        };
+
+        $this->assertTrue($client->postJsonAsync("http://127.0.0.1:{$port}/events", ['name' => 'created']));
+
+        $connection = stream_socket_accept($server, 1);
+        $received = stream_get_contents($connection);
+        $this->assertStringNotContainsString('abc', $received);
+
+        fclose($connection);
+        fclose($server);
+    }
+
+    /** cURL speaks file://, gopher:// or dict:// as well : a URL taken from a user could read files or talk to Redis. */
+    public function testOnlyHttpIsFetched()
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/Curl error 1:/');
+
+        (new ExposedHttpClient())->fetch(new Request('GET', 'file:///etc/hostname'), userAgent: null);
+    }
+
     /** Every fetch logged its headers, so Authorization and API keys piled up in Storage/Logs. */
     public function testCredentialsAreRedactedFromTheLogs()
     {

@@ -7,6 +7,7 @@ use Cube\Env\Cache;
 use Cube\Env\Cache\CacheConfiguration;
 use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
+use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
 use Cube\Tests\Units\Web\Classes\CountingApi;
 use Cube\Tests\Units\Web\Classes\ProductReader;
@@ -259,6 +260,19 @@ class RouterTest extends TestCase
         $response = $router->route(new Request('GET', '/products'));
 
         $this->assertFalse($reached);
+        $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
+    }
+
+    /** The request was validated and its slug models found first : an unauthenticated client told existing ids from missing ones. */
+    public function testMiddlewaresRunBeforeTheRequestIsValidatedAndItsModelsFound()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(
+            Route::put('/products/{product}', fn (PriceRequest $request, Product $product) => Response::ok(), [BlockingMiddleware::class])
+        );
+
+        $response = $router->route(new Request('PUT', '/products/404', [], ['price' => 'not a price']));
+
         $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
     }
 

@@ -2,7 +2,6 @@
 
 namespace Cube\Web\Router;
 
-use Cube\Core\Injector;
 use Cube\Data\Bunch;
 use Cube\Data\Models\Model;
 use Cube\Web\Http\Request;
@@ -16,20 +15,18 @@ class RouterCallStack
      */
     protected array $middlewares = [];
 
-    protected mixed $controllerCallback;
-    protected mixed $controllerParams;
+    /** @var \Closure(Request):mixed */
+    protected \Closure $handler;
 
     protected int $index = 0;
 
-    public function __construct(
-        callable|array $controllerCallback,
-        mixed $controllerParams=[],
-        array $middlewares = [],
-    )
+    /**
+     * @param \Closure(Request):mixed $handler
+     */
+    public function __construct(\Closure $handler, array $middlewares = [])
     {
         $this->middlewares = $middlewares;
-        $this->controllerParams = $controllerParams;
-        $this->controllerCallback = $controllerCallback;
+        $this->handler = $handler;
     }
 
     /**
@@ -73,25 +70,14 @@ class RouterCallStack
         return Response::json($this->adaptSingleValue($response));
     }
 
-    protected function callControllerCallback(Request $request): mixed {
-        if (is_callable($this->controllerCallback))
-            return ($this->controllerCallback)($request, ...$this->controllerParams);
-
-        list($controllerClass, $method) = $this->controllerCallback;
-
-        $controller = Injector::getInstance()->instanciate($controllerClass);
-        return $controller->$method($request, ...$this->controllerParams);
-    }
-
     public function __invoke(Request $request): Response
     {
         $middleware = $this->getNextMiddleware();
 
-        if ($middleware)
-            return $this->adaptValueToResponse(
-                $middleware::handle($request, fn(Request $request) => ($this)($request))
-            );
+        $response = $middleware
+            ? $middleware::handle($request, fn(Request $request) => ($this)($request))
+            : ($this->handler)($request);
 
-        return $this->adaptValueToResponse($this->callControllerCallback($request));
+        return $this->adaptValueToResponse($response);
     }
 }
