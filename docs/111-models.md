@@ -276,11 +276,46 @@ In those rules a field is optional when its column is nullable or has a database
 are the relations : only the columns an insert cannot do without are required.
 
 Returning a model (or a `Bunch` of models) from a controller is enough : the router converts it to
-JSON with `toArray()`. And a `Model`-typed parameter in a route callback is fetched from the slug
-automatically — see [Routing and middlewares](./106-routing-and-middlewares.md).
+JSON, whole, unless a resource shapes it (described below). And a `Model`-typed parameter in a route callback is
+fetched from the slug automatically — see [Routing and middlewares](./106-routing-and-middlewares.md).
 
 For a full CRUD API over a model, let your controller delegate to a `ModelAPI` instead of writing
 the queries by hand — see [Controller and APIs](./107-controller-and-apis.md).
+
+## Shaping what a model answers
+
+A model returned as is leaves your application whole : every field and every loaded relation, a
+password hash included. A `ModelResource` decides what it looks like instead, and you choose it
+explicitly where the model is answered
+
+```php
+/**
+ * @extends ModelResource<User>
+ */
+class UserResource extends ModelResource
+{
+    public static function getModelClass(): string
+    {
+        return User::class;
+    }
+
+    public function toArray(Model $model): array
+    {
+        return [
+            'id' => $model->id,
+            'login' => $model->login,
+            'agency' => AgencyResource::of($model->agency), // a model left as is would be answered whole
+        ];
+    }
+}
+
+return UserResource::of($user);        // one model
+return UserResource::of($users);       // a list, an array or a Bunch
+```
+
+A model can have as many resources as it has representations : nothing is picked for you. A
+`ModelAPI` answers with the one its `getModelResource()` gives — see
+[Controller and APIs](./107-controller-and-apis.md#a-crud-api-from-a-model).
 
 ## Faking models
 

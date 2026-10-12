@@ -385,15 +385,21 @@ class Response extends HttpMessage
         return static::file($path, $code, $attachmentFile ?? basename($path));
     }
 
+    protected static function toJsonValue(mixed $value): mixed
+    {
+        return match (true) {
+            $value instanceof Model => $value->toArray(),
+            $value instanceof Bunch => self::toJsonValue($value->toArray()),
+            is_array($value) => array_map(self::toJsonValue(...), $value),
+            default => $value,
+        };
+    }
+
     public static function json(mixed $value, int $code = StatusCode::OK): static
     {
-        if ($value instanceof Model) {
-            $value = $value->toArray();
-        }
-
         return new static(
             $code,
-            json_encode($value, JSON_THROW_ON_ERROR),
+            json_encode(self::toJsonValue($value), JSON_THROW_ON_ERROR),
             ['Content-Type' => 'application/json']
         );
     }

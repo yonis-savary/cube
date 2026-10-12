@@ -2,8 +2,6 @@
 
 namespace Cube\Web\Router;
 
-use Cube\Data\Bunch;
-use Cube\Data\Models\Model;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Middleware;
@@ -37,28 +35,6 @@ class RouterCallStack
         return $this->middlewares[$this->index++] ?? false;
     }
 
-    protected function adaptSingleValue(mixed &$value): mixed
-    {
-        if ($value instanceof Bunch)
-            $value = $value->toArray();
-
-        if ($value instanceof Model)
-            $value = $value->toArray();
-
-        if (is_array($value))
-            $this->adaptArray($value);
-
-        return $value;
-    }
-
-    protected function adaptArray(array &$value): array
-    {
-        foreach ($value as &$row)
-            $row = $this->adaptSingleValue($row);
-
-        return $value;
-    }
-
     protected function adaptValueToResponse(mixed $response): Response
     {
         if ($response instanceof Response)
@@ -67,7 +43,7 @@ class RouterCallStack
         if ($response === null)
             return new Response();
 
-        return Response::json($this->adaptSingleValue($response));
+        return Response::json($response);
     }
 
     public function __invoke(Request $request): Response

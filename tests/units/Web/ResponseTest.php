@@ -7,6 +7,7 @@ use Cube\Event\Events;
 use Cube\Event\Events\DisplayingResponse;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Env\Classes\SpyLogger;
+use Cube\Data\Bunch;
 use Cube\Env\Environment;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\Request;
@@ -184,6 +185,12 @@ class ResponseTest extends TestCase
         $configuration = Environment::withInstance($environment, fn () => new CORSConfiguration(['https://example.org']));
 
         $this->assertFalse($configuration->allowCredentials);
+    }
+
+    public function testJsonAnswersACollectionAsAList()
+    {
+        $this->assertEquals([1, 2, 3], Response::json(Bunch::of([1, 2, 3]))->getJSON());
+        $this->assertEquals(['totals' => [1, 2]], Response::json(['totals' => Bunch::of([1, 2])])->getJSON());
     }
 
     public function testFileAnswersTheFileContent()

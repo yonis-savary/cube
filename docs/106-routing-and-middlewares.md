@@ -167,7 +167,7 @@ return Response::notFound();
 ```
 
 Anything else is converted to a JSON response for you — a `Model`, a `Bunch`, an array, or any
-nesting of those, is recursively converted with `toArray()`
+nesting of those, every model answered whole unless a `ModelResource` shapes it (see [Models](./111-models.md#shaping-what-a-model-answers))
 
 ```php
 public static function list()

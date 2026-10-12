@@ -245,7 +245,7 @@ class ProductModelAPI extends ModelAPI
 ```
 
 Then wire it in a controller. Its constructor receives the `ModelAPI`, so its route methods are
-instance methods
+instance methods. Writing needs a `Request` subclass listing the writable fields
 
 ```php
 class ProductController extends Controller
@@ -264,19 +264,18 @@ class ProductController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
+    public function create(WriteProductRequest $request): Response
     {
         return $this->products->createItems($request);
     }
 
-    /** @return Product[] */
-    public function read(Request $request): array
+    public function read(SearchProductRequest $request): array
     {
         return $this->products->readItems($request);
     }
 
     // The slug becomes the Product, Cube answers 404 when it does not exist
-    public function update(Request $request, Product $product): Product
+    public function update(WriteProductRequest $request, Product $product): array
     {
         return $this->products->updateItem($product, $request);
     }
@@ -286,15 +285,26 @@ class ProductController extends Controller
         return $this->products->deleteItem($product);
     }
 }
+
+class WriteProductRequest extends Request
+{
+    public function getRules(): array|Rule
+    {
+        return [
+            'name' => Param::string()->optional(),
+            'price_dollar' => Param::float(true)->optional(),
+        ];
+    }
+}
 ```
 
 Since the routes are yours, so is everything around them : expose only the verbs you need, put them
-behind a middleware, add OpenAPI attributes or a typed `Request` like on any other route.
+behind a middleware, add OpenAPI attributes like on any other route.
 
 When you have nothing to override, `forModel()` builds a `ModelAPI` without writing a class
 
 ```php
-public function read(Request $request): array
+public function read(SearchProductRequest $request): array
 {
     return ModelAPI::forModel(Product::class)->readItems($request);
 }
@@ -306,37 +316,35 @@ which an anonymous class does not have.
 | Method | Does | Answers |
 |---|---|---|
 | `createItems(Request)` | creates one row from the validated request, or several when it is a list | `201` with the created rows, `422` (plain text) when the validated value is not an object or a list |
-| `readItems(Request)` | reads rows, filtered by the validated fields | the matching models |
-| `updateItem(Model, Request)` | updates the given row with the validated fields, the primary key excepted | the updated model |
+| `readItems(Request)` | reads rows, filtered by the validated fields | the matching rows |
+| `updateItem(Model, Request)` | updates the given row with the validated fields, the primary key excepted | the updated row |
 | `deleteItem(Model)` | deletes the given row | `200` |
+
+Every row is answered whole, a password hash included. Override `getModelResource()` to answer
+through a `ModelResource` of yours — see [Models](./111-models.md#shaping-what-a-model-answers)
+
+```php
+class PublicProductAPI extends ModelAPI
+{
+    public function getModelClass(): string
+    {
+        return Product::class;
+    }
+
+    protected function getModelResource(): ?ModelResource
+    {
+        return new PublicProductResource();
+    }
+}
+```
 
 `updateItem()` and `deleteItem()` throw an `InvalidArgumentException` when the item is not an
 instance of the class `getModelClass()` returns.
 
-The request type decides what a client may write. A `Request` subclass writes what its rules
-validate. A plain `Request` declares no rule, so the model fields are validated instead : every field
-except the primary key, the relations and the hidden fields (`422` with the errors when a value is
-invalid, every field optional for `updateItem()`). That still lets a client set any other column, like
-a `role` or an `owner_id` : type the parameter with a `Request` subclass listing the writable fields
-
-```php
-class UpdateProductRequest extends Request
-{
-    public function getRules(): array|Rule
-    {
-        return [
-            'name' => Param::string(),
-            'price_dollar' => Param::float(),
-        ];
-    }
-}
-
-// a client sending "id" or any other column is ignored
-public function update(UpdateProductRequest $request, Product $product): Product
-{
-    return $this->products->updateItem($product, $request);
-}
-```
+The request type decides what a client may write and search : a `Request` subclass writes and
+filters on what its rules validate, nothing more. A plain `Request` declares no rule, so it could
+reach any column — a `role`, an `owner_id`, a password hash. `createItems()` and `updateItem()`
+throw an `InvalidArgumentException` when given one, and `readItems()` filters on nothing with it.
 
 Reading deserves a note : a validated parameter matching a `STRING` field becomes a `LIKE` search,
 split on spaces, every word having to match. Any other field type is compared for equality.
@@ -350,27 +358,4 @@ GET /product?id=12              ->  id = 12
 Only the first 8 words are searched, so a long value cannot build an unbounded query : override
 `getMaxSearchWords()` to change it. `readItems()` has no pagination, put a limit of your own on large
 tables.
-
-Columns a client must never see, write, nor search on, are declared by overriding `getHiddenFields()`.
-Every method leaves them out of the models and rows it answers, `createItems()` and `updateItem()`
-never write them, even when the request validates them, and `readItems()` ignores them as filters
-
-```php
-class UserModelAPI extends ModelAPI
-{
-    public function getModelClass(): string
-    {
-        return User::class;
-    }
-
-    // without it, GET /user?password=$2y$10$a answers whoever's hash starts that way
-    protected function getHiddenFields(): array
-    {
-        return ['password', 'reset_token'];
-    }
-}
-```
-
-The models `readItems()` and `updateItem()` answer no longer hold the hidden fields : read them
-again with `User::find()` if your own code needs them.
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./106-routing-and-middlewares.md">Previous : Routing and middlewares</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./108-storage-and-caching.md">Next : Storage and caching</a></div></td></tr></table>

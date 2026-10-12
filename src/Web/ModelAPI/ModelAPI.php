@@ -2,18 +2,15 @@
 
 namespace Cube\Web\ModelAPI;
 
-use Cube\Core\Exceptions\ResponseException;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Query;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\Rules\AnyParam;
-use Cube\Web\Http\Rules\ObjectParam;
-use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\StatusCode;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
-use Cube\Utils\Utils;
+use Cube\Data\Models\ModelResource;
 use InvalidArgumentException;
 
 /**
@@ -43,79 +40,83 @@ abstract class ModelAPI
         };
     }
 
+    /**
+     * @return ?ModelResource<TModel> What every method answers with, `null` for the whole model
+     */
+    protected function getModelResource(): ?ModelResource
+    {
+        return null;
+    }
+
+    /**
+     * @param TModel $item
+     * @return array<string,mixed>
+     */
+    protected function answer(Model $item): array
+    {
+        return $this->getModelResource()?->toArray($item) ?? $item->toArray();
+    }
+
     public function createItems(Request $request): Response
     {
+        $this->assertDeclaresItsFields($request, __FUNCTION__);
+
         $model = $this->getModelClass();
-        $validated = $this->validateWrite($request, $this->getImplicitWriteRule());
+        $validated = $request->validated();
 
         if (!is_array($validated))
             return Response::text('Array expected got '.gettype($validated), StatusCode::UNPROCESSABLE_CONTENT);
 
         $instances = Bunch::of($validated)
-            ->map(fn (array $row) => $this->withoutHiddenKeys($row))
             ->map(fn (array $row) => $model::fromArray($row)->save())
-            ->map(fn (Model $newRow) => $this->withoutHiddenFields($newRow)->toArray())
+            ->map(fn (Model $newRow) => $this->answer($newRow))
             ->toArray();
 
         return Response::json($instances, StatusCode::CREATED);
     }
 
     /**
-     * @return string[] Columns never sent back, written, nor accepted as a filter (password hashes, tokens...)
-     */
-    protected function getHiddenFields(): array
-    {
-        return [];
-    }
-
-    /**
-     * @return TModel[]
+     * A plain `Request` declares no rule : it filters on nothing, since any column (a password hash included) would answer
+     *
+     * @return array<int,array<string,mixed>>
      */
     public function readItems(Request $request): array
     {
         $model = $this->getModelClass();
         $fields = $model::fields();
-        $hiddenFields = $this->getHiddenFields();
+        $filters = $this->declaresItsFields($request) ? $request->validated() : [];
 
         $query = $model::select();
-        foreach ($request->validated() as $fieldName => $value) {
-            if (in_array($fieldName, $hiddenFields, true) || !($field = $fields[$fieldName] ?? false)) {
+        foreach ($filters as $fieldName => $value) {
+            if (!$field = $fields[$fieldName] ?? false)
                 continue;
-            }
 
-            switch ($field->type) {
-                case ModelField::STRING:
-                    self::makeSearchQuery($query, $fieldName, $value, $this->getMaxSearchWords());
-                    break;
-
-                default:
-                    $query->where($fieldName, $value);
-                    break;
-            }
+            match ($field->type) {
+                ModelField::STRING => self::makeSearchQuery($query, $fieldName, $value, $this->getMaxSearchWords()),
+                default => $query->where($fieldName, $value),
+            };
         }
 
         return Bunch::of($query->fetch())
-            ->map(fn (Model $item) => $this->withoutHiddenFields($item))
+            ->map(fn (Model $item) => $this->answer($item))
             ->get();
     }
 
     /**
      * @param TModel $item
-     * @return TModel
+     * @return array<string,mixed>
      */
-    public function updateItem(Model $item, Request $request): Model
+    public function updateItem(Model $item, Request $request): array
     {
         $this->assertHandles($item);
+        $this->assertDeclaresItsFields($request, __FUNCTION__);
 
-        $partialRule = $this->getImplicitWriteRule();
-        $partialRule->withOptionalKeys(array_keys($partialRule->getRules()));
-
-        $data = $this->withoutHiddenKeys($this->validateWrite($request, $partialRule));
+        $data = $request->validated();
         unset($data[$item::primaryKey()]);
 
         $item->merge($data)->save();
 
-        return $this->withoutHiddenFields($item::find($item->id()));
+        return $this->answer($item::find($item->id()));
     }
 
     /**
@@ -130,54 +131,16 @@ abstract class ModelAPI
         return Response::ok();
     }
 
-    /**
-     * @param TModel $item
-     * @return TModel
-     */
-    protected function withoutHiddenFields(Model $item): Model
+    protected function declaresItsFields(Request $request): bool
     {
-        foreach ($this->getHiddenFields() as $field)
-            unset($item->data->{$field});
-
-        return $item;
+        return !$request->getObjectParam() instanceof AnyParam;
     }
 
-    protected function withoutHiddenKeys(array $row): array
+    // Writing what a plain Request carries would let a client set any column : a role, an owner, a password hash
+    protected function assertDeclaresItsFields(Request $request, string $method): void
     {
-        return array_diff_key($row, array_flip($this->getHiddenFields()));
-    }
-
-    protected function getImplicitWriteRule(): ObjectParam
-    {
-        $model = $this->getModelClass();
-
-        $hiddenFields = $this->getHiddenFields();
-        if ($primaryKey = $model::primaryKey())
-            $hiddenFields[] = $primaryKey;
-
-        $modelRules = $model::toObjectParam(withRelations: false)->getRules();
-
-        return Param::object($modelRules)->without($hiddenFields);
-    }
-
-    protected function validateWrite(Request $request, ObjectParam $implicitRule): mixed
-    {
-        if (!$request->getObjectParam() instanceof AnyParam)
-            return $request->validated();
-
-        $body = $request->all();
-        $rule = is_array($body) && Utils::isList($body)
-            ? Param::array($implicitRule)
-            : $implicitRule;
-
-        $validation = $rule->validate($body, 'request');
-        if ($validation->isValid())
-            return $validation->getResult();
-
-        $response = Response::json($validation->getErrors(), StatusCode::UNPROCESSABLE_CONTENT)
-            ->withHeaders(['Content-Type' => 'application/json']);
-
-        throw new ResponseException('Given request is not valid', $response);
+        if (!$this->declaresItsFields($request))
+            throw new InvalidArgumentException(static::class."::{$method}() needs a Request subclass whose rules list the writable fields, got a plain ".$request::class);
     }
 
     protected function assertHandles(Model $item): void

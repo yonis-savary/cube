@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Web\Classes;
 
+use Cube\Data\Models\ModelResource;
 use Cube\Tests\Units\Models\User;
 use Cube\Web\ModelAPI\ModelAPI;
 
@@ -15,8 +16,8 @@ class UserAPI extends ModelAPI
         return User::class;
     }
 
-    protected function getHiddenFields(): array
+    protected function getModelResource(): ?ModelResource
     {
-        return ['password'];
+        return new UserResource();
     }
 }

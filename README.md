@@ -34,6 +34,7 @@ Tests can be automatically written by agents.
 - 💿 Data
   - Model Manipulation (Supported DBMS : MySQL/MariaDB, SQLite, Postgres)
   - Automatic Model Generation !
+  - Model Resources (choose how each model is answered, sensitive fields included)
   - Model Factories (fake models from their fields, with Faker)
   - DB Migration system !
   - Password Authentication System (+ Support for Custom Authentication)

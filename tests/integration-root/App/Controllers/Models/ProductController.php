@@ -2,6 +2,8 @@
 
 namespace App\Controllers\Models;
 
+use App\Controllers\Requests\ReadProductsRequest;
+use App\Controllers\Requests\WriteProductsRequest;
 use App\Models\Product;
 use Cube\Web\Controller;
 use Cube\Web\Http\Request;
@@ -25,20 +27,17 @@ class ProductController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
+    public function create(WriteProductsRequest $request): Response
     {
         return $this->products->createItems($request);
     }
 
-    /**
-     * @return Product[]
-     */
-    public function read(Request $request): array
+    public function read(ReadProductsRequest $request): array
     {
         return $this->products->readItems($request);
     }
 
-    public function update(Request $request, Product $product): Product
+    public function update(WriteProductsRequest $request, Product $product): array
     {
         return $this->products->updateItem($product, $request);
     }

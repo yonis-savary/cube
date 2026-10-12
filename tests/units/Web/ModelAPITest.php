@@ -2,16 +2,18 @@
 
 namespace Cube\Tests\Units\Web;
 
-use Cube\Core\Exceptions\ResponseException;
 use Cube\Data\Database\Database;
+use Cube\Data\Models\ModelResource;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
-use Cube\Tests\Units\Web\Classes\PricelessProductAPI;
 use Cube\Tests\Units\Web\Classes\ProductAPI;
+use Cube\Tests\Units\Web\Classes\ProductNameResource;
 use Cube\Tests\Units\Web\Classes\UserAPI;
+use Cube\Tests\Units\Web\Examples\ProductListRequest;
 use Cube\Tests\Units\Web\Examples\ProductNameRequest;
+use Cube\Tests\Units\Web\Examples\ProductRequest;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\ModelAPI\ModelAPI;
@@ -42,6 +44,15 @@ class ModelAPITest extends TestCase
         Database::removeInstance();
     }
 
+    /**
+     * @param array<int,array<string,mixed>> $rows
+     * @return string[]
+     */
+    protected function namesOf(array $rows): array
+    {
+        return array_column($rows, 'name');
+    }
+
     public function testReadingAnswersEveryRow()
     {
         Product::insertArray(['name' => 'Screen']);
@@ -55,10 +66,9 @@ class ModelAPITest extends TestCase
         Product::insertArray(['name' => 'Office Screen']);
         Product::insertArray(['name' => 'Mouse']);
 
-        $products = (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => 'Screen']));
+        $products = (new ProductAPI())->readItems(new ProductNameRequest('GET', '/product', ['name' => 'Screen']));
 
-        $this->assertCount(1, $products);
-        $this->assertEquals('Office Screen', $products[0]->name);
+        $this->assertEquals(['Office Screen'], $this->namesOf($products));
     }
 
     /**
@@ -71,9 +81,9 @@ class ModelAPITest extends TestCase
             Product::insertArray(['name' => 'Office Screen']);
             Product::insertArray(['name' => 'Mouse']);
 
-            $products = (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => 'Screen']));
+            $products = (new ProductAPI())->readItems(new ProductNameRequest('GET', '/product', ['name' => 'Screen']));
 
-            $this->assertEquals(['Office Screen'], array_map(fn (Product $product) => $product->name, $products));
+            $this->assertEquals(['Office Screen'], $this->namesOf($products));
         });
     }
 
@@ -87,9 +97,8 @@ class ModelAPITest extends TestCase
             Product::insertArray(['name' => 'snake_case']);
             Product::insertArray(['name' => 'back\\slash']);
 
-            $names = fn (string $search) => array_map(
-                fn (Product $product) => $product->name,
-                (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => $search]))
+            $names = fn (string $search) => $this->namesOf(
+                (new ProductAPI())->readItems(new ProductNameRequest('GET', '/product', ['name' => $search]))
             );
 
             $this->assertEquals(['100% cotton'], $names('100%'));
@@ -104,14 +113,23 @@ class ModelAPITest extends TestCase
         Product::insertArray(['name' => 'a b c d e f g h']);
 
         $search = 'a b c d e f g h '.str_repeat('missing ', 50);
-        $products = (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => $search]));
+        $products = (new ProductAPI())->readItems(new ProductNameRequest('GET', '/product', ['name' => $search]));
 
         $this->assertCount(1, $products);
     }
 
+    /** A plain Request declares no rule : it used to filter on any column, a password hash included. */
+    public function testAPlainRequestFiltersOnNothing()
+    {
+        User::insertArray(['login' => 'alice', 'password' => 'hash-of-alice', 'type' => 1]);
+        $everyone = count((new UserAPI())->readItems(new Request('GET', '/user')));
+
+        $this->assertCount($everyone, (new UserAPI())->readItems(new Request('GET', '/user', ['password' => 'no-match'])));
+    }
+
     public function testCreatingAnswersCreated()
     {
-        $response = (new ProductAPI())->createItems(new Request('POST', '/product', [], ['name' => 'Keyboard']));
+        $response = (new ProductAPI())->createItems(new ProductNameRequest('POST', '/product', [], ['name' => 'Keyboard']));
 
         $this->assertEquals(StatusCode::CREATED, $response->getStatusCode());
         $this->assertEquals('Keyboard', Product::findWhere(['name' => 'Keyboard'])->name);
@@ -119,7 +137,7 @@ class ModelAPITest extends TestCase
 
     public function testCreatingSeveralRowsFromAJsonList()
     {
-        $request = new Request(
+        $request = new ProductListRequest(
             'POST',
             '/product',
             [],
@@ -140,9 +158,9 @@ class ModelAPITest extends TestCase
     {
         $product = Product::insertArray(['name' => 'Screen']);
 
-        $updated = (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['name' => 'Bigger screen']));
+        $updated = (new ProductAPI())->updateItem($product, new ProductRequest('PUT', '/product', [], ['name' => 'Bigger screen']));
 
-        $this->assertEquals('Bigger screen', $updated->name);
+        $this->assertEquals('Bigger screen', $updated['name']);
         $this->assertEquals('Bigger screen', Product::find($product->id())->name);
     }
 
@@ -150,9 +168,9 @@ class ModelAPITest extends TestCase
     {
         $product = Product::insertArray(['name' => 'Screen']);
 
-        $updated = (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['id' => 404, 'name' => 'Moved']));
+        $updated = (new ProductAPI())->updateItem($product, new ProductRequest('PUT', '/product', [], ['id' => 404, 'name' => 'Moved']));
 
-        $this->assertEquals($product->id(), $updated->id());
+        $this->assertEquals($product->id(), $updated['id']);
         $this->assertNull(Product::find(404));
     }
 
@@ -169,7 +187,7 @@ class ModelAPITest extends TestCase
 
         $updated = (new ProductAPI())->updateItem($product, new ProductNameRequest('PUT', '/product', [], ['name' => 'Renamed', 'price_dollar' => 0]));
 
-        $this->assertEquals('Renamed', $updated->name);
+        $this->assertEquals('Renamed', $updated['name']);
         $this->assertEquals(10, Product::find($product->id())->price_dollar);
     }
 
@@ -183,62 +201,49 @@ class ModelAPITest extends TestCase
         $this->assertCount(2, $products);
     }
 
-    /** readItems() used to answer every column, and to search inside any of them : an oracle on password hashes. */
-    public function testHiddenFieldsAreNeitherAnsweredNorSearched()
-    {
-        User::insertArray(['login' => 'alice', 'password' => 'hash-of-alice', 'type' => 1]);
-        $api = new UserAPI();
-
-        $users = $api->readItems(new Request('GET', '/user', ['login' => 'alice']));
-        $this->assertCount(1, $users);
-        $this->assertArrayNotHasKey('password', $users[0]->toArray());
-
-        $everyone = count($api->readItems(new Request('GET', '/user')));
-        $this->assertCount($everyone, $api->readItems(new Request('GET', '/user', ['password' => 'no-match'])));
-
-        $updated = $api->updateItem($users[0], new Request('PUT', '/user', [], ['login' => 'alicia']));
-        $this->assertArrayNotHasKey('password', $updated->toArray());
-        $this->assertEquals('hash-of-alice', User::find($users[0]->id())->password);
-    }
-
-    /** Hidden fields were only left out of what was answered : a client could still overwrite a password hash. */
-    public function testHiddenFieldsCannotBeWritten()
+    /** Writing what a plain Request carries let a client set any column : `PUT /user/5 {"password": ...}` took the account over. */
+    public function testWritingNeedsARequestDeclaringItsFields()
     {
         $alice = User::insertArray(['login' => 'alice', 'password' => 'hash-of-alice', 'type' => 1]);
 
-        (new UserAPI())->updateItem($alice, new Request('PUT', '/user', [], ['login' => 'alicia', 'password' => 'hash-of-the-attacker']));
-
-        $this->assertEquals('alicia', User::find($alice->id())->login);
-        $this->assertEquals('hash-of-alice', User::find($alice->id())->password);
-
-        $created = (new PricelessProductAPI())->createItems(new Request('POST', '/product', [], ['name' => 'Keyboard', 'price_dollar' => 1]))->getJSON();
-        $this->assertArrayNotHasKey('price_dollar', $created[0]);
-        $this->assertNull(Product::findWhere(['name' => 'Keyboard'])->price_dollar);
-    }
-
-    public function testAPlainRequestCannotChooseThePrimaryKeyOfANewRow()
-    {
-        (new ProductAPI())->createItems(new Request('POST', '/product', [], ['id' => 404, 'name' => 'Keyboard']));
-
-        $this->assertNull(Product::find(404));
-        $this->assertNotNull(Product::findWhere(['name' => 'Keyboard']));
-    }
-
-    /** A plain Request validates nothing : the model fields are the rule, and an update may send only some of them. */
-    public function testAPlainRequestIsValidatedAgainstTheModelFields()
-    {
-        $product = Product::insertArray(['name' => 'Screen', 'price_dollar' => 10]);
-
-        try {
-            (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['created_at' => 'not a date']));
-            $this->fail('An invalid field should have been refused');
-        } catch (ResponseException $exception) {
-            $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $exception->response->getStatusCode());
+        foreach ([
+            fn () => (new UserAPI())->updateItem($alice, new Request('PUT', '/user', [], ['password' => 'hash-of-the-attacker'])),
+            fn () => (new UserAPI())->createItems(new Request('POST', '/user', [], ['login' => 'eve', 'password' => 'x', 'type' => 1])),
+        ] as $write) {
+            try {
+                $write();
+                $this->fail('A plain Request should not be written');
+            } catch (InvalidArgumentException $exception) {
+                $this->assertStringContainsString('needs a Request subclass', $exception->getMessage());
+            }
         }
 
-        $updated = (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['price_dollar' => 20]));
-        $this->assertEquals('Screen', $updated->name);
-        $this->assertEquals(20, $updated->price_dollar);
+        $this->assertEquals('hash-of-alice', User::find($alice->id())->password);
+    }
+
+    /** The default resource of a model decides what every method answers : the password hash never leaves. */
+    public function testAnswersGoThroughTheModelResource()
+    {
+        User::insertArray(['login' => 'alice', 'password' => 'hash-of-alice', 'type' => 1]);
+
+        $users = (new UserAPI())->readItems(new Request('GET', '/user'));
+
+        $this->assertArrayHasKey('login', $users[0]);
+        $this->assertArrayNotHasKey('password', $users[0]);
+    }
+
+    public function testAnApiCanAnswerWithAnotherResource()
+    {
+        Product::insertArray(['name' => 'Screen', 'price_dollar' => 10]);
+
+        $api = new class extends ProductAPI {
+            protected function getModelResource(): ?ModelResource
+            {
+                return new ProductNameResource();
+            }
+        };
+
+        $this->assertEquals([['name' => 'Screen']], $api->readItems(new Request('GET', '/product')));
     }
 
     public function testDeleting()
