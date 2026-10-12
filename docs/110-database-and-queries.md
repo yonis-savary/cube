@@ -218,6 +218,13 @@ the query refuses anything else than a plain name : letters, digits and undersco
 Product::select()->order('id, (SELECT 1) --'); // InvalidArgumentException
 ```
 
+A `LIKE` condition always declares `\` as its escape character, on every driver. Escape a value you
+search as written with `Query::escapeLike()`, so its `%` and `_` stop being wildcards
+
+```php
+Product::select()->where('name', '%'.Query::escapeLike($request->param('search')).'%', 'LIKE');
+```
+
 `whereRaw()` and `selectExpression()` are inserted as is, with no check at all. A valid name taken
 from request input is still a column the client chose : check it against a fixed list first
 

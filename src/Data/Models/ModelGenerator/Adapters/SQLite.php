@@ -117,6 +117,8 @@ class SQLite extends DatabaseAdapter
 
     protected function buildTable(string $table): Table
     {
+        Table::assertTableName($table);
+
         $db = $this->database;
 
         $dummyModel = new DummyModel();

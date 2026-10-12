@@ -15,7 +15,7 @@ class SignedPayload
     private const MAC_ALGORITHM = 'sha256';
     private const MAC_LENGTH = 64;
 
-    public static function sign(string $payload, ?string $key = null): string
+    public static function sign(string $payload, #[\SensitiveParameter] ?string $key = null): string
     {
         return self::computeMac($payload, $key).$payload;
     }
@@ -23,7 +23,7 @@ class SignedPayload
     /**
      * @return ?string The original payload, `null` when the signature does not match
      */
-    public static function verify(string $signed, ?string $key = null): ?string
+    public static function verify(string $signed, #[\SensitiveParameter] ?string $key = null): ?string
     {
         $mac = substr($signed, 0, self::MAC_LENGTH);
         $payload = substr($signed, self::MAC_LENGTH);
@@ -33,7 +33,7 @@ class SignedPayload
             : null;
     }
 
-    private static function computeMac(string $payload, ?string $key): string
+    private static function computeMac(string $payload, #[\SensitiveParameter] ?string $key): string
     {
         $key ??= env('APP_KEY', false);
         if (!$key)

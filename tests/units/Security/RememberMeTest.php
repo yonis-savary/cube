@@ -77,7 +77,24 @@ class RememberMeTest extends TestCase
         $token = $rememberMe->lastCookie()['value'];
 
         $this->assertNotEmpty($token);
-        $this->assertEquals($user->id(), $this->cache->get($token));
+        $this->assertEquals($user->id(), $rememberMe->rememberedUser($token));
+    }
+
+    /** Tokens were cache keys as is : a file name in Storage/Cache was a working cookie. */
+    public function testOnlyAHashOfTheTokenIsStored()
+    {
+        $driver = new LocalDiskCache($this->storage);
+        $cache = new Cache(new CacheConfiguration($driver));
+        $rememberMe = new SpyRememberMe($cache, $this->authentication, new UserRegisterConfiguration());
+        $rememberMe->register(User::findWhere(['login' => 'alice']));
+        $token = $rememberMe->lastCookie()['value'];
+
+        $driver->save();
+
+        $this->assertFalse($cache->has($token));
+        $this->assertNotEmpty($this->storage->exploreFiles());
+        foreach ($this->storage->exploreFiles() as $file)
+            $this->assertStringNotContainsString($token, basename($file).file_get_contents($file));
     }
 
     public function testARequestWithoutACookieIsLeftAlone()
@@ -134,16 +151,14 @@ class RememberMeTest extends TestCase
     public function testATokenPointingAtAGoneUserIsDropped()
     {
         $rememberMe = $this->newRememberMe();
-        $rememberMe->register(User::findWhere(['login' => 'alice']));
+        $rememberMe->register(new User(['id' => 404, 'login' => 'gone', 'password' => '', 'type' => 1]));
         $token = $rememberMe->lastCookie()['value'];
-
-        $this->cache->set($token, 404);
 
         $request = $this->requestWithToken($token);
 
         $this->assertSame($request, $rememberMe->handleRequest($request));
         $this->assertFalse($this->authentication->isLogged());
-        $this->assertFalse($this->cache->has($token));
+        $this->assertNull($rememberMe->rememberedUser($token));
     }
 
     public function testAnAlreadyLoggedUserIsNotLookedUpAgain()
@@ -187,7 +202,7 @@ class RememberMeTest extends TestCase
 
         $rememberMe->forget($this->requestWithToken($token));
 
-        $this->assertFalse($this->cache->has($token));
+        $this->assertNull($rememberMe->rememberedUser($token));
 
         $cookie = $rememberMe->lastCookie();
         $this->assertEquals('', $cookie['value']);
@@ -202,7 +217,7 @@ class RememberMeTest extends TestCase
 
         $rememberMe->forget($token);
 
-        $this->assertFalse($this->cache->has($token));
+        $this->assertNull($rememberMe->rememberedUser($token));
     }
 
     public function testTheTokenCookieIsKeptAwayFromScripts()
@@ -236,7 +251,7 @@ class RememberMeTest extends TestCase
 
         $rememberMe->handleRequest($this->requestWithToken($firstToken));
 
-        $this->assertFalse($this->cache->has($firstToken), 'The replaced token still points at the user');
+        $this->assertNull($rememberMe->rememberedUser($firstToken), 'The replaced token still points at the user');
     }
 
     /** Any cache key used to be accepted as a token, so a cookie naming another entry logged someone in. */
@@ -268,8 +283,8 @@ class RememberMeTest extends TestCase
             });
 
             $this->assertCount($cookiesBefore + 1, $rememberMe->sentCookies);
-            $this->assertFalse($this->cache->has($firstToken));
-            $this->assertTrue($this->cache->has($rememberMe->lastCookie()['value']));
+            $this->assertNull($rememberMe->rememberedUser($firstToken));
+            $this->assertNotNull($rememberMe->rememberedUser($rememberMe->lastCookie()['value']));
 
             $this->authentication->logout();
         }
@@ -287,8 +302,27 @@ class RememberMeTest extends TestCase
 
         $rememberMe->forgetUser($user);
 
-        $this->assertFalse($this->cache->has($laptop));
-        $this->assertFalse($this->cache->has($phone));
+        $this->assertNull($rememberMe->rememberedUser($laptop));
+        $this->assertNull($rememberMe->rememberedUser($phone));
+
+        $rememberMe->register($user);
+        $this->assertEquals($user->id(), $rememberMe->rememberedUser($rememberMe->lastCookie()['value']));
+    }
+
+    /** The token list of a user was read, modified and written back : two logins at once left one token out of forgetUser()'s reach. */
+    public function testForgetUserRevokesTokensIssuedConcurrently()
+    {
+        $user = User::findWhere(['login' => 'alice']);
+        $laptop = $this->newRememberMe();
+        $phone = $this->newRememberMe();
+
+        $laptop->register($user);
+        $phone->register($user);
+
+        $this->newRememberMe()->forgetUser($user);
+
+        $this->assertNull($laptop->rememberedUser($laptop->lastCookie()['value']));
+        $this->assertNull($phone->rememberedUser($phone->lastCookie()['value']));
     }
 
     /** forget() deleted whatever cache entry the cookie named. */

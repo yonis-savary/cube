@@ -57,7 +57,11 @@ class LocalDiskQueueDriver extends BasicQueueDriver
     public function push(array $args): void
     {
         $storage = $this->getStorage();
-        $name = uniqid(time().'-');
+        $name = sprintf(
+            '%020d-%s',
+            (int) (microtime(true) * 1_000_000),
+            bin2hex(random_bytes(8))
+        );
 
         // Written under a locked name first : a worker must never read a file still being written
         $storage->write("#{$name}", serialize($args));

@@ -107,12 +107,17 @@ class LocalDiskCache implements CacheDriverInterface
     /**
      * Destroy every element of the cache.
      */
-    public function clear(): void
+    public function clear(): array
     {
+        $removed = [];
+
         foreach ($this->index as $object) {
+            $removed[] = $object->getFile() ?? $object->key;
             $object->destroy();
         }
 
         $this->index = [];
+
+        return $removed;
     }
 }

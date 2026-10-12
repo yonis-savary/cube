@@ -4,7 +4,6 @@ namespace Cube\Security;
 
 use Closure;
 use Cube\Core\Component;
-use Cube\Data\Bunch;
 use Cube\Env\Cache;
 use Cube\Env\Storage;
 use Cube\Web\Http\Request;
@@ -49,14 +48,15 @@ class RememberMe implements Middleware
             return $request;
         }
 
-        if (!$this->isToken($token) || !$userId = $this->cache->try($token)) {
+        $userId = $this->rememberedUserOf($token);
+        if (!$this->isToken($token) || null === $userId) {
             return $request;
         }
 
         $this->issuedToken = null;
 
         if (!$this->authentication->loginById($userId)) {
-            $this->dropToken($token, $userId);
+            $this->dropToken($token);
             return $request;
         }
 
@@ -68,7 +68,7 @@ class RememberMe implements Middleware
         ))->dispatch();
 
         if ($this->issuedToken || $this->configuration->refreshTokenOnRemember) {
-            $this->dropToken($token, $userId);
+            $this->dropToken($token);
         }
 
         if ($this->configuration->refreshTokenOnRemember && !$this->issuedToken) {
@@ -86,9 +86,10 @@ class RememberMe implements Middleware
 
         $token = bin2hex(random_bytes(32));
         $duration = $this->configuration->cookieDuration;
+        $generation = $this->generationOf($userId) ?? self::newGeneration();
 
-        $this->cache->set($token, $userId, $duration);
-        $this->userTokens()->set((string) $userId, [...$this->liveTokensOf($userId), $token], $duration);
+        $this->userGenerations()->set((string) $userId, $generation, $duration);
+        $this->tokens()->set(self::keyOf($token), ['user' => $userId, 'generation' => $generation], $duration);
 
         $this->issuedToken = $token;
         $this->sendCookie($token, time() + $duration);
@@ -113,47 +114,60 @@ class RememberMe implements Middleware
             $token = $requestOrToken->getCookies()[$cookieName] ?? false;
         }
 
-        if ($this->isToken($token) && $userId = $this->cache->try($token)) {
-            $this->dropToken($token, $userId);
+        if ($this->isToken($token)) {
+            $this->dropToken($token);
         }
 
         // Without this the browser keeps sending a token nothing answers to
         $this->sendCookie('', time() - 3600);
     }
 
+    // Every token carries the generation of its user when issued : a new one invalidates them all, with no token list to keep in sync
     public function forgetUser(Model|int|string $user): void
     {
         $userId = $user instanceof Model ? $user->id() : $user;
 
-        foreach ($this->liveTokensOf($userId) as $token) {
-            $this->cache->delete($token);
-        }
-
-        $this->userTokens()->delete((string) $userId);
+        $this->userGenerations()->set((string) $userId, self::newGeneration(), $this->configuration->cookieDuration);
     }
 
-    protected function dropToken(string $token, mixed $userId): void
+    protected function rememberedUserOf(string $token): mixed
     {
-        $this->cache->delete($token);
+        $entry = $this->tokens()->get(self::keyOf($token));
+        if (!is_array($entry))
+            return null;
 
-        $this->userTokens()->set(
-            (string) $userId,
-            array_values(array_diff($this->liveTokensOf($userId), [$token])),
-            $this->configuration->cookieDuration
-        );
+        return $this->generationOf($entry['user']) === $entry['generation']
+            ? $entry['user']
+            : null;
     }
 
-    /**
-     * @return string[] Tokens of the user that still point at them
-     */
-    protected function liveTokensOf(mixed $userId): array
+    protected function dropToken(string $token): void
     {
-        return Bunch::of($this->userTokens()->get((string) $userId, []))
-            ->filter(fn (string $token) => $this->cache->get($token) == $userId, true)
-            ->get();
+        $this->tokens()->delete(self::keyOf($token));
     }
 
-    protected function userTokens(): Cache
+    protected function generationOf(mixed $userId): ?string
+    {
+        return $this->userGenerations()->get((string) $userId);
+    }
+
+    protected static function newGeneration(): string
+    {
+        return bin2hex(random_bytes(16));
+    }
+
+    // Only a hash is stored : reading the cache, or its file names, must not hand out working cookies
+    protected static function keyOf(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
+    protected function tokens(): Cache
+    {
+        return $this->cache->child('remember-me-tokens');
+    }
+
+    protected function userGenerations(): Cache
     {
         return $this->cache->child('remember-me-users');
     }

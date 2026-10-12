@@ -20,8 +20,11 @@ class RedisQueue extends BasicQueueDriver
     protected int $port;
     protected ?string $password;
 
-    public function __construct(?string $host=null, int $port=6379, ?string $password=null)
-    {
+    public function __construct(
+        ?string $host=null,
+        int $port=6379,
+        #[\SensitiveParameter] ?string $password=null
+    ) {
         $host ??= env('QUEUE_REDIS_HOST', 'redis');
         if (!$host)
             throw new InvalidArgumentException('$host parameter is needed (can also be configured through env QUEUE_REDIS_HOST)');
@@ -84,6 +87,8 @@ class RedisQueue extends BasicQueueDriver
             return null;
         }
 
-        return unserialize($payload);
+        $element = unserialize($payload);
+
+        return is_array($element) ? $element : null;
     }
 }

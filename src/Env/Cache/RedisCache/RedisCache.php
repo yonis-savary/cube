@@ -21,8 +21,12 @@ class RedisCache implements CacheDriverInterface
     protected int $port;
     protected ?string $password;
 
-    public function __construct(string $identifier="cube", ?string $host=null, int $port=6379, ?string $password=null)
-    {
+    public function __construct(
+        string $identifier="cube",
+        ?string $host=null,
+        int $port=6379,
+        #[\SensitiveParameter] ?string $password=null
+    ) {
         $identifier = preg_replace('/[^a-z0-9]/i', '.', strtolower($identifier));
         $this->identifier = "cache:$identifier:";
 
@@ -90,15 +94,19 @@ class RedisCache implements CacheDriverInterface
         $this->connection->del($key);
     }
 
-    public function clear(): void {
+    public function clear(): array {
+        $removed = [];
         $it = null;
         do {
             if ($keys = $this->connection->scan($it, $this->identifier . "*")) {
                 foreach ($keys as $key) {
                     $key = substr($key, strlen($this->identifier));
                     $this->connection->del($key);
+                    $removed[] = $key;
                 }
             }
         } while ($it !== 0);
+
+        return $removed;
     }
 }

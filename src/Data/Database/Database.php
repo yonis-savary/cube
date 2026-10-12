@@ -23,7 +23,7 @@ class Database
         protected ?string $host = null,
         protected ?int $port = null,
         protected ?string $user = null,
-        protected ?string $password = null,
+        #[\SensitiveParameter] protected ?string $password = null,
         protected ?QueryBuilder $queryBuilder = null,
         ?\PDO $connection = null
     ) {

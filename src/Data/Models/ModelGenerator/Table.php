@@ -3,6 +3,7 @@
 namespace Cube\Data\Models\ModelGenerator;
 
 use Cube\Data\Bunch;
+use Cube\Data\Database\Query\Identifier;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Data\Models\DummyModel;
@@ -15,6 +16,7 @@ use Cube\Utils\Attributes\Generated;
 use Cube\Utils\Console;
 use Cube\Utils\Path;
 use Cube\Utils\Text;
+use InvalidArgumentException;
 
 class Table
 {
@@ -26,7 +28,20 @@ class Table
         array $fields = [],
         public readonly ?string $primaryKey = null
     ) {
-        $this->fields = $fields;
+        self::assertTableName($table);
+
+        if ($primaryKey)
+            Identifier::assertColumn($primaryKey);
+
+        $this->fields = [];
+        foreach ($fields as $field)
+            $this->addField($field);
+    }
+
+    public static function assertTableName(string $table): void
+    {
+        if (!Identifier::isColumn($table))
+            throw new InvalidArgumentException("Cannot generate a model for table [{$table}], expected letters, digits and underscores");
     }
 
     public static function getClassname(string $tableName): string
@@ -40,6 +55,7 @@ class Table
 
     public function addField(ModelField $field): self
     {
+        Identifier::assertColumn($field->name);
         $this->fields[] = $field;
 
         return $this;
@@ -108,6 +124,11 @@ class Table
      */
     public function generateInto(Storage $destination, string $namespace, array $relations): ?string
     {
+        foreach ($relations as $relation) {
+            Identifier::assertColumn($relation->fromColumn);
+            Identifier::assertColumn($relation->toColumn);
+        }
+
         $className = self::getClassname($this->table);
 
         $relationsNames = [];

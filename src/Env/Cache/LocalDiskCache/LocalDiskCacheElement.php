@@ -92,6 +92,11 @@ class LocalDiskCacheElement
         $this->creationDate = $creationDate;
     }
 
+    public function getFile(): ?string
+    {
+        return $this->file;
+    }
+
     public function setFile(string $file)
     {
         $this->file = $file;

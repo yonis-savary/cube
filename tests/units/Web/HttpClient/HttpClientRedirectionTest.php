@@ -2,8 +2,11 @@
 
 namespace Cube\Tests\Units\Web\HttpClient;
 
+use Cube\Env\Logger\NullLogger;
+use Cube\Utils\Text;
 use Cube\Web\Helpers\CubeServer;
 use Cube\Web\Http\HttpClient;
+use Cube\Web\Http\Request;
 use PHPUnit\Framework\TestCase;
 
 class HttpClientRedirectionTest extends TestCase
@@ -73,6 +76,35 @@ class HttpClientRedirectionTest extends TestCase
 
         $this->assertIsArray($headers);
         $this->assertArrayNotHasKey('x-api-token', $headers);
+    }
+
+    /** The cURL mutator, which may set CURLOPT_USERPWD or auth headers, was replayed on the foreign host. */
+    public function testTheCurlMutatorStaysBehindOnARedirectionToAnotherHost()
+    {
+        $mutator = fn (\CurlHandle $handle) => curl_setopt($handle, CURLOPT_HTTPHEADER, ['X-Mutated: yes']);
+
+        $sameHost = json_decode($this->client()->fetch(new Request('GET', '/to-same-host'), curlMutator: $mutator)->getBody(), true);
+        $otherHost = json_decode($this->client()->fetch(new Request('GET', '/to-other-host'), curlMutator: $mutator)->getBody(), true);
+
+        $this->assertEquals('yes', $sameHost['x-mutated'] ?? null);
+        $this->assertArrayNotHasKey('x-mutated', $otherHost);
+    }
+
+    /** Every fetch logged its full URL, query string included, whatever the log flags asked for. */
+    public function testTheUrlParametersAreOnlyLoggedWhenAsked()
+    {
+        $logger = new class extends NullLogger {
+            public string $written = '';
+
+            public function log($level, null|string|\Stringable $message, array $context = []): void
+            {
+                $this->written .= Text::interpolate($message, $context)."\n";
+            }
+        };
+
+        $this->client()->fetch(new Request('GET', '/query', ['api_key' => 'q-123']), $logger);
+
+        $this->assertStringNotContainsString('q-123', $logger->written);
     }
 
     /** With a base URL, the Location was joined to it, and its query string dropped. */

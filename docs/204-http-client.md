@@ -127,7 +127,8 @@ $response = (new Request('GET', 'https://slow.example.com/report'))->fetch(
 | `$curlMutator` | none | a callback receiving the cURL handle before it is executed |
 
 `$curlMutator` is the escape hatch for anything Cube does not expose — a client certificate, a proxy,
-a cURL option of your own.
+a cURL option of your own. A redirection to another origin (scheme, host and port) is followed
+without it, nor the base headers and parameters, since they often carry credentials.
 
 ### How much gets logged
 
@@ -135,7 +136,7 @@ The flags combine, so you log the half you care about
 
 | Flag | Logs |
 |---|---|
-| `DEBUG_REQUEST_CURL` | the equivalent curl command line |
+| `DEBUG_REQUEST_CURL` | how the cURL handle is built : full URL, parameters and body, secrets included |
 | `DEBUG_REQUEST_HEADERS` | request headers |
 | `DEBUG_REQUEST_BODY` | request body |
 | `DEBUG_REQUEST` | the three above |

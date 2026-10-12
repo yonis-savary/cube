@@ -17,7 +17,8 @@ interface CacheDriverInterface
     public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null);
     public function has(string $key): bool;
     public function delete(string $key): void;
-    public function clear(): void;
+    /** @return string[] What was removed : files for a disk cache, keys otherwise */
+    public function clear(): array;
 
     public function &getReference(string $key): mixed;
 }

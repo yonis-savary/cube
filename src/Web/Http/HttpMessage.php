@@ -9,7 +9,17 @@ abstract class HttpMessage
 
     public function isJSON(): bool
     {
-        return str_contains($this->getHeader('content-type', ''), 'application/json');
+        return self::isJSONContentType($this->getHeader('content-type', ''));
+    }
+
+    public static function isJSONContentType(string $contentType): bool
+    {
+        $mediaType = explode(';', $contentType, 2)[0]
+            |> trim(...)
+            |> strtolower(...);
+
+        return 'application/json' === $mediaType
+            || (str_starts_with($mediaType, 'application/') && str_ends_with($mediaType, '+json'));
     }
 
     public function isFormEncoded(): bool

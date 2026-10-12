@@ -77,6 +77,38 @@ class ModelAPITest extends TestCase
         });
     }
 
+    /** `%` and `_` reached the LIKE pattern as wildcards : `?name=%` matched every row. */
+    #[DataProvider('getDatabases')]
+    public function testSearchWildcardsAreSearchedLiterally(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            Product::insertArray(['name' => '100% cotton']);
+            Product::insertArray(['name' => '100 units']);
+            Product::insertArray(['name' => 'snake_case']);
+            Product::insertArray(['name' => 'back\\slash']);
+
+            $names = fn (string $search) => array_map(
+                fn (Product $product) => $product->name,
+                (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => $search]))
+            );
+
+            $this->assertEquals(['100% cotton'], $names('100%'));
+            $this->assertEquals(['snake_case'], $names('e_c'));
+            $this->assertEquals(['back\\slash'], $names('k\\s'));
+        });
+    }
+
+    /** Every space-separated word added a LIKE clause : a long value built an unbounded query. */
+    public function testASearchKeepsItsFirstWordsOnly()
+    {
+        Product::insertArray(['name' => 'a b c d e f g h']);
+
+        $search = 'a b c d e f g h '.str_repeat('missing ', 50);
+        $products = (new ProductAPI())->readItems(new Request('GET', '/product', ['name' => $search]));
+
+        $this->assertCount(1, $products);
+    }
+
     public function testCreatingAnswersCreated()
     {
         $response = (new ProductAPI())->createItems(new Request('POST', '/product', [], ['name' => 'Keyboard']));

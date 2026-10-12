@@ -65,7 +65,8 @@ env=debug
 index and the applications files and, when APCu is available, snapshots them there too. This cache
 does not notice a new controller or route file by itself : dispatch `PostDeployment` after each
 deployment (`php do cube:dispatch --event PostDeployment`) to empty it, and restart php-fpm so its
-APCu copy goes away as well.
+APCu copy goes away as well. APCu is shared by every pool of one php-fpm master, and the snapshot
+holds the files included at boot : give each application its own php-fpm master.
 
 `isDebug()` is the default of `AutoloaderConfiguration(displayErrors:)` : outside a debug environment,
 PHP warnings and notices go to the error log instead of being printed into the response, absolute

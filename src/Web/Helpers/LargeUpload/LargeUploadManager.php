@@ -25,7 +25,7 @@ class LargeUploadManager
     public function start(): LargeUpload
     {
         $identifier = 'largeupload-'.bin2hex(random_bytes(16));
-        return new LargeUpload($identifier, $this->getStorage());
+        return new LargeUpload($identifier, $this->getStorage(), $this->configuration->maxSize);
     }
 
     public function find(string $identifier): ?LargeUpload
@@ -35,7 +35,7 @@ class LargeUploadManager
         if (!$this->isIdentifier($identifier) || !$storage->isDirectory($identifier))
             return null;
 
-        return new LargeUpload($identifier, $storage);
+        return new LargeUpload($identifier, $storage, $this->configuration->maxSize);
     }
 
     public function delete(string $identifier): bool 

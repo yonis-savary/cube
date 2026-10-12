@@ -621,7 +621,7 @@ class Autoloader
                 switch ($dirName) {
                     case 'Routes':
                     case 'Router':
-                        array_push(self::$routesFiles, ...(new Storage($directory))->exploreFiles());
+                        array_push(self::$routesFiles, ...self::phpFilesOf($directory));
                         break;
 
                     case 'Assets':
@@ -633,7 +633,7 @@ class Autoloader
                     case 'Helpers':
                     case 'Schedules':
                     case 'Cron':
-                        array_push(self::$requireFiles, ...(new Storage($directory))->exploreFiles());
+                        array_push(self::$requireFiles, ...self::phpFilesOf($directory));
                         break;
 
                     case 'Views':
@@ -642,6 +642,14 @@ class Autoloader
                 }
             }
         }
+    }
+
+    /** @return string[] */
+    protected static function phpFilesOf(string $directory): array
+    {
+        return Bunch::of((new Storage($directory))->exploreFiles())
+            ->filter(fn (string $file) => str_ends_with($file, '.php'))
+            ->get();
     }
 
     /**

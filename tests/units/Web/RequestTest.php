@@ -31,6 +31,16 @@ class RequestTest extends TestCase
         return Response::json($module->label);
     }
 
+    public function testOnlyAJsonMediaTypeIsReadAsJson()
+    {
+        $this->assertTrue(Request::isJSONContentType('application/json'));
+        $this->assertTrue(Request::isJSONContentType('Application/JSON; charset=utf-8'));
+        $this->assertTrue(Request::isJSONContentType('application/problem+json'));
+        $this->assertFalse(Request::isJSONContentType('text/plain; x=application/json'));
+        $this->assertFalse(Request::isJSONContentType('text/html+json'));
+        $this->assertFalse(Request::isJSONContentType(''));
+    }
+
     public function testOnlyReturnsSpecifiedKeys()
     {
         $request = new Request('POST', '/', [], ['name' => 'screen', 'price_dollar' => 10, 'extra' => 'ignored']);

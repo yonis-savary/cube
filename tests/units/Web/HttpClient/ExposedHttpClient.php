@@ -64,6 +64,11 @@ class ExposedHttpClient extends HttpClient
         return $this->path($request);
     }
 
+    public static function publicOriginOf(string $url): string
+    {
+        return self::originOf($url);
+    }
+
     public function publicParseHeaders(string $headers, bool $lowercaseNames = false): array
     {
         return $this->parseHeaders($headers, $lowercaseNames);

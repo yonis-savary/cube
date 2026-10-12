@@ -17,7 +17,7 @@ class Encryption
     private const CIPHER = 'aes-256-gcm';
     private const TAG_LENGTH = 16;
 
-    public static function encrypt(string $content, ?string $key = null): string
+    public static function encrypt(#[\SensitiveParameter] string $content, #[\SensitiveParameter] ?string $key = null): string
     {
         $key = self::deriveKey($key);
         $nonce = random_bytes(openssl_cipher_iv_length(self::CIPHER));
@@ -34,7 +34,7 @@ class Encryption
         return str_starts_with($encrypted, self::PREFIX);
     }
 
-    public static function decrypt(string $encrypted, ?string $key = null): string
+    public static function decrypt(string $encrypted, #[\SensitiveParameter] ?string $key = null): string
     {
         $key = self::deriveKey($key);
 
@@ -56,7 +56,7 @@ class Encryption
         return $plaintext;
     }
 
-    private static function deriveKey(?string $key): string
+    private static function deriveKey(#[\SensitiveParameter] ?string $key): string
     {
         $key ??= env('APP_KEY', false);
         if (!$key)

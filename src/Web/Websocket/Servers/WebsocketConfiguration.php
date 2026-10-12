@@ -38,6 +38,12 @@ class WebsocketConfiguration extends ConfigurationElement
             || in_array($origin, $allowedOrigins, true);
     }
 
+    public function exposesBroadcastWithoutSecret(): bool
+    {
+        return null === $this->broadcastSecret
+            && !in_array($this->httpHost, ['127.0.0.1', 'localhost', '::1', '[::1]'], true);
+    }
+
     public function getWebsocketOrigin(): string
     {
         $host = $this->websocketHost;

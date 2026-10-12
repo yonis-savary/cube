@@ -10,6 +10,7 @@ use Ratchet\WebSocket\WsServer;
 use React\EventLoop\Loop;
 use React\Http\HttpServer as ReactHttpServer;
 use React\Socket\SocketServer;
+use RuntimeException;
 
 /**
  * This simple component is used to launch the websocket service, which is made of
@@ -30,6 +31,9 @@ class Websocket
 
     public function serve()
     {
+        if ($this->configuration->exposesBroadcastWithoutSecret())
+            throw new RuntimeException("The broadcast server would listen on {$this->configuration->getHttpOrigin()} without a broadcastSecret : anyone reaching it could emit on every channel");
+
         $loop = Loop::get();
 
         $webSocketOrigin = $this->configuration->getWebsocketOrigin();
@@ -47,6 +51,10 @@ class Websocket
         $httpServer->listen($httpSocket);
 
         $this->logger->info("HTTP server listening at $httpOrigin");
+
+        if ('-1' === ini_get('memory_limit')) {
+            $this->logger->warning('memory_limit is -1 : a single client can send a message big enough to exhaust the memory of the websocket process');
+        }
 
         if (null === $this->configuration->broadcastSecret) {
             $this->logger->warning('No broadcastSecret configured : anyone reaching {origin} can broadcast', ['origin' => $httpOrigin]);

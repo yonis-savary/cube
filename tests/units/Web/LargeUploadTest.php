@@ -54,6 +54,26 @@ class LargeUploadTest extends TestCase
 
     }
 
+    /** maxSize was never read : any client allowed to upload could fill the disk. */
+    public function testATransferCannotGrowPastItsMaximumSize()
+    {
+        $this->setUpTemporaryStorage('large-upload-test-');
+        $manager = new LargeUploadManager(new LargeUploadManagerConfiguration($this->storage->child('uploads')->getRoot(), maxSize: 10));
+
+        try {
+            $upload = $manager->start();
+
+            $this->assertTrue($upload->addChunk(0, '123456'));
+            $this->assertFalse($upload->addChunk(1, '12345'));
+            $this->assertTrue($upload->addChunk(0, '1234'), 'A retried chunk replaces the previous one instead of adding to it');
+            $this->assertTrue($upload->addChunk(1, '123456'));
+
+            $this->assertEquals('1234123456', file_get_contents($upload->wrap($this->storage)));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
     /** An identifier holding `..` resolved outside the upload directory, so delete() wiped any directory. */
     public function testAnIdentifierCannotEscapeTheUploadDirectory()
     {

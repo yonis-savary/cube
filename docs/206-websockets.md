@@ -57,9 +57,14 @@ process binds, which is the normal case behind a reverse proxy.
 
 The HTTP side is what makes a signal appear on every browser. With a `broadcastSecret`, it answers
 `403` to any request that does not carry it in the `X-Broadcast-Secret` header — `Broadcast` adds it
-for you. Without one, anyone who can reach it can emit on any channel, and the server logs a warning
-when it starts. It sends no CORS headers, so a web page cannot reach it through a browser. Either
-way, expose only the websocket port publicly.
+for you. Without one, anyone who can reach it can emit on any channel : the server logs a warning
+when it listens on the loopback, and refuses to start on any other `httpHost`. It sends no CORS
+headers and only accepts an `application/json` body, so a web page cannot use a visitor's browser
+to emit. Either way, expose only the websocket port publicly.
+
+A connection to a path no channel answers is closed. Ratchet caps a client message at a quarter of
+`memory_limit`, so keep one set for the websocket process : with `-1`, a single client can exhaust
+its memory, and the server logs a warning when it starts.
 
 ## Creating a channel
 
@@ -79,7 +84,7 @@ Channels are discovered by class, so the file is enough — nothing to register.
 
 ### Deciding who may subscribe
 
-Override `authorize()` to accept or refuse a subscription. It runs before the connection joins, and
+Every channel implements `authorize()` to accept or refuse a subscription. It runs before the connection joins, and
 receives the slug values of the path being subscribed to, plus the handshake request (a PSR-7
 `RequestInterface`) carrying the client's headers, cookies and query string. Return `null` to
 allow, or a string, which is sent back to the client as the reason.
@@ -112,8 +117,15 @@ The socket process is long-running and serves every client : it has no PHP sessi
 `Authentication` cannot tell who subscribes. Authenticate from the request — a token your backend
 issued, or the session cookie read from the `Cookie` header and checked against your session storage.
 
-Without an override every subscription is accepted, so write this one before exposing anything
-sensitive.
+`authorize()` is abstract, so a channel cannot be public by mistake : a channel anyone may follow
+says so by returning `null`
+
+```php
+public function authorize(array $slugs, RequestInterface $request): ?string
+{
+    return null;
+}
+```
 
 A browser attaches the visitor's cookies to the handshake whatever page opens it, so the socket
 process first checks the `Origin` header against `allowedOrigins` (`['*']` accepts any). A browser

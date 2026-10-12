@@ -25,7 +25,7 @@ class PasswordAuthentication implements AuthenticationProvider
         }
     }
 
-    public function attempt(string $identifier, ?string $password = null): Model|false
+    public function attempt(string $identifier, #[\SensitiveParameter] ?string $password = null): Model|false
     {
         $model = $this->model;
         $password ??= '';

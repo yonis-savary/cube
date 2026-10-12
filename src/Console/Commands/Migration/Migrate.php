@@ -9,6 +9,8 @@ use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Data\Database\MigrationManager;
 use Cube\Utils\Console;
 
+use function Cube\isProduction;
+
 class Migrate extends Command
 {
     public function getScope(): string
@@ -27,7 +29,8 @@ class Migrate extends Command
         $manager->setLoggingFunction(fn($m) => print($m . "\n"));
         $manager->executeAllMigrations();
 
-        if (!$args->has('-s', '--skip-generation')) {
+        // Models are generated and committed at development time : production code is never rewritten from the live schema
+        if (!isProduction() && !$args->has('-s', '--skip-generation')) {
             Console::print("");
             return Generate::call();
         }

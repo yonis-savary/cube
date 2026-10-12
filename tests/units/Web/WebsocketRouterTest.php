@@ -50,6 +50,21 @@ class WebsocketRouterTest extends TestCase
         $this->assertFalse($preflight->hasHeader('Access-Control-Allow-Origin'));
     }
 
+    /** `text/plain; x=application/json` passed the substring check while staying a request a browser sends cross-site without preflight. */
+    public function testABroadcastMustBeExactlyJson()
+    {
+        $response = $this->broadcast(['Content-Type' => 'text/plain; x=application/json'], new WebsocketConfiguration());
+
+        $this->assertEquals(StatusCode::BAD_REQUEST, $response->getStatusCode());
+    }
+
+    public function testTheBroadcastServerRefusesToBeExposedWithoutASecret()
+    {
+        $this->assertTrue((new WebsocketConfiguration(httpHost: '0.0.0.0'))->exposesBroadcastWithoutSecret());
+        $this->assertFalse((new WebsocketConfiguration(httpHost: '0.0.0.0', broadcastSecret: 's3cret'))->exposesBroadcastWithoutSecret());
+        $this->assertFalse((new WebsocketConfiguration())->exposesBroadcastWithoutSecret());
+    }
+
     public function testTheBroadcastServerIsPrivateByDefault()
     {
         $this->assertEquals('127.0.0.1:8089', (new WebsocketConfiguration())->getHttpOrigin());
@@ -91,6 +106,12 @@ class WebsocketRouterTest extends TestCase
         );
 
         $this->assertEquals(['https://shop.example.org'], $allowedOrigins);
+    }
+
+    /** A connection to a path no channel answers was left open, so anyone could pile them up until the process ran out of resources. */
+    public function testAConnectionNoChannelAnswersIsClosed()
+    {
+        $this->assertTrue($this->subscribe('/no-such-channel', [])->closed);
     }
 
     protected function subscribe(string $path, array $headers, ?WebsocketConfiguration $configuration = null): ConnectionInterface

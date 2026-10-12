@@ -13,6 +13,7 @@ use Cube\Tests\Units\Web\Classes\CountingApi;
 use Cube\Tests\Units\Web\Classes\ProductReader;
 use Cube\Tests\Units\Web\Classes\TracingMiddleware;
 use Cube\Tests\Units\Web\Examples\PriceRequest;
+use Cube\Web\Helpers\WebAPI;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -329,6 +330,22 @@ class RouterTest extends TestCase
         $router->addRoutes(Route::get('/products', fn () => Response::ok('from the route')));
 
         $this->assertEquals('claimed', $router->route(new Request('GET', '/products'))->getBody());
+    }
+
+    /** A Route an api claimed the request with skipped the common middlewares, a global authentication one included. */
+    public function testARouteClaimedByAnApiGoesThroughTheCommonMiddlewares()
+    {
+        $api = new class extends WebAPI {
+            public function routes(Router $router): void {}
+
+            public function handle(Request $request): Response|Route|null
+            {
+                return Route::get('/claimed', fn () => Response::ok('claimed'));
+            }
+        };
+        $router = new Router(new RouterConfiguration(false, false, false, [$api], [BlockingMiddleware::class], '/'));
+
+        $this->assertEquals(StatusCode::FORBIDDEN, $router->route(new Request('GET', '/claimed'))->getStatusCode());
     }
 
     public function testAnApiRegistersItsOwnRoutes()

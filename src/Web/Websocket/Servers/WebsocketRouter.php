@@ -8,6 +8,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use Throwable;
+use Cube\Web\Http\HttpMessage;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Websocket\Channel\Channel;
 use React\Http\Io\BufferedBody;
@@ -64,7 +65,9 @@ class WebsocketRouter implements MessageComponentInterface
             $channel->subscribe($path, $connection);
             return;
         }
-        $this->logger->info("No channel found");
+
+        $this->logger->info("No channel found for path [{path}], connection closed", ['path' => $path]);
+        $connection->close();
     }
 
     public function onClose(ConnectionInterface $connection)
@@ -141,7 +144,7 @@ class WebsocketRouter implements MessageComponentInterface
                 return $response->withStatus(StatusCode::BAD_REQUEST);
             }
 
-            if (!str_contains(join(";", $request->getHeader("Content-Type")), "application/json")) {
+            if (!HttpMessage::isJSONContentType($request->getHeaderLine('Content-Type'))) {
                 return $response->withStatus(StatusCode::BAD_REQUEST);
             }
 

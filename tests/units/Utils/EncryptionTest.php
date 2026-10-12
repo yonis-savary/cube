@@ -73,4 +73,19 @@ class EncryptionTest extends TestCase
         $this->expectException(\Exception::class);
         decrypt($tampered, 'app-key');
     }
+
+    /** A logged trace held every argument : the key ended in fatal.csv, and in the 500 page of a debug environment. */
+    public function testTheKeyIsLeftOutOfTraces()
+    {
+        if (ini_get('zend.exception_ignore_args'))
+            $this->markTestSkipped('Traces hold no argument at all with zend.exception_ignore_args');
+
+        try {
+            Encryption::decrypt('not-encrypted', 'a-secret-key');
+            $this->fail('Decrypting an invalid value should throw');
+        } catch (\Exception $exception) {
+            $this->assertInstanceOf(\SensitiveParameterValue::class, $exception->getTrace()[0]['args'][1]);
+            $this->assertStringNotContainsString('a-secret-key', $exception->getTraceAsString());
+        }
+    }
 }

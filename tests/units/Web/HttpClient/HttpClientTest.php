@@ -192,6 +192,14 @@ class HttpClientTest extends TestCase
         fclose($server);
     }
 
+    /** Only the host was compared : a redirection to another port of it kept the credentials. */
+    public function testAnOriginIsMadeOfSchemeHostAndPort()
+    {
+        $this->assertSame(ExposedHttpClient::publicOriginOf('https://api.example.org/a'), ExposedHttpClient::publicOriginOf('https://API.example.org:443/b'));
+        $this->assertNotSame(ExposedHttpClient::publicOriginOf('http://api.example.org/a'), ExposedHttpClient::publicOriginOf('http://api.example.org:8080/a'));
+        $this->assertNotSame(ExposedHttpClient::publicOriginOf('https://api.example.org/a'), ExposedHttpClient::publicOriginOf('http://api.example.org/a'));
+    }
+
     /** cURL speaks file://, gopher:// or dict:// as well : a URL taken from a user could read files or talk to Redis. */
     public function testOnlyHttpIsFetched()
     {

@@ -165,13 +165,21 @@ class MySQL extends QueryBuilder
             $condition instanceof FieldComparaison => $this->getFieldComparaison($condition),
             $condition instanceof RawCondition => $condition->expression,
             $condition instanceof FieldCondition => sprintf(
-                '%s%s %s %s',
+                '%s%s %s %s%s',
                 $condition->table ? $this->getQualifiedTable($condition->table).'.' : '',
                 $condition->field,
                 $condition->operator,
                 $this->getSQLValue($condition->expression),
+                $this->getLikeEscape($condition->operator),
             ),
         };
+    }
+
+    protected function getLikeEscape(string $operator): string
+    {
+        return str_contains(strtoupper($operator), 'LIKE')
+            ? ' ESCAPE '.$this->getSQLValue('\\')
+            : '';
     }
 
     public function getUpdateConditions(): string

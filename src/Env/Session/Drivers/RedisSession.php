@@ -13,8 +13,13 @@ class RedisSession extends PHPGlobalSession
     protected int $port;
     protected ?string $password;
 
-    public function __construct(?string $host = null, int $port = 6379, string $sameSite = 'Lax', ?bool $secureCookie = null, ?string $password = null)
-    {
+    public function __construct(
+        ?string $host = null,
+        int $port = 6379,
+        string $sameSite = 'Lax',
+        ?bool $secureCookie = null,
+        #[\SensitiveParameter] ?string $password = null
+    ) {
         parent::__construct($sameSite, $secureCookie);
 
         $host ??= env('SESSION_REDIS_HOST', 'redis');

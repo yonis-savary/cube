@@ -7,6 +7,7 @@ use Cube\Event\Events;
 use Cube\Event\Events\DisplayingResponse;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Env\Classes\SpyLogger;
+use Cube\Env\Environment;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -164,6 +165,27 @@ class ResponseTest extends TestCase
         return new Request('GET', '/', headers: ['Origin' => $origin]);
     }
 
+    /** Vary was overwritten : a cache keyed on Accept-Encoding or Accept served one variant to every client. */
+    public function testCorsKeepsTheVaryHeaderAlreadySet()
+    {
+        $response = (new Response())
+            ->withHeaders(['Vary' => 'Accept-Encoding'])
+            ->withCORSHeaders($this->fromOrigin('https://example.org'), configuration: new CORSConfiguration(['https://example.org']));
+
+        $this->assertEquals('Accept-Encoding, Origin', $response->getHeader('Vary'));
+    }
+
+    /** A process environment variable keeps "false" as written, which a cast to bool turned into true. */
+    public function testCredentialsReadFromTheEnvironmentAreParsedAsABoolean()
+    {
+        $environment = new Environment(null);
+        $environment->set('CORS_ALLOWED_CREDENTIALS', 'false');
+
+        $configuration = Environment::withInstance($environment, fn () => new CORSConfiguration(['https://example.org']));
+
+        $this->assertFalse($configuration->allowCredentials);
+    }
+
     public function testFileAnswersTheFileContent()
     {
         $this->storage->write('report.txt', 'yearly report');
@@ -190,8 +212,21 @@ class ResponseTest extends TestCase
         $response = Response::download($this->storage->path('report.txt'));
 
         $this->assertEquals('application/octet-stream', $response->getHeader('content-type'));
-        $this->assertEquals('attachment; filename=report.txt', $response->getHeader('content-disposition'));
+        $this->assertEquals("attachment; filename=\"report.txt\"; filename*=UTF-8''report.txt", $response->getHeader('content-disposition'));
         $this->assertEquals('yearly report', $response->getBody());
+    }
+
+    /** The name was written unquoted : a `;` or a `"` in it broke the header or added parameters of its own. */
+    public function testADownloadNameIsQuotedAndEncoded()
+    {
+        $this->storage->write('report.txt', 'yearly report');
+
+        $response = Response::file($this->storage->path('report.txt'), attachmentFile: 'année "2025"; x=1.txt');
+
+        $this->assertEquals(
+            "attachment; filename=\"ann__e _2025_; x=1.txt\"; filename*=UTF-8''ann%C3%A9e%20%222025%22%3B%20x%3D1.txt",
+            $response->getHeader('content-disposition')
+        );
     }
 
     public function testAResponseCallbackReplacesTheBody()

@@ -216,14 +216,11 @@ class HttpClient
 
         $logger->info('Got redirected to [{url}]', ['url' => $nextURL]);
 
-        // Base headers often carry credentials : they are only sent back to the same host, never over a downgraded scheme
-        $sameHost = parse_url($nextURL, PHP_URL_HOST) === parse_url($currentURL, PHP_URL_HOST);
-        $downgraded = 'https' === parse_url($currentURL, PHP_URL_SCHEME) &&
-            'https' !== parse_url($nextURL, PHP_URL_SCHEME);
+        // Base values and the cURL mutator often carry credentials : only the same origin gets them again
+        $sameOrigin = self::originOf($nextURL) === self::originOf($currentURL);
 
-        $client = $sameHost && !$downgraded
-            ? $this
-            : new self();
+        $client = $sameOrigin ? $this : new self();
+        $curlMutator = $sameOrigin ? $curlMutator : null;
 
         [$nextPath, $nextQuery] = explode('?', $nextURL, 2) + [1 => ''];
         parse_str($nextQuery, $nextGet);
@@ -465,7 +462,9 @@ class HttpClient
         $userAgent ??= $this->baseUserAgent();
         $logger ??= $this->baseLogger();
 
-        $handle = $this->toCurlHandle($request, $timeout, $userAgent, $logger, $curlMutator);
+        // Building the handle logs the full URL, parameters and body : only when explicitly asked
+        $curlLogger = Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_CURL) ? $logger : new NullLogger();
+        $handle = $this->toCurlHandle($request, $timeout, $userAgent, $curlLogger, $curlMutator);
 
         if (Utils::valueHasFlag($logFlags, self::DEBUG_REQUEST_HEADERS)) {
             $logger->info('{method} {path}', ['method' => $request->getMethod(), 'path' => $request->getPath()]);

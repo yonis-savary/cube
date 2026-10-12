@@ -17,6 +17,11 @@ class SpyRememberMe extends RememberMe
         return $this->sentCookies ? end($this->sentCookies) : null;
     }
 
+    public function rememberedUser(string $token): mixed
+    {
+        return $this->rememberedUserOf($token);
+    }
+
     protected function sendCookie(string $value, int $expiresAt): void
     {
         $this->sentCookies[] = ['value' => $value, 'expiresAt' => $expiresAt];

@@ -85,7 +85,7 @@ abstract class ModelAPI
 
             switch ($field->type) {
                 case ModelField::STRING:
-                    self::makeSearchQuery($query, $fieldName, $value);
+                    self::makeSearchQuery($query, $fieldName, $value, $this->getMaxSearchWords());
                     break;
 
                 default:
@@ -191,11 +191,19 @@ abstract class ModelAPI
             throw new InvalidArgumentException("{$modelClass} model does not have a primary key");
     }
 
-    protected static function makeSearchQuery(Query $query, string $fieldName, mixed $value, string $comparisonKeyword="LIKE")
+    protected function getMaxSearchWords(): int
+    {
+        return 8;
+    }
+
+    protected static function makeSearchQuery(Query $query, string $fieldName, mixed $value, int $maxWords, string $comparisonKeyword="LIKE")
     {
         $query->whereGroup(fn (Query $query) =>
             Bunch::fromExplode(' ', (string) $value)
-                ->forEach(fn ($word) => $query->where($fieldName, "%{$word}%", $comparisonKeyword))
+                ->filter(fn (string $word) => '' !== $word)
+                ->slice(0, $maxWords)
+                ->map(Query::escapeLike(...))
+                ->forEach(fn (string $word) => $query->where($fieldName, "%{$word}%", $comparisonKeyword))
         );
     }
 }

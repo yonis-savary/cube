@@ -11,6 +11,7 @@ use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Security\Authentication\Events\LoggedInUser;
 use Cube\Security\Authentication\Events\LoggedOutUser;
+use RuntimeException;
 
 class Authentication
 {
@@ -28,12 +29,12 @@ class Authentication
         $this->session();
     }
 
-    public function attempt(string $login, ?string $userPassword=null): bool
+    public function attempt(string $login, #[\SensitiveParameter] ?string $userPassword=null): bool
     {
         $this->resetSession();
 
         if (!$user = $this->provider->attempt($login, $userPassword)){
-            (new FailedAuthentication())->dispatch();
+            (new FailedAuthentication($login))->dispatch();
             return false;
         }
 
@@ -43,6 +44,9 @@ class Authentication
 
     public function login(Model $user): void
     {
+        if ('cli' !== PHP_SAPI && headers_sent($file, $line))
+            throw new RuntimeException("Cannot log a user in once output started at {$file}:{$line} : the session id could not be regenerated");
+
         $this->session->regenerateId();
         $this->session->set(self::SESSION_USER_CLASS, $user::class);
         $this->session->set(self::SESSION_USER_DATA, $user->toArray());

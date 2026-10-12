@@ -85,4 +85,24 @@ class ModelGenerationTest extends TestCase
             $this->assertTrue($resultColumn->isGenerated());
         });
     }
+
+    /** Table and column names were written into the generated PHP as is : a column named `x'.system('id').'` ran on the next generation. */
+    public function testOnlyPlainNamesAreGenerated()
+    {
+        foreach ([
+            fn () => new Table("product'.system('id').'"),
+            fn () => new Table('../../Public/shell'),
+            fn () => new Table('product', [new ModelField("name'.system('id').'")]),
+            fn () => new Table('product', [], "id' OR '1"),
+        ] as $buildTable) {
+            try {
+                $buildTable();
+                $this->fail('A table holding a name that is not a plain identifier should be refused');
+            } catch (\InvalidArgumentException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+
+        $this->assertEquals('product_manager', (new Table('product_manager', [new ModelField('product')], 'id'))->table);
+    }
 }

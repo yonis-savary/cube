@@ -6,13 +6,14 @@ use Cube\Data\Bunch;
 use Cube\Env\Storage;
 use InvalidArgumentException;
 
-class LargeUpload 
+class LargeUpload
 {
     public readonly Storage $storage;
 
     public function __construct(
         public readonly string $identifier,
-        protected Storage $parentStorage
+        protected Storage $parentStorage,
+        public readonly ?int $maxSize = null
     ){
         $this->storage = $parentStorage->child($identifier);
 
@@ -24,8 +25,24 @@ class LargeUpload
         }
     }
 
-    public function addChunk(int $chunkNumber, string $body) {
-        $this->storage->write("chunk-" . $chunkNumber, $body);
+    /**
+     * @return bool `false` when the chunk would take the transfer over `maxSize`, nothing is written then
+     */
+    public function addChunk(int $chunkNumber, string $body): bool {
+        $chunk = "chunk-" . $chunkNumber;
+
+        $nextSize = $this->sizeWithout($chunk) + strlen($body);
+        if (null !== $this->maxSize && $nextSize > $this->maxSize)
+            return false;
+
+        $this->storage->write($chunk, $body);
+        return true;
+    }
+
+    protected function sizeWithout(string $chunk): int {
+        return Bunch::of($this->storage->files())
+            ->filter(fn (string $file) => str_starts_with(basename($file), 'chunk-') && basename($file) !== $chunk)
+            ->sum(fn (string $file) => filesize($file));
     }
 
     public function wrap(Storage $destinationStorage, bool $cleanup=true): string {

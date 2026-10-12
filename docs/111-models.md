@@ -29,6 +29,9 @@ php do models:generate                  # regenerate the models only
 
 `migrate:migrate` regenerates your models once the migrations are applied, so your classes never
 drift from your schema. Use `php do migrate:migrate -s` (or `--skip-generation`) to skip that step.
+In production it is always skipped : the models you deploy are the ones you generated and committed.
+A table or a column whose name is not a plain identifier (letters, digits, underscores) makes the
+generation throw, since names are written into PHP source.
 
 Add `--apis` (or `-a`) to also write a [`ModelAPI`](./107-controller-and-apis.md) subclass per
 model in `Http/Apis`, `ProductAPI` for `Product`. An API file that already exists is never

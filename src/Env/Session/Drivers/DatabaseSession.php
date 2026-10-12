@@ -14,6 +14,9 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
 {
     protected Database $database;
 
+    /** @var array<string,true> */
+    protected array $readSessions = [];
+
     public function __construct(
         public readonly string $table = '__cube_session',
         string $sameSite = 'Lax',
@@ -65,14 +68,23 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
 
     public function read(string $id): string|false
     {
-        $row = Query::select($this->table)
-            ->selectField('payload')
-            ->where('id', $id)
-            ->first();
+        $query = Query::select($this->table)->selectField('payload');
+        $row = $this->whereAlive($query, $id)->first($this->database);
 
-        return $row
-            ? base64_decode($row->payload)
-            : '';
+        if (!$row)
+            return '';
+
+        $this->readSessions[$id] = true;
+
+        return base64_decode($row->payload);
+    }
+
+    // The garbage collector may never run (session.gc_probability=0 on Debian) : an expired session must be refused on its own
+    protected function whereAlive(Query $query, string $id): Query
+    {
+        return $query
+            ->where('id', $id)
+            ->where('updated_at', time() - (int) ini_get('session.gc_maxlifetime'), '>=');
     }
 
     public function write(string $id, string $data): bool
@@ -84,15 +96,21 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
                 ->set('payload', $payload)
                 ->set('updated_at', time())
                 ->where('id', $id)
-                ->fetch();
+                ->fetch($this->database);
 
             return true;
         }
 
+        // Destroyed while this request ran (a logout elsewhere) : writing it back would revive it
+        if (isset($this->readSessions[$id]))
+            return true;
+
+        $this->destroy($id);
+
         Query::insert($this->table)
             ->insertField(['id', 'payload', 'updated_at'])
             ->values([$id, $payload, time()])
-            ->fetch();
+            ->fetch($this->database);
 
         return true;
     }
@@ -101,7 +119,7 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
     {
         Query::delete($this->table)
             ->where('id', $id)
-            ->fetch();
+            ->fetch($this->database);
 
         return true;
     }
@@ -110,18 +128,16 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
     {
         $expired = fn(Query $query) => $query->where('updated_at', time() - $max_lifetime, '<');
 
-        $count = $expired(Query::select($this->table)->selectField('id'))->count();
-        $expired(Query::delete($this->table))->fetch();
+        $count = $expired(Query::select($this->table)->selectField('id'))->count($this->database);
+        $expired(Query::delete($this->table))->fetch($this->database);
 
         return $count;
     }
 
     public function validateId(string $id): bool
     {
-        return Query::select($this->table)
-            ->selectField('id')
-            ->where('id', $id)
-            ->exists();
+        return $this->whereAlive(Query::select($this->table)->selectField('id'), $id)
+            ->exists($this->database);
     }
 
     public function updateTimestamp(string $id, string $data): bool
@@ -129,7 +145,7 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
         Query::update($this->table)
             ->set('updated_at', time())
             ->where('id', $id)
-            ->fetch();
+            ->fetch($this->database);
 
         return true;
     }

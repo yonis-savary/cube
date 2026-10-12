@@ -186,6 +186,11 @@ class Query
     }
 
 
+    public static function escapeLike(string $value): string
+    {
+        return addcslashes($value, '\\%_');
+    }
+
     /**
      * @return self<TModel>
      */

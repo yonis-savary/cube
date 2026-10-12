@@ -45,9 +45,7 @@ abstract class Channel implements ChannelInterface
      * @param RequestInterface $request Handshake request : read the client's cookies, headers or query string from it
      * @return ?string null => the subscription is authorized, string => error returned to the client through the socket
      */
-    public function authorize(array $slugs, RequestInterface $request): ?string {
-        return null;
-    }
+    abstract public function authorize(array $slugs, RequestInterface $request): ?string;
 
     /**
      * @return ?array Slug values if matching, null otherwise

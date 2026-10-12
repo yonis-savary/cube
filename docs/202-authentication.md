@@ -57,8 +57,17 @@ new SessionConfiguration(driver: new PHPGlobalSession(sameSite: 'Strict', secure
 
 Cube has no CSRF token : cross-site requests are kept away by `SameSite=Lax`, which stops the
 browser from sending the session cookie with a `POST`, `PUT` or `DELETE` coming from another site.
-Two consequences : never change state on a `GET` route, and remember that subdomains of your site
-count as the *same* site — if they host content you do not control, add a token check of your own.
+Two consequences : never change state on a `GET` route (nor on `Route::any()`, which accepts `GET`),
+and remember that subdomains of your site count as the *same* site — if they host content you do not
+control, add a token check of your own. The same goes for a session cookie set to `SameSite=None`,
+which a cross-site request carries again.
+
+A body is only read as JSON when its `Content-Type` is exactly `application/json` (or `+json`) :
+`text/plain; x=application/json`, which a browser sends cross-site without asking first, stays a
+plain text body.
+
+`login()` throws a `RuntimeException` once output has started : the session id can no longer be
+regenerated then, and a visitor who planted theirs before the login would share the new session.
 
 | Method | Does |
 |---|---|
@@ -120,9 +129,10 @@ class TokenAuthentication implements AuthenticationProvider
 
 ## Remembering a user across sessions
 
-`RememberMe` is a middleware that logs a user back in from a cookie. It stores a random token (64
-hexadecimal characters from `random_bytes()`) in the cache pointing at the user id, and sets that
-token as a cookie. A cookie of any other shape is ignored.
+`RememberMe` is a middleware that logs a user back in from a cookie. It sets a random token (64
+hexadecimal characters from `random_bytes()`) as a cookie, and keeps only its SHA-256 hash in the
+cache, pointing at the user id : reading the cache never gives out a working cookie. A cookie of any
+other shape is ignored.
 
 Add it to the routes that should accept it — usually as a common middleware
 
@@ -158,6 +168,9 @@ every device at once
 RememberMe::getInstance()->forgetUser($user);
 ```
 
+Every token carries a generation of its user, and `forgetUser()` starts a new one : every token issued
+before stops working at once, those of two devices logging in at the same moment included.
+
 | Option of `UserRegisterConfiguration` | Default | Does |
 |---|---|---|
 | `cookieName` | `remember-me-token` | name of the cookie |
@@ -181,10 +194,10 @@ trail or a brute-force counter without touching the login route — see [Events]
 | `AuthenticatedUser` | a session was opened for a user | `authenticatedUser`, `userId` |
 | `LoggedInUser` | same moment, after `AuthenticatedUser` | `authenticatedUser`, `userId` |
 | `LoggedOutUser` | `logout()` closed a session | `authenticatedUser`, `userId` |
-| `FailedAuthentication` | credentials were rejected | — |
+| `FailedAuthentication` | credentials were rejected | `identifier`, the login that was tried |
 | `RememberedUser` | a user was restored from a remember-me cookie | `userData`, `userPrimaryKeyValue` |
 
-One thing to know if you count failures : `FailedAuthentication` currently fires **twice** for a
-wrong password — once from `PasswordAuthentication` and once from `Authentication` — but only once
-for an unknown login. Count distinct attempts, not events, until that is evened out.
+`FailedAuthentication` fires once per rejected attempt, whether the login is unknown or the password
+wrong. Cube has no rate limiting of its own : count the failures per `identifier` in a listener (in the
+`Cache`, for example) and refuse the attempt in your login route once a threshold is reached.
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./201-static-server.md">Previous : Static server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./203-user-component.md">Next : User component</a></div></td></tr></table>

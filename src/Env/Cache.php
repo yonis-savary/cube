@@ -91,8 +91,9 @@ class Cache
         $this->driver->delete($key);
     }
 
-    public function clear(): void {
-        $this->driver->clear();
+    /** @return string[] */
+    public function clear(): array {
+        return $this->driver->clear();
     }
 
     public function child(string $subkey): self {

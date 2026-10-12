@@ -46,7 +46,8 @@ public static function pushChunk(Request $request, string $identifier, int $numb
     if (!$upload = LargeUploadManager::getInstance()->find($identifier))
         return Response::notFound('Unknown upload');
 
-    $upload->addChunk($number, $request->getBody());
+    if (!$upload->addChunk($number, $request->getBody()))
+        return Response::contentTooLarge('Upload too large');
 
     return Response::noContent();
 }
@@ -106,7 +107,7 @@ Nothing expires old transfers on its own. Each directory holds an `info.json` ca
 |---|---|
 | `$identifier` | the public identifier, readonly |
 | `$storage` | the `Storage` holding this transfer's chunks, readonly |
-| `addChunk(int $chunkNumber, string $body)` | writes one chunk |
+| `addChunk(int $chunkNumber, string $body)` | writes one chunk, `false` (and nothing written) when it would go over `maxSize` |
 | `wrap(Storage $destination, bool $cleanup = true)` | concatenates and returns the final path |
 | `delete()` | removes the chunks and the directory |
 
@@ -128,5 +129,5 @@ new LargeUploadManagerConfiguration(
 | Option | Default | Does |
 |---|---|---|
 | `storageName` | `/large-upload-temp` | directory, inside your `Storage`, holding the transfers |
-| `maxSize` | `null` | reserved — nothing reads it yet, cap the size in your own rule |
+| `maxSize` | `null` | maximum size of a transfer in bytes, all chunks together, `null` for no limit |
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./208-api-documentation.md">Previous : Api documentation</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./README.md">Next : Readme</a></div></td></tr></table>

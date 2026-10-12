@@ -2,6 +2,7 @@
 
 namespace Cube\Web\Http;
 
+use Cube\Data\Bunch;
 use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
@@ -365,10 +366,18 @@ class Response extends HttpMessage
 
         if ($attachmentFile) {
             $response->setHeader('Content-Type', 'application/octet-stream');
-            $response->setHeader('Content-Disposition', 'attachment; filename='.basename($attachmentFile));
+            $response->setHeader('Content-Disposition', self::attachmentDisposition(basename($attachmentFile)));
         }
 
         return $response;
+    }
+
+    // RFC 6266 : a quoted ASCII fallback for old clients, then the exact UTF-8 name
+    protected static function attachmentDisposition(string $filename): string
+    {
+        $fallback = preg_replace('/[^\x20-\x7E]|["\\\\]/', '_', $filename);
+
+        return sprintf('attachment; filename="%s"; filename*=UTF-8\'\'%s', $fallback, rawurlencode($filename));
     }
 
     public static function download(string $path, int $code = StatusCode::OK, ?string $attachmentFile = null): static
@@ -482,7 +491,12 @@ class Response extends HttpMessage
 
         // The answer depends on the Origin header : caches must not serve it to another origin
         if (!$anyOrigin && count($configuration->allowedOrigins))
-            $this->setHeader('Vary', 'Origin');
+            $this->setHeader('Vary', Bunch::fromExplode(',', (string) $this->getHeader('Vary'))
+                ->map(trim(...))
+                ->filter(keepValues: true)
+                ->push('Origin')
+                ->uniques()
+                ->join(', '));
 
         if (!$origin = $configuration->getAllowedOrigin($request->getHeader('origin')))
             return $this;

@@ -211,4 +211,27 @@ class AutoloaderTest extends TestCase
         $this->assertEquals('0', $displayErrorsIn('staging'));
         $this->assertEquals('1', $displayErrorsIn('dev'));
     }
+
+    /** Every file of Requires/ or Routes/ was included : a README or an editor backup was printed into every response. */
+    public function test_only_php_files_are_included()
+    {
+        $project = Storage::getInstance()->child(uniqid('autoloader-include-test-'));
+        $requires = $project->child('App')->child('Requires');
+        $project->write('cube.php', '<?php return [new Cube\Core\Autoloader\Applications("App")];');
+        $requires->write('helper.php', '<?php');
+        $requires->write('notes.md', 'private notes');
+
+        try {
+            $process = new Process([
+                PHP_BINARY, '-r',
+                'require "vendor/autoload.php"; Cube\Core\Autoloader::initialize($argv[1]); echo json_encode(array_map("basename", Cube\Core\Autoloader::getRequireFiles()));',
+                $project->getRoot(),
+            ], timeout: 30);
+            $process->run();
+
+            $this->assertEquals('["helper.php"]', $process->getOutput(), $process->getErrorOutput());
+        } finally {
+            Process::fromShellCommandline('rm -rf '.escapeshellarg($project->getRoot()))->run();
+        }
+    }
 }

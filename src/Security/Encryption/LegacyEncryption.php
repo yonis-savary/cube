@@ -15,7 +15,7 @@ class LegacyEncryption
 {
     private const CIPHER = 'aes-256-cbc';
 
-    public static function decrypt(string $encrypted, ?string $key = null): string
+    public static function decrypt(string $encrypted, #[\SensitiveParameter] ?string $key = null): string
     {
         $key ??= env('APP_KEY', false);
         if (!$key)

@@ -34,6 +34,9 @@ Files inside these directories shall be considered as "require" files and used b
 - `Schedules/`
 - `Cron/`
 
+Only the `.php` files of these directories and of `Routes/`/`Router/` are included : a `README.md` or
+an editor backup left there would otherwise be printed into every response.
+
 
 You can retrieve every set of files with 
 ```php

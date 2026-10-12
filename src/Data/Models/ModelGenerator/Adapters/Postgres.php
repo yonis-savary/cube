@@ -33,6 +33,8 @@ class Postgres extends SQLite
 
     protected function buildTable(string $table): Table
     {
+        Table::assertTableName($table);
+
         $db = $this->database;
         $dummyModel = new DummyModel();
 

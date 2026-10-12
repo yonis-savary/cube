@@ -206,7 +206,7 @@ route tree. Override `handle()` and return
 | Return | Meaning |
 |---|---|
 | a `Response` | you answered, the router sends it |
-| a `Route` | you decided which route runs |
+| a `Route` | you decided which route runs, behind the `commonMiddlewares` like any other |
 | `null` | not your business, routing continues |
 
 ```php
@@ -343,8 +343,13 @@ split on spaces, every word having to match. Any other field type is compared fo
 
 ```
 GET /product?name=blue screen   ->  name LIKE '%blue%' AND name LIKE '%screen%'
+GET /product?name=100%          ->  name LIKE '%100\%%'   (searched as written, not as a wildcard)
 GET /product?id=12              ->  id = 12
 ```
+
+Only the first 8 words are searched, so a long value cannot build an unbounded query : override
+`getMaxSearchWords()` to change it. `readItems()` has no pagination, put a limit of your own on large
+tables.
 
 Columns a client must never see, write, nor search on, are declared by overriding `getHiddenFields()`.
 Every method leaves them out of the models and rows it answers, `createItems()` and `updateItem()`

@@ -193,17 +193,18 @@ class AuthenticationTest extends TestCase
         $this->assertEquals(['authenticated', 'logged-in'], $seen);
     }
 
-    public function testAFailedAttemptIsAnnouncedOnce()
+    /** The event carried nothing : a listener could not count the failures of one account. */
+    public function testAFailedAttemptIsAnnouncedOnceWithItsIdentifier()
     {
-        $failures = 0;
+        $identifiers = [];
 
-        Events::withInstance(new Events(), function (Events $events) use (&$failures) {
-            $events->on(FailedAuthentication::class, function () use (&$failures) { ++$failures; });
+        Events::withInstance(new Events(), function (Events $events) use (&$identifiers) {
+            $events->on(FailedAuthentication::class, function (FailedAuthentication $event) use (&$identifiers) { $identifiers[] = $event->identifier; });
 
             $this->newAuthentication()->attempt('alice', 'wrong-password');
         });
 
-        $this->assertEquals(1, $failures);
+        $this->assertEquals(['alice'], $identifiers);
     }
 
     public function testLoggingOutAnnouncesItself()

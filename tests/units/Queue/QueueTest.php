@@ -9,6 +9,7 @@ use Cube\Tests\Units\Queue\Classes\FailingQueue;
 use Cube\Tests\Units\Queue\Classes\GreetingQueue;
 use Cube\Tests\Units\Queue\Classes\NumberQueue;
 use Cube\Tests\Units\Queue\Classes\SelfStoppingQueue;
+use Cube\Utils\SignedPayload;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -236,5 +237,18 @@ class QueueTest extends TestCase
 
         $this->assertFalse($queue->processNext());
         $this->assertEquals([], $queue->numbers);
+    }
+
+    /** A payload that is not a list of arguments hit the `?array` return type and killed the worker loop. */
+    public function testARedisQueueSkipsAMalformedJob()
+    {
+        $queue = new NumberQueue(new RedisQueue());
+        $queue->flush();
+
+        $redis = new \Redis();
+        $redis->connect(env('QUEUE_REDIS_HOST'), 6379);
+        $redis->rPush(NumberQueue::getIdentifier(), SignedPayload::sign(serialize('not a list of arguments')));
+
+        $this->assertFalse($queue->processNext());
     }
 }

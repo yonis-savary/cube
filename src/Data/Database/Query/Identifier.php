@@ -13,9 +13,14 @@ class Identifier
     public const OPERATORS = ['=', '<>', '!=', '<', '<=', '>', '>=', 'LIKE', 'NOT LIKE', 'ILIKE', 'NOT ILIKE', 'IN', 'NOT IN', 'IS', 'IS NOT'];
     public const JOIN_TYPES = ['LEFT', 'RIGHT', 'INNER', 'CROSS', 'FULL', 'LEFT OUTER', 'RIGHT OUTER', 'FULL OUTER'];
 
+    public static function isColumn(string $column): bool
+    {
+        return 1 === preg_match(self::COLUMN_PATTERN, $column);
+    }
+
     public static function assertColumn(string $column): void
     {
-        if (!preg_match(self::COLUMN_PATTERN, $column))
+        if (!self::isColumn($column))
             throw new InvalidArgumentException("Invalid SQL column name [{$column}], expected letters, digits and underscores");
     }
 

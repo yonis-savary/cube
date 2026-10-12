@@ -238,10 +238,7 @@ class Router
                     return $this->globalizeResponse(fn() => $serviceResponse, $request);
 
                 if ($serviceResponse instanceof Route)
-                {
-                    $route = $serviceResponse;
-                    break;
-                }
+                    return $this->globalizeResponse(fn (Request $request) => $this->callRoute($serviceResponse, $request), $request);
             }
 
             if (!$route)
@@ -263,15 +260,18 @@ class Router
             }
         }
 
+        return $this->callRoute($route, $request);
+    }
+
+    protected function callRoute(Route $route, Request $request): Response
+    {
         try
         {
-            $response = $route($request, $this->injector);
+            return $route($request, $this->injector);
         }
         catch(ResponseException $responseException)
         {
             return $responseException->response;
         }
-
-        return $response;
     }
 }
