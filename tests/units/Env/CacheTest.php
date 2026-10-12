@@ -191,4 +191,37 @@ class CacheTest extends TestCase
 
         (new RedisCache(uniqid('cube-test-'), '127.0.0.1', 6379, 'a-wrong-password'))->initialize();
     }
+
+    /** Cached values are unserialized : one written to Redis by anyone but the application used to be trusted. */
+    public function testARedisCacheIgnoresAValueItDidNotSign()
+    {
+        $identifier = 'cubetest'.random_int(0, PHP_INT_MAX);
+        $cache = new RedisCache($identifier, '127.0.0.1', 6379);
+        $cache->initialize();
+
+        $redis = new \Redis();
+        $redis->connect('127.0.0.1', 6379);
+        $redis->set("cache:{$identifier}:planted", serialize('planted value'));
+
+        $this->assertNull($cache->get('planted'));
+
+        $redis->del("cache:{$identifier}:planted");
+    }
+
+    /** An unserialized LocalDiskCache used to write its whole index on destruction : any file, anywhere. */
+    public function testAnUnserializedLocalDiskCacheWritesNothing()
+    {
+        $storage = Storage::getInstance()->child(uniqid('cache-test-'));
+        self::$temporaryStorages[] = $storage;
+
+        $cache = new LocalDiskCache($storage);
+        $cache->set('shell.php', '<?php echo "pwned";');
+        $payload = serialize($cache);
+        $cache->clear();
+
+        $unserialized = unserialize($payload);
+        unset($cache, $unserialized);
+
+        $this->assertEquals([], $storage->files());
+    }
 }

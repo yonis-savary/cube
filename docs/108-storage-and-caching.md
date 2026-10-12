@@ -136,8 +136,9 @@ new CacheConfiguration(
 
 `RedisCache` takes an identifier that namespaces every key as `cache:<identifier>:<key>`, a host —
 falling back to the `CACHE_REDIS_HOST` environment variable —, a port and a password, falling back to
-`CACHE_REDIS_PASSWORD`. Set one in production : cached values are unserialized, so whoever can write
-to your Redis can run code in your application. `LocalDiskCache` takes an
+`CACHE_REDIS_PASSWORD`. Set one in production. Cached values are unserialized, so `RedisCache` signs
+each one with your `APP_KEY` and ignores (with a warning) a value it did not sign : `APP_KEY` must be
+set to use it, and changing it empties the cache in effect. `LocalDiskCache` takes an
 optional `Storage`, so you can point it at any directory
 
 ```php

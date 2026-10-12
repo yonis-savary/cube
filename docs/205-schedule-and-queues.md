@@ -160,7 +160,10 @@ can succeed later, or the job cycles forever.
 
 `RedisQueue` takes a host, a port and a password. Without them, it reads the `QUEUE_REDIS_HOST`
 (defaulting to `redis`) and `QUEUE_REDIS_PASSWORD` environment variables. Set a password in
-production : jobs are unserialized, so whoever can write to your Redis can run code in your workers.
+production. Jobs are unserialized, so `RedisQueue` signs each one with your `APP_KEY` and drops (with a
+warning) a job it did not sign : `APP_KEY` must be set to use it, and must be the same for the
+application pushing jobs and the workers processing them. Jobs still waiting when you change it are
+dropped.
 
 ```env
 QUEUE_REDIS_HOST=127.0.0.1

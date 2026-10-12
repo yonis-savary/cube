@@ -2,10 +2,14 @@
 
 namespace Cube\Web\ModelAPI;
 
+use Cube\Core\Exceptions\ResponseException;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Query;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
+use Cube\Web\Http\Rules\AnyParam;
+use Cube\Web\Http\Rules\ObjectParam;
+use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\StatusCode;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
@@ -42,12 +46,13 @@ abstract class ModelAPI
     public function createItems(Request $request): Response
     {
         $model = $this->getModelClass();
-        $validated = $request->validated();
+        $validated = $this->validateWrite($request, $this->getImplicitWriteRule());
 
         if (!is_array($validated))
             return Response::text('Array expected got '.gettype($validated), StatusCode::UNPROCESSABLE_CONTENT);
 
         $instances = Bunch::of($validated)
+            ->map(fn (array $row) => $this->withoutHiddenKeys($row))
             ->map(fn (array $row) => $model::fromArray($row)->save())
             ->map(fn (Model $newRow) => $this->withoutHiddenFields($newRow)->toArray())
             ->toArray();
@@ -56,7 +61,7 @@ abstract class ModelAPI
     }
 
     /**
-     * @return string[] Columns never sent back nor accepted as a filter (password hashes, tokens...)
+     * @return string[] Columns never sent back, written, nor accepted as a filter (password hashes, tokens...)
      */
     protected function getHiddenFields(): array
     {
@@ -102,7 +107,10 @@ abstract class ModelAPI
     {
         $this->assertHandles($item);
 
-        $data = $request->validated();
+        $partialRule = $this->getImplicitWriteRule();
+        $partialRule->withOptionalKeys(array_keys($partialRule->getRules()));
+
+        $data = $this->withoutHiddenKeys($this->validateWrite($request, $partialRule));
         unset($data[$item::primaryKey()]);
 
         $item->merge($data)->save();
@@ -132,6 +140,44 @@ abstract class ModelAPI
             unset($item->data->{$field});
 
         return $item;
+    }
+
+    protected function withoutHiddenKeys(array $row): array
+    {
+        return array_diff_key($row, array_flip($this->getHiddenFields()));
+    }
+
+    protected function getImplicitWriteRule(): ObjectParam
+    {
+        $model = $this->getModelClass();
+
+        $hiddenFields = $this->getHiddenFields();
+        if ($primaryKey = $model::primaryKey())
+            $hiddenFields[] = $primaryKey;
+
+        $modelRules = $model::toObjectParam(withRelations: false)->getRules();
+
+        return Param::object($modelRules)->without($hiddenFields);
+    }
+
+    protected function validateWrite(Request $request, ObjectParam $implicitRule): mixed
+    {
+        if (!$request->getObjectParam() instanceof AnyParam)
+            return $request->validated();
+
+        $body = $request->all();
+        $rule = is_array($body) && Utils::isList($body)
+            ? Param::array($implicitRule)
+            : $implicitRule;
+
+        $validation = $rule->validate($body, 'request');
+        if ($validation->isValid())
+            return $validation->getResult();
+
+        $response = Response::json($validation->getErrors(), StatusCode::UNPROCESSABLE_CONTENT)
+            ->withHeaders(['Content-Type' => 'application/json']);
+
+        throw new ResponseException('Given request is not valid', $response);
     }
 
     protected function assertHandles(Model $item): void

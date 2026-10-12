@@ -4,6 +4,7 @@ namespace Cube\Env\Cache\RedisCache;
 
 use Cube\Env\Cache\CacheDriverInterface;
 use Cube\Env\Logger\Logger;
+use Cube\Utils\SignedPayload;
 use InvalidArgumentException;
 use Redis;
 use RedisException;
@@ -55,9 +56,15 @@ class RedisCache implements CacheDriverInterface
     }
 
     public function get(string $key): mixed {
-        return $this->has($key) 
-            ? unserialize($this->connection->get($key))
-            : null;
+        if (!$this->has($key))
+            return null;
+
+        if (null === $payload = SignedPayload::verify($this->connection->get($key))) {
+            Logger::getInstance()->warning('Redis cache entry [{key}] has an invalid signature, it is ignored', ['key' => $key]);
+            return null;
+        }
+
+        return unserialize($payload);
     }
 
     public function &getReference(string $key): mixed
@@ -68,7 +75,7 @@ class RedisCache implements CacheDriverInterface
     }
 
     public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null) {
-        $value = serialize($value);
+        $value = SignedPayload::sign(serialize($value));
         if ($timeToLive === self::PERMANENT)
             $this->connection->set($key, $value);
         else

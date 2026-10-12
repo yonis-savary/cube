@@ -313,9 +313,11 @@ which an anonymous class does not have.
 `updateItem()` and `deleteItem()` throw an `InvalidArgumentException` when the item is not an
 instance of the class `getModelClass()` returns.
 
-Writing methods only use `$request->validated()` : the request type decides what a client may
-write. A plain `Request` validates everything, so any column of the model can be set — type the
-parameter with a `Request` subclass listing the writable fields
+The request type decides what a client may write. A `Request` subclass writes what its rules
+validate. A plain `Request` declares no rule, so the model fields are validated instead : every field
+except the primary key, the relations and the hidden fields (`422` with the errors when a value is
+invalid, every field optional for `updateItem()`). That still lets a client set any other column, like
+a `role` or an `owner_id` : type the parameter with a `Request` subclass listing the writable fields
 
 ```php
 class UpdateProductRequest extends Request
@@ -344,9 +346,9 @@ GET /product?name=blue screen   ->  name LIKE '%blue%' AND name LIKE '%screen%'
 GET /product?id=12              ->  id = 12
 ```
 
-Columns a client must never see, nor search on, are declared by overriding `getHiddenFields()`.
-Every method leaves them out of the models and rows it answers, and `readItems()` ignores them as
-filters
+Columns a client must never see, write, nor search on, are declared by overriding `getHiddenFields()`.
+Every method leaves them out of the models and rows it answers, `createItems()` and `updateItem()`
+never write them, even when the request validates them, and `readItems()` ignores them as filters
 
 ```php
 class UserModelAPI extends ModelAPI

@@ -120,9 +120,11 @@ abstract class Model extends EventDispatcher
     {
         $primaryKey = static::assertPrimaryKey(__FUNCTION__);
 
+        $knownFields = array_filter($newData, static::hasField(...), ARRAY_FILTER_USE_KEY);
+
         static::update()
             ->where($primaryKey, $id)
-            ->setAssoc($newData)
+            ->setAssoc($knownFields)
             ->fetch();
 
         return static::find($id);

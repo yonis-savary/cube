@@ -64,8 +64,8 @@ class DatabaseTest extends TestCase
     public function testBuildScalarValues(Database $database)
     {
         $this->assertSame('SELECT NULL', $database->build('SELECT {}', [null]));
-        $this->assertSame('SELECT TRUE', $database->build('SELECT {}', [true]));
-        $this->assertSame('SELECT FALSE', $database->build('SELECT {}', [false]));
+        $this->assertSame("SELECT '1'", $database->build('SELECT {}', [true]));
+        $this->assertSame("SELECT '0'", $database->build('SELECT {}', [false]));
     }
 
     #[ DataProvider('getDatabases') ]
@@ -345,5 +345,22 @@ class DatabaseTest extends TestCase
         );
 
         $this->assertEquals('utf8mb4', $database->query('SELECT @@character_set_client AS charset')[0]['charset']);
+    }
+
+    /** A single injection used to run any statement after a `;` on MySQL */
+    public function testMySQLRefusesStackedQueries()
+    {
+        $database = new Database(
+            'mysql',
+            'mysql',
+            '127.0.0.1',
+            (int) env('CUBE_TEST_MYSQL_PORT', 9901),
+            'root',
+            env('CUBE_TEST_DATABASE_PASSWORD', 'root')
+        );
+
+        $this->expectException(\PDOException::class);
+
+        $database->exec('SELECT 1; SELECT 2');
     }
 }

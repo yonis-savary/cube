@@ -30,6 +30,8 @@ class QueryBase
             throw new \InvalidArgumentException('$type must be in '.join(',', self::ALLOWED_TYPES));
         }
 
+        Identifier::assertName($table);
+
         $this->type = $type;
         $this->table = $table;
         $this->model = $model;

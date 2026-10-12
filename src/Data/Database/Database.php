@@ -46,10 +46,14 @@ class Database
         else {
             $dsn = "{$driver}:dbname={$database};host={$host};port={$port}";
 
-            if ('mysql' === $driver) // Values are escaped with PDO::quote(), whose safety depends on the connection charset
-                $dsn .= ';charset=utf8mb4';
+            $options = [];
 
-            $this->connection = new \PDO($dsn, $user, $password);
+            if ('mysql' === $driver) { // Values are escaped with PDO::quote(), whose safety depends on the connection charset
+                $dsn .= ';charset=utf8mb4';
+                $options[\Pdo\Mysql::ATTR_MULTI_STATEMENTS] = false;
+            }
+
+            $this->connection = new \PDO($dsn, $user, $password, $options);
         }
 
         if (!$this->queryBuilder) {

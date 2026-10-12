@@ -6,5 +6,8 @@ class InsertField
 {
     public function __construct(
         public readonly array $fields
-    ) {}
+    ) {
+        foreach ($fields as $field)
+            Identifier::assertColumn($field);
+    }
 }

@@ -49,12 +49,8 @@ abstract class QueryBuilder
             return 'NULL';
         }
 
-        if (true === $value) {
-            return 'TRUE';
-        }
-
-        if (false === $value) {
-            return 'FALSE';
+        if (is_bool($value)) {
+            return $this->prepareString($value ? '1' : '0', $quote, $database);
         }
 
         $value = $database->getConnection()->quote($value, \PDO::PARAM_STR);

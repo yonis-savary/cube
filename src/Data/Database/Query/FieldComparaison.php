@@ -10,5 +10,11 @@ class FieldComparaison
         public readonly string $operator,
         public readonly string $target,
         public readonly string $targetField,
-    ) {}
+    ) {
+        Identifier::assertName($source);
+        Identifier::assertColumn($sourceField);
+        Identifier::assertOperator($operator);
+        Identifier::assertName($target);
+        Identifier::assertColumn($targetField);
+    }
 }

@@ -9,5 +9,11 @@ class FieldCondition
         public readonly string $field,
         public readonly string $operator,
         public readonly mixed $expression
-    ) {}
+    ) {
+        if ($table)
+            Identifier::assertName($table);
+
+        Identifier::assertColumn($field);
+        Identifier::assertOperator($operator);
+    }
 }

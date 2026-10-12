@@ -34,6 +34,17 @@ class LocalDiskCache implements CacheDriverInterface
         $this->save();
     }
 
+    public function __serialize(): array
+    {
+        return ['storage' => $this->storage];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->storage = $data['storage'];
+        $this->index = [];
+    }
+
 
     public function get(string $key, mixed $default = null): mixed
     {

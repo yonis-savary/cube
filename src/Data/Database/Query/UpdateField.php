@@ -8,5 +8,8 @@ class UpdateField
         public readonly string $table,
         public readonly string $field,
         public readonly mixed $newValue,
-    ) {}
+    ) {
+        Identifier::assertName($table);
+        Identifier::assertColumn($field);
+    }
 }

@@ -12,6 +12,8 @@ use Cube\Tests\Units\Queue\Classes\SelfStoppingQueue;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+use function Cube\env;
+
 class QueueTest extends TestCase
 {
     protected const DRIVER_TEST_IDENTIFIER = 'cube-driver-test';
@@ -220,5 +222,19 @@ class QueueTest extends TestCase
         $this->expectExceptionMessage('refused the password');
 
         new RedisQueue('127.0.0.1', 6379, 'a-wrong-password');
+    }
+
+    /** Jobs are unserialized : one written to Redis by anyone but the application used to run as is. */
+    public function testARedisQueueDropsAJobItDidNotSign()
+    {
+        $queue = new NumberQueue(new RedisQueue());
+        $queue->flush();
+
+        $redis = new \Redis();
+        $redis->connect(env('QUEUE_REDIS_HOST'), 6379);
+        $redis->rPush(NumberQueue::getIdentifier(), serialize([42]));
+
+        $this->assertFalse($queue->processNext());
+        $this->assertEquals([], $queue->numbers);
     }
 }

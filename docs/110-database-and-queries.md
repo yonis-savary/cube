@@ -63,7 +63,7 @@ value prepared by your driver's builder. Without any value, the query runs exact
 |---|---|
 | a string | an escaped, quoted literal |
 | `null` | `NULL` |
-| `true` / `false` | `TRUE` / `FALSE` |
+| `true` / `false` | `'1'` / `'0'` |
 | an array | a parenthesized list, each element quoted |
 | an enum | its backing value |
 | a `Model` | its primary key |
@@ -80,6 +80,10 @@ Escaping is delegated to the connection itself — `PDO::quote()` — so it foll
 server you are actually talking to, including its character set and settings like MySQL's
 `NO_BACKSLASH_ESCAPES` or Postgres' `standard_conforming_strings`. A consequence worth knowing when
 you compare generated SQL : the same value produces different text on different drivers.
+
+Booleans are quoted like any other value : MySQL holds an unquoted `FALSE` equal to any string
+starting with a letter, so `where('token', false)` would have matched every token. A MySQL connection
+also refuses several statements in one call (`SELECT 1; SELECT 2` throws a `PDOException`).
 
 ```php
 $database->build('SELECT {}', ["O'Brien"]);
@@ -204,9 +208,18 @@ Product::select()->whereAssoc(['name' => 'screen', 'id' => [1, 2, 3]]); // name 
 It takes the same optional table as `where()`, and throws an `InvalidArgumentException` when given a
 list.
 
-Only **values** are escaped. Field names, operators, `whereRaw()` expressions and `order()` columns go
-into the SQL as written : never build them from request input without checking them against a fixed
-list first
+Only **values** are escaped. Field names, table names and operators go into the SQL as written, so
+the query refuses anything else than a plain name : letters, digits and underscores for a column, plus
+`&` and `.` for a table or an alias. An operator must be one of `=`, `<>`, `!=`, `<`, `<=`, `>`, `>=`,
+`LIKE`, `NOT LIKE`, `ILIKE`, `NOT ILIKE`, `IN`, `NOT IN`, `IS`, `IS NOT`. Anything else throws an
+`InvalidArgumentException`
+
+```php
+Product::select()->order('id, (SELECT 1) --'); // InvalidArgumentException
+```
+
+`whereRaw()` and `selectExpression()` are inserted as is, with no check at all. A valid name taken
+from request input is still a column the client chose : check it against a fixed list first
 
 ```php
 // ?sort=price_dollar — the column comes from the client, so it must be one the model declares

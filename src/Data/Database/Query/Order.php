@@ -17,5 +17,13 @@ class Order
         }
 
         $this->type = $type;
+
+        if ($table) {
+            Identifier::assertName($table);
+            Identifier::assertColumn($fieldOrAlias);
+        }
+        else {
+            Identifier::assertName($fieldOrAlias);
+        }
     }
 }

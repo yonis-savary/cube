@@ -19,6 +19,7 @@ Autoloader::addToExploreMap('tests/integration-root/App');
 
 $env = new Environment(null);
 $env->set('QUEUE_REDIS_HOST', 'localhost');
+$env->set('APP_KEY', 'cube-test-suite-app-key');
 
 Environment::setInstance($env);
 

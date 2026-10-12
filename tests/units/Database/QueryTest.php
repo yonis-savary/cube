@@ -768,4 +768,56 @@ class QueryTest extends TestCase
 
         Product::select()->whereAssoc(['product-1']);
     }
+
+    /**
+     * @return array<string,array{\Closure():mixed}>
+     */
+    public static function getInjectedIdentifiers(): array
+    {
+        return [
+            'where field' => [fn () => Product::select()->where('id OR 1=1 OR name', 'x')],
+            'where operator' => [fn () => Product::select()->where('id', 1, '= 1 OR 1 =')],
+            'whereAssoc key' => [fn () => Product::select()->whereAssoc(['id OR 1=1 OR name' => 'x'])],
+            'order field' => [fn () => Product::select()->order('id, (SELECT 1) --')],
+            'order alias' => [fn () => Product::select()->order('x` DESC, (SELECT 1) --', 'ASC', null)],
+            'setAssoc key' => [fn () => Product::update()->setAssoc(['name = (SELECT 1), price_dollar' => 'x'])],
+            'select field' => [fn () => Product::select()->selectField('id FROM user --')],
+            'join type' => [fn () => Product::select()->join('LEFT JOIN user ON 1=1 LEFT', 'manager')],
+            'table' => [fn () => Query::select('product; DROP TABLE product')],
+        ];
+    }
+
+    /** Identifiers and operators are written into the SQL as is : only plain names may reach a builder. */
+    #[DataProvider('getInjectedIdentifiers')]
+    public function testIdentifiersMustBePlainNames(\Closure $buildQuery)
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $buildQuery();
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testUpdateRowIgnoresWhatIsNotAField(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            $product = Product::insertArray(['name' => 'screen', 'price_dollar' => 10]);
+
+            Product::updateRow($product->id(), ['name' => 'monitor', 'name = name, price_dollar' => 0]);
+
+            $this->assertEquals('monitor', Product::find($product->id())->name);
+            $this->assertEquals(10, Product::find($product->id())->price_dollar);
+        });
+    }
+
+    /** MySQL holds an unquoted FALSE equal to any string starting with a letter : `?token=false` matched every token. */
+    #[DataProvider('getDatabases')]
+    public function testABooleanNeverMatchesAString(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            Product::insertArray(['name' => 'f3a9c1d2']);
+
+            $this->assertCount(0, Product::select()->where('name', false)->fetch());
+            $this->assertCount(0, Product::select()->where('name', true)->fetch());
+        });
+    }
 }

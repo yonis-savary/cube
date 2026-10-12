@@ -18,5 +18,14 @@ class Field
         if (null === $expression && null === $table) {
             throw new \InvalidArgumentException('Either a table field or an expression is needed');
         }
+
+        if ($table)
+            Identifier::assertName($table);
+
+        if ($field)
+            Identifier::assertColumn($field);
+
+        if ($alias)
+            Identifier::assertName($alias);
     }
 }

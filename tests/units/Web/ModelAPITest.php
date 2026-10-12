@@ -2,11 +2,13 @@
 
 namespace Cube\Tests\Units\Web;
 
+use Cube\Core\Exceptions\ResponseException;
 use Cube\Data\Database\Database;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
+use Cube\Tests\Units\Web\Classes\PricelessProductAPI;
 use Cube\Tests\Units\Web\Classes\ProductAPI;
 use Cube\Tests\Units\Web\Classes\UserAPI;
 use Cube\Tests\Units\Web\Examples\ProductNameRequest;
@@ -162,12 +164,49 @@ class ModelAPITest extends TestCase
         $everyone = count($api->readItems(new Request('GET', '/user')));
         $this->assertCount($everyone, $api->readItems(new Request('GET', '/user', ['password' => 'no-match'])));
 
-        $created = $api->createItems(new Request('POST', '/user', [], ['login' => 'bob', 'password' => 'hash-of-bob', 'type' => 1]))->getJSON();
-        $this->assertArrayNotHasKey('password', $created[0]);
-
         $updated = $api->updateItem($users[0], new Request('PUT', '/user', [], ['login' => 'alicia']));
         $this->assertArrayNotHasKey('password', $updated->toArray());
         $this->assertEquals('hash-of-alice', User::find($users[0]->id())->password);
+    }
+
+    /** Hidden fields were only left out of what was answered : a client could still overwrite a password hash. */
+    public function testHiddenFieldsCannotBeWritten()
+    {
+        $alice = User::insertArray(['login' => 'alice', 'password' => 'hash-of-alice', 'type' => 1]);
+
+        (new UserAPI())->updateItem($alice, new Request('PUT', '/user', [], ['login' => 'alicia', 'password' => 'hash-of-the-attacker']));
+
+        $this->assertEquals('alicia', User::find($alice->id())->login);
+        $this->assertEquals('hash-of-alice', User::find($alice->id())->password);
+
+        $created = (new PricelessProductAPI())->createItems(new Request('POST', '/product', [], ['name' => 'Keyboard', 'price_dollar' => 1]))->getJSON();
+        $this->assertArrayNotHasKey('price_dollar', $created[0]);
+        $this->assertNull(Product::findWhere(['name' => 'Keyboard'])->price_dollar);
+    }
+
+    public function testAPlainRequestCannotChooseThePrimaryKeyOfANewRow()
+    {
+        (new ProductAPI())->createItems(new Request('POST', '/product', [], ['id' => 404, 'name' => 'Keyboard']));
+
+        $this->assertNull(Product::find(404));
+        $this->assertNotNull(Product::findWhere(['name' => 'Keyboard']));
+    }
+
+    /** A plain Request validates nothing : the model fields are the rule, and an update may send only some of them. */
+    public function testAPlainRequestIsValidatedAgainstTheModelFields()
+    {
+        $product = Product::insertArray(['name' => 'Screen', 'price_dollar' => 10]);
+
+        try {
+            (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['created_at' => 'not a date']));
+            $this->fail('An invalid field should have been refused');
+        } catch (ResponseException $exception) {
+            $this->assertEquals(StatusCode::UNPROCESSABLE_CONTENT, $exception->response->getStatusCode());
+        }
+
+        $updated = (new ProductAPI())->updateItem($product, new Request('PUT', '/product', [], ['price_dollar' => 20]));
+        $this->assertEquals('Screen', $updated->name);
+        $this->assertEquals(20, $updated->price_dollar);
     }
 
     public function testDeleting()

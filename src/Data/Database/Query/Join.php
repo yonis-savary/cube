@@ -9,5 +9,13 @@ class Join
         public readonly ?string $tableToJoin = null,
         public readonly ?string $alias = null,
         public readonly ?FieldComparaison $condition = null
-    ) {}
+    ) {
+        Identifier::assertJoinType($type);
+
+        if ($tableToJoin)
+            Identifier::assertName($tableToJoin);
+
+        if ($alias)
+            Identifier::assertName($alias);
+    }
 }

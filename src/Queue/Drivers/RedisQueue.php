@@ -2,6 +2,8 @@
 
 namespace Cube\Queue\Drivers;
 
+use Cube\Env\Logger\Logger;
+use Cube\Utils\SignedPayload;
 use InvalidArgumentException;
 use Redis;
 use RedisException;
@@ -59,7 +61,7 @@ class RedisQueue extends BasicQueueDriver
 
     public function push(array $args): void
     {
-        $this->connection->rPush($this->identifier, serialize($args));
+        $this->connection->rPush($this->identifier, SignedPayload::sign(serialize($args)));
     }
 
     public function next(): ?array
@@ -74,8 +76,14 @@ class RedisQueue extends BasicQueueDriver
             return null;
         }
 
-        return $result
-            ? unserialize($result[1])
-            : null;
+        if (!$result)
+            return null;
+
+        if (null === $payload = SignedPayload::verify($result[1])) {
+            Logger::getInstance()->warning('Dropped a job with an invalid signature from queue [{queue}]', ['queue' => $this->identifier]);
+            return null;
+        }
+
+        return unserialize($payload);
     }
 }
