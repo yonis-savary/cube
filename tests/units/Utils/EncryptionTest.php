@@ -13,30 +13,30 @@ class EncryptionTest extends TestCase
 {
     public function testEncryptThenDecrypt()
     {
-        $this->assertEquals('order #1024', decrypt(encrypt('order #1024', 'app-key'), 'app-key'));
+        $this->assertEquals('order #1024', decrypt(encrypt('order #1024', 'app-key-of-at-least-thirty-two-bytes'), 'app-key-of-at-least-thirty-two-bytes'));
     }
 
     /** decrypt() tests its result for truthiness, so a "0" or empty plaintext is taken for a failure. */
     public function testFalsyPlaintextsSurviveARoundTrip()
     {
-        $this->assertSame('0', decrypt(encrypt('0', 'app-key'), 'app-key'));
-        $this->assertSame('', decrypt(encrypt('', 'app-key'), 'app-key'));
+        $this->assertSame('0', decrypt(encrypt('0', 'app-key-of-at-least-thirty-two-bytes'), 'app-key-of-at-least-thirty-two-bytes'));
+        $this->assertSame('', decrypt(encrypt('', 'app-key-of-at-least-thirty-two-bytes'), 'app-key-of-at-least-thirty-two-bytes'));
     }
 
     /** AES-CBC carries no authentication tag, so a flipped IV bit silently changes the plaintext. */
     public function testATamperedCiphertextIsRejected()
     {
-        $payload = base64_decode(substr(encrypt('{"admin":0}', 'app-key'), strlen(Encryption::PREFIX)));
+        $payload = base64_decode(substr(encrypt('{"admin":0}', 'app-key-of-at-least-thirty-two-bytes'), strlen(Encryption::PREFIX)));
         $payload[9] = chr(ord($payload[9]) ^ (ord('0') ^ ord('1')));
 
         $this->expectException(\Exception::class);
-        decrypt(Encryption::PREFIX.base64_encode($payload), 'app-key');
+        decrypt(Encryption::PREFIX.base64_encode($payload), 'app-key-of-at-least-thirty-two-bytes');
     }
 
     public function testAnotherKeyCannotDecrypt()
     {
         $this->expectException(\Exception::class);
-        decrypt(encrypt('order #1024', 'app-key'), 'another-key');
+        decrypt(encrypt('order #1024', 'app-key-of-at-least-thirty-two-bytes'), 'another-key-of-at-least-thirty-two-bytes');
     }
 
     /** The raw key used to be cut at 32 bytes, so two keys sharing those bytes were the same key. */
@@ -50,28 +50,28 @@ class EncryptionTest extends TestCase
 
     public function testNewValuesAreVersioned()
     {
-        $this->assertStringStartsWith(Encryption::PREFIX, encrypt('order #1024', 'app-key'));
+        $this->assertStringStartsWith(Encryption::PREFIX, encrypt('order #1024', 'app-key-of-at-least-thirty-two-bytes'));
     }
 
     /** The former format is unauthenticated : reading it implicitly gave a padding oracle on any value a client sends. */
     public function testAValueEncryptedWithTheFormerFormatIsOnlyReadExplicitly()
     {
         $iv = random_bytes(16);
-        $legacy = base64_encode($iv.openssl_encrypt('order #1024', 'aes-256-cbc', 'app-key', OPENSSL_RAW_DATA, $iv));
+        $legacy = base64_encode($iv.openssl_encrypt('order #1024', 'aes-256-cbc', 'app-key-of-at-least-thirty-two-bytes', OPENSSL_RAW_DATA, $iv));
 
-        $this->assertEquals('order #1024', LegacyEncryption::decrypt($legacy, 'app-key'));
+        $this->assertEquals('order #1024', LegacyEncryption::decrypt($legacy, 'app-key-of-at-least-thirty-two-bytes'));
 
         $this->expectException(\Exception::class);
-        decrypt($legacy, 'app-key');
+        decrypt($legacy, 'app-key-of-at-least-thirty-two-bytes');
     }
 
     /** A tampered new value must not get a second chance through the unauthenticated former format. */
     public function testATamperedValueIsNotRetriedAsALegacyOne()
     {
-        $tampered = substr(encrypt('order #1024', 'app-key'), 0, -4).'AAAA';
+        $tampered = substr(encrypt('order #1024', 'app-key-of-at-least-thirty-two-bytes'), 0, -4).'AAAA';
 
         $this->expectException(\Exception::class);
-        decrypt($tampered, 'app-key');
+        decrypt($tampered, 'app-key-of-at-least-thirty-two-bytes');
     }
 
     /** A logged trace held every argument : the key ended in fatal.csv, and in the 500 page of a debug environment. */
@@ -81,11 +81,11 @@ class EncryptionTest extends TestCase
             $this->markTestSkipped('Traces hold no argument at all with zend.exception_ignore_args');
 
         try {
-            Encryption::decrypt('not-encrypted', 'a-secret-key');
+            Encryption::decrypt('not-encrypted', 'a-secret-key-of-at-least-thirty-two-bytes');
             $this->fail('Decrypting an invalid value should throw');
         } catch (\Exception $exception) {
             $this->assertInstanceOf(\SensitiveParameterValue::class, $exception->getTrace()[0]['args'][1]);
-            $this->assertStringNotContainsString('a-secret-key', $exception->getTraceAsString());
+            $this->assertStringNotContainsString('a-secret-key-of-at-least-thirty-two-bytes', $exception->getTraceAsString());
         }
     }
 }

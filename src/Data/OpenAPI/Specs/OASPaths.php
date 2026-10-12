@@ -4,12 +4,14 @@ namespace Cube\Data\OpenAPI\Specs;
 
 use Cube\Data\AutoDataToObject;
 use Cube\Data\Bunch;
+use Cube\Data\OpenAPI\Attributes\Hidden;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Paths\OASEndPoint;
 use Cube\Utils\Console;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
+use ReflectionClass;
 use RuntimeException;
 
 class OASPaths extends AutoDataToObject
@@ -62,6 +64,11 @@ class OASPaths extends AutoDataToObject
                     continue;
                 }
 
+                if ($this->isHidden($route)) {
+                    $context->log("Ignored hidden route : $path");
+                    continue;
+                }
+
                 foreach ($route->getMethods() as $method) {
                     $method = strtolower($method);
 
@@ -73,6 +80,14 @@ class OASPaths extends AutoDataToObject
                 }
             }
         }
+    }
+
+    protected function isHidden(Route $route): bool
+    {
+        $method = $route->getReflectionMethod();
+
+        return count($method->getAttributes(Hidden::class))
+            || count(new ReflectionClass($route->getCallback()[0])->getAttributes(Hidden::class));
     }
 
     protected function addOperation(string $path, string $method, Route $route): void

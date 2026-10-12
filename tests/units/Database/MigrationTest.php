@@ -60,6 +60,22 @@ class MigrationTest extends TestCase
         $this->assertTrue($database->hasField("user_log", "log_datetime"));
     }
 
+    /** create(), addColumn() and the rename methods wrote names between delimiters without doubling the delimiter itself. */
+    #[ DataProvider('getDatabases') ]
+    public function testNamesHoldingTheDelimiterAreEscaped(Database $database)
+    {
+        $delimiter = 'pgsql' === $database->getDriver() ? '"' : '`';
+        $table = "odd{$delimiter}table";
+
+        $plan = $this->getDatabasePlan($database);
+        $plan->create($table, [ModelField::id()]);
+        $plan->addColumn($table, ModelField::string("odd{$delimiter}column", 20));
+
+        $this->assertTrue($database->hasTable($table));
+        $this->assertTrue($database->hasField($table, "odd{$delimiter}column"));
+        $this->assertFalse($database->hasTable('odd'));
+    }
+
     #[ DataProvider('getDatabases') ]
     public function testSimpleDrop(Database $database) 
     {

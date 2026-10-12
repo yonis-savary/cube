@@ -220,7 +220,11 @@ class Router
     public function route(Request $request): Response
     {
         return $this->resolveResponse($request)
-            ->withDefaultCORSHeaders($request);
+            ->withDefaultCORSHeaders($request)
+            ->withDefaultHeaders([
+                'X-Content-Type-Options' => 'nosniff',
+                ...$this->configuration->securityHeaders
+            ]);
     }
 
     protected function resolveResponse(Request $request): Response

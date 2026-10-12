@@ -3,9 +3,8 @@
 namespace Cube\Security\Encryption;
 
 use Exception;
-use RuntimeException;
 
-use function Cube\env;
+use function Cube\appKey;
 
 /**
  * Authenticated encryption (AES-256-GCM) with a key derived from the given one, or from `APP_KEY`
@@ -58,9 +57,7 @@ class Encryption
 
     private static function deriveKey(#[\SensitiveParameter] ?string $key): string
     {
-        $key ??= env('APP_KEY', false);
-        if (!$key)
-            throw new RuntimeException('Cannot encrypt or decrypt without an app key or provided app key');
+        $key = appKey($key);
 
         // The cipher wants exactly 32 bytes : derive them rather than cut or pad the given key
         return hash_hkdf('sha256', $key, 32, 'cube-encryption');

@@ -23,7 +23,10 @@ class MySQL extends Plan
         $fieldDescription = $this->getModelFieldSQLQuery($firstColumn);
 
         $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";
-        $this->database->exec("CREATE TABLE `$table` ( `$fieldName` $fieldDescription $additionnalSQL )");
+        $this->database->exec(
+            $this->database->build('CREATE TABLE `{}` ( `{}` ', [$table, $fieldName]).
+            "$fieldDescription $additionnalSQL )"
+        );
 
         if ($firstColumn->hasReference())
             $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField, $firstColumn->onDeleteBehavior);
@@ -66,7 +69,7 @@ class MySQL extends Plan
 
     public function addColumn(string $table, ModelField $field) {
         $fieldName = $field->name;
-        $query = "ALTER TABLE `$table` ADD COLUMN `$fieldName`";
+        $query = $this->database->build('ALTER TABLE `{}` ADD COLUMN `{}`', [$table, $fieldName]);
 
         $query .= " ". $this->getModelFieldSQLQuery($field);
 
@@ -124,17 +127,17 @@ class MySQL extends Plan
 
     public function addUniqueIndex(string $table, string|array $fields) {
         $fields = Bunch::of($fields);
-        $fieldsExpression = $fields->join(",");
+        $fieldsExpression = $fields->map(fn ($field) => $this->database->build('`{}`', [$field]))->join(",");
 
         $indexName = strtolower("idx_".$table."_" . $fields->join("_"));
-        $this->database->query("CREATE UNIQUE INDEX $indexName ON `{}`($fieldsExpression)", [$table]);
+        $this->database->exec($this->database->build('CREATE UNIQUE INDEX `{}` ON `{}`', [$indexName, $table])."($fieldsExpression)");
     }
 
     public function renameField(string $table, string $oldFieldName, string $newFieldName) {
-        $this->database->query("ALTER TABLE `$table` RENAME COLUMN `$oldFieldName` TO `$newFieldName`");
+        $this->database->query('ALTER TABLE `{}` RENAME COLUMN `{}` TO `{}`', [$table, $oldFieldName, $newFieldName]);
     }
 
     public function renameTable(string $oldTableName, string $newTableName) {
-        $this->database->query("ALTER TABLE `$oldTableName` RENAME TO `$newTableName`");
+        $this->database->query('ALTER TABLE `{}` RENAME TO `{}`', [$oldTableName, $newTableName]);
     }
 }

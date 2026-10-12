@@ -227,6 +227,12 @@ public static function read(Request $request, Agency $agency)
 }
 ```
 
+A model is fetched by its primary key only : whether the current user may see or change it is for
+your code to decide, in the callback or in a middleware.
+
+The request body is bounded by PHP and your web server, not by Cube : set `post_max_size`,
+`upload_max_filesize` and nginx's `client_max_body_size` to what your routes need.
+
 ## Middlewares
 
 A middleware is a class implementing `Middleware`, with a single static `handle()` method. Call
@@ -321,7 +327,26 @@ new RouterConfiguration(
 | `apis` | additional `WebAPI` services, as class names or instances |
 | `commonMiddlewares` | middlewares applied to every route |
 | `commonPrefix` | prefix applied to every route |
+| `securityHeaders` | headers added to every response that does not set them already |
 | `cached` | remember, in the `Cache` component, which route answers each method and path ; only routes without slugs whose callback is a `[Controller::class, 'method']` array are cached |
+
+## Security headers
+
+Every response the router answers carries `X-Content-Type-Options: nosniff`. Declare the others your
+application needs in `securityHeaders` : a controller that sets one of them keeps its own value
+
+```php
+new RouterConfiguration(
+    securityHeaders: [
+        'X-Frame-Options' => 'DENY',
+        'Referrer-Policy' => 'strict-origin-when-cross-origin',
+        'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains',
+        'Content-Security-Policy' => "default-src 'self'",
+    ],
+)
+```
+
+Only send `Strict-Transport-Security` once your whole domain answers over HTTPS : browsers remember it.
 
 ## Cross-origin requests (CORS)
 

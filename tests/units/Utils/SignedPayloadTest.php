@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Utils;
 
+use Cube\Console\Commands\Key\Generate;
 use Cube\Env\Environment;
 use Cube\Utils\SignedPayload;
 use PHPUnit\Framework\TestCase;
@@ -30,7 +31,7 @@ class SignedPayloadTest extends TestCase
 
     public function testAPayloadSignedWithAnotherKeyIsRefused()
     {
-        $signed = SignedPayload::sign(serialize([1]), 'another-application-key');
+        $signed = SignedPayload::sign(serialize([1]), 'another-application-key-of-32-bytes-or-more');
 
         $this->assertNull(SignedPayload::verify($signed));
     }
@@ -40,5 +41,22 @@ class SignedPayloadTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         Environment::withInstance(new Environment(null), fn () => SignedPayload::sign('payload'));
+    }
+
+    /** Any non-empty key was accepted : a derivation does not make `secret` any harder to guess. */
+    public function testAShortKeyIsRefused()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('at least 32 are expected');
+
+        SignedPayload::sign('payload', 'c2VjcmV0==');
+    }
+
+    public function testAGeneratedKeyIsAccepted()
+    {
+        $key = Generate::newKey();
+
+        $this->assertSame('payload', SignedPayload::verify(SignedPayload::sign('payload', $key), $key));
+        $this->assertNotEquals($key, Generate::newKey());
     }
 }

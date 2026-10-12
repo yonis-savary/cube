@@ -98,22 +98,12 @@ argument rather than a message naming the real cause.
 ## Per-user storage
 
 Cube ships `UserStorage`, an abstract `Storage` using the trait to give each user a subdirectory
-named after their MD5. It is currently unusable as-is : `getUserInstance()` builds it with
-`new self()`, which PHP refuses on an abstract class, so a subclass fails with *Cannot instantiate
-abstract class*. Until it uses `new static()`, write the few lines yourself
+named after their MD5, under a directory named after your class. Nobody logged in means no
+directory : `getInstance()` throws a `RuntimeException` rather than sharing one between every
+anonymous visitor.
 
 ```php
-class InvoiceStorage extends Storage
-{
-    use UserComponent;
-
-    public static function getUserInstance(mixed $userPrimaryKey, string $userPrimaryKeyMD5): static
-    {
-        $root = Storage::getInstance()->child('invoices')->child($userPrimaryKeyMD5);
-
-        return new static($root->getRoot());
-    }
-}
+class InvoiceStorage extends UserStorage {}
 
 InvoiceStorage::getInstance()->write('2026-01.pdf', $bytes);
 ```

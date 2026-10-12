@@ -18,6 +18,7 @@ class RouterConfiguration extends ConfigurationElement
      * @param bool                   $loadControllers Load routes from Controller classes ?
      * @param bool                   $loadRoutesFiles Load PHP Files inside your app(s) Routes directory ?
      * @param class-string<WebAPI>[] $apis            Additionnal services to load (Either classes name or instances)
+     * @param array<string,string>   $securityHeaders Headers added to every response that does not set them already (X-Frame-Options, Content-Security-Policy...)
      */
     public function __construct(
         public readonly bool $cached = false,
@@ -26,6 +27,7 @@ class RouterConfiguration extends ConfigurationElement
         array $apis = [],
         public readonly array $commonMiddlewares = [],
         public readonly string $commonPrefix = '/',
+        public readonly array $securityHeaders = [],
     ) {
         foreach ($apis as &$api) {
             if (!Autoloader::extends($api, WebAPI::class)) {

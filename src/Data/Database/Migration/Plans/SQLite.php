@@ -26,16 +26,16 @@ class SQLite extends Plan
 
         foreach ($fields as $field) {
 
-            $fieldQuery = $field->name . " ". $this->getModelFieldSQLQuery($field);
+            $fieldQuery = $this->database->build('`{}` ', [$field->name]).$this->getModelFieldSQLQuery($field);
 
             $fieldsExpressions->push($fieldQuery);
             if ($field->hasReference()) {
-                $relationsAndIndex->push("FOREIGN KEY (".$field->name.") REFERENCES ". $field->referenceModel ."(". $field->referenceField .")");
+                $relationsAndIndex->push($this->database->build('FOREIGN KEY (`{}`) REFERENCES `{}`(`{}`)', [$field->name, $field->referenceModel, $field->referenceField]));
             }
         }
 
         $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";
-        $this->database->exec("CREATE TABLE `$table` ( ". $fieldsExpressions->merge($relationsAndIndex)->join(",") ." $additionnalSQL )");
+        $this->database->exec($this->database->build('CREATE TABLE `{}` ( ', [$table]).$fieldsExpressions->merge($relationsAndIndex)->join(",") ." $additionnalSQL )");
     }
 
     protected function getModelFieldSQLQuery(ModelField $field): string 
@@ -71,7 +71,7 @@ class SQLite extends Plan
 
     public function addColumn(string $table, ModelField $field) {
         $fieldName = $field->name;
-        $query = "ALTER TABLE `$table` ADD COLUMN `$fieldName`";
+        $query = $this->database->build('ALTER TABLE `{}` ADD COLUMN `{}`', [$table, $fieldName]);
 
         $query .= " ". $this->getModelFieldSQLQuery($field);
 
@@ -113,10 +113,10 @@ class SQLite extends Plan
     }
 
     public function renameField(string $table, string $oldFieldName, string $newFieldName) {
-        $this->database->query("ALTER TABLE \"$table\" RENAME COLUMN \"$oldFieldName\" TO \"$newFieldName\"");
+        $this->database->query('ALTER TABLE "{}" RENAME COLUMN "{}" TO "{}"', [$table, $oldFieldName, $newFieldName]);
     }
 
     public function renameTable(string $oldTableName, string $newTableName) {
-        $this->database->query("ALTER TABLE \"$oldTableName\" RENAME TO \"$newTableName\"");
+        $this->database->query('ALTER TABLE "{}" RENAME TO "{}"', [$oldTableName, $newTableName]);
     }
 }

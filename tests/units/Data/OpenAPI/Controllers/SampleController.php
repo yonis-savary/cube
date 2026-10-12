@@ -3,6 +3,7 @@
 namespace Cube\Tests\Units\Data\OpenAPI\Controllers;
 
 use Cube\Data\OpenAPI\Attributes\Endpoint;
+use Cube\Data\OpenAPI\Attributes\Hidden;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\CustomRequestFormat;
@@ -21,6 +22,11 @@ class SampleController extends Controller
 
     #[Endpoint("Call simple endpoint", "Some Simple Description !")]
     public function simpleEndpoint() {
+
+    }
+
+    #[Hidden]
+    public function internalEndpoint() {
 
     }
 

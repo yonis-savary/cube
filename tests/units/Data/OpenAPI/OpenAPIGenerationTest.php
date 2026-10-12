@@ -79,6 +79,20 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADSimpleOperation.json fixture");
     }
 
+    /** Every array-callback route was documented, internal ones included. */
+    public function testAHiddenRouteIsLeftOut() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/simple-route", [SampleController::class, "simpleRoute"]),
+            Route::get("/internal", [SampleController::class, "internalEndpoint"])
+        );
+
+        $document = $this->generateAsArray($router);
+
+        $this->assertArrayHasKey('/simple-route', $document['paths']);
+        $this->assertArrayNotHasKey('/internal', $document['paths']);
+    }
+
 
     public function testSlugOperationGeneration() {
         $router = $this->getStandaloneRouter();

@@ -28,7 +28,9 @@ class Renderer
     }
 
     public function findView(string $viewName): ?string {
-        return $this->viewFiles->first(fn($file) => str_ends_with(preg_replace("~\.[^/]+$~", "", $file), $viewName));
+        $viewName = '/'.ltrim($viewName, '/');
+
+        return $this->viewFiles->first(fn($file) => str_ends_with('/'.ltrim(preg_replace("~\.[^/]+$~", "", $file), '/'), $viewName));
     }
 
     public function render(string $viewName, array $context=[]): string {

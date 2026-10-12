@@ -348,6 +348,23 @@ class RouterTest extends TestCase
         $this->assertEquals(StatusCode::FORBIDDEN, $router->route(new Request('GET', '/claimed'))->getStatusCode());
     }
 
+    /** No response forbade content sniffing, so a text answer echoing user input could be read as HTML. */
+    public function testEveryResponseCarriesTheSecurityHeaders()
+    {
+        $router = new Router(new RouterConfiguration(false, false, false, securityHeaders: ['X-Frame-Options' => 'DENY']));
+        $router->addRoutes(
+            Route::get('/products', fn () => Response::ok('products')),
+            Route::get('/embeddable', fn () => Response::ok('widget')->withHeaders(['X-Frame-Options' => 'SAMEORIGIN'])),
+        );
+
+        $response = $router->route(new Request('GET', '/products'));
+        $this->assertEquals('nosniff', $response->getHeader('X-Content-Type-Options'));
+        $this->assertEquals('DENY', $response->getHeader('X-Frame-Options'));
+
+        $this->assertEquals('SAMEORIGIN', $router->route(new Request('GET', '/embeddable'))->getHeader('X-Frame-Options'));
+        $this->assertEquals('nosniff', $router->route(new Request('GET', '/missing'))->getHeader('X-Content-Type-Options'));
+    }
+
     public function testAnApiRegistersItsOwnRoutes()
     {
         $api = new CountingApi();

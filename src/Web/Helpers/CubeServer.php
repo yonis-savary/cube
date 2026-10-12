@@ -34,7 +34,7 @@ class CubeServer
         $this->publicStorage = new Storage($path);
 
         $logger->info('Starting cube server on port {port} at {path}...', ['port' => $port, 'path' => $path]);
-        $this->process = new Process(['php', '-S', "0.0.0.0:{$port}", 'index.php'], $path);
+        $this->process = new Process(['php', '-S', "127.0.0.1:{$port}", 'index.php'], $path);
         $this->process->start(fn () => $this->log());
 
         usleep($safeTimeout * 1000);

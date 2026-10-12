@@ -28,7 +28,7 @@
     "require": {
         "php": "^8.5",
         "psr/log": "^3.0.2",
-        "symfony/process": "7.4.13",
+        "symfony/process": "^7.4",
         "cboden/ratchet": "^0.4.4",
         "react/http": "^1.10"
     },

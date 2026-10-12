@@ -26,7 +26,9 @@ class AssetsInserter
     }
 
     protected function findAsset(string $assetName): ?string {
-        return $this->assetsFiles->first(fn($file) => str_ends_with($file, $assetName));
+        $assetName = '/'.ltrim($assetName, '/');
+
+        return $this->assetsFiles->first(fn($file) => str_ends_with('/'.ltrim($file, '/'), $assetName));
     }
 
     public function insert(string $assetName): string {

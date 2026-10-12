@@ -2,9 +2,7 @@
 
 namespace Cube\Utils;
 
-use RuntimeException;
-
-use function Cube\env;
+use function Cube\appKey;
 
 /**
  * Prepends an HMAC (keyed on `APP_KEY`) to a payload stored outside the application, so that it can
@@ -35,9 +33,7 @@ class SignedPayload
 
     private static function computeMac(string $payload, #[\SensitiveParameter] ?string $key): string
     {
-        $key ??= env('APP_KEY', false);
-        if (!$key)
-            throw new RuntimeException('Cannot sign or verify a payload without an app key (APP_KEY) or a provided key');
+        $key = appKey($key);
 
         return hash_hmac(self::MAC_ALGORITHM, $payload, hash_hkdf('sha256', $key, 32, 'cube-signed-payload'));
     }

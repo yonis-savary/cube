@@ -33,6 +33,10 @@ In production it is always skipped : the models you deploy are the ones you gene
 A table or a column whose name is not a plain identifier (letters, digits, underscores) makes the
 generation throw, since names are written into PHP source.
 
+A migration runs in a transaction, but MySQL commits on every `CREATE`, `ALTER` and `DROP` : a
+migration failing halfway leaves its first statements applied there. Keep one structural change per
+migration on MySQL.
+
 Add `--apis` (or `-a`) to also write a [`ModelAPI`](./107-controller-and-apis.md) subclass per
 model in `Http/Apis`, `ProductAPI` for `Product`. An API file that already exists is never
 rewritten, so your overrides are safe, and the framework's own tables (prefixed with `__`) get none

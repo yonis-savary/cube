@@ -79,7 +79,8 @@ The Cube framework contains a bunch of commands you can use out-of-the-box !, wh
 | `web:serve [PORT]` | Start PHP Builtin Webserver to serve your app |
 | `unix:serve <SOCKET_PATH>` | Serve your socket routes on a unix socket |
 | `configuration:cache` | Cache your app configuration |
-| `cache:clear` | Clear every cache items |
+| `cache:clear` | Clear every cache items, listing what was removed |
+| `key:generate` | Print a random `APP_KEY` to paste in your `.env` |
 | `make:dto` | Can create a DTO object from a JSON user input |
 | `make:migration <MIGRATION_NAME>` | Create a migration file |
 | `make:openapi` | Generate the OpenAPI document of your API |

@@ -161,6 +161,19 @@ class AuthenticationTest extends TestCase
         $this->assertTrue($authentication->attempt('alice', 'correct-horse'));
     }
 
+    /** The first row matching any field was picked : an account whose email is another one's login hid it, or answered for it. */
+    public function testAnIdentifierMatchingSeveralAccountsIsRefused()
+    {
+        User::insertArray(['login' => 'ambiguous', 'password' => password_hash('right-password', PASSWORD_DEFAULT), 'type' => 1]);
+        User::insertArray(['login' => 'impostor', 'password' => 'ambiguous', 'type' => 1]);
+
+        $authentication = $this->newAuthentication(
+            new PasswordAuthentication(User::class, ['login', 'password'], 'password')
+        );
+
+        $this->assertFalse($authentication->attempt('ambiguous', 'right-password'));
+    }
+
     public function testASaltFieldTakesPartInTheHash()
     {
         // The salt column here is 'login', so what gets verified is password + login

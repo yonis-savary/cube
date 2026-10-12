@@ -514,6 +514,17 @@ class Response extends HttpMessage
         return $this;
     }
 
+    /** @param array<string,string> $headers */
+    public function withDefaultHeaders(array $headers): static
+    {
+        foreach ($headers as $name => $value) {
+            if (null === $this->getHeader($name))
+                $this->setHeader($name, $value);
+        }
+
+        return $this;
+    }
+
     public function withDefaultCORSHeaders(Request $request): static
     {
         if ($this->corsDefined)

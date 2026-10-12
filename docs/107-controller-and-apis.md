@@ -128,7 +128,7 @@ Product::toObjectParam()->withOptionalKeys(['name', 'price_dollar']);
 | `Param::array(Rule $childRule)` | a list whose every item matches `$childRule` |
 | `Param::anyKeyObject(Rule $valueRule)` | a map with unknown keys and known value shape |
 | `Param::model(...)` | a value that must exist as a model row |
-| `UploadRule::new()` | an upload, chain `withMimeType()` and `withMaxSize()` |
+| `UploadRule::new()` | an upload, chain `withMimeType()` and `withMaxSize()` : without them, any type and size is accepted |
 
 Two chainable checks apply to any of them : `inArray(array $values)` and
 `isBetween($min, $max, bool $canBeEqual = true)`. Add your own with `withCondition()` and

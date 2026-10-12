@@ -37,6 +37,13 @@ Files inside these directories shall be considered as "require" files and used b
 Only the `.php` files of these directories and of `Routes/`/`Router/` are included : a `README.md` or
 an editor backup left there would otherwise be printed into every response.
 
+Files inside `Views/` are plain-PHP views rendered by `Cube\render('client/details', $context)`. A
+view prints nothing escaped by itself : wrap every value with `Cube\e()`, which escapes it for HTML
+
+```php
+<h1><?= Cube\e($client->name) ?></h1>
+```
+
 
 You can retrieve every set of files with 
 ```php

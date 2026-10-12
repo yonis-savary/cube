@@ -64,8 +64,9 @@ class ProductController extends Controller
 }
 ```
 
-Every model a response refers to is described once in `components.schemas`, from its fields and
-relations. A `nullable` rule becomes a nullable type, and a rule that is not `optional()` a
+Every model a response refers to is described once in `components.schemas`, from **all** its fields
+and relations : the hidden fields of a `ModelAPI` belong to that API, not to the model, so a password
+hash column appears in the schema. Read the document before publishing it. A `nullable` rule becomes a nullable type, and a rule that is not `optional()` a
 required key or parameter.
 
 ## Describing an endpoint
@@ -83,6 +84,18 @@ The `operationId` is the camelCase of the summary (`listProducts`), or of the me
 exception naming both operations when two collide. Give them distinct methods, or set
 `#[Endpoint(operationId: ...)]` yourself. A callback shared by several verbs (`new Route('/', $callback,
 ['PUT', 'PATCH'])`) always collides : declare one route per verb.
+
+## Leaving a route out
+
+`#[Hidden]` on a controller method, or on the controller class, keeps its routes out of the document
+
+```php
+#[Hidden]
+public function healthCheck(): Response
+{
+    return Response::ok();
+}
+```
 
 ## Describing a response
 

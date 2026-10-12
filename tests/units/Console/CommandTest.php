@@ -88,6 +88,7 @@ class CommandTest extends TestCase
             'cube:help',
             'cube:queue',
             'cube:test',
+            'key:generate',
             'make:dto',
             'make:migration',
             'make:openapi',

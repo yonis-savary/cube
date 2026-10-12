@@ -72,9 +72,17 @@ holds the files included at boot : give each application its own php-fpm master.
 PHP warnings and notices go to the error log instead of being printed into the response, absolute
 paths included.
 
-Values are read as written, so `APP_KEY=c2VjcmV0==` or `PASSWORD=abc!def` need no quotes. `true`,
+Values are read as written, so a base64 value ending in `==` or `PASSWORD=abc!def` need no quotes. `true`,
 `on`, `yes` read as `"1"`, and `false`, `off`, `no`, `none`, `null` as `""`. Variables of the process
 (`getenv()` and `$_ENV`) are read first, and the `.env` file overrides them.
+
+`APP_KEY` signs the Redis cache and queue payloads and keys `Cube\encrypt()` : it must hold at least
+32 bytes, and anything shorter throws. `php do key:generate` prints a random one to paste in your
+`.env`.
+
+`configuration:cache` writes your configuration elements, passwords included, under
+`Storage/cube/configuration`, and a `RedisSession` puts its password in `session.save_path`, which
+`phpinfo()` shows. Keep `Storage` outside your web root and readable by your application only.
 
 ## Components
 

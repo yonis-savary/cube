@@ -9,6 +9,8 @@ use Cube\Web\Html\Renderer;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
+use function Cube\e;
+
 class RendererTest extends TestCase
 {
     protected function getRenderer(): Renderer
@@ -44,6 +46,21 @@ class RendererTest extends TestCase
         $this->assertIsString($renderer->findView("client/details"));
         $this->assertIsString($renderer->findView("order/details"));
         $this->assertNull($renderer->findView("order/inexistent"));
+    }
+
+    /** Names were matched as plain suffixes : the view `ails` found `details.php`. */
+    public function test_a_name_matches_whole_path_segments_only()
+    {
+        $renderer = $this->getRenderer();
+
+        $this->assertNull($renderer->findView("ails"));
+        $this->assertNull($renderer->findView("t/details"));
+    }
+
+    public function test_escaping_a_value_for_html()
+    {
+        $this->assertEquals('&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#039;quotes&#039;', e('<script>alert("x")</script> & \'quotes\''));
+        $this->assertEquals('42', e(42));
     }
 
     public function test_render_simple()

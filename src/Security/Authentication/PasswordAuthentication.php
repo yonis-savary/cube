@@ -37,10 +37,13 @@ class PasswordAuthentication implements AuthenticationProvider
             $query->where($field, $identifier, '=', $model::table())->or();
         }
 
-        if (!$user = $query->first()) {
+        $candidates = $query->limit(2)->fetch();
+        if (1 !== count($candidates)) {
             password_verify($password, self::DECOY_HASH);
             return false;
         }
+
+        $user = $candidates[0];
 
         $this->saltString($password, $user);
 
