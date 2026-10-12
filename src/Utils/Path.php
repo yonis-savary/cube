@@ -160,15 +160,17 @@ class Path
             return;
         }
 
-        try {
-            while (!is_dir('./vendor/yonis-savary/cube')) {
-                chdir('..');
-            }
+        $directory = getcwd();
 
-            self::$projectPath = getcwd();
-        } catch (\Throwable $_) {
-            throw new \Exception('Could not resolve project root path');
+        while (!is_dir("{$directory}/vendor/yonis-savary/cube")) {
+            if ($directory === $parent = dirname($directory))
+                throw new \RuntimeException('Could not find the project root : no vendor/yonis-savary/cube in '.getcwd().' nor any of its parents');
+
+            $directory = $parent;
         }
+
+        chdir($directory);
+        self::$projectPath = $directory;
     }
 
     public static function getProjectPath(): string

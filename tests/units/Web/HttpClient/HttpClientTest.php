@@ -164,6 +164,21 @@ class HttpClientTest extends TestCase
         fclose($server);
     }
 
+    /** The request line was built from the path alone : every query parameter was lost. */
+    public function testAsyncFetchKeepsTheQueryString()
+    {
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) substr(strrchr(stream_socket_get_name($server, false), ':'), 1);
+
+        $this->assertTrue((new ExposedHttpClient("http://127.0.0.1:{$port}"))->getAsync('/events', ['page' => 2]));
+
+        $connection = stream_socket_accept($server, 1);
+        $this->assertStringStartsWith('GET /events?page=2 HTTP/1.1', stream_get_contents($connection));
+
+        fclose($connection);
+        fclose($server);
+    }
+
     /** A client built for one API sent its credentials to any absolute URL it was given. */
     public function testBaseValuesStayOnTheBaseOrigin()
     {

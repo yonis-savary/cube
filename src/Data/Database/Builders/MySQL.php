@@ -142,15 +142,18 @@ class MySQL extends QueryBuilder
         $body = '';
         $operator = 'AND';
 
-        foreach ($conditions as $index => $condition)
+        foreach ($conditions as $condition)
         {
-            if (is_string($condition) || !$stringCondition = $this->getCondition($condition))
+            if (is_string($condition)) {
+                $operator = $condition;
+                continue;
+            }
+
+            if (!$stringCondition = $this->getCondition($condition))
                 continue;
 
             $body .= $body ? " $operator $stringCondition" : $stringCondition;
-
-            $nextElement = $conditions[$index + 1] ?? null;
-            $operator = is_string($nextElement) ? $nextElement : 'AND';
+            $operator = 'AND';
         }
 
         return $body;

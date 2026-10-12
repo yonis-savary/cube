@@ -84,6 +84,10 @@ you compare generated SQL : the same value produces different text on different 
 Booleans are quoted like any other value : MySQL holds an unquoted `FALSE` equal to any string
 starting with a letter, so `where('token', false)` would have matched every token. A MySQL connection
 also refuses several statements in one call (`SELECT 1; SELECT 2` throws a `PDOException`).
+Both only hold for a connection Cube opens itself : a `PDO` you give to `fromPDO()` keeps its own
+options, so build it with `charset=utf8mb4` in its DSN and `Pdo\Mysql::ATTR_MULTI_STATEMENTS => false`.
+A MySQL connection using a multi-byte charset that defeats escaping (`gbk`, `big5`, `sjis`...) is
+refused with an `InvalidArgumentException`.
 
 ```php
 $database->build('SELECT {}', ["O'Brien"]);

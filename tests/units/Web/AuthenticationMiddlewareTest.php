@@ -3,6 +3,7 @@
 namespace Cube\Tests\Units\Web;
 
 use Cube\Tests\Units\Web\Classes\RoleMiddleware;
+use Cube\Web\Helpers\WebAPI;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -39,6 +40,22 @@ class AuthenticationMiddlewareTest extends TestCase
 
         $this->assertEquals(StatusCode::FORBIDDEN, $response->getStatusCode());
         $this->assertEquals('admin', $response->getBody());
+    }
+
+    /** As a common middleware, it read the extras of a route a WebAPI answer does not have, and crashed with a 500. */
+    public function testAnApiAnswerHasNoRouteToGuard()
+    {
+        $api = new class extends WebAPI {
+            public function routes(Router $router): void {}
+
+            public function handle(Request $request): Response|Route|null
+            {
+                return Response::ok('from the api');
+            }
+        };
+        $router = new Router(new RouterConfiguration(false, false, false, [$api], [RoleMiddleware::class]));
+
+        $this->assertEquals('from the api', $router->route(new Request('GET', '/anything'))->getBody());
     }
 
     public function testUserHasPermissionAnswersWhatIsMissing()

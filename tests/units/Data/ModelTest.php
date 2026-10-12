@@ -506,6 +506,20 @@ class ModelTest extends TestCase
         });
     }
 
+    /** Postgres and SQLite ignored the LIMIT of a DELETE : destroying one of two identical rows deleted both. */
+    #[ DataProvider('getDatabases') ]
+    public function testDestroyingADuplicatedRowWithoutPrimaryKeyKeepsTheOther(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            ModuleUser::insertArray(['user' => 1, 'module' => 3]);
+            $duplicate = ModuleUser::insertArray(['user' => 1, 'module' => 3]);
+
+            $duplicate->destroy();
+
+            $this->assertEquals(1, ModuleUser::select()->where('module', 3)->count());
+        });
+    }
+
     #[ DataProvider('getDatabases') ]
     public function testLastOnAnEmptyTable(Database $database)
     {

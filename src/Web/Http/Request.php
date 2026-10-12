@@ -47,9 +47,12 @@ class Request extends HttpMessage
         ?string $ip = null,
         array $cookies = []
     ) {
+        [$path, $query] = explode('?', $path, 2) + [1 => ''];
+        parse_str($query, $queryParameters);
+
         $this->method = $method;
         $this->path = self::normalizePath($path);
-        $this->get = self::parseDictionaryValues($get);
+        $this->get = self::parseDictionaryValues($get + $queryParameters);
         $this->post = self::parseDictionaryValues($post);
         $this->setHeaders($headers);
         $this->uploads = $uploads;
@@ -372,10 +375,8 @@ class Request extends HttpMessage
         );
     }
 
-    protected static function normalizePath(string $uri): string
+    protected static function normalizePath(string $path): string
     {
-        $path = explode('?', $uri, 2)[0];
-
         return '/' === $path
             ? $path
             : Text::dontEndsWith($path, '/');

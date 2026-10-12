@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Utils;
 
 use Cube\Utils\Path;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 
 /**
  * @internal
@@ -73,5 +74,18 @@ class PathTest extends TestCase
     public function testPathToNamespaceOutsideOfThePsr4PrefixesPascalCasesEachDirectory()
     {
         $this->assertEquals('Storage\\MyModule\\SubDirectory', Path::pathToNamespace(Path::relative('Storage/my-module/sub_directory')));
+    }
+
+    /** chdir('..') never fails at `/`, so a directory outside any Cube project made the lookup loop forever. */
+    public function testResolvingTheProjectOutsideOfAnyProjectThrows()
+    {
+        $process = new Process([
+            PHP_BINARY, '-r',
+            'require $argv[1]; try { Cube\Utils\Path::resolveProjectPath(); } catch (RuntimeException $e) { echo $e->getMessage(); }',
+            realpath('vendor/autoload.php'),
+        ], sys_get_temp_dir(), timeout: 10);
+        $process->run();
+
+        $this->assertStringStartsWith('Could not find the project root', $process->getOutput(), $process->getErrorOutput());
     }
 }

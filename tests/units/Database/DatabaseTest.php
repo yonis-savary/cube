@@ -363,4 +363,16 @@ class DatabaseTest extends TestCase
 
         $database->exec('SELECT 1; SELECT 2');
     }
+
+    /** A PDO given as is skipped the DSN charset : with a multi-byte charset such as gbk, PDO::quote() can be bypassed. */
+    public function testAMySQLConnectionWithAnUnsafeCharsetIsRefused()
+    {
+        $dsn = 'mysql:host=127.0.0.1;port='.env('CUBE_TEST_MYSQL_PORT', 9901);
+        $password = env('CUBE_TEST_DATABASE_PASSWORD', 'root');
+
+        $this->assertInstanceOf(Database::class, Database::fromPDO(new \PDO("{$dsn};charset=utf8mb4", 'root', $password)));
+
+        $this->expectException(\InvalidArgumentException::class);
+        Database::fromPDO(new \PDO("{$dsn};charset=gbk", 'root', $password));
+    }
 }

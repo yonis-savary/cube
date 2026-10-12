@@ -137,6 +137,14 @@ class RequestTest extends TestCase
         $this->assertEquals('/products', (new Request('GET', '/products?page=2'))->getPath());
     }
 
+    /** The query of a path was dropped : `$client->get('/products?page=2')` asked for the first page. */
+    public function testTheQueryStringOfAPathIsKeptAsGetParameters()
+    {
+        $request = new Request('GET', '/products?page=2&sort=name', ['sort' => 'price']);
+
+        $this->assertEquals(['sort' => 'price', 'page' => '2'], $request->get());
+    }
+
     /** fromGlobals() trimmed the trailing slash before stripping the query, so `/products/?page=2` kept it. */
     public function testATrailingSlashBeforeTheQueryStringIsTrimmed()
     {

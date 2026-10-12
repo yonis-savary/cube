@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Web;
 
 use App\Channels\ProductChannel;
 use Cube\Env\Configuration;
+use Cube\Web\Websocket\Broadcast\BroadcastConfiguration;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Websocket\Servers\WebsocketConfiguration;
@@ -112,6 +113,17 @@ class WebsocketRouterTest extends TestCase
     public function testAConnectionNoChannelAnswersIsClosed()
     {
         $this->assertTrue($this->subscribe('/no-such-channel', [])->closed);
+    }
+
+    /** Path::join() collapsed the `//` of the origin, so clients were sent to `ws:/host:8088/...`. */
+    public function testAChannelRedirectsToAFullWebsocketUrl()
+    {
+        $location = Configuration::withInstance(
+            new Configuration(new BroadcastConfiguration(socketHost: 'websocket.example.org', socketPort: 8088)),
+            fn () => (new PrivateChannel())->redirect(['id' => 7])->getHeader('Location')
+        );
+
+        $this->assertEquals('ws://websocket.example.org:8088/private/7', $location);
     }
 
     protected function subscribe(string $path, array $headers, ?WebsocketConfiguration $configuration = null): ConnectionInterface

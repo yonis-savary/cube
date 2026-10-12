@@ -23,7 +23,7 @@ abstract class AuthenticationMiddleware implements Middleware
         $identifier = static::getIdentifier();
 
         $neededPermissions = [];
-        foreach ($request->getRoute()->getExtras() as $key => $permissions) {
+        foreach ($request->getRoute()?->getExtras() ?? [] as $key => $permissions) {
             if (str_starts_with((string) $key, $identifier))
                 array_push($neededPermissions, ...$permissions);
         }

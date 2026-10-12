@@ -11,7 +11,6 @@ use Cube\Data\Database\Query\Join;
 use Cube\Data\Database\Query\Order;
 use Cube\Data\Database\Query\QueryBase;
 use Cube\Data\Database\Query\UpdateField;
-use Cube\Env\Logger\Logger;
 use Exception;
 use Throwable;
 
@@ -243,15 +242,19 @@ class SQLite extends MySQL
 
     protected function buildDelete(): string
     {
-        if ($this->query->limit) {
-            Logger::getInstance()->warning('LIMIT statement for delete query is not supported by SQLite');
-        }
+        $table = $this->getTable($this->query->base->table);
 
+        if (!$this->query->limit)
+            return sprintf("DELETE FROM %s \n%s", $table, $this->getConditions($this->query->conditions));
+
+        // SQLite has no DELETE ... LIMIT : the rows are picked by their physical identifier instead
         return sprintf(
-            "DELETE FROM %s \n%s \n%s",
-            $this->getTable($this->query->base->table),
+            "DELETE FROM %s WHERE rowid IN (SELECT rowid FROM %s \n%s \n%s \n%s)",
+            $table,
+            $table,
             $this->getConditions($this->query->conditions),
-            $this->getOrders()
+            $this->getOrders(),
+            $this->getLimit()
         );
     }
 

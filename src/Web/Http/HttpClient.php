@@ -573,7 +573,7 @@ class HttpClient
         $host = $parsed['host'];
         $secure = 'https' === ($parsed['scheme'] ?? 'http');
         $port = $parsed['port'] ?? ($secure ? 443 : 80);
-        $path = $parsed['path'] ?? '/';
+        $path = ($parsed['path'] ?? '/').(isset($parsed['query']) ? '?'.$parsed['query'] : '');
 
         $headers["Connection"] = "close";
         $headers["Host"] = "$host:$port";

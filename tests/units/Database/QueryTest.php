@@ -761,6 +761,23 @@ class QueryTest extends TestCase
         });
     }
 
+    #[DataProvider('getDatabases')]
+    public function testAnEmptyGroupBeforeAnOrKeepsIt(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            foreach (['screen', 'mouse', 'desk'] as $name)
+                Product::insertArray(['name' => $name]);
+
+            $query = Product::select()
+                ->where('name', 'screen')
+                ->whereGroup(fn () => null)
+                ->or()
+                ->where('name', 'mouse');
+
+            $this->assertEquals(['screen', 'mouse'], $this->fetchNames($query));
+        });
+    }
+
     public function testAssocMethodsRefuseAList()
     {
         $this->expectException(InvalidArgumentException::class);

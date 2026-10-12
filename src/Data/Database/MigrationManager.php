@@ -131,8 +131,7 @@ abstract class MigrationManager
         $this->createMigrationTableIfInexistant();
 
         $files = $this->migrationFiles
-            ->filter(fn($file) => basename($file))
-            ->filter(fn($migrationName) => !$this->migrationWasMade($migrationName))
+            ->filter(fn($file) => !$this->migrationWasMade(basename($file)))
             ->toArray();
 
         if (count($files))

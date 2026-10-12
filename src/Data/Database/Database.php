@@ -30,6 +30,9 @@ class Database
         if ($connection) {
             $this->driver = $connection->getAttribute(\PDO::ATTR_DRIVER_NAME);
             $this->connection = $connection;
+
+            if ('mysql' === $this->driver)
+                self::assertQuotableCharset($connection);
         }
         else if ('sqlite' === $driver) {
             $this->database = $database
@@ -79,6 +82,14 @@ class Database
             $config->user,
             $config->password,
         );
+    }
+
+    protected static function assertQuotableCharset(\PDO $connection): void
+    {
+        $charset = strtolower((string) $connection->query('SELECT @@character_set_client')->fetchColumn());
+
+        if (in_array($charset, ['big5', 'cp932', 'eucjpms', 'gb18030', 'gb2312', 'gbk', 'sjis', 'ujis'], true))
+            throw new \InvalidArgumentException("The given MySQL connection uses the [{$charset}] charset, values could not be escaped safely : build it with `charset=utf8mb4` in its DSN");
     }
 
     public static function fromPDO(\PDO $connection, ?string $database=null): self

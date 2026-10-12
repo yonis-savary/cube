@@ -271,7 +271,7 @@ class Route
         array_shift($slugs);
         for ($i = 0; $i < count($slugs); ++$i) {
             $name = $regexMap[$i];
-            $value = urldecode($slugs[$i]);
+            $value = rawurldecode($slugs[$i]);
 
             if (in_array($name, $untypedSlugs) && str_contains($value, '/'))
                 return false;

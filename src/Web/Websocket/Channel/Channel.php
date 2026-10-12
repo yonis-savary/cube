@@ -3,7 +3,6 @@
 namespace Cube\Web\Websocket\Channel;
 
 use Cube\Env\Logger\Logger;
-use Cube\Utils\Path;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -112,10 +111,7 @@ abstract class Channel implements ChannelInterface
     {
         $broadCastConfiguration = BroadcastConfiguration::resolve();
 
-        $path = Path::join(
-            $broadCastConfiguration->getWebsocketOrigin(),
-            $this->path($routeParams)
-        );
+        $path = rtrim($broadCastConfiguration->getWebsocketOrigin(), '/').'/'.ltrim($this->path($routeParams), '/');
 
         return new Response(StatusCode::TEMPORARY_REDIRECT, headers: [
             "Location" => $path

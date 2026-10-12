@@ -348,6 +348,16 @@ class RouterTest extends TestCase
         $this->assertEquals(StatusCode::FORBIDDEN, $router->route(new Request('GET', '/claimed'))->getStatusCode());
     }
 
+    /** urldecode() read a `+` in a path as a space, which only form encoding does. */
+    public function testASlugKeepsItsPlusSigns()
+    {
+        $router = $this->newRouter();
+        $router->addRoutes(Route::get('/search/{term}', fn (Request $request, string $term) => Response::ok($term)));
+
+        $this->assertEquals('c++ guide', $router->route(new Request('GET', '/search/c%2B%2B%20guide'))->getBody());
+        $this->assertEquals('a+b', $router->route(new Request('GET', '/search/a+b'))->getBody());
+    }
+
     /** No response forbade content sniffing, so a text answer echoing user input could be read as HTML. */
     public function testEveryResponseCarriesTheSecurityHeaders()
     {
