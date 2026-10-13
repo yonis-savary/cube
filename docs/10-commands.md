@@ -193,7 +193,7 @@ It returns the exit code.
 | `cube:hello-world` | print `Hello World !` |
 | `cube:dispatch -e <EVENT>` | dispatch an event on `Events`, by class name or its end (see [Events](./08-events.md#dispatching-from-the-command-line)) |
 | `cube:queue -q <QUEUE> [-f] [-l]` | run a queue (class name or its end), flush it with `-f`/`--flush`, log to stdout with `-l`/`--log` (see [Queues](./29-queues.md)) |
-| `cube:test` | run `vendor/bin/phpunit` from your project root |
+| `cube:test` | run `vendor/bin/phpunit` from your project root, with your arguments, answering its exit code |
 | `web:serve [PORT]` | serve `Public/` with PHP's built-in web server, on port `8000` by default |
 | `unix:serve <SOCKET_PATH>` | serve your socket routes on a unix socket (see [Unix socket server](./31-unix-socket-server.md)) |
 | `websocket:serve [-l]` | start the websocket server (see [Websockets](./30-websockets.md)) |

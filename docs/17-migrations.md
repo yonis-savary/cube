@@ -145,12 +145,15 @@ ModelField::timestamp('updated_at');
 
 ModelField::string('email')->unique();
 ModelField::integer('agency_id')
-    ->references('agency', 'id')                    // the table name, in a migration
+    ->references('agency', 'id')                    // a table name, or a model class (Agency::class)
     ->onDeleteCascade();                            // or ->onDeleteSetNull()
 ```
 
-A field is nullable unless you call `notNull()` (a primary key always is). In a migration,
-`references()` takes the **table** name : the plan writes it as is in the `REFERENCES` clause.
+A field is nullable unless you call `notNull()` (a primary key always is). `references()` takes a
+table name or a model class : a model class is replaced by its `table()` in the `REFERENCES` clause.
+The dry run checks that the referenced column exists in the database or in the migration. When a
+model class's table does not exist yet, it checks the model's `fields()` instead : MySQL and
+PostgreSQL still refuse the foreign key at execution if the table is missing, only SQLite accepts it.
 
 | `ModelField` type | MySQL | PostgreSQL | SQLite |
 |---|---|---|---|

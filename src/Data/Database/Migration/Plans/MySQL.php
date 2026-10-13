@@ -29,7 +29,7 @@ class MySQL extends Plan
         );
 
         if ($firstColumn->hasReference())
-            $this->addForeignKey($table, $firstColumn->name, $firstColumn->referenceModel, $firstColumn->referenceField, $firstColumn->onDeleteBehavior);
+            $this->addForeignKey($table, $firstColumn->name, $firstColumn->getReferenceTable(), $firstColumn->referenceField, $firstColumn->onDeleteBehavior);
 
         foreach ($fields as $field) {
             $this->addColumn($table, $field);
@@ -76,7 +76,7 @@ class MySQL extends Plan
         $this->database->exec($query);
 
         if ($field->hasReference())
-            $this->addForeignKey($table, $field->name, $field->referenceModel, $field->referenceField, $field->onDeleteBehavior);
+            $this->addForeignKey($table, $field->name, $field->getReferenceTable(), $field->referenceField, $field->onDeleteBehavior);
     }
 
     public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {

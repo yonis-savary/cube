@@ -46,7 +46,7 @@ Tests can be automatically written by agents.
 composer require yonis-savary/cube
 
 # Install server base files such as Public/, .gitignore...
-cp -r vendor/yonis-savary/cube/server/* .
+cp -r vendor/yonis-savary/cube/server/. .
 ```
 
 ## 🔍 Cube's Look

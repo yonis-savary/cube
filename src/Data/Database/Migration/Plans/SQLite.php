@@ -30,7 +30,7 @@ class SQLite extends Plan
 
             $fieldsExpressions->push($fieldQuery);
             if ($field->hasReference()) {
-                $relationsAndIndex->push($this->database->build('FOREIGN KEY (`{}`) REFERENCES `{}`(`{}`)', [$field->name, $field->referenceModel, $field->referenceField]));
+                $relationsAndIndex->push($this->database->build('FOREIGN KEY (`{}`) REFERENCES `{}`(`{}`)', [$field->name, $field->getReferenceTable(), $field->referenceField]));
             }
         }
 

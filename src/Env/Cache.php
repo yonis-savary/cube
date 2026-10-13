@@ -93,7 +93,7 @@ class Cache
 
     /** @return string[] */
     public function clear(): array {
-        return $this->driver->clear();
+        return $this->driver->clear($this->prefixKey ? $this->key('') : '');
     }
 
     public function child(string $subkey): self {

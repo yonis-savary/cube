@@ -94,11 +94,11 @@ class RedisCache implements CacheDriverInterface
         $this->connection->del($key);
     }
 
-    public function clear(): array {
+    public function clear(string $keyPrefix = ''): array {
         $removed = [];
         $it = null;
         do {
-            if ($keys = $this->connection->scan($it, $this->identifier . "*")) {
+            if ($keys = $this->connection->scan($it, $this->identifier . addcslashes($keyPrefix, '*?[]\\') . "*")) {
                 foreach ($keys as $key) {
                     $key = substr($key, strlen($this->identifier));
                     $this->connection->del($key);

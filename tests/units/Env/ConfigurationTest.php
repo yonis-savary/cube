@@ -9,8 +9,10 @@ use Cube\Env\Configuration;
 use Cube\Env\Configuration\GenericElement;
 use Cube\Env\Configuration\Import;
 use Cube\Env\Session\SessionConfiguration;
+use Cube\Security\Authentication\AuthenticationConfiguration;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @internal
@@ -67,6 +69,15 @@ class ConfigurationTest extends TestCase
         $this->assertEquals('registered', SessionConfiguration::resolve($registered)->namespace);
         $this->assertEquals('given', SessionConfiguration::resolve($empty, new SessionConfiguration('given'))->namespace);
         $this->assertEquals('cube', SessionConfiguration::resolve($empty)->namespace);
+    }
+
+    /** An element without defaults fell back on new static() and died on an ArgumentCountError naming no configuration. */
+    public function test_a_missing_element_without_defaults_asks_to_declare_it()
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(AuthenticationConfiguration::class.' has required options and no default');
+
+        AuthenticationConfiguration::resolve(new Configuration());
     }
 
     public function test_a_configuration_file_is_loaded_element_by_element()

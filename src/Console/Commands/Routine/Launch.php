@@ -35,7 +35,7 @@ class Launch extends Command
 
     protected function launchScheduler(Logger $logger): void
     {
-        $logger->asGlobalInstance(function () {
+        Logger::withInstance($logger, function () {
             Console::print('Launching Scheduler');
             Scheduler::getInstance()->launch();
         });

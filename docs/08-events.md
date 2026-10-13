@@ -165,7 +165,7 @@ On the `Events` component
 | `PreRouting` | `Public/index.php` is about to build the request and route it (web entry point only) | — |
 | `PostRouting` | the router answered, before the response is displayed (web entry point only) | `router`, `request`, `response` |
 | `DisplayingResponse` | a response is about to be sent ; preventing it sends nothing | `response` |
-| `PostDeployment` | you dispatch it after a deployment (`php do cube:dispatch --event PostDeployment`) ; Cube empties its class index cache, by clearing the whole `Cache` driver (application entries and cached routes included) | — |
+| `PostDeployment` | you dispatch it after a deployment (`php do cube:dispatch --event PostDeployment`) ; Cube empties its class index cache and its remembered routes | — |
 | `AuthenticatedUser` | a user passed authentication | `authenticatedUser`, `userId` |
 | `LoggedInUser` | a user session was opened | `authenticatedUser`, `userId` |
 | `LoggedOutUser` | a user session was closed | `authenticatedUser`, `userId` |

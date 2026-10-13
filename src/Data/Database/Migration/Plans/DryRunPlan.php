@@ -72,28 +72,27 @@ class DryRunPlan extends Plan
         if ($this->columnExists($table, $column))
             throw new DryRunPlanException("$table.$column already exists");
 
-        $referenceModel = $modelField->referenceModel;
-        $referenceField = $modelField->referenceField;
-        $referenceException = new DryRunPlanException("$table.$column foreign key: $referenceModel.$referenceField does not exists");;
-        if ($referenceModel) {
-            if ($this->tableExists($referenceModel))
-            {
-                if (!$this->columnExists($referenceModel, $referenceField))
-                    throw $referenceException;
-            }
-            else if (class_exists($referenceModel))
-            {
-                /** @var class-string<Model> $referenceModel */
-                if (array_key_exists($referenceField, $referenceModel::fields()))
-                    throw $referenceException;
-            }
-            else
-            {
-                throw $referenceException;
-            }
-        }
+        $this->assertReferenceExists($table, $modelField);
 
         $this->addTableDiffField($table, $modelField);
+    }
+
+    protected function assertReferenceExists(string $table, ModelField $modelField): void
+    {
+        if (!$referenceTable = $modelField->getReferenceTable())
+            return;
+
+        $referenceModel = $modelField->referenceModel;
+        $referenceField = $modelField->referenceField;
+
+        $exists = match (true) {
+            $this->tableExists($referenceTable) => $this->columnExists($referenceTable, $referenceField),
+            is_a($referenceModel, Model::class, true) => array_key_exists($referenceField, $referenceModel::fields()),
+            default => false,
+        };
+
+        if (!$exists)
+            throw new DryRunPlanException("$table.{$modelField->name} foreign key: $referenceTable.$referenceField does not exists");
     }
 
     public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {

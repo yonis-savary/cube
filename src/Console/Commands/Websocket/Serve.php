@@ -4,6 +4,7 @@ namespace Cube\Console\Commands\Websocket;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
+use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
 use Cube\Env\Logger\StdOutLogger;
 use Cube\Web\Websocket\Servers\Websocket;
@@ -26,7 +27,7 @@ class Serve extends Command
             ? new StdOutLogger()
             : new NullLogger()
         ;
-        $logger->asGlobalInstance(fn() => Websocket::getInstance()->serve());
+        Logger::withInstance($logger, fn() => Websocket::getInstance()->serve());
         return 0;
     }
 }

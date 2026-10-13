@@ -9,6 +9,7 @@ use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Migration\Plans\Exceptions\DryRunPlanException;
 use Cube\Data\Database\Migration\Plans\Exceptions\UnsupportedByDBMSException;
 use Cube\Data\Models\ModelField;
+use Cube\Data\Models\Model;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -58,6 +59,35 @@ class MigrationTest extends TestCase
         $this->assertTrue($database->hasField("user_log", "id"));
         $this->assertTrue($database->hasField("user_log", "user_id"));
         $this->assertTrue($database->hasField("user_log", "log_datetime"));
+    }
+
+    /** A reference given as a Model class failed the dry run and was written as is in the REFERENCES clause. */
+    #[ DataProvider('getDatabases') ]
+    public function testAReferenceCanNameAModelClass(Database $database)
+    {
+        $reviewTarget = new class extends Model {
+            public static function table(): string { return 'review_target'; }
+            public static function fields(): array { return []; }
+            public static function relations(): array { return []; }
+        };
+
+        $migration = new class($reviewTarget::class) extends Migration {
+            public function __construct(private string $reviewTargetModel) {}
+
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create('review_target', [ModelField::id()]);
+                $plan->create('review', [
+                    ModelField::id(),
+                    ModelField::integer('target')->references($this->reviewTargetModel, 'id')->notNull(),
+                ]);
+            }
+        };
+
+        $thrown = $migration->execute($this->getDatabasePlan($database), $database);
+
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+        $this->assertTrue($database->hasField('review', 'target'));
     }
 
     /** create(), addColumn() and the rename methods wrote names between delimiters without doubling the delimiter itself. */

@@ -268,9 +268,9 @@ services:
     restart: always
 ```
 
-The server logs connections, refusals and dispatches through the `Logger` component, so to
-`Storage/Logs/cube.csv` by default. The command accepts `-l` / `--log`, meant to echo that log to
-stdout, but it currently has no effect : the log still goes to `cube.csv`.
+The server logs connections, refusals and dispatches through the `Logger` component. With `-l` /
+`--log`, the command replaces it with a logger writing to stdout ; without it, the server logs
+nothing.
 
 The process builds your channels once, at start : restart it after a deployment.
 

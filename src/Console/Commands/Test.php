@@ -4,9 +4,7 @@ namespace Cube\Console\Commands;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Core\Autoloader;
 use Cube\Utils\Path;
-use Cube\Utils\Shell;
 use Symfony\Component\Process\Process;
 
 class Test extends Command
@@ -19,14 +17,29 @@ class Test extends Command
     public function execute(Args $args): int
     {
         $bin = Path::relative('vendor/bin/phpunit');
-        if (file_exists($bin)) {
-            Shell::executeInDirectory($bin, Path::getProjectPath(), function ($type, $buffer) {
-                echo $buffer;
-            });
-            return 0;
+        if (!file_exists($bin)) {
+            echo "PHPUnit bin not found";
+            return 1;
         }
 
-        echo "PHPUnit bin not found";
-        return 1;
+        $process = new Process([$bin, ...$this->toPhpUnitArguments($args)], Path::getProjectPath(), timeout: null);
+        $process->run(function ($type, $buffer) {
+            echo $buffer;
+        });
+
+        return $process->getExitCode();
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function toPhpUnitArguments(Args $args): array
+    {
+        $arguments = [];
+
+        foreach ($args->dump() as $parameter => $values)
+            array_push($arguments, ...array_filter([(string) $parameter, ...$values], fn (string $argument) => $argument !== ''));
+
+        return $arguments;
     }
 }

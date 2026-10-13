@@ -3,6 +3,8 @@
 namespace Cube\Env\Configuration;
 
 use Cube\Env\Configuration;
+use ReflectionClass;
+use RuntimeException;
 
 abstract class ConfigurationElement
 {
@@ -15,7 +17,17 @@ abstract class ConfigurationElement
 
         $configuration ??= Configuration::getInstance();
 
-        return $configuration->resolve($class) ?? $default ?? new $class();
+        return $configuration->resolve($class) ?? $default ?? static::fromDefaults();
+    }
+
+    protected static function fromDefaults(): static
+    {
+        $class = static::class;
+
+        if ((new ReflectionClass($class))->getConstructor()?->getNumberOfRequiredParameters())
+            throw new RuntimeException("{$class} has required options and no default : declare it in your cube.php");
+
+        return new $class();
     }
 
     public function getName(): string

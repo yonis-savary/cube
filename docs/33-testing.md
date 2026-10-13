@@ -67,12 +67,11 @@ The `Storage/Tests-*` directories are not deleted after the run : remove them wh
 `php do test` (or its full identifier `php do cube:test`) runs `vendor/bin/phpunit` from your project
 and prints its output. It prints `PHPUnit bin not found` and answers `1` when PHPUnit is not installed.
 
-The command passes no argument to PHPUnit, always answers `0`, even when a test fails, and is stopped
-by a 60 seconds timeout. In a CI pipeline, or to filter, call PHPUnit directly
+Every argument goes to PHPUnit, the command answers PHPUnit's exit code, and it never times out
 
 ```sh
-vendor/bin/phpunit
-vendor/bin/phpunit --filter ProductTest
+php do test
+php do test --filter ProductTest
 ```
 
 ## A fresh database per test
@@ -92,15 +91,12 @@ Keep in mind
   the same process : put it back in `tearDown()` (see
   [Swapping a component](#swapping-a-component)).
 
-The current test database is `TestContext::getInstance()->getDatabase()`, also returned by
-`Database::getInstance()`. To check a row from a test, query it through its model
+The current test database is `$this->database`, also returned by `Database::getInstance()`. To check
+a row from a test, assert it through its model
 
 ```php
-$this->assertTrue(Product::existsWhere(['name' => 'Painting']));
+$this->assertModelExists(Product::class, ['name' => 'Painting']);
 ```
-
-`CubeTestCase::assertModelExists()` is meant for that, but currently fails with an `Error` : the
-`$database` property it reads is never set. Use `existsWhere()` until it is fixed.
 
 ## Sending requests
 

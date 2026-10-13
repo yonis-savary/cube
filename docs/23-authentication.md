@@ -32,8 +32,8 @@ public static function login(LoginRequest $request)
 
 `AuthenticationConfiguration` has no default : its `provider` argument is required, so the element
 must be in your configuration before anything calls `Authentication::getInstance()`. Without it,
-the first call fails while building the configuration, with an error about a missing constructor
-argument rather than one naming the real cause.
+the first call throws a `RuntimeException` asking you to declare `AuthenticationConfiguration` in
+`cube.php`.
 
 ## Who is logged in
 

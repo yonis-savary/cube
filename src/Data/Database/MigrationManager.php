@@ -150,7 +150,7 @@ abstract class MigrationManager
 
     public function createMigration(string $name, Storage $directory): string
     {
-        $filename = date('Y_m_d_h_i_s_').$name.'.php';
+        $filename = date('Y_m_d_H_i_s_').$name.'.php';
         $directory->write($filename, Text::toFile('
         <?php
 

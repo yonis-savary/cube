@@ -18,7 +18,7 @@ interface CacheDriverInterface
     public function has(string $key): bool;
     public function delete(string $key): void;
     /** @return string[] What was removed : files for a disk cache, keys otherwise */
-    public function clear(): array;
+    public function clear(string $keyPrefix = ''): array;
 
     public function &getReference(string $key): mixed;
 }

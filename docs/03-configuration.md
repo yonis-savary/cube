@@ -134,7 +134,8 @@ $vatRate = BillingConfiguration::resolve()->vatRate;
 ```
 
 - Give **every constructor parameter a default** : without an element in `cube.php`, `resolve()`
-  builds `new static()`.
+  builds `new static()`. An element with a required parameter throws a `RuntimeException` asking to
+  declare it in `cube.php` instead.
 - Hold **ready-made collaborators** rather than strings someone must interpret later : Cube's own
   elements take a cache driver, a session driver or an authentication provider as an object.
 - **No closure and no resource** inside an element : `configuration:cache` serializes them.
@@ -202,6 +203,7 @@ readable by your application only. See [Deployment](./34-deployment.md) for the 
 | `GenericElement($name, $value)` | | an untyped value, see [above](#untyped-values-with-genericelement) |
 
 `AuthenticationConfiguration` is the only element without a default for every option : declare it
-before using `Authentication`, otherwise building the component fails.
+before using `Authentication`, otherwise building the component throws a `RuntimeException` naming
+the missing element.
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./02-installation.md">Previous : Installation</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./04-applications-and-discovery.md">Next : Applications and discovery</a></div></td></tr></table>

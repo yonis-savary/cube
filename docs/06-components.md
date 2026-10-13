@@ -145,15 +145,14 @@ whatever the callback returns.
 with the same persistent components, build the context once and call `run()` on it
 
 ```php
-$context = new RequestContext([Configuration::class, Logger::class, Injector::class]);
+$context = new RequestContext([Configuration::class, Logger::class]);
 
 foreach ($messages as $message)
     $context->run(fn () => $this->handle($message));
 ```
 
-The `Injector` is a component too : list it among the persistent components, otherwise the callback
-gets a new `Injector` without the bindings you declared with `provide()`. Static properties are not
-components : they are left as they are.
+The `Injector` is always kept, so the bindings you declared with `provide()` stay available inside
+the callback. Static properties are not components : they are left as they are.
 
 This is how the [unix socket server](./31-unix-socket-server.md) isolates its requests.
 

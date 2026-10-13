@@ -61,6 +61,23 @@ class ResponseTest extends TestCase
         }
     }
 
+    public function testFactoriesKeepAStringAsTheRawBody()
+    {
+        $response = Response::notFound('Resource not found');
+
+        $this->assertEquals('Resource not found', $response->getBody());
+        $this->assertNull($response->getHeader('content-type'));
+    }
+
+    public function testFactoriesAnswerAnyOtherValueAsJson()
+    {
+        $response = Response::created(['name' => 'screen', 'tags' => Bunch::of(['tv'])]);
+
+        $this->assertEquals(StatusCode::CREATED, $response->getStatusCode());
+        $this->assertEquals('application/json', $response->getHeader('content-type'));
+        $this->assertEquals(['name' => 'screen', 'tags' => ['tv']], $response->getJSON());
+    }
+
     public function testTextIsSentAsPlainText()
     {
         $response = Response::text('<b>not markup</b>', StatusCode::NOT_FOUND);

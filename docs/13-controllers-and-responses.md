@@ -134,7 +134,7 @@ Response::download($path);                                  // as a download nam
 | `Response::file(string $path, int $code = 200, ?string $attachmentFile = null)` | streams `$path` ; with `$attachmentFile`, as a download under that name |
 | `Response::download(string $path, int $code = 200, ?string $attachmentFile = null)` | `file()` as a download, named after the file by default |
 | `Response::temporaryRedirect(string $url)` / `permanentRedirect(string $url)` | `307` / `308` with a `Location` header |
-| `Response::ok()`, `created()`, `notFound()`, `forbidden()`, … | the status, with an optional string body |
+| `Response::ok()`, `created()`, `notFound()`, `forbidden()`, … | the status, with an optional content : a string is sent as is, anything else (a model, a `Bunch`, an array) as JSON like `json()` |
 | `new Response(int $statusCode = 204, ?string $body = null, array $headers = [])` | anything else |
 
 Only the two redirect constructors set `Location` : for a `302` or a `303`, add it with

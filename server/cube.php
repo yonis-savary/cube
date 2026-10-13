@@ -15,8 +15,8 @@ return [
     // Configure your sql connection here
     // new DatabaseConfiguration('sqlite', env('DB_FILE', 'database.sqlite')),
 
-    // To improve performances, you can enable autoloading caching
-    // new AutoloaderConfiguration(false),
+    // Class discovery is cached in production only : force it on or off here
+    // new AutoloaderConfiguration(cached: true),
 
     // You can serve your frontend application with a static file server
     // new RouterConfiguration(

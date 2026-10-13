@@ -105,6 +105,17 @@ class CacheTest extends TestCase
 
 
     #[DataProvider('getCaches')]
+    public function testClearingAChildOnlyRemovesItsOwnKeys(Cache $cache) {
+        $cache->set('application-key', 'kept');
+        $cache->child('autoloader')->set('classes', ['kept-out']);
+
+        $cache->child('autoloader')->clear();
+
+        $this->assertFalse($cache->child('autoloader')->has('classes'));
+        $this->assertEquals('kept', $cache->get('application-key'));
+    }
+
+    #[DataProvider('getCaches')]
     public function testCallbackSet(Cache $cache) {
         $cache->set('some-key', fn() => 1+2);
         $this->assertEquals(3, $cache->get('some-key'));

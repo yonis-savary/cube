@@ -95,8 +95,9 @@ php-fpm's APCu, a php-fpm restart does). Invalidate the configuration with
 | `Assets/` | asset files (`AssetsInserter`, `AssetServer`) |
 | `Requires/`, `Includes/`, `Helpers/`, `Schedules/`, `Cron/` | included at boot (global functions, `Cube\schedule(...)` calls) |
 | `Views/` | views for `Renderer` / `Cube\render()` |
+| `Migrations/` (`MigrationManagerConfiguration::$directoryName`) | migration files, read by path by `MigrationManager` and sorted by name |
 
-Everything else (`Models/`, `Controllers/`, `Commands/`, `Migrations/`, `Queue/`, `Channels/`) is
+Everything else (`Models/`, `Controllers/`, `Commands/`, `Queue/`, `Channels/`) is
 found by class discovery, not by path. `tests/integration-root/App` is the reference example.
 
 ## Data layer

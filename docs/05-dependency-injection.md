@@ -225,8 +225,7 @@ Every value must extend or implement the type, otherwise the `Injector` throws a
 | `->getDependencies($callback, $args = [])` | the resolved arguments of a callable or a `[Class::class, 'method']` array, without calling it |
 
 Bindings belong to an `Injector` instance : a new `Injector` starts without any, the framework's
-included. Inside [`RequestContext::run()`](./06-components.md#running-code-with-fresh-components) the
-`Injector` is a component like the others, so list `Injector::class` among the persistent components
-to keep your bindings.
+included. [`RequestContext::run()`](./06-components.md#running-code-with-fresh-components) never
+resets the `Injector`, so your bindings stay available inside it.
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./04-applications-and-discovery.md">Previous : Applications and discovery</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./06-components.md">Next : Components</a></div></td></tr></table>

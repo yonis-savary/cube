@@ -6,6 +6,7 @@ use Cube\Env\Logger\Logger;
 use Cube\Event\EventDispatcher;
 use Cube\Event\Events;
 use Cube\Event\Events\PostDeployment;
+use Cube\Web\Router\Router;
 use Psr\Log\LoggerInterface;
 
 Injector::getInstance()->asGlobalInstance(function($i) {
@@ -14,3 +15,4 @@ Injector::getInstance()->asGlobalInstance(function($i) {
 });
 
 PostDeployment::on(fn() => Autoloader::cleanCache() );
+PostDeployment::on(fn() => Router::cleanCache() );

@@ -104,7 +104,7 @@ $rates = $cache->getOrSet('exchange-rates', fn () => $api->fetchRates(), Cache::
 | `has(string $key)` | whether the key is there and alive |
 | `try(string $key)` | reads, `false` when missing |
 | `delete(string $key)` | removes one entry |
-| `clear()` | empties the whole cache, returns what it removed |
+| `clear()` | empties the cache (only its own keys for a `child()`), returns what it removed |
 | `getReference(string $key, mixed $default)` | a mutable slot you can write through |
 | `child(string $prefix)` | the same cache, with prefixed keys |
 
@@ -146,7 +146,7 @@ $reports->set('daily', $rows);   // stored as reports-daily
 $reports->getOrSet('weekly', fn () => $this->buildWeekly());
 ```
 
-`clear()` empties the whole driver, not only the keys of a `child()`.
+`clear()` on a `child()` empties only the keys of that child ; on the root cache, it empties everything.
 
 ### Drivers
 

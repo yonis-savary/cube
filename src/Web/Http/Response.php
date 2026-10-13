@@ -33,46 +33,54 @@ class Response extends HttpMessage
         $this->corsDefined = false;
     }
 
+    public static function fromContent(int $statusCode, mixed $content = null): static
+    {
+        if (is_null($content) || is_string($content))
+            return new static($statusCode, $content);
+
+        return static::json($content, $statusCode);
+    }
+
     // Generic functions by Http Response Code
 
     public static function continue(mixed $content = null): static
     {
-        return new static(StatusCode::CONTINUE, $content);
+        return static::fromContent(StatusCode::CONTINUE, $content);
     }
 
     public static function switchingProtocols(mixed $content = null): static
     {
-        return new static(StatusCode::SWITCHING_PROTOCOLS, $content);
+        return static::fromContent(StatusCode::SWITCHING_PROTOCOLS, $content);
     }
 
     public static function processing(mixed $content = null): static
     {
-        return new static(StatusCode::PROCESSING, $content);
+        return static::fromContent(StatusCode::PROCESSING, $content);
     }
 
     public static function earlyHints(mixed $content = null): static
     {
-        return new static(StatusCode::EARLY_HINTS, $content);
+        return static::fromContent(StatusCode::EARLY_HINTS, $content);
     }
 
     public static function ok(mixed $content = null): static
     {
-        return new static(StatusCode::OK, $content);
+        return static::fromContent(StatusCode::OK, $content);
     }
 
     public static function created(mixed $content = null): static
     {
-        return new static(StatusCode::CREATED, $content);
+        return static::fromContent(StatusCode::CREATED, $content);
     }
 
     public static function accepted(mixed $content = null): static
     {
-        return new static(StatusCode::ACCEPTED, $content);
+        return static::fromContent(StatusCode::ACCEPTED, $content);
     }
 
     public static function nonAuthoritativeInformation(mixed $content = null): static
     {
-        return new static(StatusCode::NON_AUTHORITATIVE_INFORMATION, $content);
+        return static::fromContent(StatusCode::NON_AUTHORITATIVE_INFORMATION, $content);
     }
 
     public static function noContent(): static
@@ -82,62 +90,62 @@ class Response extends HttpMessage
 
     public static function resetContent(mixed $content = null): static
     {
-        return new static(StatusCode::RESET_CONTENT, $content);
+        return static::fromContent(StatusCode::RESET_CONTENT, $content);
     }
 
     public static function partialContent(mixed $content = null): static
     {
-        return new static(StatusCode::PARTIAL_CONTENT, $content);
+        return static::fromContent(StatusCode::PARTIAL_CONTENT, $content);
     }
 
     public static function multiStatus(mixed $content = null): static
     {
-        return new static(StatusCode::MULTI_STATUS, $content);
+        return static::fromContent(StatusCode::MULTI_STATUS, $content);
     }
 
     public static function alreadyReported(mixed $content = null): static
     {
-        return new static(StatusCode::ALREADY_REPORTED, $content);
+        return static::fromContent(StatusCode::ALREADY_REPORTED, $content);
     }
 
     public static function imUsed(mixed $content = null): static
     {
-        return new static(StatusCode::IM_USED, $content);
+        return static::fromContent(StatusCode::IM_USED, $content);
     }
 
     public static function multipleChoices(mixed $content = null): static
     {
-        return new static(StatusCode::MULTIPLE_CHOICES, $content);
+        return static::fromContent(StatusCode::MULTIPLE_CHOICES, $content);
     }
 
     public static function movedPermanently(mixed $content = null): static
     {
-        return new static(StatusCode::MOVED_PERMANENTLY, $content);
+        return static::fromContent(StatusCode::MOVED_PERMANENTLY, $content);
     }
 
     public static function found(mixed $content = null): static
     {
-        return new static(StatusCode::FOUND, $content);
+        return static::fromContent(StatusCode::FOUND, $content);
     }
 
     public static function seeOther(mixed $content = null): static
     {
-        return new static(StatusCode::SEE_OTHER, $content);
+        return static::fromContent(StatusCode::SEE_OTHER, $content);
     }
 
     public static function notModified(mixed $content = null): static
     {
-        return new static(StatusCode::NOT_MODIFIED, $content);
+        return static::fromContent(StatusCode::NOT_MODIFIED, $content);
     }
 
     public static function useProxy(mixed $content = null): static
     {
-        return new static(StatusCode::USE_PROXY, $content);
+        return static::fromContent(StatusCode::USE_PROXY, $content);
     }
 
     public static function unused(mixed $content = null): static
     {
-        return new static(StatusCode::UNUSED, $content);
+        return static::fromContent(StatusCode::UNUSED, $content);
     }
 
     public static function temporaryRedirect(mixed $content = null): static
@@ -156,202 +164,202 @@ class Response extends HttpMessage
 
     public static function badRequest(mixed $content = null): static
     {
-        return new static(StatusCode::BAD_REQUEST, $content);
+        return static::fromContent(StatusCode::BAD_REQUEST, $content);
     }
 
     public static function unauthorized(mixed $content = null): static
     {
-        return new static(StatusCode::UNAUTHORIZED, $content);
+        return static::fromContent(StatusCode::UNAUTHORIZED, $content);
     }
 
     public static function paymentRequired(mixed $content = null): static
     {
-        return new static(StatusCode::PAYMENT_REQUIRED, $content);
+        return static::fromContent(StatusCode::PAYMENT_REQUIRED, $content);
     }
 
     public static function forbidden(mixed $content = null): static
     {
-        return new static(StatusCode::FORBIDDEN, $content);
+        return static::fromContent(StatusCode::FORBIDDEN, $content);
     }
 
     public static function notFound(mixed $content = null): static
     {
-        return new static(StatusCode::NOT_FOUND, $content);
+        return static::fromContent(StatusCode::NOT_FOUND, $content);
     }
 
     public static function methodNotAllowed(mixed $content = null): static
     {
-        return new static(StatusCode::METHOD_NOT_ALLOWED, $content);
+        return static::fromContent(StatusCode::METHOD_NOT_ALLOWED, $content);
     }
 
     public static function notAcceptable(mixed $content = null): static
     {
-        return new static(StatusCode::NOT_ACCEPTABLE, $content);
+        return static::fromContent(StatusCode::NOT_ACCEPTABLE, $content);
     }
 
     public static function proxyAuthenticationRequired(mixed $content = null): static
     {
-        return new static(StatusCode::PROXY_AUTHENTICATION_REQUIRED, $content);
+        return static::fromContent(StatusCode::PROXY_AUTHENTICATION_REQUIRED, $content);
     }
 
     public static function requestTimeout(mixed $content = null): static
     {
-        return new static(StatusCode::REQUEST_TIMEOUT, $content);
+        return static::fromContent(StatusCode::REQUEST_TIMEOUT, $content);
     }
 
     public static function conflict(mixed $content = null): static
     {
-        return new static(StatusCode::CONFLICT, $content);
+        return static::fromContent(StatusCode::CONFLICT, $content);
     }
 
     public static function gone(mixed $content = null): static
     {
-        return new static(StatusCode::GONE, $content);
+        return static::fromContent(StatusCode::GONE, $content);
     }
 
     public static function lengthRequired(mixed $content = null): static
     {
-        return new static(StatusCode::LENGTH_REQUIRED, $content);
+        return static::fromContent(StatusCode::LENGTH_REQUIRED, $content);
     }
 
     public static function preconditionFailed(mixed $content = null): static
     {
-        return new static(StatusCode::PRECONDITION_FAILED, $content);
+        return static::fromContent(StatusCode::PRECONDITION_FAILED, $content);
     }
 
     public static function contentTooLarge(mixed $content = null): static
     {
-        return new static(StatusCode::CONTENT_TOO_LARGE, $content);
+        return static::fromContent(StatusCode::CONTENT_TOO_LARGE, $content);
     }
 
     public static function uriTooLong(mixed $content = null): static
     {
-        return new static(StatusCode::URI_TOO_LONG, $content);
+        return static::fromContent(StatusCode::URI_TOO_LONG, $content);
     }
 
     public static function unsupportedMediaType(mixed $content = null): static
     {
-        return new static(StatusCode::UNSUPPORTED_MEDIA_TYPE, $content);
+        return static::fromContent(StatusCode::UNSUPPORTED_MEDIA_TYPE, $content);
     }
 
     public static function rangeNotSatisfiable(mixed $content = null): static
     {
-        return new static(StatusCode::RANGE_NOT_SATISFIABLE, $content);
+        return static::fromContent(StatusCode::RANGE_NOT_SATISFIABLE, $content);
     }
 
     public static function expectationFailed(mixed $content = null): static
     {
-        return new static(StatusCode::EXPECTATION_FAILED, $content);
+        return static::fromContent(StatusCode::EXPECTATION_FAILED, $content);
     }
 
     public static function imATeapot(mixed $content = null): static
     {
-        return new static(StatusCode::IM_A_TEAPOT, $content);
+        return static::fromContent(StatusCode::IM_A_TEAPOT, $content);
     }
 
     public static function misdirectedRequest(mixed $content = null): static
     {
-        return new static(StatusCode::MISDIRECTED_REQUEST, $content);
+        return static::fromContent(StatusCode::MISDIRECTED_REQUEST, $content);
     }
 
     public static function unprocessableContent(mixed $content = null): static
     {
-        return new static(StatusCode::UNPROCESSABLE_CONTENT, $content);
+        return static::fromContent(StatusCode::UNPROCESSABLE_CONTENT, $content);
     }
 
     public static function locked(mixed $content = null): static
     {
-        return new static(StatusCode::LOCKED, $content);
+        return static::fromContent(StatusCode::LOCKED, $content);
     }
 
     public static function failedDependency(mixed $content = null): static
     {
-        return new static(StatusCode::FAILED_DEPENDENCY, $content);
+        return static::fromContent(StatusCode::FAILED_DEPENDENCY, $content);
     }
 
     public static function tooEarly(mixed $content = null): static
     {
-        return new static(StatusCode::TOO_EARLY, $content);
+        return static::fromContent(StatusCode::TOO_EARLY, $content);
     }
 
     public static function upgradeRequired(mixed $content = null): static
     {
-        return new static(StatusCode::UPGRADE_REQUIRED, $content);
+        return static::fromContent(StatusCode::UPGRADE_REQUIRED, $content);
     }
 
     public static function preconditionRequired(mixed $content = null): static
     {
-        return new static(StatusCode::PRECONDITION_REQUIRED, $content);
+        return static::fromContent(StatusCode::PRECONDITION_REQUIRED, $content);
     }
 
     public static function tooManyRequests(mixed $content = null): static
     {
-        return new static(StatusCode::TOO_MANY_REQUESTS, $content);
+        return static::fromContent(StatusCode::TOO_MANY_REQUESTS, $content);
     }
 
     public static function requestHeaderFieldsTooLarge(mixed $content = null): static
     {
-        return new static(StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE, $content);
+        return static::fromContent(StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE, $content);
     }
 
     public static function unavailableForLegalReasons(mixed $content = null): static
     {
-        return new static(StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS, $content);
+        return static::fromContent(StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS, $content);
     }
 
     public static function internalServerError(mixed $content = null): static
     {
-        return new static(StatusCode::INTERNAL_SERVER_ERROR, $content);
+        return static::fromContent(StatusCode::INTERNAL_SERVER_ERROR, $content);
     }
 
     public static function notImplemented(mixed $content = null): static
     {
-        return new static(StatusCode::NOT_IMPLEMENTED, $content);
+        return static::fromContent(StatusCode::NOT_IMPLEMENTED, $content);
     }
 
     public static function badGateway(mixed $content = null): static
     {
-        return new static(StatusCode::BAD_GATEWAY, $content);
+        return static::fromContent(StatusCode::BAD_GATEWAY, $content);
     }
 
     public static function serviceUnavailable(mixed $content = null): static
     {
-        return new static(StatusCode::SERVICE_UNAVAILABLE, $content);
+        return static::fromContent(StatusCode::SERVICE_UNAVAILABLE, $content);
     }
 
     public static function gatewayTimeout(mixed $content = null): static
     {
-        return new static(StatusCode::GATEWAY_TIMEOUT, $content);
+        return static::fromContent(StatusCode::GATEWAY_TIMEOUT, $content);
     }
 
     public static function httpVersionNotSupported(mixed $content = null): static
     {
-        return new static(StatusCode::HTTP_VERSION_NOT_SUPPORTED, $content);
+        return static::fromContent(StatusCode::HTTP_VERSION_NOT_SUPPORTED, $content);
     }
 
     public static function variantAlsoNegotiates(mixed $content = null): static
     {
-        return new static(StatusCode::VARIANT_ALSO_NEGOTIATES, $content);
+        return static::fromContent(StatusCode::VARIANT_ALSO_NEGOTIATES, $content);
     }
 
     public static function insufficientStorage(mixed $content = null): static
     {
-        return new static(StatusCode::INSUFFICIENT_STORAGE, $content);
+        return static::fromContent(StatusCode::INSUFFICIENT_STORAGE, $content);
     }
 
     public static function loopDetected(mixed $content = null): static
     {
-        return new static(StatusCode::LOOP_DETECTED, $content);
+        return static::fromContent(StatusCode::LOOP_DETECTED, $content);
     }
 
     public static function notExtended(mixed $content = null): static
     {
-        return new static(StatusCode::NOT_EXTENDED, $content);
+        return static::fromContent(StatusCode::NOT_EXTENDED, $content);
     }
 
     public static function networkAuthenticationRequired(mixed $content = null): static
     {
-        return new static(StatusCode::NETWORK_AUTHENTICATION_REQUIRED, $content);
+        return static::fromContent(StatusCode::NETWORK_AUTHENTICATION_REQUIRED, $content);
     }
 
     // Generic Response by Content Type

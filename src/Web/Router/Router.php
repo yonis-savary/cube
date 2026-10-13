@@ -33,6 +33,18 @@ class Router
     /** @var WebAPI[] $apis */
     protected array $apis = [];
 
+    protected static function routesCache(?Cache $cache = null): Cache
+    {
+        $cache ??= Cache::getInstance();
+
+        return $cache->child("router");
+    }
+
+    public static function cleanCache(?Cache $cache = null): void
+    {
+        self::routesCache($cache)->clear();
+    }
+
     public function __construct(
         RouterConfiguration $config,
         ?Injector $injector = null
@@ -41,7 +53,7 @@ class Router
         $this->injector = $injector ?? Injector::getInstance();
 
         if ($config->cached)
-            $this->cache = Cache::getInstance()->child("Routers")->child(md5(static::class));
+            $this->cache = self::routesCache()->child(md5(static::class));
 
         $this->rootHolder = new RouteGroup(
             $config->commonPrefix,

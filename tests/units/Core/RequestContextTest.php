@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Core;
 
+use Cube\Core\Injector;
 use Cube\Core\RequestContext;
 use Cube\Tests\Units\Core\Classes\Counter;
 use Cube\Tests\Units\Core\Classes\SpecializedCounter;
@@ -87,6 +88,16 @@ class RequestContextTest extends TestCase
         $instance = $context->run(fn () => Counter::getInstance());
 
         $this->assertSame($instance, Counter::getInstance());
+    }
+
+    /** The Injector was reset like any component, so a run lost every provide() binding, the framework's own included. */
+    public function test_the_injector_and_its_bindings_are_kept()
+    {
+        $injector = Injector::getInstance();
+
+        $seenInside = RequestContext::oneShot(fn () => Injector::getInstance());
+
+        $this->assertSame($injector, $seenInside);
     }
 
     public function test_persistence_is_not_inherited_by_subclasses()

@@ -195,6 +195,16 @@ class ModelField
         return $this;
     }
 
+    public function getReferenceTable(): ?string
+    {
+        if (!$this->referenceModel)
+            return null;
+
+        return is_a($this->referenceModel, Model::class, true)
+            ? $this->referenceModel::table()
+            : $this->referenceModel;
+    }
+
     public function onDeleteCascade(): self
     {
         $this->onDeleteBehavior = self::ON_DELETE_CASCADE;

@@ -53,4 +53,22 @@ class MigrationManagerTest extends TestCase
             $this->tearDownTemporaryStorage();
         }
     }
+
+    /** Names used a 12-hour clock, so a migration made at 1 PM sorted before one made at 11 AM the same day. */
+    public function testAMigrationNameUsesA24HourClock()
+    {
+        $this->setUpTemporaryStorage('migration-manager-test-');
+
+        try {
+            $manager = Configuration::withInstance(
+                new Configuration(new Applications($this->storage->getRoot())),
+                fn () => new SQLite((new SQLiteProvider())->getEmptyDatabase(), new MigrationManagerConfiguration())
+            );
+            $written = $manager->createMigration('CreateInvoice', $this->storage);
+
+            $this->assertStringStartsWith(date('Y_m_d_H_'), basename($written));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
 }

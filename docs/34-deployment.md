@@ -77,8 +77,8 @@ only a restart drops that copy.
 
 Keep in mind
 
-- `PostDeployment` empties the **whole** `Cache` component, not only the discovery entries : what your
-  application cached is gone too, and so are the [remembered routes](#caching-routes).
+- `PostDeployment` empties the discovery entries and the [remembered routes](#caching-routes) only :
+  what your application cached stays. Run `php do cache:clear` to empty everything.
 - Restart php-fpm **after** the dispatch : a request served in between reads the old disk cache and
   puts it back into APCu.
 - APCu is shared by every pool of one php-fpm master, and restarting the master restarts all of them :
@@ -113,8 +113,8 @@ new RouterConfiguration(cached: true),
 
 Only routes without slugs whose callback is a `[Controller::class, 'method']` array are remembered,
 and a remembered route is called directly, without asking your `WebAPI` services first (see
-[Routing and middlewares](./11-routing-and-middlewares.md)). The remembered routes are emptied with the
-rest of the `Cache`, by `PostDeployment` or `php do cache:clear`.
+[Routing and middlewares](./11-routing-and-middlewares.md)). The remembered routes are emptied by
+`PostDeployment` and by `php do cache:clear`.
 
 ## Errors
 

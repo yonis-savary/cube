@@ -2,6 +2,7 @@
 
 namespace Tests\Integration;
 
+use App\Models\Product;
 use Cube\Test\CubeTestCase;
 
 /**
@@ -32,6 +33,8 @@ class RouterTest extends CubeTestCase
         $this->assertEquals('my-product', $product['name']);
         $this->assertEquals(42, $product['price_dollar']);
         $this->assertCount(3, $product['managers']);
+
+        $this->assertModelExists(Product::class, ['name' => 'my-product']);
 
         $productId = $product['id'];
 
