@@ -21,7 +21,7 @@ say so in one clause instead of describing the intent, and report it to the user
 
 ## 2. Write the page
 
-- File name : `docs/<number>-<kebab-case-title>.md`, `1xx` core / `2xx` features / `9xx` advanced.
+- File name : `docs/<number>-<kebab-case-title>.md`, a two-digit number giving the reading order.
 - The `#` title must match the filename, since the menu labels are derived from it.
 - Write the content **without** the menu tables — step 3 generates them. When editing an existing
   page, leave the existing tables in place and let the generator rewrite them.

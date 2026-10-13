@@ -136,8 +136,8 @@ leave commented-out code, never narrate a refactor.
 
 ## Documentation
 
-Durable knowledge belongs in the repository. A new subsystem gets a page in `docs/` (numbered,
-`1xx` core / `2xx` features), is added to `docs/README.md`, and the menus are regenerated with
+Durable knowledge belongs in the repository. A new subsystem gets a page in `docs/` (numbered in
+reading order), is added to `docs/README.md`, and the menus are regenerated with
 `php docs/generate-menus.php`. Update `README.md`'s feature list when the framework gains a
 capability.
 

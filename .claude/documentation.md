@@ -6,15 +6,14 @@ Cube, not someone maintaining the framework — internal design belongs in
 
 ## Files and numbering
 
-- One page per subsystem, named `<number>-<kebab-case-title>.md`.
-  `1xx` = core concepts every app needs (applications, commands, logging, routing, controllers,
-  storage, events), `2xx` = optional features (static server, authentication, http client, queues,
-  websockets), `9xx` = niche or advanced topics.
-- The number is the reading order, so insert a new page where it belongs in the learning path
-  rather than appending it at the end.
+- One page per subsystem, named `<number>-<kebab-case-title>.md` with a two-digit number
+  (`01`, `02`...) : the pages are read in a single continuous order, from the foundations
+  (installation, configuration, injection) to the most specific utilities.
+- The number is the reading order, so insert a new page where it belongs in the learning path and
+  renumber the pages after it, rather than appending it at the end.
 - The `#` title must match the filename : `generate-menus.php` derives menu labels from the
   filename (number stripped, dashes turned into spaces, first letter uppercased), so
-  `106-routing-and-middlewares.md` shows up as *Routing and middlewares*.
+  `11-routing-and-middlewares.md` shows up as *Routing and middlewares*.
 - After adding, renaming or removing a page, regenerate the menus **from inside `docs/`** :
   ```sh
   cd docs && php generate-menus.php
