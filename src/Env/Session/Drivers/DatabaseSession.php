@@ -2,7 +2,6 @@
 
 namespace Cube\Env\Session\Drivers;
 
-use Cube\Utils\Implementations;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Query;
@@ -42,15 +41,7 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
         if ($database->hasTable($this->table))
             return;
 
-        $driver = $database->getDriver();
-        $plan = Implementations::findOrFail(
-            Plan::class,
-            fn ($plan) => $plan::supports($driver),
-            [$database],
-            $driver
-        );
-
-        $plan->create($this->table, [
+        Plan::forDatabase($database)->create($this->table, [
             ModelField::string('id', 128)->primaryKey(),
             ModelField::string('payload')->notNull(),
             ModelField::integer('updated_at')->notNull(),

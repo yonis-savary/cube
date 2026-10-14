@@ -4,21 +4,22 @@ namespace Cube\Data\Database;
 
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
-use Cube\Utils\Implementations;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
 use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Data\Database\Migration\Plan;
+use Cube\Data\Models\ModelField;
 use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Console;
 use Cube\Utils\Text;
+use DateTime;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
-abstract class MigrationManager
+class MigrationManager
 {
     use Component;
 
@@ -77,17 +78,54 @@ abstract class MigrationManager
         return $this->lastErrorFile;
     }
 
-    abstract public function migrationWasMade(string $name): bool;
+    public function migrationWasMade(string $name): bool
+    {
+        return Query::select($this->getMigrationTableName())
+            ->selectField('name')
+            ->where('name', $name)
+            ->exists($this->database);
+    }
 
-    abstract public function createMigrationTableIfInexistant();
+    public function createMigrationTableIfInexistant(): void
+    {
+        $table = $this->getMigrationTableName();
+        if ($this->database->hasTable($table))
+            return;
 
-    abstract public function markMigrationAsDone(string $name);
+        $this->getPlan()->create($table, [
+            ModelField::id(),
+            ModelField::string('name', 200)->notNull()->unique(),
+            ModelField::datetime('created_at')->notNull(),
+        ]);
+    }
 
-    abstract public function markMigrationAsUndone(string $name);
+    public function markMigrationAsDone(string $name): void
+    {
+        Query::insert($this->getMigrationTableName())
+            ->insertField(['name', 'created_at'])
+            ->values([$name, new DateTime()])
+            ->fetch($this->database);
+    }
 
-    abstract public function listDoneMigrations(): array;
+    public function markMigrationAsUndone(string $name): void
+    {
+        Query::delete($this->getMigrationTableName())
+            ->where('name', $name)
+            ->fetch($this->database);
+    }
 
-    abstract public static function supports(string $driver): bool;
+    /** @return string[] */
+    public function listDoneMigrations(): array
+    {
+        return Bunch::wrap(
+            Query::select($this->getMigrationTableName())
+                ->selectField('name')
+                ->order('id', 'ASC')
+                ->fetch($this->database)
+        )
+            ->map(fn ($row) => $row->name)
+            ->toArray();
+    }
 
     public function executeMigration(string $file): bool
     {
@@ -153,14 +191,7 @@ abstract class MigrationManager
 
     protected function getPlan(): Plan
     {
-        $databaseDriver = $this->database->getDriver();
-
-        return Implementations::findOrFail(
-            Plan::class,
-            fn ($plan) => $plan::supports($databaseDriver),
-            [$this->database],
-            $databaseDriver
-        );
+        return Plan::forDatabase($this->database);
     }
 
     protected function recordFailure(string $file, Throwable $error, string $message): false
@@ -228,18 +259,6 @@ abstract class MigrationManager
     {
         return null !== $this->migrationFiles->first(
             fn ($file) => basename($file) === $name
-        );
-    }
-
-    public static function getDefaultInstance(): static
-    {
-        $database = Database::getInstance();
-        $databaseDriver = $database->getDriver();
-
-        return Implementations::findOrFail(
-            MigrationManager::class,
-            fn ($manager) => $manager::supports($databaseDriver),
-            for: $databaseDriver
         );
     }
 }

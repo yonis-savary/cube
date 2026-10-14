@@ -4,12 +4,13 @@ namespace Cube\Tests\Units\Database;
 
 use Cube\Core\Autoloader\Applications;
 use Cube\Data\Database\Database;
-use Cube\Data\Database\Migration\Adapters\SQLite;
+use Cube\Data\Database\MigrationManager;
 use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
 use Cube\Env\Configuration;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 class MigrationManagerTest extends TestCase
 {
     use HasTemporaryStorage;
+    use TestMultipleDrivers;
 
     /** Pending migrations were filtered by their full path, so an applied one was never recognized as such. */
     public function testAnAppliedMigrationIsNotPendingAnymore()
@@ -40,7 +42,7 @@ class MigrationManagerTest extends TestCase
 
             $manager = Configuration::withInstance(
                 new Configuration(new Applications($this->storage->getRoot())),
-                fn () => new SQLite((new SQLiteProvider())->getEmptyDatabase(), new MigrationManagerConfiguration())
+                fn () => new MigrationManager((new SQLiteProvider())->getEmptyDatabase(), new MigrationManagerConfiguration())
             );
 
             $logs = [];
@@ -64,7 +66,7 @@ class MigrationManagerTest extends TestCase
         try {
             $manager = Configuration::withInstance(
                 new Configuration(new Applications($this->storage->getRoot())),
-                fn () => new SQLite((new SQLiteProvider())->getEmptyDatabase(), new MigrationManagerConfiguration())
+                fn () => new MigrationManager((new SQLiteProvider())->getEmptyDatabase(), new MigrationManagerConfiguration())
             );
             $written = $manager->createMigration('CreateInvoice', $this->storage);
 
@@ -189,11 +191,59 @@ class MigrationManagerTest extends TestCase
         return $migrations->path($name);
     }
 
-    protected function makeManager(Database $database): SQLite
+    #[DataProvider('getDatabases')]
+    public function testAppliedMigrationsAreTrackedOnEveryDriver(Database $database)
+    {
+        $this->setUpTemporaryStorage('migration-manager-test-');
+
+        try {
+            $this->assertMigrationsAreTracked($this->makeManager($database));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
+    protected function assertMigrationsAreTracked(MigrationManager $manager): void
+    {
+        $manager->createMigrationTableIfInexistant();
+        $manager->createMigrationTableIfInexistant();
+
+        $manager->markMigrationAsDone('2026_01_01_create_invoice.php');
+        $manager->markMigrationAsDone('2026_01_02_create_customer.php');
+
+        $this->assertTrue($manager->migrationWasMade('2026_01_01_create_invoice.php'));
+        $this->assertFalse($manager->migrationWasMade('2026_01_03_create_product.php'));
+        $this->assertSame(['2026_01_01_create_invoice.php', '2026_01_02_create_customer.php'], $manager->listDoneMigrations());
+
+        $manager->markMigrationAsUndone('2026_01_01_create_invoice.php');
+
+        $this->assertFalse($manager->migrationWasMade('2026_01_01_create_invoice.php'));
+        $this->assertSame(['2026_01_02_create_customer.php'], $manager->listDoneMigrations());
+    }
+
+    public function testTheDefaultInstanceUsesTheGlobalDatabase()
+    {
+        $this->setUpTemporaryStorage('migration-manager-test-');
+        $database = (new SQLiteProvider())->getEmptyDatabase();
+
+        try {
+            $manager = Configuration::withInstance(
+                new Configuration(new Applications($this->storage->getRoot())),
+                fn () => $database->asGlobalInstance(fn () => MigrationManager::withInstance(null, fn () => MigrationManager::getInstance()))
+            );
+
+            $manager->createMigrationTableIfInexistant();
+            $this->assertTrue($database->hasTable($manager->getMigrationTableName()));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
+    protected function makeManager(Database $database): MigrationManager
     {
         return Configuration::withInstance(
             new Configuration(new Applications($this->storage->getRoot())),
-            fn () => new SQLite($database, new MigrationManagerConfiguration())
+            fn () => new MigrationManager($database, new MigrationManagerConfiguration())
         );
     }
 }

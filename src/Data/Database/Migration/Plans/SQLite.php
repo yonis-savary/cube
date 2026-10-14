@@ -3,17 +3,20 @@
 namespace Cube\Data\Database\Migration\Plans;
 
 use Cube\Data\Bunch;
-use Cube\Data\Database\Migration\Plan;
+use Cube\Data\Database\Migration\SQLPlan;
 use Cube\Data\Models\ModelField;
 use Cube\Env\Logger\Logger;
-use Cube\Web\Html\AssetsInserter\UnsupportedAssetTypeException;
-use RuntimeException;
 
-class SQLite extends Plan
+class SQLite extends SQLPlan
 {
     public static function supports(string $driver): bool
     {
         return strtolower($driver) === 'sqlite';
+    }
+
+    protected function getAutoIncrementClause(): string
+    {
+        return " AUTOINCREMENT";
     }
 
     public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
@@ -24,60 +27,14 @@ class SQLite extends Plan
         $relationsAndIndex = new Bunch();
 
         foreach ($fields as $field) {
+            $fieldsExpressions->push("{$this->quote($field->name)} {$this->getModelFieldSQLQuery($field)}");
 
-            $fieldQuery = $this->database->build('`{}` ', [$field->name]).$this->getModelFieldSQLQuery($field);
-
-            $fieldsExpressions->push($fieldQuery);
-            if ($field->hasReference()) {
-                $relationsAndIndex->push($this->database->build('FOREIGN KEY (`{}`) REFERENCES `{}`(`{}`)', [$field->name, $field->getReferenceTable(), $field->referenceField]));
-            }
+            if ($field->hasReference())
+                $relationsAndIndex->push("FOREIGN KEY ({$this->quote($field->name)}) REFERENCES {$this->quote($field->getReferenceTable())}({$this->quote($field->referenceField)})");
         }
 
         $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";
-        $this->database->exec($this->database->build('CREATE TABLE `{}` ( ', [$table]).$fieldsExpressions->merge($relationsAndIndex)->join(",") ." $additionnalSQL )");
-    }
-
-    protected function getModelFieldSQLQuery(ModelField $field): string 
-    {
-        $query = match($field->type) {
-            ModelField::STRING    => ($m = $field->maximumLength) ? "VARCHAR($m)": "TEXT",
-            ModelField::INTEGER   => "INTEGER",
-            ModelField::FLOAT     => "FLOAT",
-            ModelField::BOOLEAN   => "BOOLEAN",
-            ModelField::DECIMAL   => "DECIMAL(".($field->decimalMaximumDigits ?? 10).",".($field->decimalDigitsToTheRight ?? 5).")",
-            ModelField::DATE      => "DATE",
-            ModelField::DATETIME  => "DATETIME",
-            ModelField::TIMESTAMP => "TIMESTAMP",
-        };
-
-        if ($field->isPrimaryKey)
-            $query .= " PRIMARY KEY";
-
-        if ($field->autoIncrement)
-            $query .= " AUTOINCREMENT";
-
-        if (!$field->nullable && (!$field->isPrimaryKey))
-            $query .= " NOT NULL";
-
-        if ($field->isUnique && (!$field->isPrimaryKey))
-            $query .= " UNIQUE";
-
-        if ($field->hasDefault)
-            $query .= " DEFAULT " . $this->database->build("{}", [$field->default]);
-
-        return $query;
-    }
-
-    public function addColumn(string $table, ModelField $field) {
-        $fieldName = $field->name;
-        $query = $this->database->build('ALTER TABLE `{}` ADD COLUMN `{}`', [$table, $fieldName]);
-
-        $query .= " ". $this->getModelFieldSQLQuery($field);
-
-        $this->database->exec($query);
-
-        if ($field->isUnique || $field->hasReference())
-            Logger::getInstance()->warning("SQLite does not support constraints on already existing fields, trying to constraint $table." . $field->name);
+        $this->database->exec("CREATE TABLE {$this->quote($table)} ( ".$fieldsExpressions->merge($relationsAndIndex)->join(",")." $additionnalSQL )");
     }
 
     public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
@@ -86,36 +43,9 @@ class SQLite extends Plan
         );
     }
 
-    public function dropTable(string $table) {
-        $this->database->query("DROP TABLE `{}`", [$table]);
-    }
-
-    public function dropConstraint(string $table, string $constraintName) {
-        $this->database->query("ALTER TABLE `{}` DROP CONSTRAINT `{}`", [$table, $constraintName]);
-    }
-
-    public function dropColumn(string $table, string $field) {
-        $this->database->query("ALTER TABLE `{}` DROP COLUMN `{}`", [$table, $field]);
-    }
-
     public function alterColumn(string $table, string $field, ModelField $newProperties) {
         Logger::getInstance()->warning(
             "Column edition is not supported by SQLite, please rebuild your $table table"
         );
-    }
-
-    public function addUniqueIndex(string $table, string|array $fields) {
-        $fields = Bunch::wrap($fields)->join(', ');
-        Logger::getInstance()->warning(
-            "SQLite does not support constraints on already existing fields, trying to make unique key on $table ($fields)"
-        );
-    }
-
-    public function renameField(string $table, string $oldFieldName, string $newFieldName) {
-        $this->database->query('ALTER TABLE "{}" RENAME COLUMN "{}" TO "{}"', [$table, $oldFieldName, $newFieldName]);
-    }
-
-    public function renameTable(string $oldTableName, string $newTableName) {
-        $this->database->query('ALTER TABLE "{}" RENAME TO "{}"', [$oldTableName, $newTableName]);
     }
 }

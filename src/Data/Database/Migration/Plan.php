@@ -7,6 +7,7 @@ use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
+use Cube\Utils\Implementations;
 use InvalidArgumentException;
 
 abstract class Plan
@@ -21,6 +22,18 @@ abstract class Plan
     ){}
 
     abstract public static function supports(string $driver): bool;
+
+    public static function forDatabase(Database $database): static
+    {
+        $driver = $database->getDriver();
+
+        return Implementations::findOrFail(
+            static::class,
+            fn ($plan) => $plan::supports($driver),
+            [$database],
+            $driver
+        );
+    }
 
     /**
      * Create a new table

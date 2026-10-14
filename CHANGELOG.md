@@ -55,6 +55,14 @@ change it asks from your application.
 - The migration history is ordered by insertion id rather than `created_at`.
 - Removed : `MigrationManager::catchUpTo()`, `Plan::allowExperimentalFeatures()`,
   `UnsupportedByDBMSException`.
+- `MigrationManager` is one class for every driver : the `Migration\Adapters\*` classes are removed,
+  build `new MigrationManager($database, $configuration)` instead.
+- `QueryBuilder` holds the SQL rendering, and the `Postgres` / `SQLite` builders no longer extend
+  `MySQL`. A custom builder declares `getIdentifierDelimiters()` and `getUnboundedLimit()`.
+- The `MySQL`, `PostgreSQL` and `SQLite` plans extend `Migration\SQLPlan`, and the
+  `ModelGenerator` adapters no longer extend `SQLite` : a custom adapter implements `listTables()`,
+  `listForeignKeys()`, `listColumns()` and `getModelField()`.
+- SQLite quotes every table and column name it renders.
 
 **Background work and CLI**
 - Cron expressions combine a restricted day of the month and a restricted day of the week with OR,
@@ -91,3 +99,10 @@ change it asks from your application.
 ### Fixed
 
 See `ROADMAP.md` for the detail of each point : `S01`–`S46` (security audit) and `R01`–`R36`.
+
+Also fixed :
+- Postgres and SQLite `UPDATE` queries with a join but no `where()` lost their `WHERE` keyword.
+- `HttpMessage::getJSON()` decodes the displayed body, so it reads a `Response::file()`.
+- `ResponseAssert::json()` throws on an invalid body instead of answering `null`.
+- `ValidationReturn::mergeWith()` threw on keyed errors ; `addErrorKey()` appends to an existing key.
+- `Plan::addUniqueIndex()` creates the index on SQLite instead of logging a warning.

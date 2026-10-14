@@ -3,124 +3,70 @@
 namespace Cube\Data\Models\ModelGenerator\Adapters;
 
 use Cube\Data\Bunch;
-use Cube\Data\Models\DummyModel;
 use Cube\Data\Models\ModelField;
-use Cube\Data\Models\ModelGenerator\Table;
-use Cube\Data\Models\Relations\HasOne;
 
-class MySQL extends SQLite
+class MySQL extends DatabaseAdapter
 {
     public static function supports(string $driver): bool
     {
         return $driver === 'mysql';
     }
 
-    public function process(): void
+    protected function listTables(): array
     {
-        $db = $this->database;
-
-        $this->tables = Bunch::wrap(
-            $db->query('SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = {}', [$db->getDatabase()])
+        return Bunch::fromQuery(
+            'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = {}',
+            [$this->database->getDatabase()],
+            $this->database
         )
             ->key('TABLE_NAME')
-            ->map(fn ($x) => $this->buildTable($x))
             ->get()
         ;
     }
 
-    protected function buildTable(string $table): Table
+    protected function listForeignKeys(string $table): array
     {
-        Table::assertTableName($table);
-
-        $db = $this->database;
-        $dummyModel = new DummyModel();
-
-
-        $sqlRelations = $db->query(
-                'SELECT TABLE_NAME,
-                    COLUMN_NAME,
-                    CONSTRAINT_NAME,
-                    REFERENCED_TABLE_NAME,
-                    REFERENCED_COLUMN_NAME
-                FROM information_schema.KEY_COLUMN_USAGE
-                WHERE TABLE_SCHEMA = {}
-                AND TABLE_NAME = {}
-                AND REFERENCED_COLUMN_NAME IS NOT NULL
-            ',
-                [$db->getDatabase(), $table]
+        return $this->database->query(
+            'SELECT COLUMN_NAME AS `column`,
+                REFERENCED_TABLE_NAME AS referencedTable,
+                REFERENCED_COLUMN_NAME AS referencedColumn
+            FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = {}
+            AND TABLE_NAME = {}
+            AND REFERENCED_COLUMN_NAME IS NOT NULL
+        ',
+            [$this->database->getDatabase(), $table]
         );
-
-        $fields = Bunch::wrap($sqlRelations)->key('COLUMN_NAME');
-
-        $addedRelationNames = [];
-
-        $relations = Bunch::wrap($sqlRelations)
-            ->map(function ($x) use ($fields, $dummyModel, $table, &$addedRelationNames) {
-                $targetModel = Table::getClassname($x['REFERENCED_TABLE_NAME']);
-                $relationName = strtolower($x['COLUMN_NAME']);
-
-                while ($fields->has($relationName) || in_array($relationName, $addedRelationNames))
-                    $relationName = "_$relationName";
-
-                $addedRelationNames[] = $relationName;
-                return new HasOne(
-                    $relationName,
-                    Table::getClassname($table),
-                    $x['COLUMN_NAME'],
-                    $targetModel,
-                    $x['REFERENCED_COLUMN_NAME'],
-                    $dummyModel
-                );
-            })
-            ->get();
-
-        foreach ($relations as $relation) {
-            $this->addRelation($relation);
-        }
-
-        $primary = null;
-
-        $fields = Bunch::wrap($db->query("DESCRIBE `{$table}`"))
-            ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); })
-            ->get()
-        ;
-
-        return new Table($table, $fields, $primary);
     }
 
-    protected function getModelField(string $table, array $desc, ?string &$primary): ModelField
+    protected function listColumns(string $table): array
     {
-        $fieldName = $desc['Field'];
+        return $this->database->query("DESCRIBE `{}`", [$table]);
+    }
+
+    protected function getModelField(string $table, array $column, ?string &$primary): ModelField
+    {
+        $fieldName = $column['Field'];
 
         $field = new ModelField($fieldName);
 
-        $nullable = ('NO' != $desc['Null']);
+        $nullable = ('NO' != $column['Null']);
 
-        $field->type($this->getModelFieldType($desc['Type']));
+        $field->type($this->getModelFieldType($column['Type']));
         $field->nullable($nullable);
-        $field->hasDefault($nullable || (null !== $desc['Default']));
+        $field->hasDefault($nullable || (null !== $column['Default']));
 
-        if (str_contains(strtolower($desc['Extra']), 'generated')) {
+        if (str_contains(strtolower($column['Extra']), 'generated')) {
             $field->generated();
         }
 
-        $tableClassName = Table::getClassname($table);
+        $this->applyReference($table, $field);
 
-        /** @var ?HasOne $relation */
-        $relation = Bunch::wrap($this->relations)
-            ->onlyInstancesOf(HasOne::class)
-            ->first(fn (HasOne $rel) => $rel->isSource($tableClassName, $fieldName))
-        ;
-
-        if ($relation) {
-            $field->references($relation->toModel, $relation->toColumn);
-        }
-
-        if (str_contains($desc['Key'], 'PRI')) {
+        if (str_contains($column['Key'], 'PRI')) {
             $primary = $fieldName;
         }
 
-        if (str_contains($desc['Extra'], 'auto_increment')) {
+        if (str_contains($column['Extra'], 'auto_increment')) {
             $field->autoIncrement();
         }
 

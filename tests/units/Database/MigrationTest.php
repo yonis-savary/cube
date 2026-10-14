@@ -2,7 +2,6 @@
 
 namespace Cube\Tests\Units\Database;
 
-use Cube\Utils\Implementations;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\Plan;
@@ -17,8 +16,7 @@ class MigrationTest extends TestCase
     use TestMultipleDrivers;
     protected function getDatabasePlan(Database $database): Plan
     {
-        $databaseDriver = $database->getDriver();
-        return Implementations::findOrFail(Plan::class, fn (string $plan) => $plan::supports($databaseDriver), [$database], $databaseDriver);
+        return Plan::forDatabase($database);
     }
 
     #[ DataProvider('getDatabases') ]
@@ -373,5 +371,22 @@ class MigrationTest extends TestCase
         $thrown = $migration->execute($this->getDatabasePlan($database), $database);
 
         $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+    }
+
+    /** The SQLite plan only logged a warning, although SQLite creates an index on an existing table */
+    #[ DataProvider('getDatabases') ]
+    public function testAddUniqueIndexRefusesDuplicates(Database $database)
+    {
+        $plan = $this->getDatabasePlan($database);
+        $plan->create('user_agency', [
+            ModelField::integer('app_user'),
+            ModelField::integer('agency'),
+        ]);
+        $plan->addUniqueIndex('user_agency', ['app_user', 'agency']);
+
+        $database->exec('INSERT INTO user_agency (app_user, agency) VALUES (1, 1)');
+
+        $this->expectException(\PDOException::class);
+        $database->exec('INSERT INTO user_agency (app_user, agency) VALUES (1, 1)');
     }
 }

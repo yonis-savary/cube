@@ -3,46 +3,10 @@
 namespace Cube\Data\Models\ModelGenerator\Adapters;
 
 use Cube\Data\Bunch;
-use Cube\Data\Models\DummyModel;
 use Cube\Data\Models\ModelField;
-use Cube\Data\Models\ModelGenerator\Table;
-use Cube\Data\Models\Relations\HasOne;
 
 class SQLite extends DatabaseAdapter
 {
-    public const SQLITE_TYPES = [
-        'INT' => ModelField::INTEGER,
-        'INT4' => ModelField::INTEGER,
-        'INTEGER' => ModelField::INTEGER,
-        'TINYINT(1)' => ModelField::BOOLEAN,
-        'TINYINT' => ModelField::INTEGER,
-        'SMALLINT' => ModelField::INTEGER,
-        'MEDIUMINT' => ModelField::INTEGER,
-        'BIGINT' => ModelField::INTEGER,
-        'UNSIGNED BIG INT' => ModelField::INTEGER,
-        'INT2' => ModelField::INTEGER,
-        'INT8' => ModelField::INTEGER,
-        'CHARACTER' => ModelField::STRING,
-        'VARCHAR' => ModelField::STRING,
-        'VARYING CHARACTER' => ModelField::STRING,
-        'NCHAR' => ModelField::STRING,
-        'NATIVE CHARACTER' => ModelField::STRING,
-        'NVARCHAR' => ModelField::STRING,
-        'TEXT' => ModelField::STRING,
-        'CLOB' => ModelField::STRING,
-        'BLOB' => ModelField::STRING,
-        'REAL' => ModelField::FLOAT,
-        'DOUBLE' => ModelField::FLOAT,
-        'DOUBLE PRECISION' => ModelField::FLOAT,
-        'FLOAT' => ModelField::FLOAT,
-        'NUMERIC' => ModelField::FLOAT,
-        'DECIMAL' => ModelField::DECIMAL,
-        'BOOLEAN' => ModelField::BOOLEAN,
-        'DATE' => ModelField::DATE,
-        'DATETIME' => ModelField::DATETIME,
-        'TIMESTAMP' => ModelField::TIMESTAMP,
-    ];
-
     protected array $tablesWithSequence = [];
 
     public static function supports(string $driver): bool
@@ -52,117 +16,67 @@ class SQLite extends DatabaseAdapter
 
     public function process(): void
     {
-        $db = $this->database;
-
-        $this->tablesWithSequence = Bunch::wrap($db->query('SELECT * FROM sqlite_sequence'))
-            ->map(fn ($x) => $x['name'])
+        $this->tablesWithSequence = Bunch::fromQuery('SELECT name FROM sqlite_sequence', [], $this->database)
+            ->key('name')
             ->get()
         ;
 
-        $this->tables = Bunch::wrap($db->query("SELECT * FROM sqlite_master WHERE type='table' AND name <> 'sqlite_sequence'"))
-            ->map(fn ($x) => $this->buildTable($x['name']))
+        parent::process();
+    }
+
+    protected function listTables(): array
+    {
+        return Bunch::fromQuery("SELECT name FROM sqlite_master WHERE type='table' AND name <> 'sqlite_sequence'", [], $this->database)
+            ->key('name')
             ->get()
         ;
     }
 
-    protected function getModelFieldType(string $fieldSqliteType): string
+    protected function listForeignKeys(string $table): array
     {
-        $fieldType = strtoupper($fieldSqliteType);
-        foreach (self::SQLITE_TYPES as $sqliteType => $modelType) {
-            if (str_starts_with($fieldType, $sqliteType)) {
-                return $modelType;
-            }
-        }
-
-        return ModelField::STRING;
+        return Bunch::fromQuery("PRAGMA foreign_key_list('{$table}')", [], $this->database)
+            ->map(fn ($foreignKey) => [
+                'column' => $foreignKey['from'],
+                'referencedTable' => $foreignKey['table'],
+                'referencedColumn' => $foreignKey['to'],
+            ])
+            ->get()
+        ;
     }
 
-    protected function getModelField(string $table, array $desc, ?string &$primary): ModelField
+    protected function listColumns(string $table): array
     {
-        $fieldName = $desc['name'];
+        return Bunch::fromQuery('PRAGMA table_xinfo({})', [$table], $this->database)
+            ->filter(fn($column) => in_array($column['hidden'], ['0', '2'])) // 0 => visible column, 2 => generated column
+            ->get()
+        ;
+    }
+
+    protected function getModelField(string $table, array $column, ?string &$primary): ModelField
+    {
+        $fieldName = $column['name'];
 
         $field = new ModelField($fieldName);
 
-        $nullable = 0 == $desc['notnull'];
+        $nullable = 0 == $column['notnull'];
 
-        $field->type($this->getModelFieldType($desc['type']));
+        $field->type($this->getModelFieldType($column['type']));
         $field->nullable($nullable);
-        $field->hasDefault($nullable || (null !== $desc['dflt_value']));
+        $field->hasDefault($nullable || (null !== $column['dflt_value']));
 
-        $tableClassName = Table::getClassname($table);
+        $this->applyReference($table, $field);
 
-        /** @var ?HasOne $relation */
-        $relation = Bunch::wrap($this->relations)
-            ->onlyInstancesOf(HasOne::class)
-            ->first(fn (HasOne $rel) => $rel->isSource($tableClassName, $fieldName))
-        ;
-
-        if ($relation) {
-            $field->references($relation->toModel, $relation->toColumn);
+        if ($column['pk']) {
+            $primary = $fieldName;
         }
 
-        if ($desc['pk']) {
-            $primary = $desc['name'];
-        }
-
-        if ($desc['pk'] && in_array($table, $this->tablesWithSequence)) {
+        if ($column['pk'] && in_array($table, $this->tablesWithSequence)) {
             $field->autoIncrement();
         }
-        if ($desc['hidden'] == '2') {
+        if ($column['hidden'] == '2') {
             $field->generated();
         }
 
         return $field;
-    }
-
-    protected function buildTable(string $table): Table
-    {
-        Table::assertTableName($table);
-
-        $db = $this->database;
-
-        $dummyModel = new DummyModel();
-
-        $sqlRelations = $db->query("PRAGMA foreign_key_list('{$table}')");
-
-        $fields = Bunch::wrap($sqlRelations)->key('from');
-
-        $addedRelationNames = [];
-
-        $relations = Bunch::wrap($sqlRelations)
-            ->map(function ($x) use ($fields, $dummyModel, $table, &$addedRelationNames) {
-                $targetModel = Table::getClassname($x['table']);
-                $relationName = strtolower($x['from']);
-
-                while ($fields->has($relationName) || in_array($relationName, $addedRelationNames))
-                    $relationName = "_$relationName";
-
-                $addedRelationNames[] = $relationName;
-
-                return new HasOne(
-                    $relationName,
-                    Table::getClassname($table),
-                    $x['from'],
-                    $targetModel,
-                    $x['to'],
-                    $dummyModel
-                );
-            })
-            ->get();
-
-        foreach ($relations as $relation) {
-            $this->addRelation($relation);
-        }
-
-        $primary = null;
-
-        $fields = Bunch::wrap($db->query('PRAGMA table_xinfo({})', [$table]))
-            ->filter(fn($x) => in_array($x['hidden'], ['0', '2'])) // 0 => visible column, 2 => generated column
-            ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); }) // function() syntax is important, $primary is mutable
-            ->values()
-            ->get()
-        ;
-
-        return new Table($table, $fields, $primary);
     }
 }

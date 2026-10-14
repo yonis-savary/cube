@@ -370,7 +370,8 @@ $total = Product::select()->count($otherDatabase);
 
 ## Supporting another DBMS
 
-A driver is one class extending `QueryBuilder`, declaring what it supports and rendering a `Query`
+A driver is one class extending `QueryBuilder`, which already renders standard SQL : the driver
+declares what it supports and how it quotes identifiers
 
 ```php
 class Oracle extends QueryBuilder
@@ -380,23 +381,36 @@ class Oracle extends QueryBuilder
         return 'oci' === $pdoDriver;
     }
 
-    // build(), count(), transaction(), hasTable(), hasField(), getIdentifierDelimiters()
+    public function getIdentifierDelimiters(): array
+    {
+        return ['"'];
+    }
+
+    // What LIMIT takes when only an offset is given
+    public function getUnboundedLimit(): string
+    {
+        return 'ALL';
+    }
 }
 ```
+
+Override what your DBMS does differently : `getRowIdentifier()` names the physical row identifier
+(`ctid`, `rowid`) when it has no `DELETE ... LIMIT`, and any `get*()` / `build*()` method can be
+redefined, as `MySQL` does for its qualified `UPDATE ... SET`.
 
 Nothing else to register : the `Database` component asks every builder Cube discovers which PDO
 driver it supports, and builds the first match — see
 [Applications and discovery](./04-applications-and-discovery.md). The rest of the stack works the
 same way, each part with a static `supports()` :
 
-| To support | Extend |
-|---|---|
-| queries | `Cube\Data\Database\Builders\QueryBuilder` |
-| migration plans | `Cube\Data\Database\Migration\Plan` |
-| the migration history table | `Cube\Data\Database\MigrationManager` |
-| model generation | `Cube\Data\Models\ModelGenerator\Adapters\DatabaseAdapter` |
+| To support | Extend | Then declare |
+|---|---|---|
+| queries | `Cube\Data\Database\Builders\QueryBuilder` | `getIdentifierDelimiters()`, `getUnboundedLimit()` |
+| migration plans | `Cube\Data\Database\Migration\SQLPlan` | `getAutoIncrementClause()`, `alterColumn()` |
+| model generation | `Cube\Data\Models\ModelGenerator\Adapters\DatabaseAdapter` | `listTables()`, `listForeignKeys()`, `listColumns()`, `getModelField()` |
 
-A new DBMS is these four classes and no edit anywhere else. You can also give a `QueryBuilder`
+A new DBMS is these three classes and no edit anywhere else. The migration history table goes
+through `Query` and `SQLPlan`, so it needs nothing more. You can also give a `QueryBuilder`
 instance to the `Database` constructor, which then skips the lookup.
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./15-api-documentation.md">Previous : Api documentation</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./17-migrations.md">Next : Migrations</a></div></td></tr></table>

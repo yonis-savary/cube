@@ -1012,85 +1012,7 @@ parameters:
 			message: '#^Call to function is_string\(\) with array\|Cube\\Data\\Database\\Query\\FieldComparaison\|Cube\\Data\\Database\\Query\\FieldCondition\|Cube\\Data\\Database\\Query\\RawCondition will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\MySQL\:\:build\(\) has parameter \$query with generic class Cube\\Data\\Database\\Query but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\MySQL\:\:count\(\) has parameter \$query with generic class Cube\\Data\\Database\\Query but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\MySQL\:\:getCondition\(\) has parameter \$condition with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\MySQL\:\:getConditions\(\) has parameter \$conditions with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\MySQL\:\:getConditionsBody\(\) has parameter \$conditions with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\MySQL\:\:getFieldComparaison\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Property Cube\\Data\\Database\\Builders\\MySQL\:\:\$query with generic class Cube\\Data\\Database\\Query does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Unsafe usage of new static\(\)\.$#'
-			identifier: new.static
-			count: 1
-			path: src/Data/Database/Builders/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\Postgres\:\:build\(\) has parameter \$query with generic class Cube\\Data\\Database\\Query but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Database/Builders/Postgres.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\Postgres\:\:count\(\) has parameter \$query with generic class Cube\\Data\\Database\\Query but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Database/Builders/Postgres.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\Postgres\:\:getFieldComparaison\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Builders/Postgres.php
-
-		-
-			message: '#^Property Cube\\Data\\Database\\Builders\\Postgres\:\:\$query with generic class Cube\\Data\\Database\\Query does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Database/Builders/Postgres.php
-
-		-
-			message: '#^Unsafe usage of new static\(\)\.$#'
-			identifier: new.static
-			count: 1
-			path: src/Data/Database/Builders/Postgres.php
+			path: src/Data/Database/Builders/QueryBuilder.php
 
 		-
 			message: '#^Method Cube\\Data\\Database\\Builders\\QueryBuilder\:\:build\(\) has parameter \$query with generic class Cube\\Data\\Database\\Query but does not specify its types\: TModel$#'
@@ -1105,34 +1027,46 @@ parameters:
 			path: src/Data/Database/Builders/QueryBuilder.php
 
 		-
+			message: '#^Method Cube\\Data\\Database\\Builders\\QueryBuilder\:\:getCondition\(\) has parameter \$condition with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Data/Database/Builders/QueryBuilder.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Builders\\QueryBuilder\:\:getConditions\(\) has parameter \$conditions with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Data/Database/Builders/QueryBuilder.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Builders\\QueryBuilder\:\:getConditionsBody\(\) has parameter \$conditions with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Data/Database/Builders/QueryBuilder.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Builders\\QueryBuilder\:\:getFieldComparaison\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Builders/QueryBuilder.php
+
+		-
 			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(Database\) \$callback\)\: Unexpected token "\(", expected variable at offset 26 on line 2$#'
 			identifier: phpDoc.parseError
 			count: 1
 			path: src/Data/Database/Builders/QueryBuilder.php
 
 		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\SQLite\:\:build\(\) has parameter \$query with generic class Cube\\Data\\Database\\Query but does not specify its types\: TModel$#'
+			message: '#^Property Cube\\Data\\Database\\Builders\\QueryBuilder\:\:\$query with generic class Cube\\Data\\Database\\Query does not specify its types\: TModel$#'
 			identifier: missingType.generics
 			count: 1
-			path: src/Data/Database/Builders/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Builders\\SQLite\:\:getFieldComparaison\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Builders/SQLite.php
-
-		-
-			message: '#^Property Cube\\Data\\Database\\Builders\\SQLite\:\:\$query with generic class Cube\\Data\\Database\\Query does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Database/Builders/SQLite.php
+			path: src/Data/Database/Builders/QueryBuilder.php
 
 		-
 			message: '#^Unsafe usage of new static\(\)\.$#'
 			identifier: new.static
 			count: 1
-			path: src/Data/Database/Builders/SQLite.php
+			path: src/Data/Database/Builders/QueryBuilder.php
 
 		-
 			message: '#^Method Cube\\Data\\Database\\Database\:\:build\(\) has parameter \$context with no value type specified in iterable type array\.$#'
@@ -1199,78 +1133,6 @@ parameters:
 			identifier: staticClassAccess.privateProperty
 			count: 5
 			path: src/Data/Database/Database.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\MySQL\:\:createMigrationTableIfInexistant\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\MySQL\:\:listDoneMigrations\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Database/Migration/Adapters/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\MySQL\:\:markMigrationAsDone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\MySQL\:\:markMigrationAsUndone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\Postgres\:\:createMigrationTableIfInexistant\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/Postgres.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\Postgres\:\:listDoneMigrations\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Database/Migration/Adapters/Postgres.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\Postgres\:\:markMigrationAsDone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/Postgres.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\Postgres\:\:markMigrationAsUndone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/Postgres.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\SQLite\:\:createMigrationTableIfInexistant\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\SQLite\:\:listDoneMigrations\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Database/Migration/Adapters/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\SQLite\:\:markMigrationAsDone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Adapters\\SQLite\:\:markMigrationAsUndone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Adapters/SQLite.php
 
 		-
 			message: '#^Method Cube\\Data\\Database\\Migration\\Migration\:\:down\(\) has no return type specified\.$#'
@@ -1459,94 +1321,10 @@ parameters:
 			path: src/Data/Database/Migration/Plans/DryRunPlan.php
 
 		-
-			message: '#^Match expression does not handle remaining value\: string$#'
-			identifier: match.unhandled
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:addColumn\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:addForeignKey\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:addUniqueIndex\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
 			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:alterColumn\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1
 			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:create\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:dropColumn\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:dropConstraint\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:dropTable\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:renameField\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\MySQL\:\:renameTable\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/MySQL.php
-
-		-
-			message: '#^Match expression does not handle remaining value\: string$#'
-			identifier: match.unhandled
-			count: 2
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:addColumn\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:addForeignKey\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:addUniqueIndex\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
 
 		-
 			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:alterColumn\(\) has no return type specified\.$#'
@@ -1555,61 +1333,7 @@ parameters:
 			path: src/Data/Database/Migration/Plans/PostgreSQL.php
 
 		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:create\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:dropColumn\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:dropConstraint\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:dropTable\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:renameField\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\PostgreSQL\:\:renameTable\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/PostgreSQL.php
-
-		-
-			message: '#^Match expression does not handle remaining value\: string$#'
-			identifier: match.unhandled
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:addColumn\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
 			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:addForeignKey\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:addUniqueIndex\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1
 			path: src/Data/Database/Migration/Plans/SQLite.php
@@ -1622,36 +1346,6 @@ parameters:
 
 		-
 			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:create\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:dropColumn\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:dropConstraint\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:dropTable\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:renameField\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/Migration/Plans/SQLite.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\Migration\\Plans\\SQLite\:\:renameTable\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1
 			path: src/Data/Database/Migration/Plans/SQLite.php
@@ -1675,14 +1369,68 @@ parameters:
 			path: src/Data/Database/Migration/RawSQLMigration.php
 
 		-
-			message: '#^Generic type Cube\\Data\\Bunch\<int, string\> in PHPDoc tag @var for property Cube\\Data\\Database\\MigrationManager\:\:\$migrationFiles does not specify all template types of class Cube\\Data\\Bunch\: TKey, TValue, TNullableCallback, TCallbacks, TNullableCallbacks$#'
-			identifier: generics.lessTypes
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
 			count: 1
-			path: src/Data/Database/MigrationManager.php
+			path: src/Data/Database/Migration/SQLPlan.php
 
 		-
-			message: '#^Method Cube\\Data\\Database\\MigrationManager\:\:createMigrationTableIfInexistant\(\) has no return type specified\.$#'
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:addColumn\(\) has no return type specified\.$#'
 			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:addForeignKey\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:addUniqueIndex\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:create\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:dropColumn\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:dropConstraint\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:dropTable\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:renameField\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Method Cube\\Data\\Database\\Migration\\SQLPlan\:\:renameTable\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: src/Data/Database/Migration/SQLPlan.php
+
+		-
+			message: '#^Generic type Cube\\Data\\Bunch\<int, string\> in PHPDoc tag @var for property Cube\\Data\\Database\\MigrationManager\:\:\$migrationFiles does not specify all template types of class Cube\\Data\\Bunch\: TKey, TValue, TNullableCallback, TCallbacks, TNullableCallbacks$#'
+			identifier: generics.lessTypes
 			count: 1
 			path: src/Data/Database/MigrationManager.php
 
@@ -1690,30 +1438,6 @@ parameters:
 			message: '#^Method Cube\\Data\\Database\\MigrationManager\:\:executeAllMigrations\(\) should return bool but return statement is missing\.$#'
 			identifier: return.missing
 			count: 2
-			path: src/Data/Database/MigrationManager.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\MigrationManager\:\:getDefaultInstance\(\) should return static\(Cube\\Data\\Database\\MigrationManager\) but returns Cube\\Data\\Database\\MigrationManager\.$#'
-			identifier: return.type
-			count: 1
-			path: src/Data/Database/MigrationManager.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\MigrationManager\:\:listDoneMigrations\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Database/MigrationManager.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\MigrationManager\:\:markMigrationAsDone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/Database/MigrationManager.php
-
-		-
-			message: '#^Method Cube\\Data\\Database\\MigrationManager\:\:markMigrationAsUndone\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
 			path: src/Data/Database/MigrationManager.php
 
 		-
@@ -1744,6 +1468,12 @@ parameters:
 			message: '#^Unsafe access to private property Cube\\Data\\Database\\MigrationManager\:\:\$instances through static\:\:\.$#'
 			identifier: staticClassAccess.privateProperty
 			count: 5
+			path: src/Data/Database/MigrationManager.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
 			path: src/Data/Database/MigrationManager.php
 
 		-
@@ -2305,38 +2035,32 @@ parameters:
 			path: src/Data/Models/ModelGenerator.php
 
 		-
-			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\MySQL\:\:getModelField\(\) has parameter \$desc with no value type specified in iterable type array\.$#'
+			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\DatabaseAdapter\:\:getModelField\(\) has parameter \$column with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Data/Models/ModelGenerator/Adapters/DatabaseAdapter.php
+
+		-
+			message: '#^PHPDoc tag @var for variable \$relation contains generic class Cube\\Data\\Models\\Relations\\HasOne but does not specify its types\: TModel$#'
+			identifier: missingType.generics
+			count: 1
+			path: src/Data/Models/ModelGenerator/Adapters/DatabaseAdapter.php
+
+		-
+			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\MySQL\:\:getModelField\(\) has parameter \$column with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Data/Models/ModelGenerator/Adapters/MySQL.php
 
 		-
-			message: '#^PHPDoc tag @var for variable \$relation contains generic class Cube\\Data\\Models\\Relations\\HasOne but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Models/ModelGenerator/Adapters/MySQL.php
-
-		-
-			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\Postgres\:\:getModelField\(\) has parameter \$desc with no value type specified in iterable type array\.$#'
+			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\Postgres\:\:getModelField\(\) has parameter \$column with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Data/Models/ModelGenerator/Adapters/Postgres.php
 
 		-
-			message: '#^PHPDoc tag @var for variable \$relation contains generic class Cube\\Data\\Models\\Relations\\HasOne but does not specify its types\: TModel$#'
-			identifier: missingType.generics
-			count: 1
-			path: src/Data/Models/ModelGenerator/Adapters/Postgres.php
-
-		-
-			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\SQLite\:\:getModelField\(\) has parameter \$desc with no value type specified in iterable type array\.$#'
+			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\SQLite\:\:getModelField\(\) has parameter \$column with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Models/ModelGenerator/Adapters/SQLite.php
-
-		-
-			message: '#^PHPDoc tag @var for variable \$relation contains generic class Cube\\Data\\Models\\Relations\\HasOne but does not specify its types\: TModel$#'
-			identifier: missingType.generics
 			count: 1
 			path: src/Data/Models/ModelGenerator/Adapters/SQLite.php
 
@@ -4247,12 +3971,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Test/CubeTestCase.php
-
-		-
-			message: '#^Parameter \#2 \$associative of function json_decode expects bool\|null, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: src/Test/ResponseAssert.php
 
 		-
 			message: '#^Method Cube\\Test\\TestContext\:\:replaceGlobalInstances\(\) has no return type specified\.$#'

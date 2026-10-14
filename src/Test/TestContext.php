@@ -4,7 +4,6 @@ namespace Cube\Test;
 
 use Cube\Core\Component;
 use Cube\Data\Database\Database;
-use Cube\Data\Database\Migration\Adapters\SQLite;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
 use Cube\Data\Database\MigrationManager;
 use Cube\Env\Configuration;
@@ -87,7 +86,7 @@ class TestContext
 
         $database->asGlobalInstance(function() use ($database) {
             $config = MigrationManagerConfiguration::resolve(Configuration::getInstance());
-            $migrationManager= new SQLite($database, $config);
+            $migrationManager = new MigrationManager($database, $config);
             $migrationManager->setLoggingFunction(fn($buffer) => debug($buffer));
             $migrationManager->executeAllMigrations();
         });

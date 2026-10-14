@@ -2,159 +2,55 @@
 
 namespace Cube\Data\Database\Migration\Plans;
 
-use Cube\Data\Bunch;
-use Cube\Data\Database\Migration\Plan;
+use Cube\Data\Database\Migration\SQLPlan;
 use Cube\Data\Models\ModelField;
-use RuntimeException;
 
-class PostgreSQL extends Plan
+class PostgreSQL extends SQLPlan
 {
     public static function supports(string $driver): bool
     {
         return strtolower($driver) === 'pgsql';
     }
 
-    public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
-        if (!count($fields))
-            $fields = [ModelField::id()];
-
-        $firstColumn = array_shift($fields);
-        $fieldName = $firstColumn->name;
-        $fieldDescription = $this->getModelFieldSQLQuery($firstColumn);
-
-        $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";
-        $this->database->exec($this->database->build('CREATE TABLE "{}" ( "{}" ', [$table, $fieldName])."$fieldDescription $additionnalSQL )");
-
-        if ($firstColumn->hasReference())
-            $this->addForeignKey($table, $firstColumn->name, $firstColumn->getReferenceTable(), $firstColumn->referenceField, $firstColumn->onDeleteBehavior);
-
-        foreach ($fields as $field) {
-            $this->addColumn($table, $field);
-        }
-    }
-
-    protected function getModelFieldSQLQuery(ModelField $field): string 
+    protected function getAutoIncrementClause(): string
     {
-        $query = ($field->isPrimaryKey && $field->autoIncrement)
-            ? "SERIAL"
-            : match($field->type) {
-                ModelField::STRING    => ($m = $field->maximumLength) ? "VARCHAR($m)": "TEXT",
-                ModelField::INTEGER   => "INTEGER",
-                ModelField::FLOAT     => "FLOAT",
-                ModelField::BOOLEAN   => "BOOLEAN",
-                ModelField::DECIMAL   => "DECIMAL(".($field->decimalMaximumDigits ?? 10).",".($field->decimalDigitsToTheRight ?? 5).")",
-                ModelField::DATE      => "DATE",
-                ModelField::DATETIME  => "TIMESTAMP",
-                ModelField::TIMESTAMP => "TIMESTAMP",
-            };
-
-        if (!$field->nullable && (!$field->isPrimaryKey)) 
-            $query .= " NOT NULL";
-
-        if ($field->isUnique && (!$field->isPrimaryKey))
-            $query .= " UNIQUE";
-
-        if ($field->hasDefault)
-            $query .= " DEFAULT " . $this->database->build("{}", [$field->default]);
-
-        if ($field->isPrimaryKey)
-            $query .= " PRIMARY KEY";
-
-        return $query;
+        return "";
     }
 
-    public function addColumn(string $table, ModelField $field) {
-        $fieldName = $field->name;
-        $query = $this->database->build('ALTER TABLE "{}" ADD COLUMN "{}"', [$table, $fieldName]);
+    protected function getColumnType(ModelField $field): string
+    {
+        if ($field->isPrimaryKey && $field->autoIncrement)
+            return "SERIAL";
 
-        $query .= " ". $this->getModelFieldSQLQuery($field);
-
-        $this->database->exec($query);
-
-        if ($field->hasReference())
-            $this->addForeignKey($table, $field->name, $field->getReferenceTable(), $field->referenceField, $field->onDeleteBehavior);
-    }
-
-    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
-        $deleteBehavior = match ($deleteBehavior) {
-            ModelField::ON_DELETE_CASCADE => "ON DELETE CASCADE",
-            ModelField::ON_DELETE_SET_NULL => "ON DELETE SET NULL",
-            default => "",
-        };
-        $this->database->query('ALTER TABLE "{}" ADD FOREIGN KEY ("{}") REFERENCES "{}"("{}") '. $deleteBehavior, [
-            $table, $field, $foreignTable, $foreignKey
-        ]);
-    }
-
-    public function dropTable(string $table) {
-        if (!$this->database->hasTable($table))
-            throw new RuntimeException("Given database does not contains the $table table");
-
-        $this->database->query("DROP TABLE \"{}\"", [$table]);
-    }
-
-    public function dropConstraint(string $table, string $constraintName) {
-        if (!$this->database->hasTable($table))
-            throw new RuntimeException("Given database does not contains the $table table");
-
-        $this->database->query('ALTER TABLE "{}" DROP CONSTRAINT "{}"', [$table, $constraintName]);
-    }
-
-    public function dropColumn(string $table, string $field) {
-        if (!$this->database->hasField($table, $field))
-            throw new RuntimeException("Given database does not contains the $table($field) column");
-
-        $this->database->query('ALTER TABLE "{}" DROP COLUMN "{}"', [$table, $field]);
+        return ModelField::DATETIME === $field->type
+            ? "TIMESTAMP"
+            : parent::getColumnType($field);
     }
 
     public function alterColumn(string $table, string $field, ModelField $newProperties) {
-        if (!$this->database->hasField($table, $field))
-            throw new RuntimeException("Given database does not contains the $table($field) column");
+        $this->assertFieldExists($table, $field);
 
         if ($field !== $newProperties->name) {
             $this->renameField($table, $field, $newProperties->name);
         }
 
+        $column = "ALTER TABLE {$this->quote($table)} ALTER COLUMN {$this->quote($newProperties->name)}";
         $typeQuery = ($newProperties->isPrimaryKey && $newProperties->autoIncrement)
             ? "SERIAL"
-            : "TYPE " . match($newProperties->type) {
-                ModelField::STRING    => ($m = $newProperties->maximumLength) ? "VARCHAR($m)": "TEXT",
-                ModelField::INTEGER   => "INTEGER",
-                ModelField::FLOAT     => "FLOAT",
-                ModelField::BOOLEAN   => "BOOLEAN",
-                ModelField::DECIMAL   => "DECIMAL(".($newProperties->decimalMaximumDigits ?? 10).",".($newProperties->decimalDigitsToTheRight ?? 5).")",
-                ModelField::DATE      => "DATE",
-                ModelField::DATETIME  => "TIMESTAMP",
-                ModelField::TIMESTAMP => "TIMESTAMP",
-            };
+            : "TYPE " . $this->getColumnType($newProperties);
 
-        $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" ' . $typeQuery, [$table, $newProperties->name]);
+        $this->database->exec("$column $typeQuery");
 
-        if (!$newProperties->nullable && (!$newProperties->isPrimaryKey))
-            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" SET NOT NULL', [$table, $newProperties->name]);
-        else
-            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" DROP NOT NULL', [$table, $newProperties->name]);
+        $this->database->exec(
+            (!$newProperties->nullable && (!$newProperties->isPrimaryKey))
+                ? "$column SET NOT NULL"
+                : "$column DROP NOT NULL"
+        );
 
         if ($newProperties->isUnique && (!$newProperties->isPrimaryKey))
-            $this->database->query('ALTER TABLE "{}" ADD UNIQUE ("{}")', [$table, $newProperties->name]);
+            $this->database->exec("ALTER TABLE {$this->quote($table)} ADD UNIQUE ({$this->quote($newProperties->name)})");
 
         if ($newProperties->hasDefault)
-            $this->database->query('ALTER TABLE "{}" ALTER COLUMN "{}" SET DEFAULT {}', [$table, $newProperties->name, $newProperties->default]);
-    }
-
-    public function addUniqueIndex(string $table, string|array $fields) {
-        $fields = Bunch::wrap($fields);
-        $fieldsExpression = $fields->map(fn ($field) => $this->database->build('"{}"', [$field]))->join(",");
-
-        $indexName = strtolower("idx_".$table."_" . $fields->join("_"));
-        $this->database->exec($this->database->build('CREATE UNIQUE INDEX "{}" ON "{}"', [$indexName, $table])."($fieldsExpression)");
-    }
-
-    public function renameField(string $table, string $oldFieldName, string $newFieldName) {
-        $this->database->query('ALTER TABLE "{}" RENAME COLUMN "{}" TO "{}"', [$table, $oldFieldName, $newFieldName]);
-    }
-
-    public function renameTable(string $oldTableName, string $newTableName) {
-        $this->database->query('ALTER TABLE "{}" RENAME TO "{}"', [$oldTableName, $newTableName]);
+            $this->database->exec("$column SET DEFAULT " . $this->database->build("{}", [$newProperties->default]));
     }
 }
