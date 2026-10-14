@@ -172,9 +172,9 @@ php do configuration:cache
 ```
 
 From then on, **`cube.php` is ignored** : a change to `cube.php`, to an imported file or to a `.env`
-value used in them only applies after running `configuration:cache` again. Neither `cache:clear` nor
-the `PostDeployment` event drop it : the cache lives under `Storage/cube/configuration`, delete that
-directory to go back to reading `cube.php`.
+value used in them only applies after running `configuration:cache` again. The `PostDeployment` event
+drops the cache, so that a release reads `cube.php` again (see [Deployment](./34-deployment.md)) ;
+`cache:clear` does not, as the cache lives apart under `Storage/cube/configuration`.
 
 The cache holds your elements as they are, passwords included, and a `RedisSession` puts its
 password in `session.save_path`, which `phpinfo()` shows : keep `Storage` outside your web root and

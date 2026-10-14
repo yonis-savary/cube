@@ -37,7 +37,7 @@ class ModelGenerator
         $namespace ??= Path::pathToNamespace($destination->getRoot());
         $relations = $adapter->getRelations();
 
-        return Bunch::of($adapter->getTables())
+        return Bunch::wrap($adapter->getTables())
             ->map(fn($table) => $table->generateInto($destination, $namespace, $relations))
             ->get();
     }

@@ -10,8 +10,8 @@ class StoreProductRequest extends Request
     public function getRules(): array
     {
         return [
-            'name' => Param::string(true, false),
-            'price_dollar' => Param::float(true),
+            'name' => Param::string(),
+            'price_dollar' => Param::float(nullable: true),
             'managers' => Param::array(Param::object()),
         ];
     }

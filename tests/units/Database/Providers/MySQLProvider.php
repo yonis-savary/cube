@@ -47,6 +47,6 @@ class MySQLProvider extends DatabaseProvider
     {
         $statement = $this->rootConnection()->query('SHOW DATABASES');
 
-        return Bunch::of($statement->fetchAll())->key('Database')->get();
+        return Bunch::wrap($statement->fetchAll())->key('Database')->get();
     }
 }

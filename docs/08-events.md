@@ -143,7 +143,8 @@ You can give any of your own classes the same ability by extending `EventDispatc
 
 ## Dispatching from the command line
 
-`php do cube:dispatch` dispatches an event on `Events`. Give the class name, or the end of it
+`php do cube:dispatch` dispatches an event on `Events`. Give the full class name, or its last
+namespace segments as long as a single `Event` class matches them
 
 ```sh
 php do cube:dispatch --event PostDeployment
@@ -152,7 +153,7 @@ php do cube:dispatch -e "App\Events\CatalogImported"
 
 The event is built through the [`Injector`](./05-dependency-injection.md), so its constructor
 parameters must be resolvable. The command answers `1` without `--event`, `2` when no `Event` class
-matches.
+matches or when several do (it lists them : add a namespace segment, `Billing\InvoiceWasSent`).
 
 ## What the framework dispatches
 
@@ -165,7 +166,7 @@ On the `Events` component
 | `PreRouting` | `Public/index.php` is about to build the request and route it (web entry point only) | — |
 | `PostRouting` | the router answered, before the response is displayed (web entry point only) | `router`, `request`, `response` |
 | `DisplayingResponse` | a response is about to be sent ; preventing it sends nothing | `response` |
-| `PostDeployment` | you dispatch it after a deployment (`php do cube:dispatch --event PostDeployment`) ; Cube empties its class index cache and its remembered routes | — |
+| `PostDeployment` | you dispatch it after a deployment (`php do cube:dispatch --event PostDeployment`) ; Cube empties its class index cache, its remembered routes and the configuration cache | — |
 | `AuthenticatedUser` | a user passed authentication | `authenticatedUser`, `userId` |
 | `LoggedInUser` | a user session was opened | `authenticatedUser`, `userId` |
 | `LoggedOutUser` | a user session was closed | `authenticatedUser`, `userId` |

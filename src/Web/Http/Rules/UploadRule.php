@@ -7,15 +7,14 @@ use Cube\Utils\File;
 
 class UploadRule extends Rule
 {
-    protected bool $nullable;
-
     public function __construct(bool $nullable = false, bool $rejectUploadsWithErrors = true)
     {
         $this->nullable = $nullable;
 
-        if (!$nullable) {
+        if ($nullable)
+            $this->default(null);
+        else
             $this->withCondition(fn (mixed $value) => null !== $value, '{key} upload is needed');
-        }
 
         $this->withValueCondition(fn (mixed $value) => $value instanceof Upload, '{key} must be an uploaded file');
 

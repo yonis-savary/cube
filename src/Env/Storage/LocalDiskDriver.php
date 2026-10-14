@@ -28,8 +28,9 @@ class LocalDiskDriver extends StorageDriver
 
     public function makeDirectory(string $path, bool $recursive = true): bool
     {
+        // Another process can create it between is_dir() and mkdir() : the result is checked below instead
         if (!is_dir($path)) {
-            mkdir($path, recursive: $recursive);
+            @mkdir($path, recursive: $recursive);
         }
 
         return $this->isDirectory($path);
@@ -75,7 +76,7 @@ class LocalDiskDriver extends StorageDriver
 
     public function scanDirectory(string $path): array
     {
-        return Bunch::of(scandir($path))
+        return Bunch::wrap(scandir($path))
             ->diff(['.', '..'])
             ->values()
             ->get()

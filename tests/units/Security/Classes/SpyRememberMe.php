@@ -12,6 +12,8 @@ class SpyRememberMe extends RememberMe
     /** @var array<int,array{value:string,expiresAt:int}> */
     public array $sentCookies = [];
 
+    public int $tokenLookups = 0;
+
     public function lastCookie(): ?array
     {
         return $this->sentCookies ? end($this->sentCookies) : null;
@@ -20,6 +22,13 @@ class SpyRememberMe extends RememberMe
     public function rememberedUser(string $token): mixed
     {
         return $this->rememberedUserOf($token);
+    }
+
+    protected function rememberedUserOf(string $token): mixed
+    {
+        $this->tokenLookups++;
+
+        return parent::rememberedUserOf($token);
     }
 
     protected function sendCookie(string $value, int $expiresAt): void

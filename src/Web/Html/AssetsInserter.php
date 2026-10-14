@@ -22,7 +22,7 @@ class AssetsInserter
 
     public function __construct(array $assetsFiles)
     {
-        $this->assetsFiles = Bunch::of($assetsFiles);
+        $this->assetsFiles = Bunch::wrap($assetsFiles);
     }
 
     protected function findAsset(string $assetName): ?string {

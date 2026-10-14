@@ -55,9 +55,7 @@
                                     },
                                     "some-date": {
                                         "type": "string",
-                                        "format": "date",
-                                        "format_minimum": "2000-01-01",
-                                        "format_maximum": "2099-12-31"
+                                        "format": "date"
                                     }
                                 },
                                 "required": [
@@ -134,9 +132,7 @@
                                     },
                                     "some-date": {
                                         "type": "string",
-                                        "format": "date",
-                                        "format_minimum": "2000-01-01",
-                                        "format_maximum": "2099-12-31"
+                                        "format": "date"
                                     }
                                 },
                                 "required": [
@@ -213,9 +209,7 @@
                                     },
                                     "some-date": {
                                         "type": "string",
-                                        "format": "date",
-                                        "format_minimum": "2000-01-01",
-                                        "format_maximum": "2099-12-31"
+                                        "format": "date"
                                     }
                                 },
                                 "required": [

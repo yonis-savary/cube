@@ -42,11 +42,11 @@ the array
 | marked `#[ArrayOf(Item::class)]` | an array of `Item`, one per element of the value |
 | marked `#[BunchOf(Item::class)]` | a [`Bunch`](./07-collections.md) of `Item` |
 | anything else | the value as is |
-| without a matching key | `null` |
+| without a matching key | its default value, or `null` when it declares none |
 
-A missing key gives `null` even when the parameter declares a default value, so make the
-parameters an incoming payload may leave out nullable. For a union type, only the first type is
-looked at.
+Give a default value, or a nullable type, to every parameter an incoming payload may leave out :
+a missing key on a parameter that has neither ends in a `TypeError`. For a union type, only the
+first type is looked at.
 
 When the constructor refuses the values (a `TypeError` for a wrong type, typically), `fromData()`
 logs the class and the **type** of each received field — never their values, which may hold
@@ -137,17 +137,15 @@ in a sub-directory, with a `keys()` mapping the camel-cased parameters back to t
 
 | Sample value | Generated parameter |
 |---|---|
-| a string | `?string` |
+| a string, dates included | `?string` |
 | an integer, a float, a boolean | `?int`, `?float`, `?bool` |
 | `null` | `mixed` |
 | an object | `?NestedClass`, generated alongside |
 | a list of objects | `?array` marked `#[ArrayOf(NestedClass::class)]` |
 | a list of scalars, an empty array | `?array` |
-| a string like `2025-02-03T08:47:06.000Z` | `?\Datetime` |
 
-Treat the result as a first draft : review the types, rename what needs it. A date parameter in
-particular receives the string as is, which a `\DateTime` type refuses — change it to `?string`, or
-convert the value yourself.
+Treat the result as a first draft : review the types, rename what needs it. `fromData()` passes
+scalars as is, so a date stays the string of the payload — parse it where you read it.
 
 ## The other direction : AutoDataToObject
 
@@ -186,8 +184,8 @@ class Webhook extends AutoDataToObject
 (new Webhook('product.created'))->toJSON();
 ```
 
-Nested `AutoDataToObject` instances are converted when they are a property or an element of a list
-property ; inside an associative array they are kept as is.
+Only public properties are exported. Nested `AutoDataToObject` instances are converted wherever they
+sit : a property, an element of a list, or a value of an associative array.
 
 ## Reference
 

@@ -3,7 +3,6 @@
 namespace Cube\Data;
 
 use Cube\Env\Storage;
-use Cube\Utils\Utils;
 use stdClass;
 
 use function Cube\debug;
@@ -67,20 +66,36 @@ abstract class AutoDataToObject
                     default => $anyValue,
                 };
             }
-            else if (Utils::isList($anyValue)) {
-                foreach ($anyValue as &$subValue) {
-                    $subValue = $this->convertValue($subValue);
-                }
+
+            foreach ($anyValue as &$subValue) {
+                $subValue = $this->convertValue($subValue);
             }
         }
 
         return $anyValue;
     }
 
+    /**
+     * @return array<string,mixed>
+     */
+    protected function publicProperties(): array
+    {
+        $properties = [];
+
+        foreach ((new \ReflectionObject($this))->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+            if ($property->isStatic() || !$property->isInitialized($this))
+                continue;
+
+            $properties[$property->getName()] = $property->getValue($this);
+        }
+
+        return $properties;
+    }
+
     public function toArray(): array {
         $objectKeys = $this->objectKeys();
         $arrayKeys = $this->arrayKeys();
-        $array = (array) $this;
+        $array = $this->publicProperties();
 
         foreach ($array as $key => $value) {
             $convertionType = in_array($key, $objectKeys)

@@ -20,7 +20,7 @@ class Launch extends Command
 
     public function getHelp(): string
     {
-        return 'Launch queues and scheduled tasks that should launch at that time';
+        return 'Run the scheduled tasks due now (meant to run every minute, see routine:generate)';
     }
 
     public function execute(Args $args): int
@@ -35,7 +35,7 @@ class Launch extends Command
 
     protected function launchScheduler(Logger $logger): void
     {
-        Logger::withInstance($logger, function () {
+        $logger->asGlobalInstance(function () {
             Console::print('Launching Scheduler');
             Scheduler::getInstance()->launch();
         });

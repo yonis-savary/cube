@@ -17,7 +17,7 @@ abstract class UserStorage extends Storage
 
         $storage = static::getBaseStorage()->child($userPrimaryKeyMD5);
 
-        return new static($storage->getRoot());
+        return new static($storage->getRoot(), $storage->driver);
     }
 
     private static function getBaseStorage(): Storage

@@ -270,24 +270,43 @@ class RememberMeTest extends TestCase
      */
     public function testALoginListenerIssuingATokenLeavesNoOrphan()
     {
-        foreach ([true, false] as $refresh) {
-            $rememberMe = $this->newRememberMe(new UserRegisterConfiguration(refreshTokenOnRemember: $refresh));
-            $rememberMe->register(User::findWhere(['login' => 'alice']));
-            $firstToken = $rememberMe->lastCookie()['value'];
-            $cookiesBefore = count($rememberMe->sentCookies);
+        $rememberMe = $this->newRememberMe(new UserRegisterConfiguration(refreshTokenOnRemember: true));
+        $rememberMe->register(User::findWhere(['login' => 'alice']));
+        $firstToken = $rememberMe->lastCookie()['value'];
+        $cookiesBefore = count($rememberMe->sentCookies);
 
-            Events::withInstance(new Events(), function (Events $events) use ($rememberMe, $firstToken) {
-                $events->on(AuthenticatedUser::class, fn (AuthenticatedUser $event) => $rememberMe->register($event));
+        $this->rememberWithALoginListener($rememberMe, $firstToken);
 
-                $rememberMe->handleRequest($this->requestWithToken($firstToken));
-            });
+        $this->assertCount($cookiesBefore + 1, $rememberMe->sentCookies);
+        $this->assertNull($rememberMe->rememberedUser($firstToken));
+        $this->assertNotNull($rememberMe->rememberedUser($rememberMe->lastCookie()['value']));
+    }
 
-            $this->assertCount($cookiesBefore + 1, $rememberMe->sentCookies);
-            $this->assertNull($rememberMe->rememberedUser($firstToken));
-            $this->assertNotNull($rememberMe->rememberedUser($rememberMe->lastCookie()['value']));
+    /** With the login listener, `refreshTokenOnRemember: false` still replaced the token on every use. */
+    public function testALoginListenerKeepsTheTokenWithoutRefresh()
+    {
+        $rememberMe = $this->newRememberMe(new UserRegisterConfiguration(refreshTokenOnRemember: false));
+        $rememberMe->register(User::findWhere(['login' => 'alice']));
+        $firstToken = $rememberMe->lastCookie()['value'];
+        $cookiesBefore = count($rememberMe->sentCookies);
 
-            $this->authentication->logout();
-        }
+        $this->rememberWithALoginListener($rememberMe, $firstToken);
+        $this->authentication->logout();
+        $this->rememberWithALoginListener($rememberMe, $firstToken);
+
+        $this->assertTrue($this->authentication->isLogged());
+        $this->assertCount($cookiesBefore, $rememberMe->sentCookies);
+        $this->assertNotNull($rememberMe->rememberedUser($firstToken));
+    }
+
+    /** The cache was read for any cookie value before checking it had the shape of a token. */
+    public function testACookieThatIsNotATokenIsNotLookedUp()
+    {
+        $rememberMe = $this->newRememberMe();
+
+        $rememberMe->handleRequest($this->requestWithToken('last-import'));
+
+        $this->assertEquals(0, $rememberMe->tokenLookups);
     }
 
     public function testForgetUserRevokesEveryDevice()
@@ -333,6 +352,15 @@ class RememberMeTest extends TestCase
         $this->newRememberMe()->forget($this->requestWithToken('last-import'));
 
         $this->assertEquals('today', $this->cache->get('last-import'));
+    }
+
+    protected function rememberWithALoginListener(SpyRememberMe $rememberMe, string $token): void
+    {
+        Events::withInstance(new Events(), function (Events $events) use ($rememberMe, $token) {
+            $events->on(AuthenticatedUser::class, fn (AuthenticatedUser $event) => $rememberMe->register($event));
+
+            $rememberMe->handleRequest($this->requestWithToken($token));
+        });
     }
 
     protected function newRememberMe(?UserRegisterConfiguration $configuration = null): SpyRememberMe

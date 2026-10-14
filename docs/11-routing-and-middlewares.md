@@ -434,8 +434,8 @@ new RouterConfiguration(
 | `securityHeaders` | `[]` | headers added to every response that does not set them already |
 
 With `cached`, only routes without slugs whose callback is a `[Controller::class, 'method']` array
-are remembered. A remembered route is called directly : the `WebAPI` services are not asked to claim
-the request first.
+are remembered. The `WebAPI` services of the `apis` option are still asked to claim the request
+before a remembered route runs.
 
 ## Responses the router produces on its own
 
@@ -446,7 +446,7 @@ the request first.
 | an `OPTIONS` request no route answers | `204 No Content`, with the CORS headers of the path's methods when the origin is allowed |
 | the first parameter is a `Request` subclass and the request is invalid | `422 Unprocessable Content`, the validation errors as JSON |
 | a slug parameter is a model and no row has that key | `404 Not Found` |
-| a `ResponseException` escaped the callback | the response it carries |
+| a `ResponseException` escaped the callback or a `WebAPI`'s `handle()` | the response it carries |
 | the callback returned nothing | `204 No Content` |
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./10-commands.md">Previous : Commands</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./12-requests-and-validation.md">Next : Requests and validation</a></div></td></tr></table>

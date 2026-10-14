@@ -33,7 +33,7 @@ abstract class ModelResource
         if ($models instanceof Model)
             return $resource->toArray($models);
 
-        return Bunch::of($models)
+        return Bunch::wrap($models)
             ->map(fn (Model $model) => $resource->toArray($model))
             ->toArray();
     }

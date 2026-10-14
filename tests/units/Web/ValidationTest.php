@@ -9,6 +9,7 @@ use Cube\Web\Http\Rules\AnyParam;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\UploadRule;
+use Cube\Web\Http\Rules\ValidationReturn;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -624,5 +625,47 @@ class ValidationTest extends TestCase
 
         $this->assertTrue(Param::datetime()->validate('2024-02-29 10:00:00')->isValid());
         $this->assertFalse(Param::datetime()->validate('2024-02-31 10:00:00')->isValid());
+    }
+
+    /** Spreading string-keyed errors into array_push() threw an "unknown named parameter" Error */
+    public function testMergeWithKeepsKeyedAndUnkeyedErrors()
+    {
+        $return = (new ValidationReturn())
+            ->addError('body is invalid')
+            ->addErrorKey('name', ['name is required']);
+
+        $merged = (new ValidationReturn())
+            ->addError('payload is too large')
+            ->addErrorKey('name', ['name is too short'])
+            ->addErrorKey('price', ['price must be an integer']);
+
+        $return->mergeWith($merged);
+
+        $this->assertSame([
+            0 => 'body is invalid',
+            'name' => ['name is required', 'name is too short'],
+            1 => 'payload is too large',
+            'price' => ['price must be an integer'],
+        ], $return->getErrors());
+    }
+
+    public function testAddErrorKeyAppendsToTheErrorsAlreadyUnderThatKey()
+    {
+        $return = (new ValidationReturn())
+            ->addErrorKey('name', ['name is required'])
+            ->addErrorKey('name', ['name is too short']);
+
+        $this->assertSame(['name' => ['name is required', 'name is too short']], $return->getErrors());
+    }
+
+    /** ArrayParam keys its errors by index : an integer key does not make them unkeyed messages */
+    public function testMergeWithKeepsTheErrorsOfAnArrayParam()
+    {
+        $arrayReturn = Param::array(Param::integer())->validate([1, 'two']);
+
+        $return = (new ValidationReturn())->mergeWith($arrayReturn);
+
+        $this->assertSame($arrayReturn->getErrors(), $return->getErrors());
+        $this->assertIsArray($return->getErrors()[1]);
     }
 }

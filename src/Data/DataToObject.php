@@ -16,7 +16,7 @@ abstract class DataToObject
 
     public static function bunch(array $collection): Bunch
     {
-        return Bunch::of($collection)
+        return Bunch::wrap($collection)
             ->map(fn ($element) => static::fromData($element))
         ;
     }
@@ -43,7 +43,7 @@ abstract class DataToObject
             $parameterName = $specialKeys[$parameterName] ?? $parameterName;
 
             if (!array_key_exists($parameterName, $rawData)) {
-                $constructorValues[] = null;
+                $constructorValues[] = $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null;
 
                 continue;
             }

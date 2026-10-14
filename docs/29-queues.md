@@ -73,7 +73,7 @@ long as the worker does.
 
 ## Running the worker
 
-`cube:queue` finds the class by its full name, or by the end of it
+`cube:queue` finds the class by its full name, or by its short name
 
 ```sh
 php do cube:queue --queue='App\Queue\InvoiceMailerQueue'
@@ -83,8 +83,9 @@ php do cube:queue --queue=InvoiceMailerQueue
 php do cube:queue --queue=InvoiceMailerQueue -l
 ```
 
-A short name is matched against the end of every known class name, and the first match wins : give
-the full name when two classes end the same way.
+A short name matches whole segments of a queue class name : `InvoiceMailerQueue` or
+`Queue\InvoiceMailerQueue`, never `MailerQueue`. When it matches several queues, the command refuses to
+pick one and lists them : add namespace segments, or give the full name.
 
 The worker loops until it is stopped, waiting 50 ms whenever the queue is empty. With the `pcntl`
 extension, `SIGTERM` and `SIGINT` (`Ctrl-C`) let it finish the current item before leaving; from code,
@@ -164,8 +165,8 @@ drops (with a warning) an item it did not sign. `APP_KEY` must be set (32 bytes 
 `php do key:generate` makes one) and must be the same for the application pushing items and the
 workers processing them. Items still waiting when you change it are dropped.
 
-A lost connection is reopened on the next poll; if Redis is still unreachable, the worker stops with
-a `RuntimeException`, and its supervisor restarts it.
+A lost connection is reopened on the next poll. While Redis stays unreachable, the worker keeps
+running : it logs a warning in the queue's log and tries again a second later.
 
 Here is a Redis service to develop against
 

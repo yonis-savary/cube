@@ -9,6 +9,7 @@ use Cube\Data\Database\Migration\MigrationManagerConfiguration;
 use Cube\Data\Database\MigrationManager;
 use Cube\Env\Configuration;
 use Cube\Env\Storage;
+use Cube\Utils\Path;
 use Cube\Web\Router\Router;
 
 use function Cube\debug;
@@ -19,10 +20,10 @@ class TestContext
 
     protected Storage $storage;
     protected Router $router;
-    protected Database $database;
+    protected ?Database $database;
     protected Database $emptyApplicationDatabase;
     protected Configuration $configuration;
-    protected MigrationManager $migrationManager;
+    protected ?MigrationManager $migrationManager = null;
 
     public function __construct(
         ?Storage $storage=null,
@@ -33,7 +34,7 @@ class TestContext
     {
         $this->storage = $storage ?? Storage::getInstance();
         $this->router = $router ?? Router::getInstance();
-        $this->database = $database ?? Database::getInstance();
+        $this->database = $database;
 
         $this->configuration = $configuration ?? Configuration::getInstance();
 
@@ -42,13 +43,42 @@ class TestContext
 
     public function replaceGlobalInstances()
     {
-        Storage::getInstance($this->storage);
+        Storage::setInstance($this->storage);
         Router::setInstance($this->router);
-        Database::setInstance($this->database);
         Configuration::setInstance($this->configuration);
 
+        if ($this->database)
+            Database::setInstance($this->database);
+
         MigrationManager::removeInstance();
-        $this->migrationManager = MigrationManager::getInstance();
+        $this->migrationManager = null;
+    }
+
+    public static function useTemporaryStorage(?Storage $parent = null): Storage
+    {
+        $parent ??= Storage::getInstance();
+
+        $storage = $parent->child(uniqid('Tests-'));
+        Storage::setInstance($storage);
+        register_shutdown_function(fn () => self::removeDirectory($storage->getRoot()));
+
+        return $storage;
+    }
+
+    protected static function removeDirectory(string $path): void
+    {
+        if (!is_dir($path))
+            return;
+
+        foreach (array_diff(scandir($path), ['.', '..']) as $entry) {
+            $child = Path::join($path, $entry);
+
+            is_dir($child)
+                ? self::removeDirectory($child)
+                : unlink($child);
+        }
+
+        rmdir($path);
     }
 
     public function createEmptyApplicationDatabase(): Database
@@ -86,7 +116,7 @@ class TestContext
     }
 
     public function getDatabase(): Database {
-        return $this->database;
+        return $this->database ??= Database::getInstance();
     }
 
     public function getConfiguration(): Configuration {
@@ -94,7 +124,7 @@ class TestContext
     }
 
     public function getMigrationManager(): MigrationManager {
-        return $this->migrationManager;
+        return $this->migrationManager ??= MigrationManager::getInstance();
     }
 
 

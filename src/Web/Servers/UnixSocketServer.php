@@ -65,9 +65,25 @@ class UnixSocketServer
         $this->setup();
 
         $socket = new SocketServer("unix://{$this->socketPath}");
-        $httpCallback = fn (ServerRequestInterface $request) => $this->handle($request);
 
-        (new HttpServer($httpCallback))->listen($socket);
+        try {
+            (new HttpServer(fn (ServerRequestInterface $request) => $this->handle($request)))->listen($socket);
+            $this->stopOnSignals($socket);
+
+            Console::log("Listening on unix://{$this->socketPath}");
+            Loop::run();
+        } finally {
+            $socket->close();
+
+            if (file_exists($this->socketPath))
+                unlink($this->socketPath);
+        }
+    }
+
+    protected function stopOnSignals(SocketServer $socket): void
+    {
+        if (!function_exists('pcntl_signal'))
+            return;
 
         $stop = function () use ($socket) {
             $socket->close();
@@ -76,15 +92,6 @@ class UnixSocketServer
 
         Loop::addSignal(SIGINT, $stop);
         Loop::addSignal(SIGTERM, $stop);
-
-        Console::log("Listening on unix://{$this->socketPath}");
-
-        try {
-            Loop::run();
-        } finally {
-            if (file_exists($this->socketPath))
-                unlink($this->socketPath);
-        }
     }
 
     public function handle(ServerRequestInterface $psrRequest): ResponseInterface

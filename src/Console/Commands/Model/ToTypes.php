@@ -91,7 +91,7 @@ class ToTypes extends Command
             ...Bunch::fromValues($model::fields())
                 ->zip(fn ($field) => $this->getFieldTypeScript($field)),
 
-            ...Bunch::of($model::relations())
+            ...Bunch::wrap($model::relations())
                 ->map(fn ($relation) => [$relation, $instance->{$relation}()])
                 ->zip(fn ($relationObject) => $this->getRelationTypeScript($relationObject[0], $model, $relationObject[1])),
         ])
@@ -111,7 +111,7 @@ class ToTypes extends Command
 
     public function execute(Args $args): int
     {
-        $models = Bunch::of(Autoloader::classesThatExtends(Model::class))
+        $models = Bunch::wrap(Autoloader::classesThatExtends(Model::class))
             ->map(fn ($class) => $this->generateForModel($class))
             ->join("\n\n")
         ;

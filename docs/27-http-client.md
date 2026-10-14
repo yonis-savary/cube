@@ -69,16 +69,12 @@ Everything a connector answers for is a method you may override
 | `baseURLParameters()` | `[]` | merged into every query string |
 | `basePostParameters()` | `[]` | merged into every body |
 | `baseLogger()` | a `NullLogger` | where the exchange is logged — nothing is logged unless you override it |
-| `baseUserAgent()` | a Firefox user agent | the `User-Agent` header, only when `fetch()` is called with `userAgent: null` (see below) |
+| `baseUserAgent()` | a Firefox user agent | the `User-Agent` header, when no `$userAgent` is given |
 
 Base headers and parameters often carry credentials : with a `baseURL()`, they are only sent to its
 origin (scheme, host and port). An absolute URL to another origin is still fetched, without them.
 Only `http` and `https` are fetched, so a URL taken from user input cannot read `file://` or talk to
 another protocol.
-
-`baseUserAgent()` is currently bypassed by the verb methods and by `Request::fetch()` : both pass
-the Firefox user agent explicitly, so your override only applies when you call
-`$connector->fetch($request, userAgent: null)` yourself.
 
 ## Sending a request
 
@@ -168,7 +164,7 @@ $response = (new Request('GET', 'https://reports.example.com/monthly'))->fetch(
 |---|---|---|
 | `$logger` | the connector's `baseLogger()` | where the exchange is logged |
 | `$timeout` | none | cURL connect and total timeout, in seconds |
-| `$userAgent` | a Firefox user agent | the `User-Agent` header |
+| `$userAgent` | the connector's `baseUserAgent()` | the `User-Agent` header, an empty string sends none |
 | `$supportRedirection` | `true` | follow `301`, `302`, `303`, `307` and `308`, up to 10 times |
 | `$logFlags` | `DEBUG_ESSENTIALS` | how much of the exchange is logged |
 | `$httpClient` | a bare `HttpClient` | the connector to send through |
@@ -257,8 +253,8 @@ MockServers::getInstance()->set(BillingConnector::class, BillingMocker::class);
 MockServers::removeInstance();
 ```
 
-An `...Async` call is answered by a mock too. With `setMockServer()` the mock handles it, with
-`MockServers` it is simply skipped and returns `true`.
+An `...Async` call is answered by a mock too : the mock handles it, whichever way it was registered,
+and the call returns `true`.
 
 For a couple of routes, declaring a class is more than you need
 

@@ -14,6 +14,8 @@ use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Console;
 use Cube\Utils\Text;
+use InvalidArgumentException;
+use RuntimeException;
 use Throwable;
 
 abstract class MigrationManager
@@ -42,7 +44,7 @@ abstract class MigrationManager
         $this->configuration = $configuration;
 
         $this->migrationFiles
-            = Bunch::of(Applications::resolve()->paths)
+            = Bunch::wrap(Applications::resolve()->paths)
                 ->map(fn (string $app) => new Storage($app))
                 ->map(fn (Storage $app) => $app->child($this->configuration->directoryName))
                 ->map(fn (Storage $migrationDirectory) => $migrationDirectory->files())
@@ -81,6 +83,8 @@ abstract class MigrationManager
 
     abstract public function markMigrationAsDone(string $name);
 
+    abstract public function markMigrationAsUndone(string $name);
+
     abstract public function listDoneMigrations(): array;
 
     abstract public static function supports(string $driver): bool;
@@ -90,14 +94,6 @@ abstract class MigrationManager
         $this->createMigrationTableIfInexistant();
 
         $migrationName = basename($file);
-        $databaseDriver = $this->database->getDriver();
-
-        $plan = Implementations::findOrFail(
-            Plan::class,
-            fn ($plan) => $plan::supports($databaseDriver),
-            [$this->database],
-            $databaseDriver
-        );
 
         if ($this->migrationWasMade($migrationName)) {
             return true;
@@ -105,22 +101,77 @@ abstract class MigrationManager
 
         /** @var Migration $migration */
         $migration = include $file;
-        $error = $migration->execute($plan, $this->database);
-        if (!$error)
-            $this->markMigrationAsDone($migrationName);
 
-        if ($error instanceof Throwable) {
-            $this->log(Console::withRedColor("Error with $file ! " . $error->getMessage()));
-            $this->lastError = $error;
-            $this->lastErrorFile = $file;
-            Logger::getInstance()->error("Failed migration {$file}");
-            Logger::getInstance()->logThrowable($error);
-            return false;
-        } else {
-            $this->log(Console::withGreenColor("Migration: $file applied"));
-        }
+        if ($error = $migration->execute($this->getPlan(), $this->database))
+            return $this->recordFailure($file, $error, "Error with $file ! ");
+
+        $this->markMigrationAsDone($migrationName);
+        $this->log(Console::withGreenColor("Migration: $file applied"));
 
         return true;
+    }
+
+    public function revertMigration(string $file): bool
+    {
+        /** @var Migration $migration */
+        $migration = include $file;
+
+        if ($error = $migration->revert($this->getPlan(), $this->database))
+            return $this->recordFailure($file, $error, "Error while rolling back $file ! ");
+
+        $this->markMigrationAsUndone(basename($file));
+        $this->log(Console::withGreenColor("Migration: $file rolled back"));
+
+        return true;
+    }
+
+    public function rollback(int $steps = 1): void
+    {
+        if ($steps < 1)
+            throw new InvalidArgumentException("Cannot rollback [{$steps}] migrations, expected at least 1");
+
+        $this->createMigrationTableIfInexistant();
+
+        $names = array_slice(array_reverse($this->listDoneMigrations()), 0, $steps);
+
+        if (!count($names)) {
+            $this->log(Console::withBlueColor("Nothing to rollback !"));
+            return;
+        }
+
+        foreach ($names as $name) {
+            if (!$this->revertMigration($this->getMigrationFile($name)))
+                throw new FailedMigrationException($this->lastError, $this->lastErrorFile);
+        }
+    }
+
+    protected function getMigrationFile(string $name): string
+    {
+        return $this->migrationFiles->first(fn ($file) => basename($file) === $name)
+            ?? throw new RuntimeException("Cannot find the file of the applied migration [{$name}] in any [{$this->configuration->directoryName}] directory");
+    }
+
+    protected function getPlan(): Plan
+    {
+        $databaseDriver = $this->database->getDriver();
+
+        return Implementations::findOrFail(
+            Plan::class,
+            fn ($plan) => $plan::supports($databaseDriver),
+            [$this->database],
+            $databaseDriver
+        );
+    }
+
+    protected function recordFailure(string $file, Throwable $error, string $message): false
+    {
+        $this->log(Console::withRedColor($message . $error->getMessage()));
+        $this->lastError = $error;
+        $this->lastErrorFile = $file;
+        Logger::getInstance()->error('Failed migration {file}', ['file' => $file]);
+        Logger::getInstance()->logThrowable($error);
+
+        return false;
     }
 
     /**
@@ -190,25 +241,5 @@ abstract class MigrationManager
             fn ($manager) => $manager::supports($databaseDriver),
             for: $databaseDriver
         );
-    }
-
-    public function catchUpTo(string $name): array
-    {
-        $doneMigrations = [];
-
-        foreach ($this->migrationFiles->toArray() as $file) {
-            $doneMigrations[] = $file;
-
-            $thisFileName = basename($file);
-            if (!$this->migrationWasMade($thisFileName)) {
-                $this->markMigrationAsDone($thisFileName);
-            }
-
-            if ($file === $name) {
-                break;
-            }
-        }
-
-        return $doneMigrations;
     }
 }

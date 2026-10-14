@@ -2,7 +2,9 @@
 
 namespace Cube\Console;
 
+use Cube\Core\Autoloader;
 use Cube\Core\Injector;
+use Cube\Data\Bunch;
 use Cube\Utils\Console;
 
 abstract class Command
@@ -51,6 +53,22 @@ abstract class Command
             |> (fn ($class) => preg_replace('/\\\.+/', '', $class))
             |> (fn ($class) => preg_replace_callback('/([a-z])([A-Z])/', fn ($m) => $m[1].'-'.$m[2], $class))
             |> strtolower(...);
+    }
+
+    /**
+     * @template TBase
+     *
+     * @param class-string<TBase> $base
+     *
+     * @return Bunch<int,class-string<TBase>>
+     */
+    protected function classesNamed(string $base, string $name): Bunch
+    {
+        $name = ltrim($name, '\\');
+
+        return Bunch::wrap(Autoloader::classesThatExtends($base))
+            ->filter(fn (string $class) => $class === $name || str_ends_with($class, '\\'.$name))
+            ->values();
     }
 
     abstract public function execute(Args $args): int;

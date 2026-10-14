@@ -81,9 +81,10 @@ fires on odd days, starting with the 1st. A step only follows `*` : `0-30/10` or
 and so are combinations such as `1-5,7`. Names (`mon`, `jan`) and shortcuts (`@daily`) are not
 supported.
 
-When both the day of the month and the day of the week are restricted, **both** must match — unlike
-standard cron, where either one is enough. `0 0 1 * 1` fires only on a month's first day that is
-also a monday.
+When both the day of the month and the day of the week are restricted, **either** one is enough, as in
+standard cron : `0 0 1 * 1` fires on the first day of every month and on every monday. When one of them
+is `*`, the other one alone decides : `0 0 * * 1` fires on mondays only. Only a bare `*` leaves a field
+unrestricted — a step such as `*/2` restricts it.
 
 An expression that is not five fields, or whose values fall outside their bounds, throws an
 `InvalidArgumentException` as soon as it is declared rather than silently never matching.
@@ -110,8 +111,7 @@ rather than doing it inline
 Cube\daily(fn () => ExportQueue::queue('daily-sales'));
 ```
 
-`routine:launch` does **not** run your queues, despite what its help text says — schedules and queue
-workers are launched separately.
+`routine:launch` does **not** run your queues : schedules and queue workers are launched separately.
 
 ## Where the logs go
 

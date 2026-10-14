@@ -321,6 +321,18 @@ class AuthenticationTest extends TestCase
         $this->assertArrayNotHasKey('password', $this->newAuthentication()->user()->toArray());
     }
 
+    /** `login()` stored the model as given : the hash of a user logged in after registration ended up in the session. */
+    public function testLoggingInAModelKeepsItsCredentialsOutOfTheSession()
+    {
+        $authentication = $this->newAuthentication();
+        $user = User::findWhere(['login' => 'alice']);
+
+        $authentication->login($user);
+
+        $this->assertArrayNotHasKey('password', $authentication->user()->toArray());
+        $this->assertNotNull($user->password, 'The model given to login() must be left untouched');
+    }
+
     protected function newAuthentication(?PasswordAuthentication $provider = null): Authentication
     {
         $provider ??= new PasswordAuthentication(User::class, 'login', 'password');

@@ -30,7 +30,7 @@ class LocalDiskQueueDriver extends BasicQueueDriver
     {
         $storage = $this->getStorage();
 
-        $toProcess = Bunch::of($storage->files())
+        $toProcess = Bunch::wrap($storage->files())
             ->first(fn ($file) => !str_starts_with(basename($file), '#'))
         ;
 
@@ -50,7 +50,7 @@ class LocalDiskQueueDriver extends BasicQueueDriver
 
     public function flush(): void
     {
-        Bunch::of($this->getStorage()->files())
+        Bunch::wrap($this->getStorage()->files())
         ->forEach(fn ($file) => unlink($file));
     }
 

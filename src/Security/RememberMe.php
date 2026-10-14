@@ -20,6 +20,7 @@ class RememberMe implements Middleware
     use Component;
 
     protected ?string $issuedToken = null;
+    protected bool $isRemembering = false;
 
     public function __construct(
         protected Cache $cache,
@@ -48,14 +49,13 @@ class RememberMe implements Middleware
             return $request;
         }
 
-        $userId = $this->rememberedUserOf($token);
-        if (!$this->isToken($token) || null === $userId) {
+        if (!$this->isToken($token) || null === $userId = $this->rememberedUserOf($token)) {
             return $request;
         }
 
         $this->issuedToken = null;
 
-        if (!$this->authentication->loginById($userId)) {
+        if (!$this->logBackIn($userId)) {
             $this->dropToken($token);
             return $request;
         }
@@ -78,8 +78,23 @@ class RememberMe implements Middleware
         return $request;
     }
 
+    protected function logBackIn(mixed $userId): bool
+    {
+        $this->isRemembering = true;
+
+        try {
+            return $this->authentication->loginById($userId);
+        } finally {
+            $this->isRemembering = false;
+        }
+    }
+
     public function register(AuthenticatedUser|Model $user): void
     {
+        // A login listener calls register() during the remember-me login too : the used token has to survive it
+        if ($this->isRemembering && !$this->configuration->refreshTokenOnRemember)
+            return;
+
         $userId = $user instanceof AuthenticatedUser
             ? $user->userId
             : $user->id();

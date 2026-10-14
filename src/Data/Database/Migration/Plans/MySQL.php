@@ -126,7 +126,7 @@ class MySQL extends Plan
     }
 
     public function addUniqueIndex(string $table, string|array $fields) {
-        $fields = Bunch::of($fields);
+        $fields = Bunch::wrap($fields);
         $fieldsExpression = $fields->map(fn ($field) => $this->database->build('`{}`', [$field]))->join(",");
 
         $indexName = strtolower("idx_".$table."_" . $fields->join("_"));

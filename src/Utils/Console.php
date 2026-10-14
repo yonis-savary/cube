@@ -69,7 +69,7 @@ class Console
 
         $logger = self::getLogger();
 
-        Bunch::of($elements)
+        Bunch::wrap($elements)
             ->filter(fn ($x) => '' !== $x && null !== $x)
         // ->map(fn($x) => preg_replace("/[^ ]+/", "", (string) $x))
             ->map(fn ($x) => preg_replace('/(?:[@-Z\-_]|\[[0-?]*[ -\/]*[@-~])/', '', $x))
@@ -313,7 +313,7 @@ class Console
         if (count($paths)) {
             list($index, $_) = self::promptList(
                 'Please choose an application to proceed',
-                Bunch::of($appsToLoad->paths)->map(fn ($x) => Path::toRelative($x))->get()
+                Bunch::wrap($appsToLoad->paths)->map(fn ($x) => Path::toRelative($x))->get()
             );
 
             return $paths[$index];

@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Text;
 use Cube\Web\Http\Rules\AnyParam;
+use Cube\Web\Http\Rules\ArrayParam;
 use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\ValidationReturn;
@@ -156,7 +157,7 @@ class Request extends HttpMessage
 
     public function collect(string $key): Bunch
     {
-        return Bunch::of($this->param($key));
+        return Bunch::wrap($this->param($key));
     }
 
     public function list(array $keys, array $default = []): array
@@ -166,7 +167,7 @@ class Request extends HttpMessage
 
     public function upload(string $inputName): ?Upload
     {
-        return Bunch::of($this->uploads)
+        return Bunch::wrap($this->uploads)
             ->first(fn (Upload $upload) => $upload->inputName === $inputName)
         ;
     }
@@ -176,7 +177,7 @@ class Request extends HttpMessage
      */
     public function uploads(string $inputName): array
     {
-        return Bunch::of($this->uploads)
+        return Bunch::wrap($this->uploads)
             ->filter(fn (Upload $upload) => $upload->inputName === $inputName, true)
             ->get()
         ;
@@ -284,24 +285,38 @@ class Request extends HttpMessage
             : new AnyParam();
     }
 
-    protected function getBodyMergedWithUpload(): array 
+    protected function getBodyMergedWithUpload(Rule $validator): array
     {
-        $uploads = [];
-        foreach ($this->uploads as $upload) {
-            $uploads[$upload->inputName] ??= [];
-            $uploads[$upload->inputName][] = $upload;
-        }
+        $rules = $validator instanceof ObjectParam ? $validator->getRules() : [];
 
-        foreach ($uploads as &$array) {
-            $array = count($array) === 1 ? $array[0]: $array;
-        }
+        $uploads = [];
+        foreach ($this->uploads as $upload)
+            $uploads[$upload->inputName][] = $upload;
+
+        foreach ($uploads as $inputName => &$inputUploads)
+            $inputUploads = self::shapeUploadsFor($inputUploads, $rules[$inputName] ?? null);
 
         return array_merge($this->all(), $uploads);
     }
 
+    /**
+     * @param Upload[] $uploads
+     *
+     * @return Upload|Upload[]
+     */
+    protected static function shapeUploadsFor(array $uploads, Rule|array|null $rule): Upload|array
+    {
+        if ($rule instanceof ArrayParam || count($uploads) > 1)
+            return $uploads;
+
+        return $uploads[0];
+    }
+
     public function validate(): ValidationReturn
     {
-        return $this->getObjectParam()->validate($this->getBodyMergedWithUpload(), 'request');
+        $validator = $this->getObjectParam();
+
+        return $validator->validate($this->getBodyMergedWithUpload($validator), 'request');
     }
 
     public function isValid(): bool
@@ -312,7 +327,7 @@ class Request extends HttpMessage
     public function validated(?string $key=null, ?Rule $validator = null): mixed
     {
         $validator ??= $this->getObjectParam();
-        $result = $validator->validate($this->getBodyMergedWithUpload(), 'request')->getResult();
+        $result = $validator->validate($this->getBodyMergedWithUpload($validator), 'request')->getResult();
 
         if (!$key)
             return $result;
@@ -342,7 +357,7 @@ class Request extends HttpMessage
     public function fetch(
         ?Logger $logger = null,
         ?int $timeout = null,
-        ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        ?string $userAgent = null,
         bool $supportRedirection = true,
         int $logFlags = HttpClient::DEBUG_ESSENTIALS,
         ?HttpClient $httpClient = null,
@@ -363,7 +378,7 @@ class Request extends HttpMessage
 
     public function fetchAsync(
         ?Logger $logger = null,
-        ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        ?string $userAgent = null,
         ?HttpClient $httpClient = null,
     ): bool {
         $httpClient ??= new HttpClient();
@@ -412,7 +427,20 @@ class Request extends HttpMessage
                 $cleanedUploads[] = new Upload($upload, $inputName);
         }
 
-        return $cleanedUploads;
+        return self::withoutEmptyInputs($cleanedUploads);
+    }
+
+    /**
+     * @param Upload[] $uploads
+     *
+     * @return Upload[]
+     */
+    protected static function withoutEmptyInputs(array $uploads): array
+    {
+        // A form sends its empty file inputs too, each reporting UPLOAD_ERR_NO_FILE : none of them is an upload
+        return (new Bunch($uploads))
+            ->filter(fn (Upload $upload) => UPLOAD_ERR_NO_FILE !== $upload->error, true)
+            ->get();
     }
 
     /**
@@ -454,6 +482,6 @@ class Request extends HttpMessage
                 $uploads[] = Upload::fromPsrUploadedFile($file, $inputName);
         }
 
-        return $uploads;
+        return self::withoutEmptyInputs($uploads);
     }
 }

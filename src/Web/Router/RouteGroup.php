@@ -77,7 +77,7 @@ class RouteGroup
      */
     public function getRoutes(): array
     {
-        return Bunch::of($this->elements)
+        return Bunch::wrap($this->elements)
             ->reduce(function($arr, $cur) {
                 array_push(
                     $arr,

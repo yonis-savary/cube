@@ -23,15 +23,18 @@ class Queue extends Command
         return "Launch/Flush a given Queue";
     }
 
-    protected function findQueueClass(string $target) {
-        $allClasses = Autoloader::classesList();
+    /**
+     * @return class-string<CubeQueue>
+     */
+    protected function findQueueClass(string $target): string
+    {
+        $candidates = $this->classesNamed(CubeQueue::class, $target);
 
-        foreach ($allClasses as $class) {
-            if (str_ends_with($class, $target))
-                return $class;
-        }
-
-        throw new Exception("Could not find [$target] class");
+        return match ($candidates->count()) {
+            0 => throw new Exception("Could not find a queue class named [$target]"),
+            1 => $candidates->first(),
+            default => throw new Exception("[$target] matches several queue classes, give one of them : " . $candidates->join(', ')),
+        };
     }
 
     public function execute(Args $args): int

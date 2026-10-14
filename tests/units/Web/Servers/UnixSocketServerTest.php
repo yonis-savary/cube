@@ -5,6 +5,7 @@ namespace Cube\Tests\Units\Web\Servers;
 use Cube\Env\Logger\Logger;
 use Cube\Event\Events;
 use Cube\Tests\Units\Core\Classes\Counter;
+use Cube\Utils\Shell;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -126,6 +127,20 @@ class UnixSocketServerTest extends TestCase
         Logger::withInstance($logger, fn () => $server->handle(new ServerRequest('GET', 'http://localhost/log')));
 
         $this->assertSame($logger, $seen);
+    }
+
+    /** `Loop::addSignal()` threw without pcntl, so the server could not start and left its socket file behind. */
+    public function testTheServerStartsAndCleansUpWithoutPcntl()
+    {
+        $socketPath = sys_get_temp_dir() . '/' . uniqid('cube-') . '.sock';
+
+        $output = Shell::executeInDirectory(
+            'php -d disable_functions=pcntl_signal,pcntl_signal_dispatch,pcntl_async_signals ' . escapeshellarg(__DIR__ . '/WithoutPcntl/serve.php') . ' ' . escapeshellarg($socketPath),
+            __DIR__
+        );
+
+        $this->assertStringContainsString('socket created', $output->getOutput(), $output->getErrorOutput());
+        $this->assertFileDoesNotExist($socketPath);
     }
 
     protected function newServer(Route ...$routes): UnixSocketServer

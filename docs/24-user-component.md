@@ -38,7 +38,7 @@ UserPreferences::getInstance()->set('theme', 'dark');
 - `getUserInstance(mixed $userPrimaryKey, string $userPrimaryKeyMD5)` is `abstract` — this is where
   you build the instance for that user.
 - `getAuthentication()` returns the `Authentication` component, and can be overridden in the class
-  using the trait if your service authenticates against something else.
+  using the trait, or in any subclass of it, if your service authenticates against something else.
 
 Two arguments reach `getUserInstance()`
 
@@ -104,7 +104,7 @@ argument rather than a message naming the real cause.
 
 Cube ships `UserStorage`, an abstract [`Storage`](./21-storage-and-caching.md) using the trait to give
 each user a subdirectory named after their MD5, under a directory named after your class (lowercased,
-namespace separators turned into `/`). Nobody logged in means no directory : `getInstance()` throws a
+namespace separators turned into `/`), on the driver of the global `Storage`. Nobody logged in means no directory : `getInstance()` throws a
 `RuntimeException` rather than sharing one between every anonymous visitor.
 
 ```php

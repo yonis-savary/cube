@@ -20,7 +20,7 @@ class ResponseAssert extends Assert
 
     public function json(): mixed
     {
-        return json_decode($this->body(), JSON_THROW_ON_ERROR);
+        return $this->response->getJSON();
     }
 
     public function assertJsonContent(mixed $expectedContent): self
@@ -111,7 +111,7 @@ class ResponseAssert extends Assert
         return $this->assertResponseCode(StatusCode::RESET_CONTENT);
     }
 
-    public function assertPatientContent(): self
+    public function assertPartialContent(): self
     {
         return $this->assertResponseCode(StatusCode::PARTIAL_CONTENT);
     }
@@ -351,7 +351,7 @@ class ResponseAssert extends Assert
         return $this->assertResponseCode(StatusCode::HTTP_VERSION_NOT_SUPPORTED);
     }
 
-    public function assertVariantAlsoNegociates(): self
+    public function assertVariantAlsoNegotiates(): self
     {
         return $this->assertResponseCode(StatusCode::VARIANT_ALSO_NEGOTIATES);
     }

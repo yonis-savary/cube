@@ -31,7 +31,7 @@ else if (count($commands) > 1)
         ""
     );
     Console::table(
-        Bunch::of($commands)
+        Bunch::wrap($commands)
         ->map(fn(Command $command) => [$command->getFullIdentifier(), $command->getHelp()])
         ->get(),
         ["Full Identifier", "Description"],

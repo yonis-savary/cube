@@ -59,6 +59,11 @@ class HttpClient
         $this->httpMockServer = $mockServer;
     }
 
+    protected function getMockServer(): ?HttpMockServer
+    {
+        return $this->httpMockServer ?? MockServers::getInstance()->get(static::class);
+    }
+
     public function baseURL(): ?string
     {
         return null;
@@ -305,10 +310,11 @@ class HttpClient
     public function toCurlHandle(
         Request $request,
         ?int $timeout = null,
-        ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        ?string $userAgent = null,
         ?Logger $logger = null,
         ?callable $curlMutator = null
     ): \CurlHandle {
+        $userAgent ??= $this->baseUserAgent();
         $logger ??= new NullLogger();
 
         $logger->info('Building CURL handle');
@@ -453,11 +459,8 @@ class HttpClient
         ?callable $curlMutator = null,
         int $followedRedirections = 0
     ): Response {
-        if ($this->httpMockServer)
-            return $this->httpMockServer->handle($request);
-
-        if ($registeredMock = MockServers::getInstance()->get(static::class))
-            return $registeredMock->handle($request);
+        if ($mockServer = $this->getMockServer())
+            return $mockServer->handle($request);
 
         $userAgent ??= $this->baseUserAgent();
         $logger ??= $this->baseLogger();
@@ -534,15 +537,12 @@ class HttpClient
         ?Logger $logger = null,
         ?string $userAgent = null
     ): bool {
-
-        if ($this->httpMockServer) {
-            $this->httpMockServer->handle($request);
+        if ($mockServer = $this->getMockServer()) {
+            $mockServer->handle($request);
             return true;
         }
 
-        if (MockServers::getInstance()->get(static::class))
-            return true;
-
+        $userAgent ??= $this->baseUserAgent();
         $logger ??= $this->baseLogger();
 
         $path = $this->path($request);

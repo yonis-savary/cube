@@ -39,10 +39,18 @@ class Postgres extends MigrationManager
         $this->database->query('INSERT INTO "{}" (name) VALUES ({})', [$this->getMigrationTableName(), $name]);
     }
 
+    public function markMigrationAsUndone(string $name)
+    {
+        $this->database->query(
+            'DELETE FROM "{}" WHERE name = {}',
+            [$this->getMigrationTableName(), $name]
+        );
+    }
+
     public function listDoneMigrations(): array
     {
-        return Bunch::of(
-            $this->database->query('SELECT name FROM "{}" ORDER BY created_at', [$this->getMigrationTableName()])
+        return Bunch::wrap(
+            $this->database->query('SELECT name FROM "{}" ORDER BY id', [$this->getMigrationTableName()])
         )
             ->map(fn ($x) => $x['name'])
             ->toArray()

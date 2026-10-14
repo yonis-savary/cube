@@ -93,8 +93,9 @@ Every `BroadcastConfiguration` value falls back to its `WebsocketConfiguration` 
 is `null` : `httpHost`, `httpPort`, `socketHost` (`websocketHost`), `socketPort` (`websocketPort`) and
 `broadcastSecret`. A host without a scheme gets `http://` for the HTTP side and `ws://` for the socket
 side. Set `socketHost` and `socketPort` whenever the address a browser sees differs from the one the
-process binds — the normal case behind a reverse proxy, and the default one too, since
-`websocketHost` is `0.0.0.0`.
+process binds — the normal case behind a reverse proxy. Without `socketHost`, a `websocketHost`
+binding every interface (`0.0.0.0`, the default, or `::`) becomes `localhost` in those URLs, which only
+suits a local setup.
 
 ### Securing the HTTP side
 
@@ -200,10 +201,10 @@ class JobRunner
 }
 ```
 
-`emit()` sends the signal asynchronously and returns a `bool` : whether the connection to the socket
-process opened. It does not wait for the answer, so it is neither a delivery receipt nor a sign the
-server accepted the signal — a wrong secret or a channel with no subscriber both look like `true`.
-The exchange is logged to `Storage/Logs/broadcast-client.csv`.
+`emit()` waits for the socket process to answer and returns `true` when it accepted and dispatched
+the signal. A wrong secret, an unknown channel or an unreachable process give `false`, logged to
+`Storage/Logs/broadcast-client.csv`. It is not a delivery receipt : a path with no subscriber is still
+`true`.
 
 When you send many signals to the same path, lock the parameters once instead of rebuilding the path
 each time
@@ -297,7 +298,7 @@ The process builds your channels once, at start : restart it after a deployment.
 |---|---|---|
 | `httpHost` | `httpHost` | reaching the HTTP server from the backend |
 | `httpPort` | `httpPort` | same |
-| `socketHost` | `websocketHost` | the URL given to browsers (`getWebsocketOrigin()`, `redirect()`) |
+| `socketHost` | `websocketHost`, `localhost` when it binds every interface | the URL given to browsers (`getWebsocketOrigin()`, `redirect()`) |
 | `socketPort` | `websocketPort` | same |
 | `broadcastSecret` | `broadcastSecret` | the `X-Broadcast-Secret` header sent with every signal |
 
@@ -305,7 +306,7 @@ The process builds your channels once, at start : restart it after a deployment.
 |---|---|
 | `getRoute(): string` | the route subscribers connect to — required |
 | `authorize(array $slugs, RequestInterface $request): ?string` | `null` accepts the subscription, a string refuses it — required |
-| `emit(array $data, array $routeParams = []): bool` | sends `$data` to the subscribers of that path |
+| `emit(array $data, array $routeParams = []): bool` | sends `$data` to the subscribers of that path, `false` when the socket process refused it or could not be reached |
 | `path(array $routeParams = []): string` | the channel path for those parameters |
 | `lockParams(array $params)` / `unlockParams()` | fixes the path used by `emit()` |
 | `redirect(array $routeParams = []): Response` | a `307` to the full websocket URL |

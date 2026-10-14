@@ -5,6 +5,7 @@ namespace Cube\Data\OpenAPI\Specs\Paths\RequestBody;
 use Cube\Data\AutoDataToObject;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
+use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Router\Route;
 
 class OASRequestBody extends AutoDataToObject
@@ -30,17 +31,16 @@ class OASRequestBody extends AutoDataToObject
 
     public function processBodyParameters(Route $route) 
     {
-        $rules = $this->getRequestRules($route);
-        if (!$rules?->getRules())
+        if (!$rules = $this->getRequestRules($route))
             return;
 
         $this->requestBody = [];
         $this->requestBody['required'] = true;
         $this->requestBody['content'] = ['application/json' => ['schema' => []]];
 
-        foreach ($rules->getRules() as $key => $_) {
+        $keys = $rules instanceof ObjectParam ? array_keys($rules->getRules()) : [];
+        foreach ($keys as $key)
             $this->context->log(" - Adding body request [$key] parameter");
-        }
 
         $this->mutateParameterWithRule(
             $rules,

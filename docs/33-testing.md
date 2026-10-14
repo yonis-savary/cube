@@ -45,22 +45,21 @@ hold the whole setup
 | `Tests/bootstrap.php` | boots Cube, moves `Storage` to a temporary directory and prepares the test database |
 | `Tests/Unit/HelloWorldTest.php` | a placeholder test, delete it once you have your own |
 
-Cube does not install PHPUnit for you, and your tests need composer's `Tests\` mapping (see
-[Installation](./02-installation.md))
+Cube does not install PHPUnit for you, nor Faker, which [model factories](#faking-models) need. Your
+tests also need composer's `Tests\` mapping (see [Installation](./02-installation.md))
 
 ```sh
-composer require --dev phpunit/phpunit
+composer require --dev phpunit/phpunit fakerphp/faker
 ```
 
 `Tests/bootstrap.php` runs once per PHPUnit process, before any test
 
 1. `Autoloader::initialize()` on your project, which reads your `cube.php` and your `.env` ;
-2. replaces the `Storage` component with a new `Storage/Tests-<unique id>` directory : logs, cache and
-   files written during the run land there, never in your real storage ;
+2. replaces the `Storage` component with a new `Storage/Tests-<unique id>` directory
+   (`TestContext::useTemporaryStorage()`) : logs, cache, test databases and files written during the
+   run land there, never in your real storage, and the directory is removed when the process ends ;
 3. builds an empty SQLite database, runs every migration of your applications into it, and makes it
    the global `Database`.
-
-The `Storage/Tests-*` directories are not deleted after the run : remove them when they pile up.
 
 ## Running the tests
 
@@ -85,8 +84,6 @@ Keep in mind
 - The test database is **always SQLite**, whatever your `DatabaseConfiguration` says : your
   migrations must run on SQLite. Migrations written with the `Plan` API do ; a
   [raw SQL migration](./17-migrations.md#raw-sql-migrations) must use SQL that SQLite understands.
-- The bootstrap still builds the `Database` of your `cube.php` once, before replacing it : that
-  database must be reachable from where the tests run (a `sqlite` one always is).
 - Only the database is reset. Any other component you set in a test stays set for the next tests of
   the same process : put it back in `tearDown()` (see
   [Swapping a component](#swapping-a-component)).
@@ -180,10 +177,10 @@ Every status code has its shortcut, named after it
 | Family | Shortcuts |
 |---|---|
 | `1xx` | `assertContinue`, `assertSwitchingProtocols`, `assertProcessing`, `assertEarlyHints` |
-| `2xx` | `assertOk`, `assertCreated`, `assertAccepted`, `assertNonAuthoritativeInformation`, `assertNoContent`, `assertResetContent`, `assertPatientContent` (206, *Partial Content*), `assertMultiStatus`, `assertAlreadyReported`, `assertImUsed` |
+| `2xx` | `assertOk`, `assertCreated`, `assertAccepted`, `assertNonAuthoritativeInformation`, `assertNoContent`, `assertResetContent`, `assertPartialContent` (206), `assertMultiStatus`, `assertAlreadyReported`, `assertImUsed` |
 | `3xx` | `assertMultipleChoices`, `assertMovedPermanently`, `assertFound`, `assertSeeOther`, `assertNotModified`, `assertUseProxy`, `assertUnused`, `assertTemporaryRedirect`, `assertPermanentRedirect` |
 | `4xx` | `assertBadRequest`, `assertUnauthorized`, `assertPaymentRequired`, `assertForbidden`, `assertNotFound`, `assertMethodNotAllowed`, `assertNotAcceptable`, `assertProxyAuthenticationRequired`, `assertRequestTimeout`, `assertConflict`, `assertGone`, `assertLengthRequired`, `assertPreconditionFailed`, `assertContentTooLarge`, `assertURITooLong`, `assertUnsupportedMediaType`, `assertRangeNotSatisfiable`, `assertExpectationFailed`, `assertImATeapot`, `assertMisdirectedRequest`, `assertUnprocessableContent`, `assertLocked`, `assertFailedDependency`, `assertTooEarly`, `assertUpgradeRequired`, `assertPreconditionRequired`, `assertTooManyRequests`, `assertRequestHeaderFieldsTooLarge`, `assertUnavailableForLegalReasons` |
-| `5xx` | `assertInternalServerError`, `assertNotImplemented`, `assertBadGateway`, `assertServiceUnavailable`, `assertGatewayTimeout`, `assertHttpVersionNotSupported`, `assertVariantAlsoNegociates` (506), `assertInsufficientStorage`, `assertLoopDetected`, `assertNotExtended`, `assertNetworkAuthenticationRequired` |
+| `5xx` | `assertInternalServerError`, `assertNotImplemented`, `assertBadGateway`, `assertServiceUnavailable`, `assertGatewayTimeout`, `assertHttpVersionNotSupported`, `assertVariantAlsoNegotiates` (506), `assertInsufficientStorage`, `assertLoopDetected`, `assertNotExtended`, `assertNetworkAuthenticationRequired` |
 
 The codes the router produces by itself are listed in
 [Routing and middlewares](./11-routing-and-middlewares.md#responses-the-router-produces-on-its-own) :
@@ -247,9 +244,11 @@ by your application
 MockServers::getInstance()->set(BillingConnector::class, BillingMocker::class);
 
 $this->post('/orders/12/invoice')->assertCreated();
-
-MockServers::removeInstance();
 ```
+
+`CubeTestCase::tearDown()` removes every mock registered on `MockServers`, so the next test talks to
+the network again unless it registers its own. A test of yours overriding `tearDown()` calls
+`parent::tearDown()`.
 
 The mock declares real routes and returns real responses. See
 [Http client](./27-http-client.md#testing-without-the-network) for writing one.
@@ -279,14 +278,16 @@ class PriceFormatterTest extends TestCase
 | `getRouter()` | the router requests are sent to |
 | `getStorage()` | the storage captured when the context was built |
 | `getConfiguration()` | the configuration in use |
-| `getMigrationManager()` | the migration manager of the database the context was built with |
+| `getMigrationManager()` | the migration manager of the current database |
+| `useTemporaryStorage(?Storage $parent = null)` | static : a new `Tests-<unique id>` child made the global `Storage`, removed when the process ends (the bootstrap calls it) |
 | `createEmptyApplicationDatabase()` | a new SQLite database with every migration applied (the bootstrap calls it) |
 | `useNewEmptyApplicationDatabase()` | a fresh copy of that database, made global (`CubeTestCase::setUp()` calls it) |
 
 ## Faking models
 
 `Model::factory()` builds models filled with fake values, from [Faker](https://fakerphp.org) : in your
-tests, a seeder, or wherever an example is needed
+tests, a seeder, or wherever an example is needed. Cube only suggests Faker : install it with
+`composer require --dev fakerphp/faker`, otherwise a factory throws a `RuntimeException` saying so
 
 ```php
 $user = User::factory()->make();                          // not saved

@@ -348,6 +348,48 @@ class RouterTest extends TestCase
         $this->assertEquals(StatusCode::FORBIDDEN, $router->route(new Request('GET', '/claimed'))->getStatusCode());
     }
 
+    /** The router only caught a ResponseException around the route call : thrown from an api's handle(), it became a 500. */
+    public function testAResponseExceptionThrownByAnApiIsUnwrapped()
+    {
+        $api = new class extends WebAPI {
+            public function handle(Request $request): Response|Route|null
+            {
+                throw new ResponseException('maintenance', Response::serviceUnavailable('maintenance'));
+            }
+        };
+        $router = new Router(new RouterConfiguration(false, false, false, [$api], [], '/'));
+
+        $response = $router->route(new Request('GET', '/products'));
+
+        $this->assertEquals(StatusCode::SERVICE_UNAVAILABLE, $response->getStatusCode());
+        $this->assertEquals('maintenance', $response->getBody());
+    }
+
+    /** A cached router served its remembered route before asking the apis, so a maintenance api was bypassed. */
+    public function testACachedRouteDoesNotBypassTheApis()
+    {
+        $this->setUpTemporaryStorage('router-cache-api-test-');
+
+        try {
+            Cache::withInstance(new Cache(new CacheConfiguration(new LocalDiskCache($this->storage))), function () {
+                $api = new CountingApi();
+                $router = new Router(new RouterConfiguration(true, false, false, [$api], [], '/'));
+                $router->addRoutes(Route::get('/products', [ProductReader::class, 'list']));
+
+                $this->assertEquals(StatusCode::OK, $router->route($request = new Request('GET', '/products'))->getStatusCode());
+                $this->assertInstanceOf(Route::class, $router->getCachedRouteForRequest($request));
+
+                $maintenance = new CountingApi(Response::serviceUnavailable('maintenance'));
+                $cachedRouter = new Router(new RouterConfiguration(true, false, false, [$maintenance], [], '/'));
+
+                $this->assertEquals('maintenance', $cachedRouter->route(new Request('GET', '/products'))->getBody());
+                $this->assertEquals(1, $maintenance->handleCalls);
+            });
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
     /** urldecode() read a `+` in a path as a space, which only form encoding does. */
     public function testASlugKeepsItsPlusSigns()
     {

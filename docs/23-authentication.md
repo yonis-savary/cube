@@ -75,8 +75,8 @@ $user->save();
 Authentication::getInstance()->login($user);
 ```
 
-`login()` stores the model as you give it : here the session holds the hash too. Use `loginById()`
-instead when that matters, it goes through the provider, which leaves the credentials out.
+`login()` leaves the fields the provider names in `getCredentialFields()` out of the session copy :
+here `user()` gives the user back without `password_hash`. The model you pass is left untouched.
 
 `attempt()` first forgets whoever was logged in, so a failed attempt leaves nobody logged in. It does
 not dispatch `LoggedOutUser` for that.
@@ -125,12 +125,12 @@ An attempt is rejected when
 An unknown login still costs one password verification, like a known one : the response time does
 not tell whether a login exists.
 
-The models `attempt()` and `userById()` return come without their `passwordField` and `saltField`, so
-the copy kept in the session never holds a hash. Use `find()` when you need those columns.
+The models `attempt()` and `userById()` return come without their `passwordField` and `saltField`, the
+fields `getCredentialFields()` names. Use `find()` when you need those columns.
 
 ### Your own provider
 
-Implement `AuthenticationProvider` — two methods — and pass it to the configuration instead. This is
+Implement `AuthenticationProvider` — three methods — and pass it to the configuration instead. This is
 the way in for an LDAP directory, an API token, or a single sign-on.
 
 ```php
@@ -144,6 +144,12 @@ class TokenAuthentication implements AuthenticationProvider
     public function userById(mixed $id): Model|false
     {
         return User::find($id) ?? false;
+    }
+
+    // kept out of the session copy of the user
+    public function getCredentialFields(): array
+    {
+        return ['api_token'];
     }
 }
 
@@ -216,5 +222,6 @@ FailedAuthentication::on(function (FailedAuthentication $event) {
 |---|---|
 | `attempt(string $identifier, ?string $password = null)` | the user `Model`, or `false` when the credentials are rejected |
 | `userById(mixed $id)` | the user `Model`, or `false` when nobody has that id |
+| `getCredentialFields()` | the fields `login()` keeps out of the session, `[]` when there are none |
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./22-sessions.md">Previous : Sessions</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./24-user-component.md">Next : User component</a></div></td></tr></table>

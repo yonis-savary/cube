@@ -6,6 +6,7 @@ use Cube\Data\AutoDataToObject;
 use Cube\Data\Bunch;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
+use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Router\Route;
 
 class OASParameters extends AutoDataToObject
@@ -17,7 +18,7 @@ class OASParameters extends AutoDataToObject
 
     public function toArray(): array
     {
-        return Bunch::of($this->parameters)
+        return Bunch::wrap($this->parameters)
             ->map(fn(OASParameter $parameter) => $parameter->toArray())
             ->toArray();
     }
@@ -68,6 +69,11 @@ class OASParameters extends AutoDataToObject
     {
         if (!$rules = $this->getRequestRules($route))
             return;
+
+        if (!$rules instanceof ObjectParam) {
+            $this->context->log(" - Warning: the request rules of {$route->getPath()} are a single " . $rules::class . ", only an object gives query parameters");
+            return;
+        }
 
         foreach ($rules->getRules() as $key => $rule)
         {

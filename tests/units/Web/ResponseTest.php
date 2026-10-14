@@ -71,7 +71,7 @@ class ResponseTest extends TestCase
 
     public function testFactoriesAnswerAnyOtherValueAsJson()
     {
-        $response = Response::created(['name' => 'screen', 'tags' => Bunch::of(['tv'])]);
+        $response = Response::created(['name' => 'screen', 'tags' => Bunch::wrap(['tv'])]);
 
         $this->assertEquals(StatusCode::CREATED, $response->getStatusCode());
         $this->assertEquals('application/json', $response->getHeader('content-type'));
@@ -93,15 +93,27 @@ class ResponseTest extends TestCase
         $this->assertTrue(Response::created()->isOk());
         $this->assertTrue(Response::noContent()->isOk());
 
-        $this->assertFalse(Response::movedPermanently()->isOk());
+        $this->assertFalse(Response::movedPermanently('/home')->isOk());
         $this->assertFalse(Response::notFound()->isOk());
         $this->assertFalse(Response::internalServerError()->isOk());
     }
 
+    /** `found()`, `seeOther()` and `movedPermanently()` sent their target as the body, without a Location header. */
     public function testRedirectionsCarryTheirTargetInALocationHeader()
     {
-        $this->assertEquals('/login', Response::temporaryRedirect('/login')->getHeader('location'));
-        $this->assertEquals('/login', Response::permanentRedirect('/login')->getHeader('location'));
+        $redirections = [
+            StatusCode::MOVED_PERMANENTLY => Response::movedPermanently('/login'),
+            StatusCode::FOUND => Response::found('/login'),
+            StatusCode::SEE_OTHER => Response::seeOther('/login'),
+            StatusCode::TEMPORARY_REDIRECT => Response::temporaryRedirect('/login'),
+            StatusCode::PERMANENT_REDIRECT => Response::permanentRedirect('/login'),
+        ];
+
+        foreach ($redirections as $statusCode => $response) {
+            $this->assertEquals($statusCode, $response->getStatusCode());
+            $this->assertEquals('/login', $response->getHeader('location'));
+            $this->assertEquals('', $response->getBody());
+        }
     }
 
     public function testJsonSetsItsContentType()
@@ -206,8 +218,8 @@ class ResponseTest extends TestCase
 
     public function testJsonAnswersACollectionAsAList()
     {
-        $this->assertEquals([1, 2, 3], Response::json(Bunch::of([1, 2, 3]))->getJSON());
-        $this->assertEquals(['totals' => [1, 2]], Response::json(['totals' => Bunch::of([1, 2])])->getJSON());
+        $this->assertEquals([1, 2, 3], Response::json(Bunch::wrap([1, 2, 3]))->getJSON());
+        $this->assertEquals(['totals' => [1, 2]], Response::json(['totals' => Bunch::wrap([1, 2])])->getJSON());
     }
 
     public function testFileAnswersTheFileContent()
@@ -219,6 +231,16 @@ class ResponseTest extends TestCase
         $this->assertEquals(StatusCode::OK, $response->getStatusCode());
         $this->assertEquals('yearly report', $response->getBody());
         $this->assertEquals('text/plain', $response->getHeader('content-type'));
+    }
+
+    /** getJSON() used to decode the raw body, which stays empty for a response displayed through a callback */
+    public function testFileContentCanBeReadAsJson()
+    {
+        $this->storage->write('document.json', json_encode(['Hello' => 'Goodbye']));
+
+        $response = Response::file($this->storage->path('document.json'));
+
+        $this->assertEquals(['Hello' => 'Goodbye'], $response->getJSON());
     }
 
     /** Without nosniff, a browser could guess HTML out of an uploaded file served as something else. */

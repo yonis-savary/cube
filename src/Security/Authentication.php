@@ -49,11 +49,16 @@ class Authentication
 
         $this->session->regenerateId();
         $this->session->set(self::SESSION_USER_CLASS, $user::class);
-        $this->session->set(self::SESSION_USER_DATA, $user->toArray());
+        $this->session->set(self::SESSION_USER_DATA, $this->toSessionData($user));
         $this->session->set(self::SESSION_USER_ID, $user->id());
 
         (new AuthenticatedUser($user, $user->id()))->dispatch();
         (new LoggedInUser($user, $user->id()))->dispatch();
+    }
+
+    protected function toSessionData(Model $user): array
+    {
+        return array_diff_key($user->toArray(), array_flip($this->provider->getCredentialFields()));
     }
 
     public function loginById(mixed $id): bool

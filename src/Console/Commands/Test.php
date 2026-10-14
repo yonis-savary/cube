@@ -14,6 +14,11 @@ class Test extends Command
         return "cube";
     }
 
+    public function getHelp(): string
+    {
+        return "Run vendor/bin/phpunit from your project root, forwarding your arguments";
+    }
+
     public function execute(Args $args): int
     {
         $bin = Path::relative('vendor/bin/phpunit');

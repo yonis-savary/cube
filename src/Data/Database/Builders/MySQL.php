@@ -44,9 +44,9 @@ class MySQL extends QueryBuilder
     public function getUpdateTables(): string
     {
         return
-            Bunch::of($this->query->base->table)
+            Bunch::wrap($this->query->base->table)
                 ->push(
-                    ...Bunch::of($this->query->joins)
+                    ...Bunch::wrap($this->query->joins)
                         ->map(fn (Join $join) => $join->tableToJoin)
                         ->get()
                 )
@@ -70,7 +70,7 @@ class MySQL extends QueryBuilder
     public function getSelectFields(): string
     {
         return
-            Bunch::of($this->query->selectFields)
+            Bunch::wrap($this->query->selectFields)
                 ->map(fn (Field $field) => $this->getField($field))
                 ->join(",\n ")
         ;
@@ -80,7 +80,7 @@ class MySQL extends QueryBuilder
     {
         return
             '('
-                .Bunch::of($this->query->insertFields->fields)
+                .Bunch::wrap($this->query->insertFields->fields)
                     ->map(fn ($field) => sprintf('`%s`', $field))
                     ->join(', ')
             .')'
@@ -89,7 +89,7 @@ class MySQL extends QueryBuilder
 
     public function getInsertValues(): string
     {
-        return Bunch::of($this->query->insertValues)
+        return Bunch::wrap($this->query->insertValues)
             ->map(fn ($values) => $this->prepareString($values->values, false, $this->database))
             ->join(', ')
         ;
@@ -97,7 +97,7 @@ class MySQL extends QueryBuilder
 
     public function getUpdates(): string
     {
-        return Bunch::of($this->query->updateFields)
+        return Bunch::wrap($this->query->updateFields)
             ->map(fn (UpdateField $field) => sprintf('`%s`.%s = %s', $field->table, $field->field, $this->getSQLValue($field->newValue)))
             ->join(', ')
         ;
@@ -191,7 +191,7 @@ class MySQL extends QueryBuilder
 
         $updateConditions = count($this->query->joins)
             ? '('
-                .Bunch::of($this->query->joins)
+                .Bunch::wrap($this->query->joins)
                     ->map(fn (Join $join) => $this->getFieldComparaison($join->condition))
                     ->join(") \n AND \n (")
             .')'
@@ -214,7 +214,7 @@ class MySQL extends QueryBuilder
     {
         return count($this->query->orders)
                 ? 'ORDER BY '
-                .Bunch::of($this->query->orders)
+                .Bunch::wrap($this->query->orders)
                     ->map(function (Order $order) {
                         return
                             $order->table
@@ -265,7 +265,7 @@ class MySQL extends QueryBuilder
 
     protected function getJoins(): string
     {
-        return Bunch::of($this->query->joins)
+        return Bunch::wrap($this->query->joins)
             ->map(function (Join $join) {
                 return sprintf(
                     '%s JOIN `%s` %s %s',

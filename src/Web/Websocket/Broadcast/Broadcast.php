@@ -6,6 +6,7 @@ use Cube\Core\Component;
 use Cube\Env\Logger\Logger;
 use Cube\Web\Http\HttpClient;
 use Cube\Web\Websocket\Servers\WebsocketConfiguration;
+use RuntimeException;
 
 /**
  * This class is a simple HTTPClient using the websocket configuration
@@ -36,8 +37,16 @@ class Broadcast extends HttpClient
         return $this->configuration->getHttpOrigin();
     }
 
-    public function emit(string $event, $data): bool {
-        $event = trim($event, "/");
-        return $this->postJsonAsync($event, $data);
+    /**
+     * @return bool `true` once the websocket server accepted and dispatched the signal
+     */
+    public function emit(string $event, array $data): bool
+    {
+        try {
+            return $this->postJson('/' . trim($event, '/'), $data)->isOk();
+        } catch (RuntimeException $exception) {
+            $this->baseLogger()->error('Could not reach the websocket server : {message}', ['message' => $exception->getMessage()]);
+            return false;
+        }
     }
 }

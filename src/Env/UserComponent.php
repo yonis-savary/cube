@@ -18,7 +18,7 @@ trait UserComponent
 
     final public static function getDefaultInstance(): static
     {
-        $authentication = self::getAuthentication();
+        $authentication = static::getAuthentication();
         $userPrimaryKey = $authentication->userId();
 
         $md5 = md5(
@@ -27,6 +27,6 @@ trait UserComponent
             : serialize($userPrimaryKey)
         );
 
-        return self::getUserInstance($userPrimaryKey, $md5);
+        return static::getUserInstance($userPrimaryKey, $md5);
     }
 }

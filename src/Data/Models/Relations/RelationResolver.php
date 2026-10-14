@@ -29,7 +29,7 @@ class RelationResolver
         $toKey = $this->relation->toColumn;
         $toModel = $this->relation->toModel;
 
-        $owners = Bunch::of($data)
+        $owners = Bunch::wrap($data)
             ->when(
                 count($this->accArray),
                 fn(Bunch $owners) => $owners->key(join('.', $this->accArray))

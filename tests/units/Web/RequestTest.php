@@ -9,6 +9,8 @@ use Cube\Tests\Units\Models\Module;
 use Cube\Tests\Units\Web\Examples\PriceRequest;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Rules\Param;
+use Cube\Web\Http\Rules\Rule;
+use Cube\Web\Http\Rules\UploadRule;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\Upload;
 use Cube\Web\Router\Route;
@@ -389,5 +391,73 @@ class RequestTest extends TestCase
         }
 
         $this->assertEquals(['front.png', 'back.png'], array_map(fn (Upload $upload) => $upload->filename, $uploads));
+    }
+
+    /** `UploadRule::new(nullable: true)` still answered "avatar is required" when the file was left out. */
+    public function testANullableUploadMayBeLeftOut()
+    {
+        $request = self::requestWithRules(['avatar' => UploadRule::new(nullable: true)]);
+
+        $this->assertTrue($request->isValid());
+        $this->assertNull($request->validated('avatar'));
+    }
+
+    /** An empty file input still reaches PHP as an UPLOAD_ERR_NO_FILE entry, which a nullable rule refused as a failed upload. */
+    public function testAnEmptyFileInputIsNoUpload()
+    {
+        $files = $_FILES;
+        try {
+            $_FILES = [
+                'avatar' => ['name' => '', 'type' => '', 'tmp_name' => '', 'error' => UPLOAD_ERR_NO_FILE, 'size' => 0],
+            ];
+
+            $uploads = Request::fromGlobals()->getUploads();
+        } finally {
+            $_FILES = $files;
+        }
+
+        $this->assertSame([], $uploads);
+    }
+
+    /** One file under a field reached the rules as a single Upload, several as a list : a list rule failed with one file. */
+    public function testUploadsReachTheirRuleInTheShapeItDeclares()
+    {
+        $rules = ['photos' => Param::array(UploadRule::new()), 'avatar' => UploadRule::new()];
+
+        $oneFile = self::requestWithRules($rules, [self::newUpload('photos'), self::newUpload('avatar')]);
+        $this->assertTrue($oneFile->isValid());
+        $this->assertCount(1, $oneFile->validated('photos'));
+        $this->assertInstanceOf(Upload::class, $oneFile->validated('avatar'));
+
+        $severalFiles = self::requestWithRules($rules, [self::newUpload('photos'), self::newUpload('photos'), self::newUpload('avatar')]);
+        $this->assertTrue($severalFiles->isValid());
+        $this->assertCount(2, $severalFiles->validated('photos'));
+
+        $severalAvatars = self::requestWithRules($rules, [self::newUpload('photos'), self::newUpload('avatar'), self::newUpload('avatar')]);
+        $this->assertFalse($severalAvatars->isValid());
+    }
+
+    /**
+     * @param array<string,Rule> $rules
+     * @param Upload[] $uploads
+     */
+    protected static function requestWithRules(array $rules, array $uploads = []): Request
+    {
+        $request = new class('POST', '/', uploads: $uploads) extends Request {
+            public array $rules = [];
+
+            public function getRules(): array
+            {
+                return $this->rules;
+            }
+        };
+        $request->rules = $rules;
+
+        return $request;
+    }
+
+    protected static function newUpload(string $inputName): Upload
+    {
+        return new Upload(['name' => 'photo.png', 'type' => 'image/png', 'tmp_name' => '/tmp/photo', 'error' => UPLOAD_ERR_OK, 'size' => 1], $inputName);
     }
 }

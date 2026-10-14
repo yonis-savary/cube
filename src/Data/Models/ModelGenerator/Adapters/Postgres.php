@@ -59,11 +59,11 @@ class Postgres extends SQLite
             AND table_constraints.table_name = {};
         ", [$table]);
 
-        $fields = Bunch::of($sqlRelations)->key('column_name');
+        $fields = Bunch::wrap($sqlRelations)->key('column_name');
 
         $addedRelationNames = [];
 
-        $relations = Bunch::of($sqlRelations)
+        $relations = Bunch::wrap($sqlRelations)
             ->map(function ($x) use ($fields, $dummyModel, $table, &$addedRelationNames) {
                 $targetModel = Table::getClassname($x['referenced_table_name']);
                 $relationName = strtolower($x['column_name']);
@@ -89,7 +89,7 @@ class Postgres extends SQLite
 
         $primary = null;
 
-        $fields = Bunch::of($db->query(
+        $fields = Bunch::wrap($db->query(
             "SELECT
                 column_name,
                 udt_name,
@@ -106,7 +106,7 @@ class Postgres extends SQLite
             ->get()
         ;
 
-        return new Table($table, $fields, $primary, $relations);
+        return new Table($table, $fields, $primary);
     }
 
     protected function getModelField(string $table, array $desc, ?string &$primary): ModelField
@@ -132,7 +132,7 @@ class Postgres extends SQLite
         $tableClassName = Table::getClassname($table);
 
         /** @var ?HasOne $relation */
-        $relation = Bunch::of($this->relations)
+        $relation = Bunch::wrap($this->relations)
             ->onlyInstancesOf(HasOne::class)
             ->first(fn (HasOne $rel) => $rel->isSource($tableClassName, $fieldName))
         ;

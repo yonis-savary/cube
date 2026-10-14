@@ -20,7 +20,7 @@ class RequestContext
      */
     public function __construct(array $persistentComponents = [])
     {
-        $this->componentsToReset = Bunch::of(Autoloader::classesThatUses(Component::class))
+        $this->componentsToReset = Bunch::wrap(Autoloader::classesThatUses(Component::class))
             ->diff([...$persistentComponents, Injector::class])
             ->get();
     }

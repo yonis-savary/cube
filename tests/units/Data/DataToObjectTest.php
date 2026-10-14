@@ -3,6 +3,7 @@
 namespace Cube\Tests\Units\Data;
 
 use Cube\Data\Bunch;
+use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
 use Cube\Utils\Text;
@@ -35,12 +36,12 @@ class DataToObjectTest extends TestCase
 
         $this->assertEquals(
             ["People's Champion", 'Life of a DON', "Mugzy's move"],
-            Bunch::of($collection->albums)->key('name')->toArray()
+            Bunch::wrap($collection->albums)->key('name')->toArray()
         );
 
         $this->assertEquals(
             ['Käärijä', 'Don Toliver', 'Royal Crown Revue'],
-            Bunch::of($collection->albums)->key('artist.name')->toArray()
+            Bunch::wrap($collection->albums)->key('artist.name')->toArray()
         );
     }
 
@@ -67,5 +68,24 @@ class DataToObjectTest extends TestCase
         $this->assertStringContainsString('name', $logger->written);
         $this->assertStringContainsString('array', $logger->written);
         $this->assertStringNotContainsString('a-secret-value', $logger->written);
+    }
+
+    /** A missing key always passed null, even to a parameter declaring a default value. */
+    public function testAMissingKeyTakesTheParameterDefaultValue()
+    {
+        $class = new class('', 0, null) extends DataToObject {
+            public function __construct(
+                public string $name,
+                public int $quantity = 1,
+                public ?string $note = 'none',
+                public ?string $comment = null,
+            ) {}
+        };
+
+        $line = $class::fromData(['name' => 'screen', 'comment' => 'fragile']);
+
+        $this->assertEquals(1, $line->quantity);
+        $this->assertEquals('none', $line->note);
+        $this->assertEquals('fragile', $line->comment);
     }
 }

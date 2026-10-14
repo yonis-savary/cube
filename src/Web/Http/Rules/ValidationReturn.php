@@ -41,9 +41,12 @@ class ValidationReturn
         return $this;
     }
 
-    public function addErrorKey(string $key, array $errors): static 
+    public function addErrorKey(string $key, array $errors): static
     {
-        $this->errors[$key] = $errors;
+        $this->errors[$key] = [
+            ...$this->errors[$key] ?? [],
+            ...$errors
+        ];
         return $this;
     }
 
@@ -58,7 +61,15 @@ class ValidationReturn
     }
 
     public function mergeWith(ValidationReturn $merge): static {
-        array_push($this->errors, ...$merge->getErrors());
+        foreach ($merge->getErrors() as $key => $errors) {
+            if (is_string($errors)) {
+                $this->addError($errors);
+                continue;
+            }
+
+            $this->addErrorKey($key, $errors);
+        }
+
         return $this;
     }
 }

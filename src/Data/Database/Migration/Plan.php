@@ -15,7 +15,6 @@ abstract class Plan
      * @var array<string,ModelField[]>
      */
     protected array $tableDiff = [];
-    protected bool $allowExperimentalFeatures = false;
 
     public function __construct(
         protected Database $database
@@ -52,10 +51,6 @@ abstract class Plan
     abstract public function renameField(string $table, string $oldFieldName, string $newFieldName);
 
     abstract public function renameTable(string $oldTableName, string $newTableName);
-
-    public function allowExperimentalFeatures() {
-        $this->allowExperimentalFeatures = true;
-    }
 
     public function tableDiffAddTable(string $table) {
         $this->tableDiff[$table] = [];
@@ -128,7 +123,7 @@ abstract class Plan
         $model = Bunch::fromExtends(Model::class)->first(fn($model) => $model->table() === $table);
 
         $modelFields = $model ? $model->fields() : [];
-        $diffFields = Bunch::of($this->tableDiff[$table] ?? [])
+        $diffFields = Bunch::wrap($this->tableDiff[$table] ?? [])
             ->zip(fn($field) => [$field->name, $field]);
 
         return array_values(array_merge($modelFields, $diffFields));

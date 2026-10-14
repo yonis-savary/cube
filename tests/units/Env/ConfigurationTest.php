@@ -172,6 +172,16 @@ class ConfigurationTest extends TestCase
         $this->assertEquals('shop', $restored->resolve(SessionConfiguration::class)->namespace);
     }
 
+    public function test_a_cached_configuration_can_be_removed()
+    {
+        $cache = $this->newCache();
+        (new Configuration(new SessionConfiguration('shop')))->identify('removed')->putToCache($cache);
+
+        (new Configuration())->identify('removed')->removeFromCache($cache);
+
+        $this->assertFalse((new Configuration())->identify('removed')->loadFromCache($cache));
+    }
+
     public function test_loading_an_absent_cache_entry_says_so()
     {
         $config = (new Configuration())->identify('never-cached');

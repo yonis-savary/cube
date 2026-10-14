@@ -9,6 +9,8 @@ use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Tests\Units\Web\Classes\UserResource;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\CustomRequestFormat;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\EnumRequestFormat;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\ListRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\QueryRequestFormat;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
@@ -127,4 +129,11 @@ class SampleController extends Controller
 
     }
 
+    public function postEndpointWithListRequest(ListRequestFormat $request) {
+
+    }
+
+    public function getEndpointWithEnumRequest(EnumRequestFormat $request) {
+
+    }
 }

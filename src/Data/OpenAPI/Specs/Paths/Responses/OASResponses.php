@@ -31,7 +31,7 @@ class OASResponses extends AutoDataToObject
     {
         $method = $route->getReflectionMethod();
 
-        if ($this->getRequestRules($route)?->getRules())
+        if ($this->getRequestRules($route))
         {
             $response = new OASResponse();
             $response->validationErrorsResponse();
@@ -110,7 +110,7 @@ class OASResponses extends AutoDataToObject
             ->filter(fn ($part) => preg_match('/^\{.+\}$/', $part))
             ->count();
 
-        return Bunch::of($route->getReflectionMethod()->getParameters())
+        return Bunch::wrap($route->getReflectionMethod()->getParameters())
             ->slice(1, $slugCount)
             ->any(fn (ReflectionParameter $parameter) =>
                 $parameter->getType() instanceof ReflectionNamedType

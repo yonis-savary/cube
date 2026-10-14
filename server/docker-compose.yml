@@ -6,7 +6,6 @@ services:
       context: .
       dockerfile: Docker/Dockerfile.php
     volumes:
-      - ./App:/var/www/App # Useful for development
       - /var/www # Share with nginx
       - ./Storage:/var/www/Storage # Persistent Storage
       - ./.env:/var/www/.env:ro # Kept out of the image, which would carry your secrets in its layers

@@ -368,9 +368,9 @@ $product->save();
 ```
 
 `SavedModel` carries the model (`$event->created`) and the `Database` it was saved with
-(`$event->database`, which can be `null` on an update through the global instance). `onSaved()` subscribes to **one instance**, which is
-what you want for a one-off follow-up, and what relations use internally to save bound children
-after their parent. See [Events](./08-events.md) for the dispatcher itself.
+(`$event->database`, the global instance when you passed none). `onSaved()` subscribes to **one
+instance**, which is what you want for a one-off follow-up, and what relations use internally to
+save bound children after their parent. See [Events](./08-events.md) for the dispatcher itself.
 
 ## Faking models
 

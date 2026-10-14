@@ -61,6 +61,6 @@ class PostgresProvider extends DatabaseProvider
     {
         $statement = $this->rootConnection()->query('SELECT datname FROM pg_database');
 
-        return Bunch::of($statement->fetchAll())->key('datname')->get();
+        return Bunch::wrap($statement->fetchAll())->key('datname')->get();
     }
 }

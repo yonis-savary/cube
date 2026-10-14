@@ -142,9 +142,10 @@ Each request and its response are logged as on the HTTP side, in `Storage/Logs/s
 
 - When the socket file already exists, the server tries to connect to it : if nothing answers, the
   file is a leftover of a killed server and gets removed, otherwise the command refuses to start.
-- On `SIGINT` (`Ctrl-C`) and `SIGTERM`, the server closes the socket and removes its file. Handling
-  those signals needs the `pcntl` extension : with PHP's default event loop, the server does not
-  start without it.
+- The server removes its socket file whenever it stops, an error included. With the `pcntl`
+  extension, `SIGINT` (`Ctrl-C`) and `SIGTERM` stop it that way. Without it, the server still starts,
+  but a signal kills the process on the spot and leaves the file behind : the next start removes it,
+  as described above.
 - The socket file gets the permissions of the process `umask` : that is what decides who can call the
   API.
 - A unix socket path is limited to 108 characters by the system.

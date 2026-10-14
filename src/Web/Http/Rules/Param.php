@@ -14,7 +14,7 @@ class Param extends Rule
 {
     protected mixed $value;
 
-    public static function from(Rule|array $rule, bool $nullable=false): ObjectParam|ArrayParam|Param
+    public static function from(Rule|array $rule, bool $nullable=false): Rule
     {
         if ($rule instanceof Rule)
             return $rule;
@@ -224,7 +224,7 @@ class Param extends Rule
             fn ($value) => in_array($value, $array),
             Text::interpolate('{key} must be in values {array}, got {value}', ['array' => join(',', $array)])
         )
-        ->withMetadata([self::META_TYPE => 'string', self::META_ENUM => $array]);
+        ->withMetadata([self::META_ENUM => $array]);
     }
 
     /**

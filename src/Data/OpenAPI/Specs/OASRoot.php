@@ -45,7 +45,7 @@ class OASRoot extends DataAutoDataToObject
         foreach ($context->sharedSchemas as $name => $schema)
             $this->components['schemas'][$name] = $schema;
 
-        $modelsToAdd = Bunch::of($context->usedModelRefs)->uniques()->toArray();
+        $modelsToAdd = Bunch::wrap($context->usedModelRefs)->uniques()->toArray();
         foreach ($modelsToAdd as $model) {
             $basename = preg_replace("~.+\\\\~", "", $model);
             $this->components['schemas'][$basename] = [];

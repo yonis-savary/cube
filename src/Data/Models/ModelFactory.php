@@ -7,6 +7,7 @@ use Cube\Data\Database\Database;
 use Cube\Utils\Implementations;
 use Faker\Factory;
 use Faker\Generator;
+use RuntimeException;
 
 /**
  * @template TModel of Model
@@ -98,7 +99,13 @@ abstract class ModelFactory
 
     protected function faker(): Generator
     {
-        return $this->faker ??= Factory::create();
+        if ($this->faker)
+            return $this->faker;
+
+        if (!class_exists(Factory::class))
+            throw new RuntimeException(static::class.' needs fakerphp/faker to make up values : composer require --dev fakerphp/faker');
+
+        return $this->faker = Factory::create();
     }
 
     /** @return TModel */

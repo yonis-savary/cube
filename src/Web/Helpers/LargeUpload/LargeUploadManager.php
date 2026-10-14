@@ -58,7 +58,7 @@ class LargeUploadManager
         $storage = $this->getStorage();
         $deadline = time() - $seconds;
 
-        return Bunch::of($storage->directories())
+        return Bunch::wrap($storage->directories())
             ->map(fn (string $directory) => basename($directory))
             ->filter(fn (string $identifier) => $this->isIdentifier($identifier))
             ->filter(fn (string $identifier) => (int) @filemtime($storage->path("{$identifier}/info.json")) < $deadline)

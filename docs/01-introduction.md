@@ -108,7 +108,7 @@ And a few other tools, each covered on its own page
 Logger::getInstance()->info('Created product {product}', ['product' => $product->id]);
 
 // Collections, see Collections
-Bunch::of([1, 2, 3])
+Bunch::wrap([1, 2, 3])
     ->map(fn ($x) => $x * 2)
     ->push(8)
     ->get(); // [2, 4, 6, 8]

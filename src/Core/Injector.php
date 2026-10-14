@@ -108,7 +108,7 @@ class Injector
             return $value;
         }
 
-        return Bunch::of($value)
+        return Bunch::wrap($value)
             ->map(fn($value) => $this->valueOrInstantiate($value))
             ->forEach(fn($subvalue) => $this->assertProvidedRespectType($class, $subvalue))
         ;

@@ -52,7 +52,7 @@ class InjectorTest extends TestCase
     public function test_interface_variadic_injection() {
         $reduceClassesFor = function($callable) {
             $objects = $this->injector->getDependencies($callable);
-            return Bunch::of($objects)->filter()->map(fn($x) => $x::class)->sort()->toArray();
+            return Bunch::wrap($objects)->filter()->map(fn($x) => $x::class)->sort()->toArray();
         };
 
         $this->assertEquals([Bird::class, Dragon::class], $reduceClassesFor([self::class, 'processCanFly']));
@@ -64,7 +64,7 @@ class InjectorTest extends TestCase
     public function test_extends_variadic_injection() {
         $reduceClassesFor = function($callable) {
             $objects = $this->injector->getDependencies($callable);
-            return Bunch::of($objects)->map(fn($x) => $x::class)->sort()->toArray();
+            return Bunch::wrap($objects)->map(fn($x) => $x::class)->sort()->toArray();
         };
 
         $this->assertEquals([Bird::class, Dragon::class, Zombie::class], $reduceClassesFor([self::class, 'processAll']));
@@ -217,7 +217,7 @@ class InjectorTest extends TestCase
     public function test_variadic_values_are_discovered_without_provider() {
         $this->assertEqualsCanonicalizing(
             [Cat::class, Dog::class],
-            Bunch::of($this->injector->getDependencies([self::class, 'processPets']))->map(fn($x) => $x::class)->toArray()
+            Bunch::wrap($this->injector->getDependencies([self::class, 'processPets']))->map(fn($x) => $x::class)->toArray()
         );
     }
 

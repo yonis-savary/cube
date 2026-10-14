@@ -78,7 +78,7 @@ class Implementations
     protected static function candidatesOf(string $base): Bunch
     {
         return interface_exists($base)
-            ? Bunch::of(Autoloader::classesThatImplements($base))
-            : Bunch::of(Autoloader::classesThatExtends($base));
+            ? Bunch::wrap(Autoloader::classesThatImplements($base))
+            : Bunch::wrap(Autoloader::classesThatExtends($base));
     }
 }

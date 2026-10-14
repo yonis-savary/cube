@@ -182,7 +182,7 @@ abstract class Model extends EventDispatcher
             ? array_values($reference)
             : [$reference];
 
-        return Bunch::of($models)->onlyInstancesOf(Model::class)->get();
+        return Bunch::wrap($models)->onlyInstancesOf(Model::class)->get();
     }
 
     /** @return Model[] */
@@ -314,7 +314,7 @@ abstract class Model extends EventDispatcher
         foreach ($extrasProperties as $key => $value)
             $model->$key = $value;
 
-        return $model->save();
+        return $model->save($database);
     }
 
     /**
@@ -482,7 +482,7 @@ abstract class Model extends EventDispatcher
         {
             $array[$key] = match(true) {
                 is_array($modelOrCollection) =>
-                    Bunch::of($modelOrCollection)->map(fn(Model $model) => $model->toArray())->toArray(),
+                    Bunch::wrap($modelOrCollection)->map(fn(Model $model) => $model->toArray())->toArray(),
 
                 ($modelOrCollection instanceof Model) =>
                     $modelOrCollection->toArray(),
@@ -645,6 +645,8 @@ abstract class Model extends EventDispatcher
 
     protected function saveExisting(?Database $database = null)
     {
+        $database ??= Database::getInstance();
+
         $fields = static::fields();
 
         $patch = [];

@@ -48,7 +48,7 @@ class OASPaths extends AutoDataToObject
         // Make sure apis/controllers are loaded
         $router->loadRoutes();
 
-        $groupedRoutes = Bunch::of($router->getRoutes())
+        $groupedRoutes = Bunch::wrap($router->getRoutes())
             ->groupBy(fn(Route $route) => $this->getTemplatedPath($route));
 
         $context = OpenAPIGenerationContext::getInstance();
@@ -66,6 +66,11 @@ class OASPaths extends AutoDataToObject
 
                 if ($this->isHidden($route)) {
                     $context->log("Ignored hidden route : $path");
+                    continue;
+                }
+
+                if (!count($route->getMethods())) {
+                    $context->log("Warning: ignored route accepting any method, OpenAPI documents one operation per method : $path");
                     continue;
                 }
 

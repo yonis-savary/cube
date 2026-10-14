@@ -20,6 +20,6 @@ trait HasScopedSession
 
     public function getScope(): string
     {
-        return md5(static::class . __DIR__);
+        return md5(static::class);
     }
 }

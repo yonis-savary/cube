@@ -67,7 +67,7 @@ abstract class ModelAPI
         if (!is_array($validated))
             return Response::text('Array expected got '.gettype($validated), StatusCode::UNPROCESSABLE_CONTENT);
 
-        $instances = Bunch::of($validated)
+        $instances = Bunch::wrap($validated)
             ->map(fn (array $row) => $model::fromArray($row)->save())
             ->map(fn (Model $newRow) => $this->answer($newRow))
             ->toArray();
@@ -97,7 +97,7 @@ abstract class ModelAPI
             };
         }
 
-        return Bunch::of($query->fetch())
+        return Bunch::wrap($query->fetch())
             ->map(fn (Model $item) => $this->answer($item))
             ->get();
     }

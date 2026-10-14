@@ -24,7 +24,7 @@ class Renderer
 
     public function __construct(array $viewFiles=[])
     {
-        $this->viewFiles = Bunch::of($viewFiles);
+        $this->viewFiles = Bunch::wrap($viewFiles);
     }
 
     public function findView(string $viewName): ?string {

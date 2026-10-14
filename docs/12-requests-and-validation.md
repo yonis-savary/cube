@@ -304,15 +304,19 @@ type and size is accepted. `withMimeType()` checks the type detected from the fi
 one the client declared. An upload PHP reported as failed is refused with PHP's reason, unless you
 pass `rejectUploadsWithErrors: false`.
 
-An upload the client may leave out still needs `optional()` : `nullable` alone does not make a
-missing input acceptable.
+An upload the client may leave out is `nullable` : `validated('avatar')` then gives `null`. An empty
+file input counts as left out.
 
 ```php
-'avatar' => UploadRule::new()->optional(),
+'avatar' => UploadRule::new(nullable: true),
 ```
 
-`UploadRule` checks a single file. When several files are sent under one name, read them with
-`$request->uploads('name')`.
+`UploadRule` checks a single file : several files sent under its name are refused. To accept several,
+wrap it in `Param::array()` — the rule then gets a list of `Upload`, even when only one file was sent.
+
+```php
+'photos' => Param::array(UploadRule::new()->withMaxSize(File::MEGABYTES * 5)),
+```
 
 Move the file where it belongs with `move()`
 

@@ -278,7 +278,7 @@ class Autoloader
     /** @return array<int,string> */
     public static function getExploredDirectories(): array
     {
-        return Bunch::of([dirname(__DIR__), ...self::$knownApplications, ...self::$addedExploredDirectories])
+        return Bunch::wrap([dirname(__DIR__), ...self::$knownApplications, ...self::$addedExploredDirectories])
             ->map(realpath(...))
             ->filter()
             ->uniques()
@@ -369,7 +369,7 @@ class Autoloader
             ->filter()
             ->toArray();
 
-        $isExplored = fn (string $file) => Bunch::of($exploredDirectories)
+        $isExplored = fn (string $file) => Bunch::wrap($exploredDirectories)
             ->any(fn ($directory) => Path::isInside($file, $directory));
 
         $classes = Bunch::fromKeys((new Bunch($classMapFiles))->filter($isExplored)->get());
@@ -392,7 +392,7 @@ class Autoloader
         ->flatMap(function($pair) use ($exploredDirectories, $classMapFiles) {
             [$namespace, $prefixDirectories] = $pair;
 
-            return Bunch::of($prefixDirectories)->map(realpath(...))
+            return Bunch::wrap($prefixDirectories)->map(realpath(...))
                 ->filter()
                 ->flatMap(fn($prefixDirectory) => self::classesOfPsr4Prefix($namespace, $prefixDirectory, $exploredDirectories, $classMapFiles));
         })
@@ -406,7 +406,7 @@ class Autoloader
      */
     protected static function classesOfPsr4Prefix(string $namespace, string $prefixDirectory, array $exploredDirectories, array $classMapFiles): array
     {
-        return Bunch::of($exploredDirectories)
+        return Bunch::wrap($exploredDirectories)
             ->map(fn($directory) => match (true) {
                 Path::isInside($prefixDirectory, $directory) => $prefixDirectory,
                 Path::isInside($directory, $prefixDirectory) => $directory,
@@ -423,7 +423,7 @@ class Autoloader
      */
     protected static function classesInPsr4Directory(string $namespace, string $prefixDirectory, string $root, array $classMapFiles): array
     {
-        return Bunch::of((new Storage($root))->exploreFiles())
+        return Bunch::wrap((new Storage($root))->exploreFiles())
             ->filter(fn ($file) => str_ends_with($file, '.php'))
             ->filter(fn ($file) => !isset($classMapFiles[$file]))
             ->filter(self::declaresTypeNamedAfterFile(...))
@@ -647,7 +647,7 @@ class Autoloader
     /** @return string[] */
     protected static function phpFilesOf(string $directory): array
     {
-        return Bunch::of((new Storage($directory))->exploreFiles())
+        return Bunch::wrap((new Storage($directory))->exploreFiles())
             ->filter(fn (string $file) => str_ends_with($file, '.php'))
             ->get();
     }
@@ -661,7 +661,7 @@ class Autoloader
             return $preprocessed;
         }
 
-        $classes = Bunch::of(self::classesList())->filter($filter);
+        $classes = Bunch::wrap(self::classesList())->filter($filter);
 
         if ($rejectAbstracts) {
             $classes = $classes->filter(function ($class) {

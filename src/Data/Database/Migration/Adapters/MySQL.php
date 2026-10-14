@@ -42,11 +42,19 @@ class MySQL extends MigrationManager
         );
     }
 
+    public function markMigrationAsUndone(string $name)
+    {
+        $this->database->query(
+            'DELETE FROM `{}` WHERE name = {}',
+            [$this->getMigrationTableName(), $name]
+        );
+    }
+
     public function listDoneMigrations(): array
     {
-        return Bunch::of(
+        return Bunch::wrap(
             $this->database->query(
-                'SELECT name FROM `{}` ORDER BY created_at', 
+                'SELECT name FROM `{}` ORDER BY id', 
                 [$this->getMigrationTableName()]
             )
         )

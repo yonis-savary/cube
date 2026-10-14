@@ -4,7 +4,6 @@ namespace Cube\Data\Database\Migration\Plans;
 
 use Cube\Data\Bunch;
 use Cube\Data\Database\Migration\Plan;
-use Cube\Data\Database\Migration\Plans\Exceptions\UnsupportedByDBMSException;
 use Cube\Data\Models\ModelField;
 use Cube\Env\Logger\Logger;
 use Cube\Web\Html\AssetsInserter\UnsupportedAssetTypeException;
@@ -106,7 +105,7 @@ class SQLite extends Plan
     }
 
     public function addUniqueIndex(string $table, string|array $fields) {
-        $fields = Bunch::of($fields)->join(', ');
+        $fields = Bunch::wrap($fields)->join(', ');
         Logger::getInstance()->warning(
             "SQLite does not support constraints on already existing fields, trying to make unique key on $table ($fields)"
         );

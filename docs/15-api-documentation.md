@@ -51,7 +51,7 @@ class ProductController extends Controller
 
 Only routes with an array callback are documented : a closure route is skipped, so prefer
 `[ProductController::class, 'show']`. A route declared for any method (`Route::any()`) names no
-method to document and is skipped too.
+method to document : it is skipped too, with a warning in the generation logs.
 
 | Your code | The document |
 |---|---|
@@ -66,16 +66,20 @@ method to document and is skipped too.
 | a `: void` return type | a `204` response |
 
 From the rules, a `nullable` rule becomes a nullable type, a rule that is not `optional()` a required
-key or parameter, `inArray()` an `enum` and `isBetween()` a `minimum` and a `maximum`.
+key or parameter, `inArray()` an `enum` of the rule's type and `isBetween()` a `minimum` and a
+`maximum` — on a number only, OpenAPI has no bound for a date or a string.
 
 Every model a response refers to is described once in `components.schemas`, from its fields and
 relations, with an example made by its factory (see
 [Testing](./33-testing.md#faking-models)) : that is what a model answered as is gives. A route
 answering through a `ModelResource` declares it with `#[ResourceResponse]`, described below.
+Those examples need `fakerphp/faker`, which Cube only suggests : install it in your development
+dependencies (`composer require --dev fakerphp/faker`) to generate a document describing models.
 
 Rules are read from a request built empty : when `getRules()` depends on the input, the document
 shows the shape it returns for an empty request. A `getRules()` returning a single rule rather than
-an object (a list, for instance) gives no parameter and no body.
+an array of rules describes the whole body (a list, for instance). On a `GET` / `DELETE`, only an
+object rule gives query parameters : any other gives none, with a warning in the generation logs.
 
 ## Describing an endpoint
 
@@ -131,8 +135,9 @@ public function detailedStats(): array
 ```
 
 The example is only read for its shape : `120` becomes an integer, `[1, 2, 3]` a list of integers
-(read from its first item), an associative array an object. Give `file` as an absolute path, as
-`__DIR__` does : the attribute checks the file exists before anything else.
+(read from its first item), an associative array an object. Give `file` relative to your project
+root, or as an absolute path inside it as `__DIR__` does : the attribute checks the file exists
+before anything else.
 
 `#[ResourceResponse]` answers what a `ModelResource` gives (see
 [Controllers and responses](./13-controllers-and-responses.md#shaping-what-a-model-answers)) : Cube

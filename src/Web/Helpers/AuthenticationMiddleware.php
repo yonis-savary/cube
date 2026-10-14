@@ -3,7 +3,6 @@
 namespace Cube\Web\Helpers;
 
 use Closure;
-use Cube\Env\Session\HasScopedSession;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Middleware;
@@ -11,8 +10,6 @@ use Cube\Web\Router\Router;
 
 abstract class AuthenticationMiddleware implements Middleware
 {
-    use HasScopedSession;
-
     public static function getIdentifier(): string
     {
         return md5(static::class);

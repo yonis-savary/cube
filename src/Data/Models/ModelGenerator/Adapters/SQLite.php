@@ -54,12 +54,12 @@ class SQLite extends DatabaseAdapter
     {
         $db = $this->database;
 
-        $this->tablesWithSequence = Bunch::of($db->query('SELECT * FROM sqlite_sequence'))
+        $this->tablesWithSequence = Bunch::wrap($db->query('SELECT * FROM sqlite_sequence'))
             ->map(fn ($x) => $x['name'])
             ->get()
         ;
 
-        $this->tables = Bunch::of($db->query("SELECT * FROM sqlite_master WHERE type='table' AND name <> 'sqlite_sequence'"))
+        $this->tables = Bunch::wrap($db->query("SELECT * FROM sqlite_master WHERE type='table' AND name <> 'sqlite_sequence'"))
             ->map(fn ($x) => $this->buildTable($x['name']))
             ->get()
         ;
@@ -92,7 +92,7 @@ class SQLite extends DatabaseAdapter
         $tableClassName = Table::getClassname($table);
 
         /** @var ?HasOne $relation */
-        $relation = Bunch::of($this->relations)
+        $relation = Bunch::wrap($this->relations)
             ->onlyInstancesOf(HasOne::class)
             ->first(fn (HasOne $rel) => $rel->isSource($tableClassName, $fieldName))
         ;
@@ -125,11 +125,11 @@ class SQLite extends DatabaseAdapter
 
         $sqlRelations = $db->query("PRAGMA foreign_key_list('{$table}')");
 
-        $fields = Bunch::of($sqlRelations)->key('from');
+        $fields = Bunch::wrap($sqlRelations)->key('from');
 
         $addedRelationNames = [];
 
-        $relations = Bunch::of($sqlRelations)
+        $relations = Bunch::wrap($sqlRelations)
             ->map(function ($x) use ($fields, $dummyModel, $table, &$addedRelationNames) {
                 $targetModel = Table::getClassname($x['table']);
                 $relationName = strtolower($x['from']);
@@ -156,7 +156,7 @@ class SQLite extends DatabaseAdapter
 
         $primary = null;
 
-        $fields = Bunch::of($db->query('PRAGMA table_xinfo({})', [$table]))
+        $fields = Bunch::wrap($db->query('PRAGMA table_xinfo({})', [$table]))
             ->filter(fn($x) => in_array($x['hidden'], ['0', '2'])) // 0 => visible column, 2 => generated column
             ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); }) // function() syntax is important, $primary is mutable
             ->values()

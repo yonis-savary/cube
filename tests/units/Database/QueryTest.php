@@ -4,6 +4,9 @@ namespace Cube\Tests\Units\Database;
 
 use Cube\Data\Bunch;
 use Cube\Data\Database\Builders\MySQL;
+use Cube\Data\Database\Builders\Postgres;
+use Cube\Data\Database\Builders\QueryBuilder;
+use Cube\Data\Database\Builders\SQLite;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
 use Cube\Data\Database\Query\FieldComparaison;
@@ -175,7 +178,7 @@ class QueryTest extends TestCase
      */
     protected function fetchNames(Query $query): array
     {
-        return Bunch::of($query->order('id', 'ASC')->fetch())
+        return Bunch::wrap($query->order('id', 'ASC')->fetch())
             ->map(fn (Product $product) => $product->name)
             ->get();
     }
@@ -328,7 +331,7 @@ class QueryTest extends TestCase
         $database->asGlobalInstance(function () {
             $this->insertProducts(4);
 
-            $this->assertEquals(['product-2', 'product-4'], $this->fetchNames(Product::select()->whereIn('name', Bunch::of(['product-2', 'product-4']))));
+            $this->assertEquals(['product-2', 'product-4'], $this->fetchNames(Product::select()->whereIn('name', Bunch::wrap(['product-2', 'product-4']))));
         });
     }
 
@@ -338,7 +341,7 @@ class QueryTest extends TestCase
         $database->asGlobalInstance(function () {
             $this->insertProducts(4);
 
-            $this->assertEquals(['product-1', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('name', Bunch::of(['product-2', 'product-4']))));
+            $this->assertEquals(['product-1', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('name', Bunch::wrap(['product-2', 'product-4']))));
         });
     }
 
@@ -349,7 +352,7 @@ class QueryTest extends TestCase
             $this->insertProducts(3);
 
             $this->assertEquals([], $this->fetchNames(Product::select()->whereIn('id', [])));
-            $this->assertEquals([], $this->fetchNames(Product::select()->whereIn('id', Bunch::of([]))));
+            $this->assertEquals([], $this->fetchNames(Product::select()->whereIn('id', Bunch::wrap([]))));
         });
     }
 
@@ -360,7 +363,7 @@ class QueryTest extends TestCase
             $this->insertProducts(3);
 
             $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('id', [])));
-            $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('id', Bunch::of([]))));
+            $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()->whereNotIn('id', Bunch::wrap([]))));
         });
     }
 
@@ -395,7 +398,7 @@ class QueryTest extends TestCase
                 ->order('product', 'ASC', 'product_manager')
                 ->fetch();
 
-            $this->assertEquals(['alice', 'bob'], Bunch::of($managers)->map(fn (ProductManager $row) => $row->manager)->get());
+            $this->assertEquals(['alice', 'bob'], Bunch::wrap($managers)->map(fn (ProductManager $row) => $row->manager)->get());
         });
     }
 
@@ -424,7 +427,7 @@ class QueryTest extends TestCase
                 ->order('product', 'ASC', 'product_manager')
                 ->fetch();
 
-            $this->assertEquals(['alice', 'bob'], Bunch::of($rows)->map(fn ($row) => $row->manager)->get());
+            $this->assertEquals(['alice', 'bob'], Bunch::wrap($rows)->map(fn ($row) => $row->manager)->get());
         });
     }
 
@@ -666,19 +669,30 @@ class QueryTest extends TestCase
         });
     }
 
+    /** @return array<string,array{QueryBuilder,string}> */
+    public static function getUpdateBuilders(): array
+    {
+        return [
+            'mysql' => [new MySQL(), '/WHERE\s+\(`product`\.id = `product_manager`\.product\)/'],
+            'pgsql' => [new Postgres(), '/WHERE\s+\("product"\.id = "product_manager"\.product\)/'],
+            'sqlite' => [new SQLite(), '/WHERE\s+\(`product`\.id = `product_manager`\.product\)/'],
+        ];
+    }
+
     /**
      * Without any where(), the join conditions used to be written without their WHERE keyword
      */
-    public function testUpdateWithAJoinAndNoConditionKeepsItsWhereKeyword()
+    #[DataProvider('getUpdateBuilders')]
+    public function testUpdateWithAJoinAndNoConditionKeepsItsWhereKeyword(QueryBuilder $builder, string $expectedCondition)
     {
-        $database = new Database('sqlite', queryBuilder: new MySQL());
+        $database = new Database('sqlite', queryBuilder: $builder);
 
         $sql = Query::update('product')
             ->join('LEFT', 'product_manager', null, new FieldComparaison('product', 'id', '=', 'product_manager', 'product'))
             ->set('name', 'renamed', 'product')
             ->build($database);
 
-        $this->assertMatchesRegularExpression('/WHERE\s+\(`product`\.id = `product_manager`\.product\)/', $sql);
+        $this->assertMatchesRegularExpression($expectedCondition, $sql);
     }
 
     #[DataProvider('getDatabases')]

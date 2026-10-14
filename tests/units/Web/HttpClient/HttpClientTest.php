@@ -88,6 +88,36 @@ class HttpClientTest extends TestCase
         $this->assertEquals(1, $client->baseLoggerCalls);
     }
 
+    /** Request::fetch() passed its own Firefox default, so the verb methods never reached baseUserAgent(). */
+    public function testTheVerbMethodsUseTheBaseUserAgent()
+    {
+        // Nothing listens on port 1, curl gives up at once and the handle is already built
+        $client = new ExposedHttpClient('http://127.0.0.1:1/');
+
+        try {
+            $client->get('/ping');
+        } catch (\RuntimeException $_) {
+        }
+
+        $this->assertEquals('CubeTestAgent/1.0', $client->handleArguments['userAgent']);
+    }
+
+    /** fetchAsync() returned true without calling a mock registered in MockServers, unlike one given to setMockServer(). */
+    public function testAsyncFetchCallsAMockRegisteredForTheClass()
+    {
+        $calls = 0;
+        MockServers::getInstance()->set(ExposedHttpClient::class, HttpMockServer::fromRoutes(
+            new \Cube\Web\Router\Route('/events', function () use (&$calls) {
+                ++$calls;
+
+                return Response::ok();
+            })
+        ));
+
+        $this->assertTrue((new ExposedHttpClient('http://unreachable.invalid/'))->postJsonAsync('/events', ['name' => 'clicked']));
+        $this->assertEquals(1, $calls);
+    }
+
     public function testNothingIsBuiltWhenAMockAnswers()
     {
         $client = new ExposedHttpClient('http://some-math-api/');
@@ -159,6 +189,21 @@ class HttpClientTest extends TestCase
 
         $connection = stream_socket_accept($server, 1);
         $this->assertStringContainsString('X-Api-Token: abc', stream_get_contents($connection));
+
+        fclose($connection);
+        fclose($server);
+    }
+
+    /** fetchAsync() sent no User-Agent at all unless one was passed explicitly. */
+    public function testAsyncFetchSendsTheBaseUserAgent()
+    {
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) substr(strrchr(stream_socket_get_name($server, false), ':'), 1);
+
+        $this->assertTrue((new ExposedHttpClient("http://127.0.0.1:{$port}"))->getAsync('/events'));
+
+        $connection = stream_socket_accept($server, 1);
+        $this->assertStringContainsString('User-Agent: CubeTestAgent/1.0', stream_get_contents($connection));
 
         fclose($connection);
         fclose($server);

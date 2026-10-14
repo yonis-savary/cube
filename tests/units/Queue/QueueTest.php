@@ -7,6 +7,7 @@ use Cube\Queue\Drivers\QueueDriver;
 use Cube\Queue\Drivers\RedisQueue;
 use Cube\Tests\Units\Queue\Classes\FailingQueue;
 use Cube\Tests\Units\Queue\Classes\GreetingQueue;
+use Cube\Tests\Units\Queue\Classes\LostRedisQueue;
 use Cube\Tests\Units\Queue\Classes\NumberQueue;
 use Cube\Tests\Units\Queue\Classes\SelfStoppingQueue;
 use Cube\Utils\SignedPayload;
@@ -248,6 +249,16 @@ class QueueTest extends TestCase
         $redis = new \Redis();
         $redis->connect(env('QUEUE_REDIS_HOST'), 6379);
         $redis->rPush(NumberQueue::getIdentifier(), SignedPayload::sign(serialize('not a list of arguments')));
+
+        $this->assertFalse($queue->processNext());
+    }
+
+    /** A failed reconnection threw outside of processNext()'s try/catch and killed the worker loop. */
+    public function testARedisQueueSurvivesAFailedReconnection()
+    {
+        $driver = new LostRedisQueue();
+        $queue = new NumberQueue($driver);
+        $driver->loseTheServer();
 
         $this->assertFalse($queue->processNext());
     }

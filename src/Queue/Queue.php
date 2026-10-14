@@ -138,7 +138,7 @@ abstract class Queue
         $this->logger->info('Starting queue ' . static::class . ' ('.date('Y-m-d H:i:s').')');
 
         try {
-            Logger::withInstance($this->logger, function () {
+            $this->logger->asGlobalInstance(function () {
                 while (!$this->shouldStop) {
                     if (!$this->processNext())
                         usleep(1000 * 50);

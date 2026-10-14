@@ -38,6 +38,12 @@ test-serial-dirty:
 	@make --no-print-directory cleanup
 	@vendor/bin/phpunit --filter=$(filter)
 
+analyse:
+	@vendor/bin/phpstan analyse --memory-limit=1G
+
+analyse-baseline:
+	@vendor/bin/phpstan analyse --memory-limit=1G --generate-baseline
+
 fix:
 	@./vendor/bin/php-cs-fixer fix --allow-risky=yes
 

@@ -19,7 +19,7 @@ class MySQL extends SQLite
     {
         $db = $this->database;
 
-        $this->tables = Bunch::of(
+        $this->tables = Bunch::wrap(
             $db->query('SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = {}', [$db->getDatabase()])
         )
             ->key('TABLE_NAME')
@@ -50,11 +50,11 @@ class MySQL extends SQLite
                 [$db->getDatabase(), $table]
         );
 
-        $fields = Bunch::of($sqlRelations)->key('COLUMN_NAME');
+        $fields = Bunch::wrap($sqlRelations)->key('COLUMN_NAME');
 
         $addedRelationNames = [];
 
-        $relations = Bunch::of($sqlRelations)
+        $relations = Bunch::wrap($sqlRelations)
             ->map(function ($x) use ($fields, $dummyModel, $table, &$addedRelationNames) {
                 $targetModel = Table::getClassname($x['REFERENCED_TABLE_NAME']);
                 $relationName = strtolower($x['COLUMN_NAME']);
@@ -80,12 +80,12 @@ class MySQL extends SQLite
 
         $primary = null;
 
-        $fields = Bunch::of($db->query("DESCRIBE `{$table}`"))
+        $fields = Bunch::wrap($db->query("DESCRIBE `{$table}`"))
             ->map(function ($x) use ($table, &$primary) { return $this->getModelField($table, $x, $primary); })
             ->get()
         ;
 
-        return new Table($table, $fields, $primary, $relations);
+        return new Table($table, $fields, $primary);
     }
 
     protected function getModelField(string $table, array $desc, ?string &$primary): ModelField
@@ -107,7 +107,7 @@ class MySQL extends SQLite
         $tableClassName = Table::getClassname($table);
 
         /** @var ?HasOne $relation */
-        $relation = Bunch::of($this->relations)
+        $relation = Bunch::wrap($this->relations)
             ->onlyInstancesOf(HasOne::class)
             ->first(fn (HasOne $rel) => $rel->isSource($tableClassName, $fieldName))
         ;

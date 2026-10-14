@@ -7,6 +7,8 @@ use Cube\Web\Websocket\Servers\WebsocketConfiguration;
 
 class BroadcastConfiguration extends ConfigurationElement
 {
+    protected const WILDCARD_HOSTS = ['0.0.0.0', '::', '[::]'];
+
     /**
      * By default http part of WebsocketConfiguration shall be used
      */
@@ -37,11 +39,18 @@ class BroadcastConfiguration extends ConfigurationElement
     public function getWebsocketOrigin(): string
     {
         $websocketConfig = WebsocketConfiguration::resolve();
-        $host = $this->socketHost ?? $websocketConfig->websocketHost;
+        $host = $this->socketHost ?? $this->toReachableHost($websocketConfig->websocketHost);
         $port = $this->socketPort ?? $websocketConfig->websocketPort;
         if (!str_contains($host, "://"))
             $host = "ws://$host";
 
         return "$host:$port";
+    }
+
+    protected function toReachableHost(string $boundHost): string
+    {
+        return in_array($boundHost, self::WILDCARD_HOSTS, true)
+            ? 'localhost'
+            : $boundHost;
     }
 }

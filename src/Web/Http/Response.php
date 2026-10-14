@@ -41,6 +41,11 @@ class Response extends HttpMessage
         return static::json($content, $statusCode);
     }
 
+    protected static function redirect(int $statusCode, string $location): static
+    {
+        return (new static($statusCode))->withHeaders(['Location' => $location]);
+    }
+
     // Generic functions by Http Response Code
 
     public static function continue(mixed $content = null): static
@@ -118,19 +123,19 @@ class Response extends HttpMessage
         return static::fromContent(StatusCode::MULTIPLE_CHOICES, $content);
     }
 
-    public static function movedPermanently(mixed $content = null): static
+    public static function movedPermanently(string $location): static
     {
-        return static::fromContent(StatusCode::MOVED_PERMANENTLY, $content);
+        return static::redirect(StatusCode::MOVED_PERMANENTLY, $location);
     }
 
-    public static function found(mixed $content = null): static
+    public static function found(string $location): static
     {
-        return static::fromContent(StatusCode::FOUND, $content);
+        return static::redirect(StatusCode::FOUND, $location);
     }
 
-    public static function seeOther(mixed $content = null): static
+    public static function seeOther(string $location): static
     {
-        return static::fromContent(StatusCode::SEE_OTHER, $content);
+        return static::redirect(StatusCode::SEE_OTHER, $location);
     }
 
     public static function notModified(mixed $content = null): static
@@ -148,18 +153,14 @@ class Response extends HttpMessage
         return static::fromContent(StatusCode::UNUSED, $content);
     }
 
-    public static function temporaryRedirect(mixed $content = null): static
+    public static function temporaryRedirect(string $location): static
     {
-        return (new static(StatusCode::TEMPORARY_REDIRECT, null))->withHeaders([
-            "Location" => $content
-        ]);
+        return static::redirect(StatusCode::TEMPORARY_REDIRECT, $location);
     }
 
-    public static function permanentRedirect(mixed $content = null): static
+    public static function permanentRedirect(string $location): static
     {
-        return (new static(StatusCode::PERMANENT_REDIRECT, null))->withHeaders([
-            "Location" => $content
-        ]);
+        return static::redirect(StatusCode::PERMANENT_REDIRECT, $location);
     }
 
     public static function badRequest(mixed $content = null): static

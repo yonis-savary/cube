@@ -18,7 +18,7 @@ class ModelGenerationTest extends TestCase
      * @param Table[] $tables
      */
     public function assertTableGotParsed(array $tables, string $tableName) {
-        $matching = Bunch::of($tables)->first(fn($table) => $table->table === $tableName);
+        $matching = Bunch::wrap($tables)->first(fn($table) => $table->table === $tableName);
         $this->assertInstanceOf(Table::class, $matching);
     }
 
@@ -27,7 +27,7 @@ class ModelGenerationTest extends TestCase
      * @param \Closure(Table) $callback
      */
     public function assertForTable(array $tables, string $tableName, callable $callback) {
-        $matching = Bunch::of($tables)->first(fn($table) => $table->table === $tableName);
+        $matching = Bunch::wrap($tables)->first(fn($table) => $table->table === $tableName);
         $this->assertInstanceOf(Table::class, $matching);
         if ($matching)
             $callback($matching);
@@ -37,7 +37,7 @@ class ModelGenerationTest extends TestCase
      * @param \Closure(ModelField) $callback
      */
     public function assertForField(Table $table, string $fieldName, callable $callback) {
-        $matching = Bunch::of($table->fields)->first(fn($field) => $field->name === $fieldName);
+        $matching = Bunch::wrap($table->fields)->first(fn($field) => $field->name === $fieldName);
         $this->assertInstanceOf(ModelField::class, $matching);
         if ($matching)
             $callback($matching);

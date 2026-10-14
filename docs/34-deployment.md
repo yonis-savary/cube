@@ -12,8 +12,8 @@ Here is a release, once your server is set up
 git pull
 composer install --no-dev --optimize-autoloader
 php do migrate                                  # apply new migrations
+php do cube:dispatch --event PostDeployment     # empty Cube's caches, the configuration cache included
 php do configuration:cache                      # only if you cache your configuration
-php do cube:dispatch --event PostDeployment     # empty Cube's caches
 # then restart php-fpm, to drop its APCu copy of the discovery cache
 ```
 
@@ -94,13 +94,12 @@ php do configuration:cache
 ```
 
 Once cached, **`cube.php` is not read anymore**. A change to `cube.php`, to an imported file or to a
-`.env` value they read only applies after you run `configuration:cache` again. `PostDeployment` and
-`cache:clear` do not touch it : it lives apart, under `Storage/cube/configuration`. Delete that
-directory to go back to reading `cube.php`.
+`.env` value they read only applies after you run `configuration:cache` again, or once
+`PostDeployment` dropped the cache. `cache:clear` does not touch it : it lives apart, under
+`Storage/cube/configuration`.
 
-Since `Storage` survives your releases (it is a volume in the Docker stack), so does this cache : if
-you cache the configuration, run `configuration:cache` on every release, otherwise the previous
-release's configuration keeps answering.
+Run `configuration:cache` **after** dispatching `PostDeployment` on each release : the dispatch drops
+the previous release's configuration, and Cube reads `cube.php` again until you cache it anew.
 
 ## Caching routes
 
@@ -112,7 +111,7 @@ new RouterConfiguration(cached: true),
 ```
 
 Only routes without slugs whose callback is a `[Controller::class, 'method']` array are remembered,
-and a remembered route is called directly, without asking your `WebAPI` services first (see
+and the `WebAPI` services you configure are still asked before a remembered route runs (see
 [Routing and middlewares](./11-routing-and-middlewares.md)). The remembered routes are emptied by
 `PostDeployment` and by `php do cache:clear`.
 
@@ -170,32 +169,29 @@ The server files include a production-ready stack (see [Installation](./02-insta
 |---|---|
 | `Docker/Dockerfile.php` | `php:8.5-fpm` with APCu (also enabled for the CLI), PHP's production `php.ini`, `composer install --no-dev --optimize-autoloader`, your project copied to `/var/www`, `Storage` owned by `www-data` |
 | `Docker/vhost.conf` | nginx serving `/var/www/Public`, every unknown path sent to `index.php` |
-| `docker-compose.yml` | the `php-fpm` and `nginx` services, nginx on port `8081` ; mounts `App/`, `Storage/` (persistent) and `.env` (read-only, kept out of the image) |
+| `docker-compose.yml` | the `php-fpm` and `nginx` services, nginx on port `8081` ; mounts `Storage/` (persistent) and `.env` (read-only, kept out of the image) |
 | `Makefile` | `build`, `up`, `down` and `deploy` |
 
 `make deploy` runs, in order
 
 ```sh
 git pull
-docker compose down
 docker compose build
+docker compose down
+docker compose run --rm --user www-data php-fpm php do migrate:migrate
+docker compose run --rm --user www-data php-fpm php do cube:dispatch --event PostDeployment
+docker compose run --rm --user www-data php-fpm php do configuration:cache
 docker compose up -d
-docker compose exec --user www-data php-fpm php do cube:dispatch --event PostDeployment
 ```
 
-Rebuilding the containers gives php-fpm a fresh APCu. The target does not run your migrations nor
-`configuration:cache`, and the dispatch comes after `up` : a request served in between can put the
-old disk cache back into APCu. Complete it with your own steps
+The image is built while the previous release still answers. The release tasks then run on the new
+image while no php-fpm serves requests, so the new php-fpm starts with an empty APCu and fresh disk
+caches : no request can put the old discovery cache back. Remove the `configuration:cache` line if
+you do not cache your configuration.
 
-```sh
-make deploy
-docker compose exec --user www-data php-fpm php do migrate
-docker compose restart php-fpm
-```
-
-The `App/` mount is there for development : in production it serves the `App/` of your checkout
-rather than the one copied in the image. Mount any other application you declare in `cube.php` the
-same way, or remove the mount to run the image as built.
+The stack runs the image as built : your applications are copied into it, not mounted. To edit
+`App/` without rebuilding in development, add `- ./App:/var/www/App` to the `php-fpm` volumes of
+your local copy.
 
 ## Checklist
 
@@ -206,8 +202,8 @@ same way, or remove the mount to run the image as built.
 - [ ] your models were generated and committed before the release (`migrate` does not write them in
       production)
 - [ ] `php do migrate`
-- [ ] `php do configuration:cache` on every release, if you cache the configuration
-- [ ] `php do cube:dispatch --event PostDeployment`, **then** restart php-fpm
+- [ ] `php do cube:dispatch --event PostDeployment`, then `php do configuration:cache` if you cache
+      the configuration, **then** restart php-fpm
 - [ ] the long-running servers restarted, the `routine:launch` cron line in place
 - [ ] log rotation set up for `Storage/Logs`
 - [ ] security headers declared in `RouterConfiguration(securityHeaders:)` (Cube only adds

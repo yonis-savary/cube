@@ -50,7 +50,7 @@ class ExposedHttpClient extends HttpClient
     public function toCurlHandle(
         Request $request,
         ?int $timeout = null,
-        ?string $userAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0',
+        ?string $userAgent = null,
         ?Logger $logger = null,
         ?callable $curlMutator = null
     ): \CurlHandle {

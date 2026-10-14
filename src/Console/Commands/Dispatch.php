@@ -6,7 +6,6 @@ use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Core\Autoloader;
 use Cube\Core\Injector;
-use Cube\Data\Bunch;
 use Cube\Event\Event;
 use Cube\Event\EventDispatcher;
 use Cube\Utils\Console;
@@ -26,21 +25,28 @@ class Dispatch extends Command {
         return 'cube';
     }
 
+    #[Override]
+    public function getHelp(): string
+    {
+        return 'Dispatch an event by class name or its end, e.g. php do cube:dispatch -e PostDeployment';
+    }
+
     /**
      * @return class-string<Event>|null
      */
     protected function getClassFromEvent(string $event): ?string {
         if (!class_exists($event)) {
 
-            $match = Bunch::of(Autoloader::classesThatExtends(Event::class))
-                ->first(fn($class) => str_ends_with($class, $event));
+            $candidates = $this->classesNamed(Event::class, $event);
 
-            if (!$match) {
-                Console::print("No Event class found for value [$event]");
+            if ($candidates->count() !== 1) {
+                Console::print($candidates->count()
+                    ? "[$event] matches several Event classes, give one of them : ".$candidates->join(', ')
+                    : "No Event class found for value [$event]");
                 return null;
             }
 
-            $event = $match;
+            $event = $candidates->first();
         }
 
         if (!Autoloader::extends($event, Event::class)) {

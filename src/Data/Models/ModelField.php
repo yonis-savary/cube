@@ -2,6 +2,7 @@
 
 namespace Cube\Data\Models;
 
+use Cube\Core\Autoloader;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
@@ -200,7 +201,7 @@ class ModelField
         if (!$this->referenceModel)
             return null;
 
-        return is_a($this->referenceModel, Model::class, true)
+        return Autoloader::extends($this->referenceModel, Model::class)
             ? $this->referenceModel::table()
             : $this->referenceModel;
     }

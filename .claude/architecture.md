@@ -102,7 +102,7 @@ found by class discovery, not by path. `tests/integration-root/App` is the refer
 
 ## Data layer
 
-- **`Bunch`** is the fluent collection used everywhere internally (`of`, `map`, `filter`,
+- **`Bunch`** is the fluent collection used everywhere internally (`wrap`, `fromAssoc`, `map`, `filter`,
   `reduce`, `first`, `groupBy`, `key`, `zip`, `partitionFilter`, …), generic over `<TKey,TValue>`
   in PHPDoc. Prefer it to raw `array_*` chains in framework code.
 - **`Query` is an intermediate representation**, never a string built as you go: `Query\Field`,

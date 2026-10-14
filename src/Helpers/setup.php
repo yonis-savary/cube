@@ -2,6 +2,7 @@
 
 use Cube\Core\Autoloader;
 use Cube\Core\Injector;
+use Cube\Env\Configuration;
 use Cube\Env\Logger\Logger;
 use Cube\Event\EventDispatcher;
 use Cube\Event\Events;
@@ -16,3 +17,4 @@ Injector::getInstance()->asGlobalInstance(function($i) {
 
 PostDeployment::on(fn() => Autoloader::cleanCache() );
 PostDeployment::on(fn() => Router::cleanCache() );
+PostDeployment::on(fn() => (new Configuration())->identify(Configuration::DEFAULT_IDENTIFIER)->removeFromCache() );

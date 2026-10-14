@@ -6,7 +6,7 @@
 set of methods, so a transformation reads as one chain instead of nested `array_*` calls.
 
 ```php
-$names = Bunch::of($products)
+$names = Bunch::wrap($products)
     ->filter(fn (Product $product) => $product->price_dollar > 10)
     ->sort(fn (Product $product) => $product->name)
     ->map(fn (Product $product) => $product->name)
@@ -21,24 +21,25 @@ Queries give one directly : `Product::select()->toBunch()`, and a route callback
 
 | Constructor | Gives |
 |---|---|
-| `Bunch::of($value)` | a bunch of the values of a **list**, a copy of another `Bunch`, or a bunch holding `$value` alone |
-| `new Bunch($array)` | a bunch of `$array` as it is, keys included |
+| `Bunch::wrap($value)` | a bunch of the values of a **list**, a copy of another `Bunch`, or a bunch holding `$value` alone |
+| `Bunch::fromAssoc($assoc)` | a bunch of `$assoc` as it is, keys included |
 | `Bunch::fromValues($assoc)` | the values of an associative array |
 | `Bunch::fromKeys($assoc)` | the keys of an associative array |
 | `Bunch::unzip($assoc)` | one `[key, value]` pair per entry |
 | `Bunch::fromExplode($delimiter, $string)` | the parts of `$string` |
-| `Bunch::range($end, $start = 1, $step = 1)` | the integers from `$start` to `$end` (mind the order) |
+| `Bunch::range($length)` | the integers from `0` to `$length - 1` |
+| `Bunch::rangeFrom($start, $end, $step = 1)` | the integers from `$start` to `$end`, both included |
 | `Bunch::fill($count, $value)` | `$value` repeated `$count` times |
 | `Bunch::fromQuery($sql, $context = [], $database = null, $key = null)` | the rows of a raw SQL query, as associative arrays ; with `$key`, the value of that column only |
 | `Bunch::fromExtends($class)`, `fromImplements($interface)`, `fromUses($trait)` | an instance of every class of that kind, see [Applications and discovery](./04-applications-and-discovery.md) |
 
-`Bunch::of()` treats an associative array as **one** value
+`Bunch::wrap()` treats an associative array as **one** value
 
 ```php
-Bunch::of([1, 2, 3])->count();                 // 3
-Bunch::of(['name' => 'screen'])->count();      // 1 : the array itself is the only element
+Bunch::wrap([1, 2, 3])->count();                 // 3
+Bunch::wrap(['name' => 'screen'])->count();      // 1 : the array itself is the only element
 Bunch::fromValues(['name' => 'screen'])->get(); // ['screen']
-new Bunch(['name' => 'screen']);               // keeps the key
+Bunch::fromAssoc(['name' => 'screen']);         // keeps the key
 ```
 
 ## Transforming
@@ -93,7 +94,7 @@ $rows->key(['nickname', 'name']);        // the nickname when there is one, else
 | `any($callback)`, `all($callback)` | whether one / every value matches |
 | `join($glue = ',')` | the values joined in a string |
 
-`Bunch` is not iterable : `foreach` over `$bunch->get()`, or use `forEach()`.
+A `Bunch` is iterable : `foreach ($bunch as $key => $value)` walks its values with their keys.
 
 ## Aggregating
 
@@ -124,12 +125,11 @@ $byCategoryAndBrand = $products->groupBy(['category', 'brand']); // ['screens' =
 
 $pricesByName = $products->zip(fn (Product $product) => [$product->name, $product->price_dollar]);
 
-$partition = $products->partitionFilter(fn (Product $product) => $product->stock > 0);
-$inStock = $partition[1] ?? [];
-$outOfStock = $partition[0] ?? [];
+[$outOfStock, $inStock] = $products->partitionFilter(fn (Product $product) => $product->stock > 0);
 ```
 
-A side of `partitionFilter()` that receives no value is absent from the result, hence the `?? []`.
+`partitionFilter()` groups the values by the integer the callback returns (`false` is `0`, `true` is
+`1`). The `0` and `1` groups are always there, empty when nothing fell in them.
 
 `chunk($size, $callback)` walks the bunch by slices : `$callback` receives each slice as an array and
 as a bunch

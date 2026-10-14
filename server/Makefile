@@ -11,7 +11,9 @@ down:
 
 deploy:
 	git pull
-	$(MAKE) down
 	$(MAKE) build
+	$(MAKE) down
+	docker compose run --rm --user www-data php-fpm php do migrate:migrate
+	docker compose run --rm --user www-data php-fpm php do cube:dispatch --event PostDeployment
+	docker compose run --rm --user www-data php-fpm php do configuration:cache
 	$(MAKE) up
-	docker compose exec --user www-data php-fpm php do cube:dispatch --event PostDeployment

@@ -16,6 +16,11 @@ class Openapi extends Command
         return "make";
     }
 
+    public function getHelp(): string
+    {
+        return "Write the OpenAPI document of your API to the configured output file";
+    }
+
     public function execute(Args $args): int
     {
         $generator = OpenAPIGenerator::getInstance();

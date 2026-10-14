@@ -38,7 +38,7 @@ abstract class QueryBuilder
         }
 
         if (is_array($value)) {
-            return "(". Bunch::of($value)->map(fn($v) => $this->prepareString($v, true, $database))->join(',') . ")";
+            return "(". Bunch::wrap($value)->map(fn($v) => $this->prepareString($v, true, $database))->join(',') . ")";
         }
 
         if (is_object($value) && enum_exists($value::class)) {

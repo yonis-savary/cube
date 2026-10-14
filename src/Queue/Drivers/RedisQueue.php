@@ -48,6 +48,19 @@ class RedisQueue extends BasicQueueDriver
             throw new RuntimeException("Redis service $host:$port refused the password");
     }
 
+    protected function tryToReconnect(): void
+    {
+        try {
+            $this->reconnect();
+        } catch (RedisException|RuntimeException $exception) {
+            Logger::getInstance()->warning('Could not reconnect queue [{queue}] to redis : {message}', [
+                'queue' => $this->identifier,
+                'message' => $exception->getMessage(),
+            ]);
+            sleep(self::BLOCKING_TIMEOUT);
+        }
+    }
+
     protected function authenticate(): bool
     {
         try {
@@ -73,8 +86,8 @@ class RedisQueue extends BasicQueueDriver
         {
             $result = $this->connection->blPop($this->identifier, self::BLOCKING_TIMEOUT);
         }
-        catch (RedisException $_) {
-            $this->reconnect();
+        catch (RedisException) {
+            $this->tryToReconnect();
 
             return null;
         }

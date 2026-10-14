@@ -8,9 +8,9 @@ use Cube\Data\Models\ModelField;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Request;
+use Cube\Web\Http\Rules\AnyParam;
 use Cube\Web\Http\Rules\ArrayParam;
 use Cube\Web\Http\Rules\ObjectParam;
-use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Router\Route;
 use DateTime;
@@ -75,11 +75,25 @@ trait MakesSchemas
 
     private function mutateParameterWithValueRule(Rule $rule, array &$schema) {
         $meta = $rule->getMetadata();
-        $type = $meta[Rule::META_TYPE] ?? false;
-        if (!$type)
+
+        if ($type = $meta[Rule::META_TYPE] ?? false)
+            $schema = $this->getValueTypeSchema($type, $meta);
+
+        if ($enum = $meta[Rule::META_ENUM] ?? false)
+            $schema['enum'] = $enum;
+
+        // OpenAPI only bounds numbers : isBetween() on a date or a string has no standard keyword
+        if (!in_array($schema['type'] ?? '', ['number', 'integer']))
             return;
 
-        $schema = match ($type) {
+        if (null !== ($min = $meta[Rule::META_MIN] ?? null))
+            $schema['minimum'] = $min;
+        if (null !== ($max = $meta[Rule::META_MAX] ?? null))
+            $schema['maximum'] = $max;
+    }
+
+    private function getValueTypeSchema(string $type, array $meta): array {
+        return match ($type) {
             'model'    => $this->getModelKeySchema($meta[Rule::META_MODEL]),
             'integer'  => ['type' => 'integer'],
             'float'    => ['type' => 'number', 'format' => 'float',],
@@ -93,15 +107,6 @@ trait MakesSchemas
             'hex'      => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
             'uuid'     => ['type' => 'string', 'format' => 'uuid'],
         };
-
-        $isNumeric = in_array($schema['type'] ?? '', ['number', 'integer']);
-        if (null !== ($min = $meta[Rule::META_MIN] ?? null))
-            $schema[$isNumeric ? 'minimum' : 'format_minimum'] = $min;
-        if (null !== ($max = $meta[Rule::META_MAX] ?? null))
-            $schema[$isNumeric ? 'maximum' : 'format_maximum'] = $max;
-
-        if ($enum = $meta[Rule::META_ENUM] ?? false)
-            $schema['enum'] = $enum;
     }
 
     private function mutateParameterWithObjectRule(ObjectParam $rule, array &$schema) {
@@ -169,7 +174,7 @@ trait MakesSchemas
         }
     }
 
-    protected function getRequestRules(Route $route): ?ObjectParam
+    protected function getRequestRules(Route $route): ?Rule
     {
         $requestParameter = $route->getReflectionMethod()->getParameters()[0] ?? null;
         if (!$requestParameter)
@@ -180,8 +185,8 @@ trait MakesSchemas
             return null;
 
         /** @var class-string<Request> $requestType */
-        $rules = Param::from((new $requestType())->getRules());
-        return $rules instanceof ObjectParam ? $rules : null;
+        $rules = (new $requestType())->getObjectParam();
+        return $rules instanceof AnyParam ? null : $rules;
     }
 
     protected function getReflectionTypeName(ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType|null $type): ?string

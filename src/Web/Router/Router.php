@@ -91,7 +91,7 @@ class Router
 
     public function loadRoutesFiles(): void
     {
-        Bunch::of(Autoloader::getRoutesFiles())
+        Bunch::wrap(Autoloader::getRoutesFiles())
         ->forEach(fn(string $file) => $this->require($file));
     }
 
@@ -216,7 +216,7 @@ class Router
         $isOptionsRequest = $request->getMethod() === 'OPTIONS';
         if (count($exceptions) || $isOptionsRequest)
         {
-            $allowedMethods = Bunch::of($exceptions)->reduce(
+            $allowedMethods = Bunch::wrap($exceptions)->reduce(
                 fn($acc, $exception) => array_merge($acc, $exception->allowedMethods), []
             );
 
@@ -241,42 +241,62 @@ class Router
 
     protected function resolveResponse(Request $request): Response
     {
-        $route = null;
-
-        if (! $route = $this->getCachedRouteForRequest($request))
-        {
+        if (!$cachedRoute = $this->getCachedRouteForRequest($request))
             $this->loadRoutes();
 
-            foreach($this->apis as $api)
-            {
-                $serviceResponse = $api->handle($request);
-                if ($serviceResponse instanceof Response)
-                    return $this->globalizeResponse(fn() => $serviceResponse, $request);
+        if ($claimedResponse = $this->askApis($request))
+            return $claimedResponse;
 
-                if ($serviceResponse instanceof Route)
-                    return $this->globalizeResponse(fn (Request $request) => $this->callRoute($serviceResponse, $request), $request);
-            }
+        if ($cachedRoute)
+            return $this->callRoute($cachedRoute, $request);
 
-            if (!$route)
-            {
-                try
-                {
-                    if (!$routeOrResponse = $this->findMatchingRoute($request))
-                        return new Response(StatusCode::NOT_FOUND);
-
-                    if ($routeOrResponse instanceof Response)
-                        return $routeOrResponse;
-
-                    $route = $routeOrResponse;
-                }
-                catch(InvalidRequestMethodException $invalid)
-                {
-                    return Response::text($invalid->getMessage(), StatusCode::METHOD_NOT_ALLOWED);
-                }
-            }
+        try
+        {
+            $routeOrResponse = $this->findMatchingRoute($request);
+        }
+        catch(InvalidRequestMethodException $invalid)
+        {
+            return Response::text($invalid->getMessage(), StatusCode::METHOD_NOT_ALLOWED);
         }
 
-        return $this->callRoute($route, $request);
+        if (!$routeOrResponse)
+            return new Response(StatusCode::NOT_FOUND);
+
+        if ($routeOrResponse instanceof Response)
+            return $routeOrResponse;
+
+        return $this->callRoute($routeOrResponse, $request);
+    }
+
+    protected function askApis(Request $request): ?Response
+    {
+        foreach ($this->apis as $api)
+        {
+            if ($response = $this->askApi($api, $request))
+                return $response;
+        }
+
+        return null;
+    }
+
+    protected function askApi(WebAPI $api, Request $request): ?Response
+    {
+        try
+        {
+            if (!$claim = $api->handle($request))
+                return null;
+
+            return $this->globalizeResponse(
+                $claim instanceof Route
+                    ? fn (Request $request) => $this->callRoute($claim, $request)
+                    : fn () => $claim,
+                $request
+            );
+        }
+        catch(ResponseException $responseException)
+        {
+            return $responseException->response;
+        }
     }
 
     protected function callRoute(Route $route, Request $request): Response

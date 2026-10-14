@@ -3,6 +3,7 @@
 namespace Cube\Routine;
 
 use Cube\Core\Autoloader;
+use Cube\Routine\Cron\AnyValue;
 use Cube\Routine\Cron\CronValue;
 
 class CronExpression
@@ -72,15 +73,30 @@ class CronExpression
             $datetime = new \DateTime($datetime);
         }
 
-        $dayOfTheWeek = (int) $datetime->format('w');
-
-        // timezone-proof comparison ; 7 is the other name cron gives to sunday
+        // timezone-proof : every field is read from the given DateTime, never from date()
         return
             $this->min->matches((int) $datetime->format('i'), 0)
             && $this->hour->matches((int) $datetime->format('H'), 0)
-            && $this->dayOfTheMonth->matches((int) $datetime->format('d'), 1)
             && $this->month->matches((int) $datetime->format('m'), 1)
-            && ($this->dayOfTheWeek->matches($dayOfTheWeek, 0) || (0 === $dayOfTheWeek && $this->dayOfTheWeek->matches(7, 0)));
+            && $this->matchesDay($datetime);
+    }
+
+    protected function matchesDay(\DateTime $datetime): bool
+    {
+        $matchesDayOfTheMonth = $this->dayOfTheMonth->matches((int) $datetime->format('d'), 1);
+        $matchesDayOfTheWeek = $this->matchesDayOfTheWeek((int) $datetime->format('w'));
+
+        // crontab(5) : when both day fields are restricted, a day matching either of them is enough
+        return $this->dayOfTheMonth instanceof AnyValue || $this->dayOfTheWeek instanceof AnyValue
+            ? $matchesDayOfTheMonth && $matchesDayOfTheWeek
+            : $matchesDayOfTheMonth || $matchesDayOfTheWeek;
+    }
+
+    protected function matchesDayOfTheWeek(int $dayOfTheWeek): bool
+    {
+        // 7 is the other name cron gives to sunday
+        return $this->dayOfTheWeek->matches($dayOfTheWeek, 0)
+            || (0 === $dayOfTheWeek && $this->dayOfTheWeek->matches(7, 0));
     }
 
     protected function transformValueToCronValue(string $value): CronValue

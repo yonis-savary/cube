@@ -25,7 +25,7 @@ class Scheduler
             $datetime = new \DateTime($datetime);
         }
 
-        $handlersToLaunch = Bunch::of($this->handlers)
+        $handlersToLaunch = Bunch::wrap($this->handlers)
             ->filter(fn ($handler) => $handler[0]->matches($datetime))
             ->map(fn ($handler) => $handler[1])
             ->toArray()

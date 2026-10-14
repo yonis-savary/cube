@@ -55,7 +55,7 @@ abstract class StorageDriver
      */
     public function files(string $path): array
     {
-        return Bunch::of($this->scanDirectory($path))
+        return Bunch::wrap($this->scanDirectory($path))
             ->map(fn ($el) => Path::join($path, $el))
             ->filter(fn ($el) => $this->isFile($el), true)
             ->get()
@@ -67,7 +67,7 @@ abstract class StorageDriver
      */
     public function directories(string $path): array
     {
-        return Bunch::of($this->scanDirectory($path))
+        return Bunch::wrap($this->scanDirectory($path))
             ->map(fn ($el) => Path::join($path, $el))
             ->filter(fn ($el) => $this->isDirectory($el), true)
             ->get()
@@ -113,7 +113,7 @@ abstract class StorageDriver
     {
         $results = [];
 
-        $partitions = Bunch::of($this->scanDirectory($path))
+        $partitions = Bunch::wrap($this->scanDirectory($path))
             ->map(fn ($e) => Path::relative($e, $path))
             ->partitionFilter(fn ($e) => $this->isDirectory($e))
         ;

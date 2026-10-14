@@ -433,7 +433,7 @@ class Query
         for ($i=0; $i<$chunkCount; $i++)
         {
             $chunkData = $this->limit($chunkSize, $i * $chunkSize)->fetch($database);
-            $callback($chunkData, Bunch::of($chunkData));
+            $callback($chunkData, Bunch::wrap($chunkData));
         }
     }
 
@@ -442,7 +442,7 @@ class Query
      * @return Bunch<TModel>
      */
     public function fetchBunch(?Database $database = null) {
-        return Bunch::of($this->fetch($database));
+        return Bunch::wrap($this->fetch($database));
     }
 
     /**
@@ -460,7 +460,7 @@ class Query
     {
         $database ??= Database::getInstance();
 
-        return Bunch::of($this->fetch($database));
+        return Bunch::wrap($this->fetch($database));
     }
 
     public function with(string ...$relations): Query {
@@ -536,7 +536,7 @@ class Query
             return $this->base->table;
         }
 
-        $existingField = Bunch::of($this->selectFields)
+        $existingField = Bunch::wrap($this->selectFields)
             ->push(...$this->knownFields)
             ->first(fn (Field $fieldObj) => $fieldObj->field === $field)
         ;

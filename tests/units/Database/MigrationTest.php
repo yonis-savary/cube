@@ -7,7 +7,6 @@ use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Migration\Plans\Exceptions\DryRunPlanException;
-use Cube\Data\Database\Migration\Plans\Exceptions\UnsupportedByDBMSException;
 use Cube\Data\Models\ModelField;
 use Cube\Data\Models\Model;
 use PHPUnit\Framework\Attributes\DataProvider;

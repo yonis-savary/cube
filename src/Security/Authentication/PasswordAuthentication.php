@@ -70,12 +70,15 @@ class PasswordAuthentication implements AuthenticationProvider
         return $this->withoutCredentials($user);
     }
 
+    public function getCredentialFields(): array
+    {
+        return array_values(array_filter([$this->passwordField, $this->saltField]));
+    }
+
     protected function withoutCredentials(Model $user): Model
     {
-        foreach ([$this->passwordField, $this->saltField] as $field) {
-            if ($field)
-                unset($user->data->{$field});
-        }
+        foreach ($this->getCredentialFields() as $field)
+            unset($user->data->{$field});
 
         return $user;
     }

@@ -16,6 +16,8 @@ class Configuration
 {
     use Component;
 
+    public const DEFAULT_IDENTIFIER = 'cube-default';
+
     /** @var array<string,GenericElement> */
     protected array $generics = [];
 
@@ -33,7 +35,7 @@ class Configuration
 
     public static function getDefaultInstance(): static
     {
-        $instance = (new static())->identify('cube-default');
+        $instance = (new static())->identify(self::DEFAULT_IDENTIFIER);
 
         if (!$instance->loadFromCache()) {
             $file = Path::relative('cube.php');
@@ -150,5 +152,15 @@ class Configuration
 
         $cache ??= self::getDefaultConfigurationCache();
         $cache->set($this->identifier, [$this->generics, $this->classElements], Cache::PERMANENT);
+    }
+
+    public function removeFromCache(?Cache $cache = null): void
+    {
+        if (!$this->identifier) {
+            throw new \InvalidArgumentException('Please use Configuration->identify() before removing it from cache');
+        }
+
+        $cache ??= self::getDefaultConfigurationCache();
+        $cache->delete($this->identifier);
     }
 }

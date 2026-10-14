@@ -36,7 +36,7 @@ Tests can be automatically written by agents.
   - Automatic Model Generation !
   - Model Resources (choose how each model is answered, sensitive fields included)
   - Model Factories (fake models from their fields, with Faker)
-  - DB Migration system !
+  - DB Migration system, with dry run and rollback !
   - Password Authentication System (+ Support for Custom Authentication)
 
 ## 🔥 Installation

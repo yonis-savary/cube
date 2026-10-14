@@ -74,7 +74,8 @@ $database = DatabaseConfiguration::resolve();
 - **No closure, no resource inside an element.** `php do configuration:cache` serializes them.
 - **`Cube\env()` belongs in configuration files only.** Once cached, the configuration is no longer
   read from `cube.php`, so an `env()` call elsewhere would not see the same values.
-- **After `configuration:cache`, `cube.php` is ignored** until you run `configuration:cache` again.
+- **After `configuration:cache`, `cube.php` is ignored** until you run `configuration:cache` again or
+  dispatch `PostDeployment`, which drops the cache.
 - An element holds ready-made collaborators (a cache driver, a session driver, an auth provider),
   never a string that someone must interpret later.
 
@@ -353,6 +354,7 @@ derived from its class : `App\Commands\CountProducts` answers `php do app:count-
 |---|---|
 | `php do make:migration Name` | creates a migration file |
 | `php do migrate:migrate` | runs the pending migrations |
+| `php do migrate:rollback [--steps=N]` | reverts the last migrations through their `down()` |
 | `php do models:generate` | regenerates the models from the database |
 | `php do models:to-types` | writes TypeScript types for the models |
 | `php do make:openapi` | writes the OpenAPI document |
@@ -615,7 +617,8 @@ Build data with factories (`Product::factory()->create()`). Use a plain
 
 ## Faking models with factories
 
-`Model::factory()` builds models filled with fake values (Faker), for tests, seeds or examples
+`Model::factory()` builds models filled with fake values, for tests, seeds or examples. It needs
+`fakerphp/faker`, which Cube only suggests : `composer require --dev fakerphp/faker`.
 
 ```php
 $user = User::factory()->make();                          // not saved

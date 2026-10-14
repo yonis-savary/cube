@@ -17,10 +17,10 @@ class BunchTest extends TestCase
 
     public function testOf()
     {
-        $this->assertEquals([], Bunch::of([])->get());
-        $this->assertEquals([1, 2, 3], Bunch::of([1, 2, 3])->get());
-        $this->assertEquals([['A' => 0]], Bunch::of(['A' => 0])->get());
-        $this->assertEquals(['test'], Bunch::of('test')->get());
+        $this->assertEquals([], Bunch::wrap([])->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap([1, 2, 3])->get());
+        $this->assertEquals([['A' => 0]], Bunch::wrap(['A' => 0])->get());
+        $this->assertEquals(['test'], Bunch::wrap('test')->get());
     }
 
     public function testFill()
@@ -32,8 +32,10 @@ class BunchTest extends TestCase
 
     public function testRange()
     {
-        $this->assertEquals([1, 2, 3, 4, 5], Bunch::range(5)->get());
-        $this->assertEquals([0, 2, 4, 6, 8, 10], Bunch::range(10, 0, 2)->get());
+        $this->assertEquals([0, 1, 2, 3, 4], Bunch::range(5)->get());
+        $this->assertEquals([], Bunch::range(0)->get());
+        $this->assertEquals([1, 2, 3, 4, 5], Bunch::rangeFrom(1, 5)->get());
+        $this->assertEquals([0, 2, 4, 6, 8, 10], Bunch::rangeFrom(0, 10, 2)->get());
     }
 
     public function testFromValues()
@@ -59,7 +61,7 @@ class BunchTest extends TestCase
 
     public function testClone()
     {
-        $first = Bunch::of([1, 2, 3]);
+        $first = Bunch::wrap([1, 2, 3]);
         $second = clone $first;
 
         $first->push(4);
@@ -72,28 +74,28 @@ class BunchTest extends TestCase
     {
         // Implicitly tested by other tests
         // Same for toArray() which is an alias of get()
-        $this->assertEquals([1, 2, 3], Bunch::of([1, 2, 3])->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap([1, 2, 3])->get());
     }
 
     public function testAsIntegers()
     {
-        $this->assertEquals([1, -2, 3], Bunch::of(['1', '-2', '3.1416'])->asIntegers()->values()->get());
-        $this->assertEquals([1, -2, 3], Bunch::of(['1', null, '-2', '3.1416'])->asIntegers()->values()->get());
-        $this->assertEquals([1, -2, 3], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asIntegers()->values()->get());
-        $this->assertEquals([1, 12, -2, 3], Bunch::of(['1', 12, '-2', '3.1416'])->asIntegers()->values()->get());
+        $this->assertEquals([1, -2, 3], Bunch::wrap(['1', '-2', '3.1416'])->asIntegers()->values()->get());
+        $this->assertEquals([1, -2, 3], Bunch::wrap(['1', null, '-2', '3.1416'])->asIntegers()->values()->get());
+        $this->assertEquals([1, -2, 3], Bunch::wrap(['1', 'Hello World', '-2', '3.1416'])->asIntegers()->values()->get());
+        $this->assertEquals([1, 12, -2, 3], Bunch::wrap(['1', 12, '-2', '3.1416'])->asIntegers()->values()->get());
     }
 
     public function testAsFloats()
     {
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', '-2', '3.1416'])->asFloats()->values()->get());
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', null, '-2', '3.1416'])->asFloats()->values()->get());
-        $this->assertEquals([1, -2, 3.1416], Bunch::of(['1', 'Hello World', '-2', '3.1416'])->asFloats()->values()->get());
-        $this->assertEquals([1, 12, -2, 3.1416], Bunch::of(['1', 12, '-2', '3.1416'])->asFloats()->values()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::wrap(['1', '-2', '3.1416'])->asFloats()->values()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::wrap(['1', null, '-2', '3.1416'])->asFloats()->values()->get());
+        $this->assertEquals([1, -2, 3.1416], Bunch::wrap(['1', 'Hello World', '-2', '3.1416'])->asFloats()->values()->get());
+        $this->assertEquals([1, 12, -2, 3.1416], Bunch::wrap(['1', 12, '-2', '3.1416'])->asFloats()->values()->get());
     }
 
     public function testFilter()
     {
-        $evens = Bunch::of([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])->filter(fn ($x) => 0 == $x % 2);
+        $evens = Bunch::wrap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])->filter(fn ($x) => 0 == $x % 2);
 
         $this->assertSame([0 => 0, 2 => 2, 4 => 4, 6 => 6, 8 => 8], $evens->get());
         $this->assertSame([0, 2, 4, 6, 8], $evens->values()->get());
@@ -101,7 +103,7 @@ class BunchTest extends TestCase
 
     public function testPartitionFilter()
     {
-        list($group1, $group2, $group3) = Bunch::of([
+        list($group1, $group2, $group3) = Bunch::wrap([
             '1-paris',
             '2-berlin',
             '3-rome',
@@ -115,11 +117,35 @@ class BunchTest extends TestCase
         $this->assertEquals(['5-oulan-bator', '6-washington'], $group3);
     }
 
+    /** A side that received no value was missing, so destructuring both sides hit an undefined key. */
+    public function testPartitionFilterAlwaysGivesBothSides()
+    {
+        [$rejected, $kept] = Bunch::wrap([2, 4, 6])->partitionFilter(fn (int $x) => $x % 2 === 0);
+
+        $this->assertEquals([], $rejected);
+        $this->assertEquals([2, 4, 6], $kept);
+    }
+
+    public function testFromAssocKeepsTheKeys()
+    {
+        $this->assertEquals(['name' => 'screen', 'price' => 10], Bunch::fromAssoc(['name' => 'screen', 'price' => 10])->get());
+        $this->assertCount(1, Bunch::wrap(['name' => 'screen', 'price' => 10]));
+    }
+
+    public function testABunchIsIterable()
+    {
+        $walked = [];
+        foreach (Bunch::fromAssoc(['a' => 1, 'b' => 2]) as $key => $value)
+            $walked[$key] = $value;
+
+        $this->assertEquals(['a' => 1, 'b' => 2], $walked);
+    }
+
     public function testMap()
     {
         $this->assertEquals(
             [0, 1, 8, 27],
-            Bunch::of([0, 1, 2, 3])
+            Bunch::wrap([0, 1, 2, 3])
                 ->map(fn ($x) => pow($x, 3))
                 ->get()
         );
@@ -127,8 +153,8 @@ class BunchTest extends TestCase
 
     public function testMerge()
     {
-        $first = Bunch::of([0, 1, 2]);
-        $second = Bunch::of([3, 4, 5]);
+        $first = Bunch::wrap([0, 1, 2]);
+        $second = Bunch::wrap([3, 4, 5]);
         $third = [6, 7, 8, 9];
 
         $result = $first->merge($second)->merge($third);
@@ -144,12 +170,12 @@ class BunchTest extends TestCase
         for ($i = 0; $i < 100; ++$i) {
             shuffle($set);
             $this->assertNotEquals($set, $target);
-            $this->assertEquals(Bunch::of($set)->sort()->get(), $target);
+            $this->assertEquals(Bunch::wrap($set)->sort()->get(), $target);
         }
 
         $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
 
-        $sorted = Bunch::of($elements)->sort(fn ($x) => $x['A'])->get();
+        $sorted = Bunch::wrap($elements)->sort(fn ($x) => $x['A'])->get();
 
         $this->assertEquals(
             [['A' => -3], ['A' => 0], ['A' => 2], ['A' => 3], ['A' => 5], ['A' => 12]],
@@ -160,7 +186,7 @@ class BunchTest extends TestCase
     public function testForEach()
     {
         $sum = 0;
-        Bunch::of([1000, 100, 10, 1])
+        Bunch::wrap([1000, 100, 10, 1])
             ->forEach(function ($x) use (&$sum) {
                 $sum += $x;
             })
@@ -171,7 +197,7 @@ class BunchTest extends TestCase
     public function testAny()
     {
         $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
-        $elements = Bunch::of($elements);
+        $elements = Bunch::wrap($elements);
 
         $this->assertTrue($elements->any(fn ($x) => 3 === $x['A']));
         $this->assertFalse($elements->any(fn ($x) => 5292 === $x['A']));
@@ -180,7 +206,7 @@ class BunchTest extends TestCase
     public function testAll()
     {
         $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
-        $elements = Bunch::of($elements);
+        $elements = Bunch::wrap($elements);
 
         $this->assertTrue($elements->all(fn ($x) => $x['A'] > -30));
         $this->assertFalse($elements->all(fn ($x) => $x['A'] > 0));
@@ -190,45 +216,45 @@ class BunchTest extends TestCase
     {
         $this->assertEquals(
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-            Bunch::of([0, 1, 2, 1, 1, 3, 4, 5, 6, 7, 5, 5, 8, 0, 9])->uniques()->values()->get()
+            Bunch::wrap([0, 1, 2, 1, 1, 3, 4, 5, 6, 7, 5, 5, 8, 0, 9])->uniques()->values()->get()
         );
     }
 
     public function testPush()
     {
-        $this->assertEquals([1, 2, 3, 'A', 'B', 'C'], Bunch::of([1, 2, 3])->push('A', 'B')->push('C')->get());
+        $this->assertEquals([1, 2, 3, 'A', 'B', 'C'], Bunch::wrap([1, 2, 3])->push('A', 'B')->push('C')->get());
     }
 
     public function testUnshift()
     {
-        $this->assertEquals(['A', 'B', 'C', 1, 2, 3], Bunch::of([1, 2, 3])->unshift('B', 'C')->unshift('A')->get());
+        $this->assertEquals(['A', 'B', 'C', 1, 2, 3], Bunch::wrap([1, 2, 3])->unshift('B', 'C')->unshift('A')->get());
     }
 
     public function testPop()
     {
-        $this->assertEquals([1, 2], Bunch::of([1, 2, 3])->pop(1)->get());
-        $this->assertEquals([1], Bunch::of([1, 2, 3])->pop(2)->get());
-        $this->assertEquals([], Bunch::of([1, 2, 3])->pop(3)->get());
-        $this->assertEquals([], Bunch::of([1, 2, 3])->pop(12)->get());
+        $this->assertEquals([1, 2], Bunch::wrap([1, 2, 3])->pop(1)->get());
+        $this->assertEquals([1], Bunch::wrap([1, 2, 3])->pop(2)->get());
+        $this->assertEquals([], Bunch::wrap([1, 2, 3])->pop(3)->get());
+        $this->assertEquals([], Bunch::wrap([1, 2, 3])->pop(12)->get());
     }
 
     public function testShift()
     {
-        $this->assertEquals([2, 3], Bunch::of([1, 2, 3])->shift(1)->get());
-        $this->assertEquals([3], Bunch::of([1, 2, 3])->shift(2)->get());
-        $this->assertEquals([], Bunch::of([1, 2, 3])->shift(3)->get());
-        $this->assertEquals([], Bunch::of([1, 2, 3])->shift(12)->get());
+        $this->assertEquals([2, 3], Bunch::wrap([1, 2, 3])->shift(1)->get());
+        $this->assertEquals([3], Bunch::wrap([1, 2, 3])->shift(2)->get());
+        $this->assertEquals([], Bunch::wrap([1, 2, 3])->shift(3)->get());
+        $this->assertEquals([], Bunch::wrap([1, 2, 3])->shift(12)->get());
     }
 
     public function testJoin()
     {
-        $this->assertEquals('Hello World !', Bunch::of(['Hello', 'World', '!'])->join(' '));
+        $this->assertEquals('Hello World !', Bunch::wrap(['Hello', 'World', '!'])->join(' '));
     }
 
     public function testFirst()
     {
         $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
-        $elements = Bunch::of($elements);
+        $elements = Bunch::wrap($elements);
 
         $this->assertEquals(['A' => 3], $elements->first());
         $this->assertEquals(['A' => 5], $elements->first(fn ($x) => 4 < $x['A']));
@@ -238,7 +264,7 @@ class BunchTest extends TestCase
     public function testLast()
     {
         $elements = [['A' => -1], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
-        $elements = Bunch::of($elements);
+        $elements = Bunch::wrap($elements);
 
         $this->assertEquals(['A' => 0], $elements->last());
         $this->assertEquals(['A' => -3], $elements->last(fn ($x) => 0 > $x['A']));
@@ -248,7 +274,7 @@ class BunchTest extends TestCase
     public function testHas()
     {
         $elements = [['A' => 3], ['A' => 2], ['A' => 5], ['A' => 12], ['A' => -3], ['A' => 0]];
-        $elements = Bunch::of($elements);
+        $elements = Bunch::wrap($elements);
 
         $this->assertTrue($elements->has(['A' => 3]));
         $this->assertFalse($elements->has(['A' => 3000]));
@@ -256,20 +282,20 @@ class BunchTest extends TestCase
 
     public function testCount()
     {
-        $this->assertEquals(4, Bunch::of([1, 2, 3])->push(4)->count());
+        $this->assertEquals(4, Bunch::wrap([1, 2, 3])->push(4)->count());
         $this->assertEquals(1000, Bunch::fill(1000, null)->count());
     }
 
     public function testReduce()
     {
-        $this->assertEquals(120, Bunch::range(5)->reduce(fn ($acc, $cur) => $acc * $cur, 1));
+        $this->assertEquals(120, Bunch::rangeFrom(1, 5)->reduce(fn ($acc, $cur) => $acc * $cur, 1));
     }
 
     public function testSum()
     {
-        $this->assertEquals(1+2+3+4+5, Bunch::of([1,2,3,4,5])->sum());
-        $this->assertEquals(2+4+6+8+10, Bunch::of([1,2,3,4,5])->sum(fn($x) => $x*2));
-        $this->assertEquals(1+2+3+4+5, Bunch::of([1,2,3,4,5])->map(fn($x) => ['myKey' => $x])->sum('myKey'));
+        $this->assertEquals(1+2+3+4+5, Bunch::wrap([1,2,3,4,5])->sum());
+        $this->assertEquals(2+4+6+8+10, Bunch::wrap([1,2,3,4,5])->sum(fn($x) => $x*2));
+        $this->assertEquals(1+2+3+4+5, Bunch::wrap([1,2,3,4,5])->map(fn($x) => ['myKey' => $x])->sum('myKey'));
     }
 
     public function testKey()
@@ -279,28 +305,28 @@ class BunchTest extends TestCase
             ['id' => 2],
             ['id' => 3],
         ];
-        $this->assertEquals([1, 2, 3], Bunch::of($baseData)->key('id')->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap($baseData)->key('id')->get());
 
         $compound = [
             ['a' => ['b' => ['c' => 1]]],
             ['a' => ['b' => ['c' => 2]]],
             ['a' => ['b' => ['c' => 3]]],
         ];
-        $this->assertEquals([1, 2, 3], Bunch::of($compound)->key('a.b.c')->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap($compound)->key('a.b.c')->get());
 
         $multiples = [
             ['apiV1' => ['info' => ['name' => 1]]],
             ['V3Name' => 2],
             ['_V2' => ['name' => 3]],
         ];
-        $this->assertEquals([1, 2, 3], Bunch::of($multiples)->key(['apiV1.info.name', '_V2.name', 'V3Name'])->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap($multiples)->key(['apiV1.info.name', '_V2.name', 'V3Name'])->get());
 
         $dotsInKey = [
             ['api.V1' => ['meta.info' => ['name' => 1]]],
             ['V3.name' => 2],
             ['V2' => ['name' => 3]],
         ];
-        $this->assertEquals([1, 2, 3], Bunch::of($dotsInKey)->key(['api.V1_meta.info_name', 'V2_name', 'V3.name'], '_')->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap($dotsInKey)->key(['api.V1_meta.info_name', 'V2_name', 'V3.name'], '_')->get());
 
         $baseData = [
             ['id' => 1],
@@ -308,42 +334,42 @@ class BunchTest extends TestCase
             ['id' => 3],
         ];
         $this->expectException(\InvalidArgumentException::class);
-        $this->assertEquals([1, 2, 3], Bunch::of($baseData)->key('id')->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap($baseData)->key('id')->get());
 
         $baseData = [
             ['id' => 1],
             ['serial' => 2],
             ['id' => 3],
         ];
-        $this->assertEquals([1, 2, 3], Bunch::of($baseData)->key(['id', 'serial'])->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap($baseData)->key(['id', 'serial'])->get());
     }
 
     public function testMax()
     {
-        $this->assertEquals(10, Bunch::of([1, 5, -5, 9, 10])->max());
-        $this->assertEquals(null, Bunch::of([])->max());
-        $this->assertEquals(12, Bunch::of([])->max(12));
-        $this->assertEquals(12, Bunch::of([])->max() ?? 12);
+        $this->assertEquals(10, Bunch::wrap([1, 5, -5, 9, 10])->max());
+        $this->assertEquals(null, Bunch::wrap([])->max());
+        $this->assertEquals(12, Bunch::wrap([])->max(12));
+        $this->assertEquals(12, Bunch::wrap([])->max() ?? 12);
     }
 
     public function testMin()
     {
-        $this->assertEquals(-5, Bunch::of([1, 5, -5, 9, 10])->min());
-        $this->assertEquals(null, Bunch::of([])->min());
-        $this->assertEquals(12, Bunch::of([])->min(12));
-        $this->assertEquals(12, Bunch::of([])->min() ?? 12);
+        $this->assertEquals(-5, Bunch::wrap([1, 5, -5, 9, 10])->min());
+        $this->assertEquals(null, Bunch::wrap([])->min());
+        $this->assertEquals(12, Bunch::wrap([])->min(12));
+        $this->assertEquals(12, Bunch::wrap([])->min() ?? 12);
     }
 
     public function testAverage()
     {
-        $this->assertEquals(50, Bunch::of([0, 100])->average());
-        $this->assertEquals(null, Bunch::of([])->average());
-        $this->assertEquals(12, Bunch::of([])->average(default: 12));
-        $this->assertEquals(12, Bunch::of([])->average() ?? 12);
+        $this->assertEquals(50, Bunch::wrap([0, 100])->average());
+        $this->assertEquals(null, Bunch::wrap([])->average());
+        $this->assertEquals(12, Bunch::wrap([])->average(default: 12));
+        $this->assertEquals(12, Bunch::wrap([])->average() ?? 12);
 
-        $this->assertEquals(100, Bunch::of([0, 100])->average(fn($x) => $x * 2));
-        $this->assertEquals(3, Bunch::of([1, 5])->map(fn($x) => ['myKey' => $x])->average('myKey'));
-        $this->assertEquals(12, Bunch::of([])->average(fn($x) => $x * 2, 12));
+        $this->assertEquals(100, Bunch::wrap([0, 100])->average(fn($x) => $x * 2));
+        $this->assertEquals(3, Bunch::wrap([1, 5])->map(fn($x) => ['myKey' => $x])->average('myKey'));
+        $this->assertEquals(12, Bunch::wrap([])->average(fn($x) => $x * 2, 12));
     }
 
 
@@ -365,7 +391,7 @@ class BunchTest extends TestCase
 
 
     public function testGroupBy() {
-        $sampleData = Bunch::of([
+        $sampleData = Bunch::wrap([
             ['type' => 'it', 'label' => 'Keyboard'],
             ['type' => 'it', 'label' => 'Mouse'],
             ['type' => 'it', 'label' => 'Power Supply'],
@@ -397,18 +423,18 @@ class BunchTest extends TestCase
 
     public function testFirstAndLast()
     {
-        $bunch = Bunch::of(['a', 'b', 'c']);
+        $bunch = Bunch::wrap(['a', 'b', 'c']);
 
         $this->assertEquals('a', $bunch->first());
         $this->assertEquals('c', $bunch->last());
 
-        $this->assertNull(Bunch::of([])->first());
-        $this->assertNull(Bunch::of([])->last());
+        $this->assertNull(Bunch::wrap([])->first());
+        $this->assertNull(Bunch::wrap([])->last());
     }
 
     public function testSortLeavesTheOriginalAlone()
     {
-        $bunch = Bunch::of([3, 1, 2]);
+        $bunch = Bunch::wrap([3, 1, 2]);
         $sorted = $bunch->sort();
 
         $this->assertEquals([1, 2, 3], $sorted->get());
@@ -428,7 +454,7 @@ class BunchTest extends TestCase
             ['rank' => 0, 'label' => 'lowest'],
         ];
 
-        $sorted = Bunch::of($rows)->sort(fn ($row) => $row['rank'])->get();
+        $sorted = Bunch::wrap($rows)->sort(fn ($row) => $row['rank'])->get();
 
         $this->assertEquals(
             ['lowest', 'first', 'second', 'third'],
@@ -438,7 +464,7 @@ class BunchTest extends TestCase
 
     public function testCloneIsDetachedFromItsSource()
     {
-        $bunch = Bunch::of([1, 2]);
+        $bunch = Bunch::wrap([1, 2]);
         $copy = clone $bunch;
         $copy->push(3);
 
@@ -449,7 +475,7 @@ class BunchTest extends TestCase
     public function testChunk()
     {
         $chunks = [];
-        Bunch::range(7)->chunk(3, function ($chunk) use (&$chunks) {
+        Bunch::rangeFrom(1, 7)->chunk(3, function ($chunk) use (&$chunks) {
             $chunks[] = $chunk;
         });
 
@@ -459,7 +485,7 @@ class BunchTest extends TestCase
     public function testChunkWithExactMultiple()
     {
         $chunks = [];
-        Bunch::range(4)->chunk(2, function ($chunk) use (&$chunks) {
+        Bunch::rangeFrom(1, 4)->chunk(2, function ($chunk) use (&$chunks) {
             $chunks[] = $chunk;
         });
 
@@ -469,7 +495,7 @@ class BunchTest extends TestCase
     public function testChunkLargerThanTheBunch()
     {
         $chunks = [];
-        Bunch::of([1, 2])->chunk(10, function ($chunk) use (&$chunks) {
+        Bunch::wrap([1, 2])->chunk(10, function ($chunk) use (&$chunks) {
             $chunks[] = $chunk;
         });
 
@@ -479,7 +505,7 @@ class BunchTest extends TestCase
     public function testChunkOnEmptyBunchNeverCallsBack()
     {
         $calls = 0;
-        Bunch::of([])->chunk(3, function () use (&$calls) {
+        Bunch::wrap([])->chunk(3, function () use (&$calls) {
             $calls++;
         });
 
@@ -488,7 +514,7 @@ class BunchTest extends TestCase
 
     public function testChunkLeavesTheOriginalAlone()
     {
-        $bunch = Bunch::of([1, 2, 3]);
+        $bunch = Bunch::wrap([1, 2, 3]);
         $bunch->chunk(2, fn () => null);
 
         $this->assertEquals([1, 2, 3], $bunch->get());
@@ -497,7 +523,7 @@ class BunchTest extends TestCase
     public function testChunkAlsoGivesTheChunkAsABunch()
     {
         $chunks = [];
-        Bunch::range(5)->chunk(2, function (array $chunk, Bunch $bunch) use (&$chunks) {
+        Bunch::rangeFrom(1, 5)->chunk(2, function (array $chunk, Bunch $bunch) use (&$chunks) {
             $this->assertEquals($chunk, $bunch->get());
             $chunks[] = $bunch->sum();
         });
@@ -515,7 +541,7 @@ class BunchTest extends TestCase
             ['rank' => 3, 'age' => 40],
         ];
 
-        $sorted = Bunch::of($rows)->sort([
+        $sorted = Bunch::wrap($rows)->sort([
             fn ($row) => $row['rank'],
             fn ($row) => $row['age'],
         ])->get();
@@ -539,7 +565,7 @@ class BunchTest extends TestCase
             ['a' => 0, 'b' => 1, 'c' => 0],
         ];
 
-        $sorted = Bunch::of($rows)->sort(['a','b','c'])->get();
+        $sorted = Bunch::wrap($rows)->sort(['a','b','c'])->get();
 
         $this->assertEquals([
             ['a' => 0, 'b' => 1, 'c' => 0],
@@ -559,7 +585,7 @@ class BunchTest extends TestCase
             ['city' => 'Annecy', 'price' => 9.9],
         ];
 
-        $sorted = Bunch::of($rows)->sort([
+        $sorted = Bunch::wrap($rows)->sort([
             fn ($row) => $row['city'],
             fn ($row) => $row['price'],
         ])->get();
@@ -577,8 +603,8 @@ class BunchTest extends TestCase
         $values = [3, -1, 2, 0];
 
         $this->assertEquals(
-            Bunch::of($values)->sort(fn ($x) => $x)->get(),
-            Bunch::of($values)->sort([fn ($x) => $x])->get()
+            Bunch::wrap($values)->sort(fn ($x) => $x)->get(),
+            Bunch::wrap($values)->sort([fn ($x) => $x])->get()
         );
     }
 
@@ -590,7 +616,7 @@ class BunchTest extends TestCase
             ['rank' => 1, 'label' => 'second'],
         ];
 
-        $sorted = Bunch::of($rows)->sort([
+        $sorted = Bunch::wrap($rows)->sort([
             fn ($row) => $row['rank'],
             fn ($row) => 0,
         ])->get();
@@ -600,7 +626,7 @@ class BunchTest extends TestCase
 
     public function testSortOnMultipleLevelsLeavesTheOriginalAlone()
     {
-        $bunch = Bunch::of([3, 1, 2]);
+        $bunch = Bunch::wrap([3, 1, 2]);
         $sorted = $bunch->sort([fn ($x) => $x]);
 
         $this->assertEquals([1, 2, 3], $sorted->get());
@@ -609,19 +635,19 @@ class BunchTest extends TestCase
 
     public function testSortWithACallableArrayStaysASingleCallback()
     {
-        $sorted = Bunch::of(['ccc', 'a', 'bb'])->sort([self::class, 'lengthOf'])->get();
+        $sorted = Bunch::wrap(['ccc', 'a', 'bb'])->sort([self::class, 'lengthOf'])->get();
 
         $this->assertEquals(['a', 'bb', 'ccc'], $sorted);
     }
 
     public function testAsIntegersWithoutFilteringNumerics()
     {
-        $this->assertEquals([1, 0, 0, 3], Bunch::of(['1', 'Hello World', null, '3.1416'])->asIntegers(false)->get());
+        $this->assertEquals([1, 0, 0, 3], Bunch::wrap(['1', 'Hello World', null, '3.1416'])->asIntegers(false)->get());
     }
 
     public function testAsFloatsWithoutFilteringNumerics()
     {
-        $this->assertEquals([1.5, 0.0, 0.0], Bunch::of(['1.5', 'Hello World', null])->asFloats(false)->get());
+        $this->assertEquals([1.5, 0.0, 0.0], Bunch::wrap(['1.5', 'Hello World', null])->asFloats(false)->get());
     }
 
     public function testFilterWithAKey()
@@ -632,18 +658,18 @@ class BunchTest extends TestCase
             ['label' => 'Screen', 'inStock' => true],
         ];
 
-        $this->assertEquals(['Keyboard', 'Screen'], Bunch::of($rows)->filter('inStock')->map('label')->values()->get());
+        $this->assertEquals(['Keyboard', 'Screen'], Bunch::wrap($rows)->filter('inStock')->map('label')->values()->get());
     }
 
     public function testMapWithAKeyReadsArraysAndObjects()
     {
-        $this->assertEquals(['Lyon', 'Brest'], Bunch::of([['city' => 'Lyon'], ['city' => 'Brest']])->map('city')->get());
-        $this->assertEquals(['Lyon', 'Brest'], Bunch::of([(object) ['city' => 'Lyon'], (object) ['city' => 'Brest']])->map('city')->get());
+        $this->assertEquals(['Lyon', 'Brest'], Bunch::wrap([['city' => 'Lyon'], ['city' => 'Brest']])->map('city')->get());
+        $this->assertEquals(['Lyon', 'Brest'], Bunch::wrap([(object) ['city' => 'Lyon'], (object) ['city' => 'Brest']])->map('city')->get());
     }
 
     public function testGroupByWithKeys()
     {
-        $rows = Bunch::of([
+        $rows = Bunch::wrap([
             ['type' => 'it', 'brand' => 'Logitech', 'label' => 'Keyboard'],
             ['type' => 'it', 'brand' => 'Logitech', 'label' => 'Mouse'],
             ['type' => 'it', 'brand' => 'Dell', 'label' => 'Screen'],
@@ -668,29 +694,29 @@ class BunchTest extends TestCase
             (object) ['city' => 'Lyon', 'price' => 1.2],
         ];
 
-        $sorted = Bunch::of($rows)->sort(['city', 'price'])->get();
+        $sorted = Bunch::wrap($rows)->sort(['city', 'price'])->get();
 
         $this->assertEquals([2.5, 1.2, 1.5], array_column($sorted, 'price'));
     }
 
     public function testSumWithAKeyReadsObjects()
     {
-        $this->assertEquals(6, Bunch::of([(object) ['price' => 1], (object) ['price' => 5]])->sum('price'));
+        $this->assertEquals(6, Bunch::wrap([(object) ['price' => 1], (object) ['price' => 5]])->sum('price'));
     }
 
     public function testAnyAndAllAcceptTruthyResults()
     {
-        $elements = Bunch::of([['A' => 3], ['A' => 0]]);
+        $elements = Bunch::wrap([['A' => 3], ['A' => 0]]);
 
         $this->assertTrue($elements->any(fn ($x) => $x['A']));
         $this->assertFalse($elements->all(fn ($x) => $x['A']));
-        $this->assertFalse(Bunch::of([0, null, ''])->any(fn ($x) => $x));
-        $this->assertTrue(Bunch::of([1, 'a', [1]])->all(fn ($x) => $x));
+        $this->assertFalse(Bunch::wrap([0, null, ''])->any(fn ($x) => $x));
+        $this->assertTrue(Bunch::wrap([1, 'a', [1]])->all(fn ($x) => $x));
     }
 
     public function testHasIsStrict()
     {
-        $elements = Bunch::of([1, 2, 3, 0]);
+        $elements = Bunch::wrap([1, 2, 3, 0]);
 
         $this->assertTrue($elements->has(1));
         $this->assertFalse($elements->has('1'));
@@ -706,34 +732,34 @@ class BunchTest extends TestCase
     /** min() and max() spread the data, and PHP refuses min() with a single non-array argument. */
     public function testMinAndMaxOfASingleElement()
     {
-        $this->assertEquals(5, Bunch::of([5])->min());
-        $this->assertEquals(5, Bunch::of([5])->max());
+        $this->assertEquals(5, Bunch::wrap([5])->min());
+        $this->assertEquals(5, Bunch::wrap([5])->max());
     }
 
     /** key() reads values through ??, so a field holding null is taken for a missing one. */
     public function testKeyReturnsAFieldHoldingNull()
     {
-        $this->assertEquals([null], Bunch::of([['discount' => null]])->key('discount')->get());
-        $this->assertEquals([null], Bunch::of([(object) ['discount' => null]])->key('discount')->get());
+        $this->assertEquals([null], Bunch::wrap([['discount' => null]])->key('discount')->get());
+        $this->assertEquals([null], Bunch::wrap([(object) ['discount' => null]])->key('discount')->get());
     }
 
     /** flat() spreads each row into array_push(), which takes string keys for named arguments. */
     public function testFlatOnAssociativeRows()
     {
-        $this->assertEquals([1, 2], Bunch::of([['first' => 1], ['second' => 2]])->flat()->get());
+        $this->assertEquals([1, 2], Bunch::wrap([['first' => 1], ['second' => 2]])->flat()->get());
     }
 
     public function testFlatOnNestedBunches()
     {
-        $this->assertEquals([1, 2, 3], Bunch::of([Bunch::of([1, 2]), [3]])->flat()->get());
+        $this->assertEquals([1, 2, 3], Bunch::wrap([Bunch::wrap([1, 2]), [3]])->flat()->get());
     }
 
     public function testFlatMap()
     {
         $this->assertEquals(
             ['Lyon', 'Villeurbanne', 'Brest'],
-            Bunch::of([['Lyon', 'Villeurbanne'], ['Brest']])
-                ->flatMap(fn (array $cities) => Bunch::of($cities))
+            Bunch::wrap([['Lyon', 'Villeurbanne'], ['Brest']])
+                ->flatMap(fn (array $cities) => Bunch::wrap($cities))
                 ->get()
         );
     }
@@ -741,7 +767,7 @@ class BunchTest extends TestCase
     /** first() requires a strict true while any() accepts a truthy result. */
     public function testFirstAcceptsATruthyResult()
     {
-        $this->assertEquals('apple', Bunch::of(['pear', 'apple'])->first(fn ($fruit) => preg_match('/a.p/', $fruit)));
+        $this->assertEquals('apple', Bunch::wrap(['pear', 'apple'])->first(fn ($fruit) => preg_match('/a.p/', $fruit)));
     }
 
     public function testValuesReindexesKeyedData()
@@ -760,14 +786,14 @@ class BunchTest extends TestCase
 
     public function testOfABunchWithGapsKeepsItsData()
     {
-        $evens = Bunch::of([1, 2, 3, 4])->filter(fn ($x) => 0 == $x % 2);
+        $evens = Bunch::wrap([1, 2, 3, 4])->filter(fn ($x) => 0 == $x % 2);
 
-        $this->assertSame([1 => 2, 3 => 4], Bunch::of($evens)->get());
+        $this->assertSame([1 => 2, 3 => 4], Bunch::wrap($evens)->get());
     }
 
     public function testPositionalReadsIgnoreGapsLeftByAFilter()
     {
-        $evens = Bunch::of([1, 2, 3, 4])->filter(fn ($x) => 0 == $x % 2);
+        $evens = Bunch::wrap([1, 2, 3, 4])->filter(fn ($x) => 0 == $x % 2);
 
         $this->assertSame(2, $evens->first());
         $this->assertSame(0, $evens->firstIndex(fn ($x) => 2 === $x));
@@ -776,7 +802,7 @@ class BunchTest extends TestCase
 
     public function testKeyAfterAFilter()
     {
-        $rows = Bunch::of([['label' => 'Keyboard', 'inStock' => false], ['label' => 'Screen', 'inStock' => true]])
+        $rows = Bunch::wrap([['label' => 'Keyboard', 'inStock' => false], ['label' => 'Screen', 'inStock' => true]])
             ->filter('inStock');
 
         $this->assertSame(['Screen'], $rows->key('label')->values()->get());

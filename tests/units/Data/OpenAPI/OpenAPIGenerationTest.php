@@ -3,6 +3,7 @@
 namespace Cube\Tests\Units\Data\OpenAPI;
 
 use Cube\Core\Injector;
+use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Configuration\Authentication\BearerToken;
 use Cube\Data\OpenAPI\Configuration\Authentication\OpenApiAuthScheme;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
@@ -363,5 +364,63 @@ class OpenAPIGenerationTest extends TestCase
         $this->expectExceptionMessage("Duplicate operationId [simpleRoute] for PUT /product/{id} and PATCH /product/{id}");
 
         $this->generateAsArray($router);
+    }
+
+    /** A Route::any() names no method : it was left out of the document without a word. */
+    public function testARouteForAnyMethodIsLeftOutWithAWarning() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::any("/anything", [SampleController::class, "simpleRoute"]),
+            Route::get("/simple-route", [SampleController::class, "simpleEndpoint"]),
+        );
+
+        $generator = new OpenAPIGenerator(new OpenAPIConfiguration(Storage::getInstance()->path(uniqid() . ".json"), 'My Test Application', '0.1.0'));
+
+        $this->expectOutputRegex('~Warning: ignored route accepting any method.*/anything~');
+        $document = $this->generateAsArray($router, $generator);
+
+        $this->assertEquals(['/simple-route'], array_keys($document['paths']));
+    }
+
+    /** Only an object of rules was read : a getRules() returning a single list rule gave no request body. */
+    public function testASingleRequestRuleDescribesTheBody() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::post("/ids", [SampleController::class, "postEndpointWithListRequest"]),
+        );
+
+        $operation = $this->generateAsArray($router)['paths']['/ids']['post'];
+
+        $this->assertEquals(
+            ['type' => 'array', 'items' => ['type' => 'integer']],
+            $operation['requestBody']['content']['application/json']['schema']
+        );
+        $this->assertArrayHasKey(422, $operation['responses']);
+    }
+
+    /** inArray() wrote a `string` type over the rule's own, so a list of integers was documented as strings. */
+    public function testAnEnumKeepsTheRuleType() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/products", [SampleController::class, "getEndpointWithEnumRequest"]),
+        );
+
+        $parameter = $this->generateAsArray($router)['paths']['/products']['get']['parameters'][0];
+
+        $this->assertEquals(['type' => 'integer', 'enum' => [10, 25, 50]], $parameter['schema']);
+    }
+
+    /** The file was checked as given, so a path relative to the project root only worked from the project root. */
+    public function testARawResponseFileIsRelativeToTheProjectRoot() {
+        $workingDirectory = getcwd();
+        chdir(sys_get_temp_dir());
+
+        try {
+            $response = new RawResponse(file: 'tests/units/Data/OpenAPI/Fixtures/RawResponseSource.json');
+        } finally {
+            chdir($workingDirectory);
+        }
+
+        $this->assertEquals(json_decode($this->readFixture('RawResponseSource.json'), true), $response->data);
     }
 }

@@ -8,6 +8,7 @@ use Cube\Core\Injector;
 use Cube\Event\Event;
 use Cube\Event\Events;
 use Cube\Event\Events\PostDeployment;
+use Cube\Tests\Units\Console\Classes\Billing\InvoiceWasSent as BillingInvoiceWasSent;
 use Cube\Tests\Units\Console\Classes\CatalogWasImported;
 use Cube\Tests\Units\Console\Classes\SayHello;
 use PHPUnit\Framework\TestCase;
@@ -86,6 +87,22 @@ class DispatchTest extends TestCase
 
         $this->assertEquals(2, $this->dispatch('--event', 'ProductWasLost'));
         $this->assertEmpty($this->received);
+    }
+
+    /** The first class whose name merely ended with the given one was dispatched, whichever it was. */
+    public function test_an_ambiguous_event_name_aborts_with_status_2()
+    {
+        $this->expectOutputRegex('/several Event classes/');
+
+        $this->assertEquals(2, $this->dispatch('--event', 'InvoiceWasSent'));
+    }
+
+    public function test_a_namespace_suffix_chooses_between_events_of_the_same_name()
+    {
+        $this->events->on(BillingInvoiceWasSent::class, function (Event $event) { $this->received[] = $event; });
+
+        $this->assertEquals(0, $this->dispatch('--event', 'Billing\\InvoiceWasSent'));
+        $this->assertInstanceOf(BillingInvoiceWasSent::class, $this->received[0]);
     }
 
     public function test_a_class_that_is_not_an_event_aborts_with_status_2()

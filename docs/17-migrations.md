@@ -9,6 +9,7 @@ applied yet, in order, and remembers which ones ran.
 ```bash
 php do make:migration CreateProductTable   # write a new migration file
 php do migrate:migrate                     # apply what is pending, then regenerate the models
+php do migrate:rollback                    # revert the last applied migration
 ```
 
 Here is the file you then fill, in `App/Migrations/`
@@ -80,7 +81,8 @@ Each migration goes through two steps
    calls against the live schema and the tables created earlier in the same migration : dropping a
    table that does not exist, adding a column that already exists, altering, dropping or renaming a
    missing column, a foreign key pointing to a missing column, a unique index on a missing column,
-   renaming a table onto an existing one. Any of those stops the migration before anything is applied.
+   renaming a table onto an existing one. Any of those — or any other exception thrown by `up()` —
+   stops the migration before anything is applied.
 2. **Transaction.** `up()` is called again with the plan of your driver, inside
    `Database::transaction()`. The migration is recorded as done only when it succeeds.
 
@@ -103,8 +105,24 @@ A migration runs in a transaction, but MySQL commits on every `CREATE`, `ALTER` 
 migration failing halfway leaves its first statements applied there. Keep one structural change per
 migration on MySQL.
 
-`down()` describes how to undo `up()`, but no command calls it yet : it is there for you to call by
-hand, from a test for instance.
+## Rolling back
+
+`down()` describes how to undo `up()`, and `migrate:rollback` calls it
+
+```bash
+php do migrate:rollback              # revert the last applied migration
+php do migrate:rollback --steps=3    # revert the 3 last ones, newest first
+php do migrate:rollback -s           # or --skip-generation
+```
+
+Each `down()` goes through the same dry run and transaction as `up()`, and the migration leaves the
+migration table once it succeeds, so `migrate:migrate` applies it again. The migrations are reverted
+in the reverse of the order they were applied ; the first failure stops the command with a
+`FailedMigrationException`, and that migration stays recorded as applied. Like `migrate:migrate`,
+the command then regenerates your models outside production, unless `-s` / `--skip-generation`.
+
+The file of each migration to revert must still be in a `Migrations/` directory : a missing one
+throws a `RuntimeException` naming it.
 
 ## The Plan API
 
@@ -207,5 +225,6 @@ new MigrationManagerConfiguration(
 |---|---|
 | `make:migration [name]` | writes an empty migration file in the chosen application |
 | `migrate:migrate [-s\|--skip-generation]` | applies pending migrations, then runs `models:generate` outside production |
+| `migrate:rollback [--steps=N] [-s\|--skip-generation]` | reverts the `N` last applied migrations (1 by default), newest first, then runs `models:generate` outside production |
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./16-database-and-queries.md">Previous : Database and queries</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./18-models.md">Next : Models</a></div></td></tr></table>

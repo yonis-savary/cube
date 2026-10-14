@@ -13,7 +13,7 @@ class WriteProductsRequest extends Request
     {
         $product = [
             'name' => Param::string()->optional(),
-            'price_dollar' => Param::float(true)->optional(),
+            'price_dollar' => Param::float(nullable: true)->optional(),
         ];
 
         return Utils::isList($this->all())

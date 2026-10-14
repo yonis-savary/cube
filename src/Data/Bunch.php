@@ -2,6 +2,7 @@
 
 namespace Cube\Data;
 
+use ArrayIterator;
 use Closure;
 use Countable;
 use Cube\Core\Autoloader;
@@ -9,6 +10,8 @@ use Cube\Core\Injector;
 use Cube\Data\Classes\NoValue;
 use Cube\Data\Database\Database;
 use Cube\Utils\Utils;
+use IteratorAggregate;
+use Traversable;
 
 /**
  * @template TKey
@@ -17,8 +20,10 @@ use Cube\Utils\Utils;
  * @template TNullableCallback of ?TCallback
  * @template TCallbacks of TCallback|TCallback[]
  * @template TNullableCallbacks of TNullableCallback|TNullableCallback[]
+ *
+ * @implements IteratorAggregate<TKey,TValue>
  */
-class Bunch implements Countable
+class Bunch implements Countable, IteratorAggregate
 {
     /** @var array<TKey,TValue> */
     protected array $data;
@@ -44,7 +49,7 @@ class Bunch implements Countable
      *
      * @return (TElement is Bunch ? TElement : (TElement is list ? self<int,value-of<TElement>> : self<int,TElement>))
      */
-    public static function of(mixed $element): self
+    public static function wrap(mixed $element): self
     {
         if ($element instanceof Bunch) {
             return new static($element->get());
@@ -60,7 +65,7 @@ class Bunch implements Countable
 
     /**
      * Loads a Bunch of non-abstract classes that extends a given parent Class (Instanciates classes).
-     * To perform this action without instanciating, call `Bunch::of(Autoloader::classesThatExtends($class))`
+     * To perform this action without instanciating, call `Bunch::wrap(Autoloader::classesThatExtends($class))`
      *
      * @template TClassname
      * @param class-string<TClassname> $class
@@ -68,7 +73,7 @@ class Bunch implements Countable
      */
     public static function fromExtends(string $class, array $constructorArgs=[]): self
     {
-        return Bunch::of(Autoloader::classesThatExtends($class))->instanciates($constructorArgs);
+        return Bunch::wrap(Autoloader::classesThatExtends($class))->instanciates($constructorArgs);
     }
 
     /**
@@ -78,7 +83,7 @@ class Bunch implements Countable
      */
     public static function fromImplements(string $implements, array $constructorArgs=[]): self
     {
-        return Bunch::of(Autoloader::classesThatImplements($implements))->instanciates($constructorArgs);
+        return Bunch::wrap(Autoloader::classesThatImplements($implements))->instanciates($constructorArgs);
     }
 
     /**
@@ -88,7 +93,7 @@ class Bunch implements Countable
      */
     public static function fromUses(string $uses, array $constructorArgs=[]): self
     {
-        return Bunch::of(Autoloader::classesThatUses($uses))->instanciates($constructorArgs);
+        return Bunch::wrap(Autoloader::classesThatUses($uses))->instanciates($constructorArgs);
     }
 
     /**
@@ -102,11 +107,35 @@ class Bunch implements Countable
     }
 
     /**
+     * @template TAssocKey of array-key
+     * @template TAssocValue
+     *
+     * @param array<TAssocKey,TAssocValue> $assoc
+     *
+     * @return self<TAssocKey,TAssocValue>
+     */
+    public static function fromAssoc(array $assoc): self
+    {
+        return new static($assoc);
+    }
+
+    /**
      * @return self<int,int>
      */
-    public static function range(int $end, int $start = 1, int $step = 1): self
+    public static function range(int $length): self
     {
-        return self::of(range($start, $end, $step));
+        if ($length <= 0)
+            return new static();
+
+        return self::rangeFrom(0, $length - 1);
+    }
+
+    /**
+     * @return self<int,int>
+     */
+    public static function rangeFrom(int $start, int $end, int $step = 1): self
+    {
+        return new static(range($start, $end, $step));
     }
 
     /**
@@ -119,7 +148,7 @@ class Bunch implements Countable
      */
     public static function fromValues(array $assoc): self
     {
-        return Bunch::of(array_values($assoc));
+        return Bunch::wrap(array_values($assoc));
     }
 
     /**
@@ -132,7 +161,7 @@ class Bunch implements Countable
      */
     public static function fromKeys(array $assoc): self
     {
-        return Bunch::of(array_keys($assoc));
+        return Bunch::wrap(array_keys($assoc));
     }
 
     /**
@@ -154,7 +183,7 @@ class Bunch implements Countable
             $data[] = [$keys[$i], $values[$i]];
         }
 
-        return self::of($data);
+        return self::wrap($data);
     }
 
     /** @param TNullableCallbacks $callbacks */
@@ -188,14 +217,14 @@ class Bunch implements Countable
      */
     public function zip(?callable $mapFunction = null): array
     {
-        $clone = Bunch::of($this);
+        $clone = Bunch::wrap($this);
         if ($mapFunction) {
             $clone = $clone->map($mapFunction);
         }
 
         return array_combine(
-            Bunch::of($clone)->map(fn ($x) => $x[0])->toArray(),
-            Bunch::of($clone)->map(fn ($x) => $x[1])->toArray(),
+            Bunch::wrap($clone)->map(fn ($x) => $x[0])->toArray(),
+            Bunch::wrap($clone)->map(fn ($x) => $x[1])->toArray(),
         );
     }
 
@@ -204,7 +233,7 @@ class Bunch implements Countable
      */
     public static function fromExplode(string $delimiter, string $string): self
     {
-        return self::of(explode($delimiter, $string));
+        return self::wrap(explode($delimiter, $string));
     }
 
     /**
@@ -318,7 +347,7 @@ class Bunch implements Countable
 
     public function partitionFilter(callable $callback): array
     {
-        $output = [];
+        $output = [0 => [], 1 => []];
         foreach ($this->data as $element) {
             $result = (int) $callback($element);
             $output[$result] ??= [];
@@ -414,7 +443,7 @@ class Bunch implements Countable
 
         if (count($callbacks)) {
             foreach ($grouped as &$group) {
-                $group = Bunch::of($group)->groupBy($callbacks);
+                $group = Bunch::wrap($group)->groupBy($callbacks);
             }
         }
 
@@ -445,7 +474,7 @@ class Bunch implements Countable
     public function merge(array|Bunch $value): self
     {
         return $this->withNewData(
-            array_merge($this->data, Bunch::of($value)->get())
+            array_merge($this->data, Bunch::wrap($value)->get())
         );
     }
 
@@ -637,6 +666,14 @@ class Bunch implements Countable
         return $this->any(fn($el) => $el === $value);
     }
 
+    /**
+     * @return Traversable<TKey,TValue>
+     */
+    public function getIterator(): Traversable
+    {
+        return new ArrayIterator($this->data);
+    }
+
     public function count(): int
     {
         return count($this->data);
@@ -691,7 +728,7 @@ class Bunch implements Countable
 
         for ($i=0; $i<$chunkCount; $i++) {
             $chunkData = array_slice($data, $i * $chunkSize, $chunkSize);
-            $callback($chunkData, Bunch::of($chunkData));
+            $callback($chunkData, Bunch::wrap($chunkData));
         }
     }
 
@@ -741,7 +778,7 @@ class Bunch implements Countable
     {
         $database ??= Database::getInstance();
 
-        $data = static::of($database->query($query, $context, \PDO::FETCH_ASSOC));
+        $data = static::wrap($database->query($query, $context, \PDO::FETCH_ASSOC));
 
         if (!count($data))
             return $data;

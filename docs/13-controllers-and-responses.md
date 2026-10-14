@@ -133,12 +133,9 @@ Response::download($path);                                  // as a download nam
 | `Response::html(mixed $value, int $code = 200)` | `text/html`, see [Views and assets](./14-views-and-assets.md) |
 | `Response::file(string $path, int $code = 200, ?string $attachmentFile = null)` | streams `$path` ; with `$attachmentFile`, as a download under that name |
 | `Response::download(string $path, int $code = 200, ?string $attachmentFile = null)` | `file()` as a download, named after the file by default |
-| `Response::temporaryRedirect(string $url)` / `permanentRedirect(string $url)` | `307` / `308` with a `Location` header |
+| `Response::movedPermanently(string $location)`, `found()`, `seeOther()`, `temporaryRedirect()`, `permanentRedirect()` | `301`, `302`, `303`, `307`, `308` with a `Location` header |
 | `Response::ok()`, `created()`, `notFound()`, `forbidden()`, … | the status, with an optional content : a string is sent as is, anything else (a model, a `Bunch`, an array) as JSON like `json()` |
 | `new Response(int $statusCode = 204, ?string $body = null, array $headers = [])` | anything else |
-
-Only the two redirect constructors set `Location` : for a `302` or a `303`, add it with
-`withHeaders()`.
 
 ### Decorating a response
 
@@ -153,7 +150,7 @@ Three fluent steps decorate a response
 ```php
 return Response::file($storage->path('logo.png'))->withClientCaching(Cache::DAY);
 
-return Response::seeOther()->withHeaders(['Location' => '/products']);
+return Response::seeOther('/products')->withHeaders(['Cache-Control' => 'no-store']);
 ```
 
 ## Aborting from deep inside
@@ -179,7 +176,7 @@ class StockService
 
 The message is for your logs, the response for the client. This is how Cube itself answers `422`
 for an invalid request and `404` for a missing slug model. The router catches it around the
-middlewares and the callback.
+middlewares, the callback and a `WebAPI`'s `handle()`.
 
 ## Claiming a request before routing
 
@@ -215,7 +212,8 @@ new RouterConfiguration(
 )
 ```
 
-The router asks every configured `WebAPI`, in order, before matching routes. `StaticServer` and
+The router asks every configured `WebAPI`, in order, before matching routes, and before a route
+remembered by the route cache. `StaticServer` and
 `AssetServer` are `WebAPI` services (see [Static server](./32-static-server.md) and
 [Views and assets](./14-views-and-assets.md#serving-assets)).
 

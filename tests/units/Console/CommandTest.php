@@ -71,7 +71,7 @@ class CommandTest extends TestCase
      */
     public function test_every_framework_command_keeps_its_identifier()
     {
-        $identifiers = Bunch::of(Autoloader::classesThatExtends(Command::class))
+        $identifiers = Bunch::wrap(Autoloader::classesThatExtends(Command::class))
             ->filter(fn (string $class) => str_starts_with($class, 'Cube\\Console\\Commands\\'))
             ->instanciates()
             ->map(fn (Command $command) => $command->getFullIdentifier())
@@ -93,6 +93,7 @@ class CommandTest extends TestCase
             'make:migration',
             'make:openapi',
             'migrate:migrate',
+            'migrate:rollback',
             'models:generate',
             'models:to-types',
             'routine:generate',
@@ -101,5 +102,20 @@ class CommandTest extends TestCase
             'web:serve',
             'websocket:serve',
         ], $identifiers);
+    }
+
+    /** `cube:dispatch`, `make:openapi` and `cube:test` showed the default help in `cube:help`. */
+    public function test_every_framework_command_has_a_help()
+    {
+        $withoutHelp = (new Bunch(Autoloader::classesThatExtends(Command::class)))
+            ->filter(fn (string $class) => str_starts_with($class, 'Cube\\Console\\Commands\\'))
+            ->instanciates()
+            ->filter(fn (Command $command) => $command->getHelp() === (new SayHello())->getHelp())
+            ->map(fn (Command $command) => $command->getFullIdentifier())
+            ->values()
+            ->get()
+        ;
+
+        $this->assertEquals([], $withoutHelp);
     }
 }

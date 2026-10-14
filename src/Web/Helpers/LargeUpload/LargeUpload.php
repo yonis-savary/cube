@@ -40,7 +40,7 @@ class LargeUpload
     }
 
     protected function sizeWithout(string $chunk): int {
-        return Bunch::of($this->storage->files())
+        return Bunch::wrap($this->storage->files())
             ->filter(fn (string $file) => str_starts_with(basename($file), 'chunk-') && basename($file) !== $chunk)
             ->sum(fn (string $file) => filesize($file));
     }
@@ -53,7 +53,7 @@ class LargeUpload
         $outputPath = $destinationStorage->path($identifier);
         $outputStream = fopen($outputPath, "a");
 
-        $chunkFiles = Bunch::of($this->storage->files())
+        $chunkFiles = Bunch::wrap($this->storage->files())
             ->filter(fn($file) => str_contains($file, 'chunk-'))
             ->sort(SORT_NATURAL);
 
@@ -67,7 +67,7 @@ class LargeUpload
     }
 
     public function delete(): void {
-        Bunch::of($this->storage->files())
+        Bunch::wrap($this->storage->files())
             ->forEach(fn($file) => unlink($file));
 
         rmdir($this->storage->getRoot());

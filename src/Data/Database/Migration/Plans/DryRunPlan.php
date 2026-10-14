@@ -2,6 +2,7 @@
 
 namespace Cube\Data\Database\Migration\Plans;
 
+use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Plan;
@@ -87,7 +88,7 @@ class DryRunPlan extends Plan
 
         $exists = match (true) {
             $this->tableExists($referenceTable) => $this->columnExists($referenceTable, $referenceField),
-            is_a($referenceModel, Model::class, true) => array_key_exists($referenceField, $referenceModel::fields()),
+            Autoloader::extends($referenceModel, Model::class) => array_key_exists($referenceField, $referenceModel::fields()),
             default => false,
         };
 
@@ -107,7 +108,7 @@ class DryRunPlan extends Plan
      * @param string[]|string $fields
      */
     public function addUniqueIndex(string $table, string|array $fields) {
-        $fields = Bunch::of($fields)->toArray();
+        $fields = Bunch::wrap($fields)->toArray();
 
         foreach ($fields as $field) {
             if (!$this->columnExists($table, $field))

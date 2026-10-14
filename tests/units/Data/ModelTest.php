@@ -5,7 +5,9 @@ namespace Cube\Tests\Units\Data;
 use Cube\Data\Database\Database;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
+use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Exceptions\MissingModelPrimaryKeyException;
+use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Module;
 use Cube\Tests\Units\Models\ModuleUser;
@@ -283,6 +285,36 @@ class ModelTest extends TestCase
 
             $printer->reload();
             $this->assertEquals(50, $printer->price_dollar);
+        });
+    }
+
+    /** findOrCreate() saved a found model on the global database instead of the one it was given. */
+    #[ DataProvider('getDatabases') ]
+    public function testFindOrCreateSavesOnTheGivenDatabase(Database $database)
+    {
+        (new SQLiteProvider())->getEmptyDatabase()->asGlobalInstance(function () use ($database) {
+            $printer = Product::findOrCreate(['name' => 'printer'], database: $database, extrasProperties: ['price_dollar' => 30]);
+            Product::findOrCreate(['name' => 'printer'], database: $database, extrasProperties: ['price_dollar' => 50]);
+
+            $this->assertEquals(50, Product::find($printer->id(), database: $database)->price_dollar);
+        });
+    }
+
+    /** SavedModel carried the resolved database on an insert, but null on an update through the global instance. */
+    #[ DataProvider('getDatabases') ]
+    public function testSavedModelCarriesTheDatabaseUsedOnInsertAndUpdate(Database $database)
+    {
+        $database->asGlobalInstance(function () use ($database) {
+            $received = [];
+
+            $product = new Product(['name' => 'screen']);
+            $product->onSaved(function (SavedModel $event) use (&$received) { $received[] = $event->database; });
+
+            $product->save();
+            $product->name = 'renamed screen';
+            $product->save();
+
+            $this->assertSame([$database, $database], $received);
         });
     }
 

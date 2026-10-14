@@ -191,8 +191,8 @@ It returns the exit code.
 |---|---|
 | `cube:help [COMMAND]` | list every command, or print the manual of one |
 | `cube:hello-world` | print `Hello World !` |
-| `cube:dispatch -e <EVENT>` | dispatch an event on `Events`, by class name or its end (see [Events](./08-events.md#dispatching-from-the-command-line)) |
-| `cube:queue -q <QUEUE> [-f] [-l]` | run a queue (class name or its end), flush it with `-f`/`--flush`, log to stdout with `-l`/`--log` (see [Queues](./29-queues.md)) |
+| `cube:dispatch -e <EVENT>` | dispatch an event on `Events`, by full class name or an unambiguous short name (see [Events](./08-events.md#dispatching-from-the-command-line)) |
+| `cube:queue -q <QUEUE> [-f] [-l]` | run a queue (full class name or an unambiguous short name), flush it with `-f`/`--flush`, log to stdout with `-l`/`--log` (see [Queues](./29-queues.md)) |
 | `cube:test` | run `vendor/bin/phpunit` from your project root, with your arguments, answering its exit code |
 | `web:serve [PORT]` | serve `Public/` with PHP's built-in web server, on port `8000` by default |
 | `unix:serve <SOCKET_PATH>` | serve your socket routes on a unix socket (see [Unix socket server](./31-unix-socket-server.md)) |
@@ -204,6 +204,7 @@ It returns the exit code.
 | `make:openapi` | write the OpenAPI document of your API (see [API documentation](./15-api-documentation.md)) |
 | `make:dto` | generate data transfer object classes from a sample JSON you paste (see [Data transfer objects](./20-data-transfer-objects.md)) |
 | `migrate:migrate [-s]` | apply the pending migrations ; outside production it then runs `models:generate`, unless `-s`/`--skip-generation` |
+| `migrate:rollback [--steps=N] [-s]` | revert the `N` last applied migrations, 1 by default, newest first ; outside production it then runs `models:generate`, unless `-s`/`--skip-generation` (see [Migrations](./17-migrations.md#rolling-back)) |
 | `models:generate [-a]` | generate a model class per table, and with `-a`/`--apis` a `ModelAPI` subclass per model (see [Models](./18-models.md)) |
 | `models:to-types` | write TypeScript types for your models, to `Storage/cube-types.ts` unless `ToTypesConfiguration` says otherwise |
 | `routine:generate` | print the crontab line launching `routine:launch` every minute (see [Schedules](./28-schedules.md)) |

@@ -49,7 +49,7 @@ On each request, the middleware
 3. logs the user in with `Authentication::loginById()` — when the provider no longer finds the user,
    the token is deleted and the request goes on anonymously
 4. dispatches `RememberedUser`
-5. replaces the token with a fresh one (see `refreshTokenOnRemember` below)
+5. replaces the token with a fresh one, unless `refreshTokenOnRemember` is off (see below)
 
 Since `loginById()` goes through `login()`, step 3 also dispatches `AuthenticatedUser` and
 `LoggedInUser`, exactly like a login by password.
@@ -108,8 +108,10 @@ one : a stolen cookie that was already used by its owner is worth nothing.
 
 The middleware never issues two tokens for one request : when a listener already called `register()`
 during the login of step 3 — the `AuthenticatedUser` listener shown at the top of this page does — that
-token is the fresh one, and the used token is deleted. This also means that with such a listener, the
-token is replaced on every use even with `refreshTokenOnRemember: false`.
+token is the fresh one, and the used token is deleted.
+
+With `refreshTokenOnRemember: false`, the used token keeps working until it expires : a `register()`
+called during the login of step 3 does nothing, so the listener does not replace it either.
 
 ## Reacting to a remembered user
 

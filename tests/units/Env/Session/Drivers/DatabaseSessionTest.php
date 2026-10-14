@@ -5,6 +5,7 @@ namespace Cube\Tests\Units\Env\Session\Drivers;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
 use Cube\Env\Session\Drivers\DatabaseSession;
+use Cube\Env\Session\SessionConfiguration;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -130,6 +131,17 @@ class DatabaseSessionTest extends TestCase
             $slowRequest->write('session-id', 'logged in');
 
             $this->assertFalse($this->openHandler()->validateId('session-id'));
+        });
+    }
+
+    /** The constructor resolved the global Database, whose PDO made `configuration:cache` fail on the SessionConfiguration. */
+    #[DataProvider('getDatabases')]
+    public function test_a_session_configuration_can_be_cached(Database $database)
+    {
+        $database->asGlobalInstance(function (Database $database) {
+            $configuration = unserialize(serialize(new SessionConfiguration(driver: new DatabaseSession())));
+
+            $this->assertSame($database, $configuration->driver->getDatabase());
         });
     }
 

@@ -179,4 +179,24 @@ class CronExpressionTest extends TestCase
         $this->assertTrue((new CronExpression('0 0 * * 5-7'))->matches('2026-08-16 00:00:00'));
         $this->assertFalse((new CronExpression('0 0 * * 7'))->matches('2026-08-17 00:00:00'));
     }
+
+    /** Both day fields restricted were combined with AND, where crontab fires on a day matching either of them. */
+    public function testRestrictedDayFieldsCombineWithOr()
+    {
+        // 2026-08-01 is a saturday, 2026-08-03 a monday, 2026-08-04 a tuesday
+        $firstOrMonday = new CronExpression('0 0 1 * 1');
+
+        $this->assertTrue($firstOrMonday->matches('2026-08-01 00:00:00'));
+        $this->assertTrue($firstOrMonday->matches('2026-08-03 00:00:00'));
+        $this->assertFalse($firstOrMonday->matches('2026-08-04 00:00:00'));
+    }
+
+    public function testADayFieldLeftToAnyKeepsTheOtherOneMandatory()
+    {
+        // 2026-08-03 is a monday, 2026-08-04 a tuesday
+        $this->assertTrue((new CronExpression('0 0 * * 1'))->matches('2026-08-03 00:00:00'));
+        $this->assertFalse((new CronExpression('0 0 * * 1'))->matches('2026-08-04 00:00:00'));
+        $this->assertTrue((new CronExpression('0 0 3 * *'))->matches('2026-08-03 00:00:00'));
+        $this->assertFalse((new CronExpression('0 0 3 * *'))->matches('2026-08-04 00:00:00'));
+    }
 }

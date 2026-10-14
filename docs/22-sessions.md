@@ -117,7 +117,10 @@ The password goes to Redis through PHP's `session.save_path` (`tcp://host:port?a
 ### Database
 
 `DatabaseSession` keeps each session in a row of the `__cube_session` table, which it creates the first
-time a session is opened. It uses `Database::getInstance()` unless you pass a `database`
+time a session is opened. It uses `Database::getInstance()` unless you pass a `database`, and resolves it
+each time it uses it, never while `cube.php` is loaded : the element stays serializable for
+`configuration:cache`. A `database` you pass yourself holds a PDO connection, which cannot be
+serialized, so leave it out when you cache your configuration
 
 ```php
 new SessionConfiguration(driver: new DatabaseSession(table: 'app_session'))

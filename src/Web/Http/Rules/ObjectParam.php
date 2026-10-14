@@ -80,7 +80,7 @@ class ObjectParam extends Rule
     }
 
     public function withOptionalKeys(string|array $keys): static {
-        Bunch::of($keys)
+        Bunch::wrap($keys)
         ->filter(fn($key) => array_key_exists($key, $this->rules))
         ->forEach(fn($key) => $this->rules[$key]->optional());
 
@@ -88,7 +88,7 @@ class ObjectParam extends Rule
     }
 
     public function withRequiredKeys(string|array $keys): static {
-        Bunch::of($keys)
+        Bunch::wrap($keys)
         ->filter(fn($key) => array_key_exists($key, $this->rules))
         ->forEach(fn($key) => $this->rules[$key]->required());
 

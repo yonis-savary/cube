@@ -25,10 +25,11 @@ class RawResponse
             throw new InvalidArgumentException("Either data or file argument must be given");
 
         if ($file) {
-            if (!is_file($file))
-                throw new InvalidArgumentException("Given file ($file) is invalid");
+            $path = Path::relative($file);
+            if (!is_file($path))
+                throw new InvalidArgumentException("Given file ($file) is invalid, no file at [$path]");
 
-            $this->data = json_decode(file_get_contents(Path::relative($file)), true, flags: JSON_THROW_ON_ERROR);
+            $this->data = json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
         }
 
     }

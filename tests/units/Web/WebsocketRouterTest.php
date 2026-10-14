@@ -4,7 +4,11 @@ namespace Cube\Tests\Units\Web;
 
 use App\Channels\ProductChannel;
 use Cube\Env\Configuration;
+use Cube\Web\Websocket\Broadcast\Broadcast;
 use Cube\Web\Websocket\Broadcast\BroadcastConfiguration;
+use Cube\Web\Http\HttpMockServer;
+use Cube\Web\Http\Response;
+use Cube\Web\Router\Route;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Websocket\Servers\WebsocketConfiguration;
@@ -124,6 +128,41 @@ class WebsocketRouterTest extends TestCase
         );
 
         $this->assertEquals('ws://websocket.example.org:8088/private/7', $location);
+    }
+
+    /** With no `socketHost`, clients were sent to the `0.0.0.0` bind address instead of a host they can reach. */
+    public function testARedirectionNeverPointsToTheWildcardBindAddress()
+    {
+        $location = Configuration::withInstance(
+            new Configuration(new WebsocketConfiguration(websocketHost: '0.0.0.0', websocketPort: 8088)),
+            fn () => (new PrivateChannel())->redirect(['id' => 7])->getHeader('Location')
+        );
+
+        $this->assertEquals('ws://localhost:8088/private/7', $location);
+    }
+
+    /** `emit()` answered `true` as soon as the connection opened, a refused signal included. */
+    public function testEmitReportsWhetherTheServerAcceptedTheSignal()
+    {
+        $broadcast = new Broadcast(new BroadcastConfiguration(httpHost: '127.0.0.1', httpPort: 8089));
+        $broadcast->setMockServer(HttpMockServer::fromRoutes(
+            Route::post('/private/7', fn () => new Response(StatusCode::OK, 'OK')),
+            Route::post('/private/8', fn () => new Response(StatusCode::FORBIDDEN)),
+        ));
+
+        $this->assertTrue($broadcast->emit('/private/7', ['message' => 'hello']));
+        $this->assertFalse($broadcast->emit('/private/8', ['message' => 'hello']));
+    }
+
+    public function testEmitAnswersFalseWhenTheServerIsUnreachable()
+    {
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) explode(':', stream_socket_get_name($server, false))[1];
+        fclose($server);
+
+        $broadcast = new Broadcast(new BroadcastConfiguration(httpHost: '127.0.0.1', httpPort: $port));
+
+        $this->assertFalse($broadcast->emit('/private/7', ['message' => 'hello']));
     }
 
     protected function subscribe(string $path, array $headers, ?WebsocketConfiguration $configuration = null): ConnectionInterface
