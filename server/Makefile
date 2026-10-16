@@ -1,19 +1,36 @@
-.PHONY: build up down deploy
+.PHONY: dev dev-down build up down deploy exec launch-scheduler
+
+# Production reads docker-compose.yml only, never the development override
+PROD = docker compose -f docker-compose.yml
+DO = $(PROD) run --rm php-fpm runuser -u www-data -- php do
+EXEC = docker compose exec --user www-data php-fpm
+
+dev:
+	docker compose up -d --build
+
+dev-down:
+	docker compose down
 
 build:
-	docker compose build
+	$(PROD) build
 
 up:
-	docker compose up -d
+	$(PROD) up -d
 
 down:
-	docker compose down
+	$(PROD) down
 
 deploy:
 	git pull
 	$(MAKE) build
 	$(MAKE) down
-	docker compose run --rm --user www-data php-fpm php do migrate:migrate
-	docker compose run --rm --user www-data php-fpm php do cube:dispatch --event PostDeployment
-	docker compose run --rm --user www-data php-fpm php do configuration:cache
+	$(DO) migrate:migrate
+	$(DO) cube:dispatch --event PostDeployment
+	$(DO) configuration:cache
 	$(MAKE) up
+
+exec:
+	$(EXEC) bash
+
+launch-scheduler:
+	$(EXEC) php do routine:launch
