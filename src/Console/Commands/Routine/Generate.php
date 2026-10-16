@@ -17,7 +17,7 @@ class Generate extends Command
 
     public function getHelp(): string
     {
-        return 'Generate a CRON syntax to launch routine:launch command';
+        return 'Generate the CRON lines launching routine:launch, with and without Docker';
     }
 
     public function execute(Args $args): int
@@ -25,7 +25,10 @@ class Generate extends Command
         $projectRoot = Path::getProjectPath();
         Console::log(
             '',
-            'Here is a command you can put in your Crontab :',
+            'Put one of these lines in your Crontab :',
+            'With the Docker stack of the server files',
+            Console::withBlueColor("* * * * * cd \"{$projectRoot}\" && make launch-scheduler", true),
+            'Without Docker',
             Console::withBlueColor("* * * * * cd \"{$projectRoot}\" && php do routine:launch", true),
             '',
         );
