@@ -16,10 +16,10 @@ class TextTest extends TestCase
         $this->assertEquals('000111000', Text::endsWith('000111', '000'));
     }
 
-    public function testDontEndsWith()
+    public function testRightWordTrim()
     {
-        $this->assertEquals('000111', Text::dontEndsWith('000111', '000'));
-        $this->assertEquals('000111', Text::dontEndsWith('000111000', '000'));
+        $this->assertEquals('000111', Text::rightWordTrim('000111', '000'));
+        $this->assertEquals('000111', Text::rightWordTrim('000111000', '000'));
     }
 
     public function testStartsWith()
@@ -28,10 +28,10 @@ class TextTest extends TestCase
         $this->assertEquals('000111000', Text::startsWith('111000', '000'));
     }
 
-    public function testDontStartsWith()
+    public function testLeftWordTrim()
     {
-        $this->assertEquals('111000', Text::dontStartsWith('111000', '000'));
-        $this->assertEquals('111000', Text::dontStartsWith('000111000', '000'));
+        $this->assertEquals('111000', Text::leftWordTrim('111000', '000'));
+        $this->assertEquals('111000', Text::leftWordTrim('000111000', '000'));
     }
 
     /** Each placeholder is replaced in turn, so a value holding a placeholder gets expanded too. */
@@ -46,7 +46,7 @@ class TextTest extends TestCase
     /** An empty suffix or prefix is always found, so the loop removing it never ended. */
     public function testAnEmptyAffixIsLeftAlone()
     {
-        $this->assertEquals('invoice', Text::dontEndsWith('invoice', ''));
-        $this->assertEquals('invoice', Text::dontStartsWith('invoice', ''));
+        $this->assertEquals('invoice', Text::rightWordTrim('invoice', ''));
+        $this->assertEquals('invoice', Text::leftWordTrim('invoice', ''));
     }
 }

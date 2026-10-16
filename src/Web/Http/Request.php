@@ -394,7 +394,7 @@ class Request extends HttpMessage
     {
         return '/' === $path
             ? $path
-            : Text::dontEndsWith($path, '/');
+            : Text::rightWordTrim($path, '/');
     }
 
     protected static function parseDictionaryValues(array $data): array

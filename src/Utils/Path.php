@@ -115,8 +115,8 @@ class Path
         $reference ??= self::getProjectPath();
         $reference = self::normalize($reference);
 
-        $path = Text::dontStartsWith($path, $reference);
-        $path = Text::dontStartsWith($path, '/');
+        $path = Text::leftWordTrim($path, $reference);
+        $path = Text::leftWordTrim($path, '/');
 
         return self::normalize($path);
     }

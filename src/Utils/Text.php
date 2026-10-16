@@ -18,7 +18,7 @@ class Text
         return $string;
     }
 
-    public static function dontEndsWith(string $string, string $suffix): string
+    public static function rightWordTrim(string $string, string $suffix): string
     {
         if ('' === $suffix)
             return $string;
@@ -40,7 +40,7 @@ class Text
         return $string;
     }
 
-    public static function dontStartsWith(string $string, string $prefix): string
+    public static function leftWordTrim(string $string, string $prefix): string
     {
         if ('' === $prefix)
             return $string;
