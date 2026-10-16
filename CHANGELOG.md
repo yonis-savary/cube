@@ -74,10 +74,25 @@ change it asks from your application.
 - `Channel::emit()` waits for the websocket server's answer and returns whether it accepted the
   signal. `Channel::redirect()` points to `localhost` when the server binds a wildcard address.
 
+**Utilities**
+- `Text::dontStartsWith()` and `Text::dontEndsWith()` are renamed `Text::leftWordTrim()` and
+  `Text::rightWordTrim()`, same behaviour : replace every call.
+
 **Server files** — copy them again, or apply the changes to your copy :
 - `Makefile` : `deploy` builds the image first, then runs `migrate:migrate`, `PostDeployment` and
   `configuration:cache` on it before starting php-fpm.
-- `docker-compose.yml` : the `./App` volume is gone, the stack runs the image as built.
+- Two Docker stacks from one multi-stage `Docker/Dockerfile.php`. `docker-compose.yml` is production :
+  the project is copied into the image, OPcache never revalidates, composer installs
+  `--no-dev --classmap-authoritative`. The new `docker-compose.override.yml` is development, read by a
+  plain `docker compose up` (`make dev`) : the project is mounted, `vendor/` lives in a volume. The
+  `Makefile` production targets pass `-f docker-compose.yml`.
+- `Makefile` : `make exec` opens a bash in php-fpm and `make launch-scheduler` runs `routine:launch` in
+  it, both as `www-data` ; call the latter from the host's cron.
+- The Docker stack answered no request : nginx and php-fpm each declared their own `/var/www` volume,
+  so nginx's stayed empty (nginx now takes php-fpm's volumes with `volumes_from`), and the mounted
+  `Storage/` belonged to the host user, so php-fpm could not even write its logs (the new
+  `Docker/entrypoint.sh` gives it to `www-data` when the container starts). `make deploy` runs its
+  commands with `runuser -u www-data` so that this entrypoint runs first.
 - `Tests/bootstrap.php` : `TestContext::useTemporaryStorage()`, which removes `Storage/Tests-*` at the
   end of the run.
 - New `AGENTS.md` and `CLAUDE.md`, pointing coding agents to `vendor/yonis-savary/cube/ai/FRAMEWORK.md`.
@@ -85,6 +100,8 @@ change it asks from your application.
 ### Added
 
 - `php do migrate:rollback [--steps=N]`, calling `Migration::down()`.
+- `php do routine:generate` also prints the crontab line for the Docker stack, `make launch-scheduler`,
+  before the plain one.
 - `Bunch::fromAssoc()`, `Bunch::rangeFrom()`, and `Bunch` is iterable with `foreach`.
 - `ModelResource`, `ModelFactory` / `Model::factory()`, and their OpenAPI support
   (`#[ResourceResponse]`).

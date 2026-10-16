@@ -1,0 +1,15 @@
+# Development stack, read on top of docker-compose.yml by a plain `docker compose up` (`make dev`) :
+# your project is mounted, so a change applies without rebuilding the image.
+services:
+  php-fpm:
+    build:
+      target: dev
+    volumes:
+      - .:/var/www
+      - vendor:/var/www/vendor # Filled from the image : no vendor/ needed on your machine
+    # Xdebug (see Docker/Dockerfile.php) : lets the container reach your IDE
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+
+volumes:
+  vendor:

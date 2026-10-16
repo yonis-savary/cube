@@ -21,6 +21,12 @@ Then let the host's cron call Cube every minute
 * * * * * cd /var/www/shop && php do routine:launch
 ```
 
+With the Docker stack of the server files, `make launch-scheduler` runs it inside the php-fpm container
+
+```cron
+* * * * * cd /srv/shop && make launch-scheduler
+```
+
 ## Helpers for common rhythms
 
 Three helpers cover the usual cases, so you only write a cron expression when you need a precise
@@ -93,7 +99,9 @@ An expression that is not five fields, or whose values fall outside their bounds
 
 `routine:launch` runs every schedule whose expression matches the current minute. Nothing calls it
 for you : call it every minute from the host's cron, or from a container's scheduler. `routine:generate`
-prints the crontab line for your project
+prints the crontab lines for your project : `make launch-scheduler` for the Docker stack first, then
+`php do routine:launch`. Both `cd` to the project path as Cube sees it : run from inside the container,
+that is `/var/www`, so replace it with the path on the host
 
 ```sh
 php do routine:generate
@@ -135,7 +143,7 @@ Scheduler::getInstance()->launch('2026-10-12 08:00');   // runs what matches tha
 | Command | Does |
 |---|---|
 | `php do routine:launch` | runs the schedules matching the current minute |
-| `php do routine:generate` | prints the crontab line calling `routine:launch` for this project |
+| `php do routine:generate` | prints the crontab lines calling `routine:launch` for this project, with and without Docker |
 
 | Method | Does |
 |---|---|

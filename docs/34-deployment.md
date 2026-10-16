@@ -155,43 +155,84 @@ production.
 
 Long-running and scheduled work does not go through php-fpm
 
-- add the line printed by `php do routine:generate` to your crontab : it runs `php do routine:launch`
-  every minute, which launches your [schedules](./28-schedules.md) and [queues](./29-queues.md) ;
+- add a line printed by `php do routine:generate` to your crontab : it runs `php do routine:launch`
+  every minute, which launches your [schedules](./28-schedules.md) (not your [queues](./29-queues.md)) ;
 - supervise the long-running servers, `php do websocket:serve` ([Websockets](./30-websockets.md)) and
   `php do unix:serve` ([Unix socket server](./31-unix-socket-server.md)), and restart them on each
   release : they keep running the code they started with.
 
 ## The Docker stack
 
-The server files include a production-ready stack (see [Installation](./02-installation.md#running-the-application))
+The server files include two stacks built from the same `Docker/Dockerfile.php` (see
+[Installation](./02-installation.md#running-the-application))
 
-| File | Does |
-|---|---|
-| `Docker/Dockerfile.php` | `php:8.5-fpm` with APCu (also enabled for the CLI), PHP's production `php.ini`, `composer install --no-dev --optimize-autoloader`, your project copied to `/var/www`, `Storage` owned by `www-data` |
-| `Docker/vhost.conf` | nginx serving `/var/www/Public`, every unknown path sent to `index.php` |
-| `docker-compose.yml` | the `php-fpm` and `nginx` services, nginx on port `8081` ; mounts `Storage/` (persistent) and `.env` (read-only, kept out of the image) |
-| `Makefile` | `build`, `up`, `down` and `deploy` |
+| | Development | Production |
+|---|---|---|
+| started with | `make dev` (a plain `docker compose up`) | `make build`, `make up`, `make deploy` |
+| compose files | `docker-compose.yml` + `docker-compose.override.yml` | `docker-compose.yml` only |
+| image target | `dev` | `prod` |
+| your project | mounted on `/var/www` : changes apply at once | copied into the image : rebuild to change it |
+| `vendor/` | in the `vendor` volume, from the image, dev dependencies included | in the image, `--no-dev --classmap-authoritative` |
+| `php.ini` | `php.ini-development` | `php.ini-production` |
+| OPcache | checks your files on each request | `validate_timestamps=0` : never looks at the files again |
+
+Both run php-fpm with APCu (also enabled for the CLI) and nginx serving `/var/www/Public` on port
+`8081`, and both mount `Storage/` (persistent) and `.env` (read-only, kept out of the image).
+
+`Storage/` belongs to your user on the host, while php-fpm runs as `www-data` : the container
+entrypoint (`Docker/entrypoint.sh`) gives it to `www-data` each time a container starts as root. Run
+your commands as `www-data` too, or the files they create in `Storage/` are left to root until the
+next start
+
+```sh
+docker compose exec --user www-data php-fpm php do cache:clear
+make exec   # a bash in php-fpm, as www-data
+```
+
+`chown` changes the owner on the host as well : delete files from `Storage/` through the container,
+or with `sudo`.
+
+Docker reads `docker-compose.override.yml` on its own whenever it is present : a plain
+`docker compose up` starts the **development** stack. The Makefile production targets pass
+`-f docker-compose.yml` so that never happens on a server, so go through them.
+
+The classmap is authoritative in production : a class composer did not see when building the image
+does not exist. Every application must be autoloaded by `composer.json` (see
+[Applications and discovery](./04-applications-and-discovery.md)).
+
+In development, the `vendor` volume is filled from the image the first time only. After changing your
+`composer.json`, install inside the container, or drop the volume to rebuild it
+
+```sh
+docker compose run --rm php-fpm composer install
+# or
+docker compose down -v && make dev
+```
+
+Xdebug is ready to enable in development : uncomment its lines in the `dev` stage of
+`Docker/Dockerfile.php` and the `extra_hosts` of `docker-compose.override.yml`, then `make dev`.
 
 `make deploy` runs, in order
 
 ```sh
 git pull
-docker compose build
-docker compose down
-docker compose run --rm --user www-data php-fpm php do migrate:migrate
-docker compose run --rm --user www-data php-fpm php do cube:dispatch --event PostDeployment
-docker compose run --rm --user www-data php-fpm php do configuration:cache
-docker compose up -d
+docker compose -f docker-compose.yml build
+docker compose -f docker-compose.yml down
+docker compose -f docker-compose.yml run --rm php-fpm runuser -u www-data -- php do migrate:migrate
+docker compose -f docker-compose.yml run --rm php-fpm runuser -u www-data -- php do cube:dispatch --event PostDeployment
+docker compose -f docker-compose.yml run --rm php-fpm runuser -u www-data -- php do configuration:cache
+docker compose -f docker-compose.yml up -d
 ```
 
 The image is built while the previous release still answers. The release tasks then run on the new
 image while no php-fpm serves requests, so the new php-fpm starts with an empty APCu and fresh disk
 caches : no request can put the old discovery cache back. Remove the `configuration:cache` line if
-you do not cache your configuration.
+you do not cache your configuration. The commands go through `runuser` rather than `--user www-data`
+so that the entrypoint, which needs root, hands `Storage/` over first.
 
-The stack runs the image as built : your applications are copied into it, not mounted. To edit
-`App/` without rebuilding in development, add `- ./App:/var/www/App` to the `php-fpm` volumes of
-your local copy.
+nginx reads your code through a volume shared with php-fpm : always `down` before `up` when you
+change the image, as `make deploy` does. An `up -d` alone keeps the previous content of that volume,
+and nginx keeps serving the previous `Public/`.
 
 ## Checklist
 

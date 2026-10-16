@@ -16,7 +16,7 @@ Cube already provides most plumbing. Before implementing, look for it:
 | read configuration | a `ConfigurationElement` subclass + `::resolve()` |
 | read an env value | `Cube\env()` (configuration files only — they get cached) |
 | paths | `Utils\Path`, `Env\Storage` (never raw `__DIR__` concatenation) |
-| strings | `Utils\Text` (`interpolate`, `dontEndsWith`, …) |
+| strings | `Utils\Text` (`interpolate`, `rightWordTrim`, …) |
 | SQL | `Query` + `ModelField`, never a concatenated string |
 | input shape | `Http\Rules\Param` in a `Request` subclass |
 | an HTTP call | `(new Request(...))->fetch()` / `HttpClient` |

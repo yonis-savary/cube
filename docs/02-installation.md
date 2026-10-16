@@ -46,8 +46,8 @@ The `server/` directory of Cube holds the files that live at the root of your pr
 | `Public/index.php` | the web entry point : boots Cube, routes the request, sends the response |
 | `do` | the command launcher : `php do <command>`, see [Commands](./10-commands.md) |
 | `cube.php` | your configuration, see [Configuration](./03-configuration.md) |
-| `Makefile` | `make build`, `make up`, `make down` and `make deploy` around docker compose |
-| `docker-compose.yml`, `Docker/Dockerfile.php`, `Docker/vhost.conf` | a php-fpm (with APCu) + nginx stack serving your application |
+| `Makefile` | `make dev` / `make dev-down` for development, `make build`, `make up`, `make down` and `make deploy` for production, `make exec` and `make launch-scheduler` for both |
+| `docker-compose.yml`, `docker-compose.override.yml`, `Docker/Dockerfile.php`, `Docker/vhost.conf` | a php-fpm (with APCu) + nginx stack serving your application, for production and for development |
 | `.gitignore`, `.dockerignore` | keep `vendor/`, `Storage/` and `.env` out of git and out of the Docker image |
 | `phpunit.xml`, `Tests/bootstrap.php`, `Tests/Unit/HelloWorldTest.php` | a PHPUnit setup with a temporary storage and database, see [Testing](./33-testing.md) |
 | `AGENTS.md`, `CLAUDE.md` | instructions for coding agents, pointing them to `vendor/yonis-savary/cube/ai/FRAMEWORK.md` |
@@ -127,19 +127,33 @@ php do web:serve        # http://localhost:8000
 php do web:serve 8080   # another port
 ```
 
-To run the docker stack, create your `.env` **before** the first `docker compose up` :
-`docker-compose.yml` mounts it into the php-fpm container (it is kept out of the image, which would
-carry your secrets in its layers), and Docker creates a directory in place of a missing file.
+The server files also include a Docker stack (php-fpm with APCu, and nginx), in two flavours. Create
+your `.env` **before** the first start : it is mounted into the container rather than copied into the
+image, which would carry your secrets in its layers, and Docker creates a directory in place of a
+missing file.
+
+For development, your whole project is mounted : a change to `App/`, `cube.php`, `Public/` or your
+tests applies without rebuilding
 
 ```sh
-make build   # docker compose build
-make up      # docker compose up -d, nginx answers on http://localhost:8081
+make dev       # docker compose up -d --build, nginx answers on http://localhost:8081
+make dev-down
+```
+
+The production stack copies your project into the image instead — see
+[Deployment](./34-deployment.md#the-docker-stack)
+
+```sh
+make build && make up   # nginx answers on http://localhost:8081
 make down
 ```
 
-The compose file mounts `App/` (so your changes apply without a rebuild) and `Storage/` (logs, cache
-and files survive the container). Mount any other application directory you declare in `cube.php`
-the same way.
+Both work with the running stack
+
+```sh
+make exec               # a bash in php-fpm, as www-data
+make launch-scheduler   # php do routine:launch, see Schedules
+```
 
 Commands run from the root of your project, the directory holding `vendor/` : Cube looks for
 `vendor/yonis-savary/cube` from the current directory upwards and works from there.

@@ -207,7 +207,7 @@ It returns the exit code.
 | `migrate:rollback [--steps=N] [-s]` | revert the `N` last applied migrations, 1 by default, newest first ; outside production it then runs `models:generate`, unless `-s`/`--skip-generation` (see [Migrations](./17-migrations.md#rolling-back)) |
 | `models:generate [-a]` | generate a model class per table, and with `-a`/`--apis` a `ModelAPI` subclass per model (see [Models](./18-models.md)) |
 | `models:to-types` | write TypeScript types for your models, to `Storage/cube-types.ts` unless `ToTypesConfiguration` says otherwise |
-| `routine:generate` | print the crontab line launching `routine:launch` every minute (see [Schedules](./28-schedules.md)) |
+| `routine:generate` | print the crontab lines launching `routine:launch` every minute, with and without Docker (see [Schedules](./28-schedules.md)) |
 | `routine:launch` | run the scheduled tasks due now |
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./09-logging.md">Previous : Logging</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./11-routing-and-middlewares.md">Next : Routing and middlewares</a></div></td></tr></table>
