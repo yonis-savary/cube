@@ -4,7 +4,6 @@ namespace Cube\Data\Database;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
-use Cube\Data\Database\Builders\QueryBuilder;
 use Cube\Data\Database\Query\Field;
 use Cube\Data\Database\Query\FieldComparaison;
 use Cube\Data\Database\Query\FieldCondition;

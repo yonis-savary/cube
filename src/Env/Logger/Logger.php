@@ -17,6 +17,8 @@ class Logger extends EventDispatcher implements LoggerInterface
     protected static $loggers = [];
 
     protected string $file;
+
+    /** @var resource */
     protected $stream;
 
     public function __construct(string $file, ?Storage $storage = null)

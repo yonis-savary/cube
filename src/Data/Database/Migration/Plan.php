@@ -2,13 +2,11 @@
 
 namespace Cube\Data\Database\Migration;
 
-use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Utils\Implementations;
-use InvalidArgumentException;
 
 abstract class Plan
 {
