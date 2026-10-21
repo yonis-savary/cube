@@ -105,6 +105,8 @@ abstract class DatabaseAdapter
         $addedRelationNames = [];
 
         foreach ($foreignKeys as $foreignKey) {
+            Table::assertTableName($foreignKey['referencedTable']);
+
             $relationName = strtolower($foreignKey['column']);
 
             while ($columns->has($relationName) || in_array($relationName, $addedRelationNames))

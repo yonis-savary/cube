@@ -24,7 +24,7 @@ abstract class Model extends EventDispatcher
     public object $data;
     public object $original;
 
-    /** @var array<string,Model|Model[]> */
+    /** @var array<string,Model|Model[]|null> */
     public array $references = [];
 
     protected bool $persisted = false;
@@ -430,7 +430,7 @@ abstract class Model extends EventDispatcher
         return $this->references[$referenceName];
     }
 
-    public function setReference(string $referenceName, array|Model $model): static
+    public function setReference(string $referenceName, array|Model|null $model): static
     {
         $this->references[$referenceName] = $model;
 
@@ -627,7 +627,7 @@ abstract class Model extends EventDispatcher
                 foreach ($referenceObject as $model)
                     $relation->bind($model->replicate());
             }
-            elseif ($relation instanceof HasOne)
+            elseif ($relation instanceof HasOne && $referenceObject)
             {
                 $relation->bind($referenceObject->replicate());
             }

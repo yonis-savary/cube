@@ -631,4 +631,25 @@ class ModelTest extends TestCase
     #[ DataProvider('getDatabases') ]
     public function testReplicate(Database $database) {}
     */
+
+    /** A HasOne loaded without a matching row stayed unset, so reading it threw as if it was never loaded */
+    #[ DataProvider('getDatabases') ]
+    public function testAHasOneLoadedWithoutRowIsNull(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $user = (new User(['login' => 'bob', 'type' => 404]))->load('_type');
+
+            $this->assertNull($user->_type);
+        });
+    }
+
+    #[ DataProvider('getDatabases') ]
+    public function testReadingAHasOneThatWasNeverLoadedThrows(Database $database)
+    {
+        $database->asGlobalInstance(function() {
+            $this->expectException(\RuntimeException::class);
+
+            (new User(['login' => 'bob', 'type' => 404]))->_type;
+        });
+    }
 }

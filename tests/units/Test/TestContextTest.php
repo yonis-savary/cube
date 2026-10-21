@@ -66,4 +66,24 @@ class TestContextTest extends TestCase
         $this->assertNotEmpty($process->getOutput(), $process->getErrorOutput());
         $this->assertDirectoryDoesNotExist($process->getOutput());
     }
+
+    /** The removal walked into symbolic links : a link to a directory outside the temporary storage emptied it. */
+    public function testTheTemporaryStorageRemovalDoesNotFollowLinks()
+    {
+        $outside = $this->storage->child('outside');
+        $outside->write('important.txt', 'keep me');
+
+        $process = new Process([
+            PHP_BINARY, '-r',
+            'require $argv[1]; $storage = Cube\Test\TestContext::useTemporaryStorage(new Cube\Env\Storage($argv[2])); symlink($argv[3], $storage->path("link")); echo $storage->getRoot();',
+            Path::join(Path::getProjectPath(), 'vendor/autoload.php'),
+            $this->storage->getRoot(),
+            $outside->getRoot(),
+        ], timeout: 30);
+        $process->run();
+
+        $this->assertNotEmpty($process->getOutput(), $process->getErrorOutput());
+        $this->assertDirectoryDoesNotExist($process->getOutput());
+        $this->assertFileExists($outside->path('important.txt'));
+    }
 }

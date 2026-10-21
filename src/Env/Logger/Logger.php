@@ -50,7 +50,8 @@ class Logger extends EventDispatcher implements LoggerInterface
             unset(self::$loggers[$this->file]);
         }
 
-        if ($this->stream) {
+        // A logger kept in self::$loggers is destroyed at shutdown, possibly after PHP already closed its stream
+        if (is_resource($this->stream)) {
             fclose($this->stream);
         }
     }

@@ -76,8 +76,7 @@ class HasOne implements Relation
         $toColumn = $this->toColumn;
 
         $data = $toModel::findWhere([$toColumn => $thisModel->$fromColumn]);
-        if ($data)
-            $thisModel->setReference($this->getName(), $data);
+        $thisModel->setReference($this->getName(), $data);
 
         return $data;
     }

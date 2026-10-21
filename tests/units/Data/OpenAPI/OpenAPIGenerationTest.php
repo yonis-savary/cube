@@ -3,6 +3,7 @@
 namespace Cube\Tests\Units\Data\OpenAPI;
 
 use Cube\Core\Injector;
+use Cube\Data\Database\Database;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Configuration\Authentication\BearerToken;
 use Cube\Data\OpenAPI\Configuration\Authentication\OpenApiAuthScheme;
@@ -91,6 +92,21 @@ class OpenAPIGenerationTest extends TestCase
 
         $content = $this->generateAsArray($router)['paths']['/users']['get']['responses'][200]['content']['application/json'];
         $this->assertEquals(['id', 'login'], array_keys($content['example'][0]));
+    }
+
+    /** The example model kept random foreign keys, so a resource loading a relation put a real row of the database into the document. */
+    public function testAResourceExampleHoldsNoRowOfTheDatabase() {
+        $database = new Database();
+        $database->exec('CREATE TABLE user_type (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT NOT NULL)');
+        for ($id = 1; $id <= 1000; $id++)
+            $database->exec("INSERT INTO user_type (id, label) VALUES ({$id}, 'real-row-{$id}')");
+
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsType"]));
+
+        $document = Database::withInstance($database, fn () => json_encode($this->generateAsArray($router)));
+
+        $this->assertStringNotContainsString('real-row-', $document);
     }
 
     /** Every array-callback route was documented, internal ones included. */

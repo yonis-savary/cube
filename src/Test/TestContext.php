@@ -72,9 +72,12 @@ class TestContext
         foreach (array_diff(scandir($path), ['.', '..']) as $entry) {
             $child = Path::join($path, $entry);
 
-            is_dir($child)
-                ? self::removeDirectory($child)
-                : unlink($child);
+            if (is_link($child) || !is_dir($child)) {
+                unlink($child);
+                continue;
+            }
+
+            self::removeDirectory($child);
         }
 
         rmdir($path);

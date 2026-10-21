@@ -3,6 +3,7 @@
 namespace Cube\Data\OpenAPI\Specs\Paths\Responses;
 
 use Cube\Data\AutoDataToObject;
+use Cube\Data\Database\Database;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
@@ -64,7 +65,11 @@ class OASResponse extends AutoDataToObject
         $resourceClass = $resourceResponse->resourceClass;
         $modelClass = $resourceClass::getModelClass();
 
-        $data = $resourceClass::of($modelClass::factory()->withSeed(crc32($modelClass))->make());
+        $model = $modelClass::factory()->withSeed(crc32($modelClass))->make();
+
+        // A resource may load relations : on an empty database in dry-run mode, the example never reads a real row
+        $exampleDatabase = new Database();
+        $data = $exampleDatabase->dryRun(fn () => Database::withInstance($exampleDatabase, fn () => $resourceClass::of($model)));
         $example = $resourceResponse->isArray ? [$data] : $data;
 
         $this->rawResponse(new RawResponse($example, description: $resourceResponse->description, mimeType: $resourceResponse->mimeType));

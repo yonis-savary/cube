@@ -50,6 +50,7 @@ class MigrationManager
                 ->map(fn (Storage $app) => $app->child($this->configuration->directoryName))
                 ->map(fn (Storage $migrationDirectory) => $migrationDirectory->files())
                 ->flat()
+                ->filter(fn (string $file) => str_ends_with($file, '.php'))
                 ->sort(fn ($file) => basename($file))
         ;
     }

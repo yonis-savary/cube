@@ -29,11 +29,9 @@ class RelationResolver
         $toKey = $this->relation->toColumn;
         $toModel = $this->relation->toModel;
 
-        $owners = Bunch::wrap($data)
-            ->when(
-                count($this->accArray),
-                fn(Bunch $owners) => $owners->key(join('.', $this->accArray))
-            );
+        $owners = Bunch::wrap($data);
+        foreach ($this->accArray as $hasOneName)
+            $owners = $owners->map(fn (Model $owner) => $owner->$hasOneName)->filter();
 
         $keys = $owners
             ->key($fromKey)

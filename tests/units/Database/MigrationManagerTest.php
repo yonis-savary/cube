@@ -58,6 +58,40 @@ class MigrationManagerTest extends TestCase
         }
     }
 
+    /** Every file of Migrations/ was included : an editor backup or a note holding PHP ran on `migrate`. */
+    public function testOnlyPhpFilesAreMigrations()
+    {
+        $this->setUpTemporaryStorage('migration-manager-test-');
+
+        try {
+            $this->storage->child('Migrations')->write('2026_01_01_create_invoice.php~', '<?php
+                use Cube\Data\Database\Database;
+                use Cube\Data\Database\Migration\Migration;
+                use Cube\Data\Database\Migration\Plan;
+                use Cube\Data\Models\ModelField;
+
+                return new class extends Migration {
+                    public function up(Plan $plan, Database $database) {
+                        $plan->create("invoice", [ModelField::id()]);
+                    }
+                };
+            ');
+
+            $database = (new SQLiteProvider())->getEmptyDatabase();
+            $manager = Configuration::withInstance(
+                new Configuration(new Applications($this->storage->getRoot())),
+                fn () => new MigrationManager($database, new MigrationManagerConfiguration())
+            );
+            $manager->setLoggingFunction(fn () => null);
+
+            $manager->executeAllMigrations();
+
+            $this->assertFalse($database->hasTable('invoice'));
+        } finally {
+            $this->tearDownTemporaryStorage();
+        }
+    }
+
     /** Names used a 12-hour clock, so a migration made at 1 PM sorted before one made at 11 AM the same day. */
     public function testAMigrationNameUsesA24HourClock()
     {

@@ -279,8 +279,8 @@ $user->load('modules._module');        // nested, with dot notation
 $user->loadMissing('modules');         // only loads what is not loaded yet
 ```
 
-A `HasMany` without any row loads an empty array. A `HasOne` loaded through `load()` without a
-matching row stays unset, so reading it still throws.
+A `HasMany` without any row loads an empty array, and a `HasOne` without a matching row loads
+`null`. Only a relation that was never loaded throws.
 
 You can also load them while reading
 
@@ -291,10 +291,11 @@ User::select(['_type', 'modules._module'])->fetch();
 User::select()->with('_type')->fetch();
 ```
 
-On a query, a `HasOne` becomes a `LEFT JOIN`, and each `HasMany` costs one more query for the whole
-result, not one per row — so loading `modules` on a hundred users runs two queries. Relations can be
-nested in any order (`users.modules`, `_user.modules`, `modules._module`). A name that is not in
-`relations()` logs an error and loads nothing.
+On a query, a `HasOne` becomes a `LEFT JOIN` — `null` when no row matches, as with `load()` — and
+each `HasMany` costs one more query for the whole result, not one per row : loading `modules` on a
+hundred users runs two queries. Relations can be nested in any order (`users.modules`,
+`_user.modules`, `modules._module`). A name that is not in `relations()` logs an error and loads
+nothing.
 
 Relations also work the other way around : data given to the constructor is bound, and saved with
 its parent

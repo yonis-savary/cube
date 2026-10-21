@@ -3,8 +3,11 @@
 namespace Cube\Tests\Units\Database;
 
 use Cube\Data\Database\Database;
+use Cube\Data\Database\Migration\Plan;
+use Cube\Tests\Units\Database\Classes\Shipment;
 use Cube\Tests\Units\Models\Module;
 use Cube\Tests\Units\Models\ModuleUser;
+use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Models\UserType;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -214,5 +217,42 @@ class RelationResolverTest extends TestCase
             'john' => [1, 2],
             'jane' => [],
         ], $this->modulesByLogin($users));
+    }
+
+    /** @return Shipment[] One shipment of an existing product, one of a missing product, one without product */
+    protected function fetchShipments(string ...$relations): array
+    {
+        Plan::forDatabase(Database::getInstance())->create('shipment', Shipment::fields());
+
+        $product = Product::insertArray(['name' => 'screen']);
+        Shipment::insertArray(['reference' => 'shipped', 'product' => $product->id]);
+        Shipment::insertArray(['reference' => 'missing', 'product' => 404]);
+        Shipment::insertArray(['reference' => 'unassigned', 'product' => null]);
+
+        return Shipment::select($relations)->order('id', 'ASC')->fetch();
+    }
+
+    /** A LEFT JOIN without matching row hydrated a HasOne holding nothing but nulls, where load() gives null */
+    #[DataProvider('getDatabases')]
+    public function testAJoinedHasOneWithoutRowIsNull(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            [$shipped, $missing, $unassigned] = $this->fetchShipments('_product');
+
+            $this->assertEquals('screen', $shipped->_product->name);
+            $this->assertNull($missing->_product);
+            $this->assertNull($unassigned->_product);
+        });
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testAHasManyUnderAMissingHasOneIsSkipped(Database $database)
+    {
+        $database->asGlobalInstance(function () {
+            [$shipped, $missing] = $this->fetchShipments('_product.managers');
+
+            $this->assertSame([], $shipped->_product->managers);
+            $this->assertNull($missing->_product);
+        });
     }
 }

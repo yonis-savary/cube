@@ -53,6 +53,8 @@ change it asks from your application.
 - `make:dto` generates ISO dates as `?string`.
 - `AutoDataToObject::toArray()` exports public properties only.
 - The migration history is ordered by insertion id rather than `created_at`.
+- A `HasOne` without a matching row is `null`, through `load()` as well as a query's `with()` (which
+  used to give a model holding only `null` fields). Reading it no longer throws.
 - Removed : `MigrationManager::catchUpTo()`, `Plan::allowExperimentalFeatures()`,
   `UnsupportedByDBMSException`.
 - `MigrationManager` is one class for every driver : the `Migration\Adapters\*` classes are removed,
@@ -123,3 +125,8 @@ Also fixed :
 - `ResponseAssert::json()` throws on an invalid body instead of answering `null`.
 - `ValidationReturn::mergeWith()` threw on keyed errors ; `addErrorKey()` appends to an existing key.
 - `Plan::addUniqueIndex()` creates the index on SQLite instead of logging a warning.
+- `MigrationManager` only runs the `.php` files of `Migrations/`.
+- `models:generate` refuses a foreign key pointing to a table whose name is not a plain identifier.
+- `TestContext::useTemporaryStorage()` no longer empties a directory a symbolic link points to.
+- A `#[ResourceResponse]` example never reads the database : a relation the resource loads is `null`.
+- A `Logger` destroyed at shutdown after PHP closed its stream no longer throws a `TypeError`.

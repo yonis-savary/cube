@@ -408,6 +408,7 @@ class Query
                 ++$fieldCount;
             }
 
+            $this->dropMissingJoins($compiledRow);
             $results[] = $compiledRow->markAsPersisted(true);
         }
 
@@ -419,6 +420,22 @@ class Query
             $result->markAsOriginal(true);
 
         return $results;
+    }
+
+    // A LEFT JOIN without a matching row only brings NULL columns : the HasOne it hydrated is no row at all
+    protected function dropMissingJoins(Model $model): void
+    {
+        foreach ($model->references as $relationName => $reference) {
+            if (!$reference instanceof Model)
+                continue;
+
+            if (Bunch::fromValues((array) $reference->data)->all(fn ($value) => null === $value)) {
+                $model->setReference($relationName, null);
+                continue;
+            }
+
+            $this->dropMissingJoins($reference);
+        }
     }
 
     /**

@@ -1687,12 +1687,6 @@ parameters:
 			path: src/Data/Models/Model.php
 
 		-
-			message: '#^Instanceof between Cube\\Data\\Models\\Model and Cube\\Data\\Models\\Model will always evaluate to true\.$#'
-			identifier: instanceof.alwaysTrue
-			count: 1
-			path: src/Data/Models/Model.php
-
-		-
 			message: '#^Method Cube\\Data\\Models\\Model\:\:__construct\(\) has parameter \$data with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2181,12 +2175,6 @@ parameters:
 		-
 			message: '#^Method Cube\\Data\\Models\\Relations\\RelationResolver\:\:__construct\(\) has parameter \$treeToExplore with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Models/Relations/RelationResolver.php
-
-		-
-			message: '#^Parameter \#1 \$condition of method Cube\\Data\\Bunch\<int,Cube\\Data\\Models\\Model,Cube\\Data\\TCallback\|null,array\<Cube\\Data\\TCallback\>\|Cube\\Data\\TCallback,array\<Cube\\Data\\TCallback\|null\>\|Cube\\Data\\TCallback\|null\>\:\:when\(\) expects bool, int\<0, max\> given\.$#'
-			identifier: argument.type
 			count: 1
 			path: src/Data/Models/Relations/RelationResolver.php
 
@@ -3356,12 +3344,6 @@ parameters:
 
 		-
 			message: '#^Property Cube\\Env\\Logger\\Logger\:\:\$loggers has no type specified\.$#'
-			identifier: missingType.property
-			count: 1
-			path: src/Env/Logger/Logger.php
-
-		-
-			message: '#^Property Cube\\Env\\Logger\\Logger\:\:\$stream has no type specified\.$#'
 			identifier: missingType.property
 			count: 1
 			path: src/Env/Logger/Logger.php

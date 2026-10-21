@@ -203,4 +203,15 @@ class LoggerTest extends TestCase
 
         return end($rows);
     }
+
+    /** At shutdown, PHP may close the stream before destroying a logger kept in Logger::$loggers : fclose() threw on it */
+    public function test_a_logger_whose_stream_is_already_closed_is_destroyed_quietly()
+    {
+        $logger = new Logger('closed.csv', $this->storage);
+        fclose((fn () => $this->stream)->call($logger));
+
+        $logger->__destruct();
+
+        $this->assertNotSame($logger, Logger::forFile('closed.csv', $this->storage));
+    }
 }

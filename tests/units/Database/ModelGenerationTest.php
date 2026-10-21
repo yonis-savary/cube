@@ -105,4 +105,15 @@ class ModelGenerationTest extends TestCase
 
         $this->assertEquals('product_manager', (new Table('product_manager', [new ModelField('product')], 'id'))->table);
     }
+
+    /** The table a foreign key points to was written into the generated PHP as is, and SQLite accepts a reference to any name. */
+    public function testAReferencedTableMustBeAPlainName()
+    {
+        $database = new Database();
+        $database->exec('CREATE TABLE victim (id INTEGER PRIMARY KEY AUTOINCREMENT, owner INTEGER REFERENCES "system(\'id\')?:A"(id))');
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        ModelGenerator::getInstance()->getAdapter($database)->process();
+    }
 }
