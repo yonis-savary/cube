@@ -4,9 +4,12 @@ namespace Cube\Data\Models;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Database\Database;
+use Cube\Data\Models\Relations\HasMany;
+use Cube\Data\Models\Relations\HasOne;
 use Cube\Utils\Implementations;
 use Faker\Factory;
 use Faker\Generator;
+use InvalidArgumentException;
 use RuntimeException;
 
 /**
@@ -18,6 +21,14 @@ abstract class ModelFactory
     private static array $factories = [];
 
     private ?Generator $faker = null;
+
+    private ?int $seed = null;
+
+    /** @var array<string,array<mixed>> */
+    private array $relationTree = [];
+
+    /** @var array<string,ModelFactory<Model>> */
+    private array $relationFactories = [];
 
     /** @return class-string<TModel> */
     abstract public static function getModelClass(): string;
@@ -57,7 +68,7 @@ abstract class ModelFactory
      */
     public function make(array $overrides = []): Model
     {
-        return $this->build($overrides, null);
+        return $this->fakeDependentRelations($this->build($overrides, null), null);
     }
 
     /**
@@ -67,7 +78,9 @@ abstract class ModelFactory
     {
         $database ??= Database::getInstance();
 
-        return $this->build($overrides, $database)->save($database);
+        $model = $this->build($overrides, $database)->save($database);
+
+        return $this->fakeDependentRelations($model, $database);
     }
 
     /**
@@ -91,10 +104,21 @@ abstract class ModelFactory
      */
     public function withSeed(int $seed): static
     {
-        $this->faker()->seed($seed);
-        $this->faker()->unique(true);
+        $this->seed = $seed;
+        $this->faker = null;
+        $this->relationFactories = [];
 
         return $this;
+    }
+
+    /**
+     * Unlike `withSeed()`, gives a copy : the factory shared by `Model::factory()` keeps making bare models
+     *
+     * @param string ...$relations Relation names, dot-separated for nested ones (`'lines.product'`)
+     */
+    public function with(string ...$relations): static
+    {
+        return $this->withRelationTree((new RelationTree(...$relations))->getTree());
     }
 
     protected function faker(): Generator
@@ -105,7 +129,21 @@ abstract class ModelFactory
         if (!class_exists(Factory::class))
             throw new RuntimeException(static::class.' needs fakerphp/faker to make up values : composer require --dev fakerphp/faker');
 
-        return $this->faker = Factory::create();
+        $this->faker = Factory::create();
+        if ($this->seed !== null)
+            $this->faker->seed($this->seed);
+
+        return $this->faker;
+    }
+
+    /** @param array<string,array<mixed>> $relationTree */
+    private function withRelationTree(array $relationTree): static
+    {
+        $factory = clone $this;
+        $factory->relationTree = $relationTree;
+        $factory->relationFactories = [];
+
+        return $factory;
     }
 
     /** @return TModel */
@@ -113,6 +151,15 @@ abstract class ModelFactory
     {
         $modelClass = $this->getFactoredClass();
         $values = [...$this->definition($this->faker()), ...$overrides];
+
+        $referencedModels = [];
+        foreach ($this->getRelations() as $name => $relation) {
+            if (!$this->isReferencedByTheModel($relation))
+                continue;
+
+            $referencedModels[$name] = $this->buildRelated($name, $relation, [], $database);
+            $values[$relation->fromColumn] = $referencedModels[$name]->{$relation->toColumn};
+        }
 
         foreach ($modelClass::fields() as $name => $field) {
             // A saved model leaves its key to the database, an example still needs one
@@ -122,7 +169,79 @@ abstract class ModelFactory
             $values[$name] = $this->fakeValue($field, $database);
         }
 
-        return new $modelClass($values);
+        $model = new $modelClass($values);
+        foreach ($referencedModels as $name => $referencedModel)
+            $model->setReference($name, $referencedModel);
+
+        return $model;
+    }
+
+    /**
+     * @param TModel $model
+     * @return TModel
+     */
+    private function fakeDependentRelations(Model $model, ?Database $database): Model
+    {
+        foreach ($this->getRelations() as $name => $relation) {
+            if ($this->isReferencedByTheModel($relation))
+                continue;
+
+            $related = $this->buildRelated($name, $relation, [$relation->toColumn => $model->{$relation->fromColumn}], $database);
+            $model->setReference($name, $relation instanceof HasMany ? [$related] : $related);
+        }
+
+        return $model;
+    }
+
+    /** @return array<string,HasOne<Model>|HasMany<Model>> */
+    private function getRelations(): array
+    {
+        $modelClass = $this->getFactoredClass();
+        $instance = new $modelClass();
+
+        $relations = [];
+        foreach (array_keys($this->relationTree) as $name) {
+            if (!in_array($name, $modelClass::relations(), true))
+                throw new InvalidArgumentException("Cannot fake relation [{$name}], it is not one of {$modelClass}::relations()");
+
+            $relations[$name] = $instance->{$name}();
+        }
+
+        return $relations;
+    }
+
+    /** @param HasOne<Model>|HasMany<Model> $relation */
+    private function isReferencedByTheModel(HasOne|HasMany $relation): bool
+    {
+        // A HasOne pointing to the key of its target is a foreign key held by the model : the target must exist first
+        return $relation instanceof HasOne && $relation->toColumn === $relation->toModel::primaryKey();
+    }
+
+    /**
+     * @param HasOne<Model>|HasMany<Model> $relation
+     * @param array<string,mixed> $overrides
+     */
+    private function buildRelated(string $name, HasOne|HasMany $relation, array $overrides, ?Database $database): Model
+    {
+        // Kept per relation, so its values keep coming from one sequence across makeMany()/createMany()
+        $factory = $this->relationFactories[$name] ??= $this->getRelatedFactory($name, $relation);
+
+        return $database
+            ? $factory->create($overrides, $database)
+            : $factory->make($overrides);
+    }
+
+    /**
+     * @param HasOne<Model>|HasMany<Model> $relation
+     * @return ModelFactory<Model>
+     */
+    private function getRelatedFactory(string $name, HasOne|HasMany $relation): ModelFactory
+    {
+        $factory = $relation->toModel::factory()->withRelationTree($this->relationTree[$name]);
+
+        return $this->seed === null
+            ? $factory
+            : $factory->withSeed(crc32($this->seed.$relation->toModel));
     }
 
     /** @param class-string<Model> $modelClass */

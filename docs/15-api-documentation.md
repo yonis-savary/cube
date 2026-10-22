@@ -69,9 +69,17 @@ From the rules, a `nullable` rule becomes a nullable type, a rule that is not `o
 key or parameter, `inArray()` an `enum` of the rule's type and `isBetween()` a `minimum` and a
 `maximum` — on a number only, OpenAPI has no bound for a date or a string.
 
-Every model a response refers to is described once in `components.schemas`, from its fields and
-relations, with an example made by its factory (see
-[Testing](./33-testing.md#faking-models)) : that is what a model answered as is gives. A route
+Every model a response refers to is described once in `components.schemas`, from its fields, with
+an example made by its factory (see [Testing](./33-testing.md#faking-models)) : that is what a model
+answered as is gives. Each relation is an optional property pointing to the schema of its model,
+since a relation only appears once loaded
+
+| Relation | Property, named after the relation |
+|---|---|
+| `HasOne` (`_type`) | `oneOf: [#/components/schemas/UserType, null]` — `null` when no row matches |
+| `HasMany` (`modules`) | a list of `#/components/schemas/ModuleUser` |
+
+A model only reached through a relation gets its schema too. A route
 answering through a `ModelResource` declares it with `#[ResourceResponse]`, described below.
 Those examples need `fakerphp/faker`, which Cube only suggests : install it in your development
 dependencies (`composer require --dev fakerphp/faker`) to generate a document describing models.
@@ -124,6 +132,19 @@ public function read(Request $request): array
 public function store(StoreProductRequest $request): Response
 ```
 
+`with` names the relations the endpoint loads, dot-separated for nested ones. The model schema
+leaves every relation optional, so the response adds what this endpoint always gives, without a
+second copy of the schema
+
+```php
+#[ModelResponse(Order::class, with: ['customer', 'lines.product'])]
+public function show(Order $order): Order
+{
+    return $order->load('customer', 'lines.product');
+}
+// schema : allOf [ #/components/schemas/Order, { required: [customer, lines], properties: { lines: { items: { required: [product] } } } } ]
+```
+
 `#[RawResponse]` describes any other shape from an example value, or from a JSON file
 
 ```php
@@ -142,12 +163,29 @@ before anything else.
 `#[ResourceResponse]` answers what a `ModelResource` gives (see
 [Controllers and responses](./13-controllers-and-responses.md#shaping-what-a-model-answers)) : Cube
 makes a model with its factory, passes it to the resource, and reads the shape of the result, which
-also becomes the response's example. Relations are not loaded on that model, so they do not appear
+also becomes the response's example
 
 ```php
 #[ResourceResponse(UserProfileResource::class, isArray: true)]
 public function profiles(): array
 ```
+
+Two endpoints can answer the same resource with different relations loaded : `with` names the ones
+this endpoint loads, and the factory makes exactly those on the example model (see
+[Testing](./33-testing.md#faking-relations))
+
+```php
+#[ResourceResponse(OrderResource::class, with: ['customer', 'lines.product'])]
+public function show(Order $order): array
+{
+    return OrderResource::of($order->load('customer', 'lines.product'));
+}
+```
+
+The resource reads the relations the endpoint loaded (`$model->customer`), it does not call `load()`
+itself : on the example, `load()` would query an empty database and replace the made-up relation
+with `null`. A resource reading a relation missing from `with` stops the generation with a
+`RuntimeException`, since the model has no such value.
 
 Each of the three takes the same optional arguments
 
@@ -156,6 +194,9 @@ Each of the three takes the same optional arguments
 | `responseCode` | `200` | the status code described |
 | `description` | none | the response's description |
 | `mimeType` | `application/json` | the content type described |
+
+`#[ModelResponse]` and `#[ResourceResponse]` take a `with` list of relation names too, empty by
+default.
 
 `#[ResourceResponse]` can be repeated on a method, one per status code. `#[ModelResponse]` and
 `#[RawResponse]` cannot : put at most one of each on a method, and use the other attributes for

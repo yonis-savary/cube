@@ -304,6 +304,7 @@ $user = User::factory()->withSeed(42)->make();            // same seed, same val
 | `makeMany(int $count, array $overrides = [])` | a list of models, not saved |
 | `createMany(int $count, array $overrides = [], ?Database $database = null)` | a list of saved models |
 | `withSeed(int $seed)` | the same factory, seeded : the same seed gives the same values |
+| `with(string ...$relations)` | a copy of the factory that also makes these relations (see [Faking relations](#faking-relations)) |
 
 ### What each field gets
 
@@ -325,6 +326,29 @@ Every field you do not give gets a value of its type
   gets a made-up number and nothing is created.
 - An **auto-incremented** or **generated** field, and a primary key with a database default, are left
   to the database by `create()`, and made up by `make()`, since an example still needs one.
+
+### Faking relations
+
+`with()` names the relations to make along with the model, dot-separated for nested ones. Each
+related model comes from its own model's factory, with the keys tying it to its parent
+
+```php
+$user = User::factory()->with('_type')->make();               // $user->_type, $user->type === $user->_type->id
+$order = Order::factory()->with('customer', 'lines.product')->create();
+```
+
+| Relation | Made |
+|---|---|
+| a `HasOne` to the key of its model (`_type` : `user.type` → `user_type.id`) | first, and its key copied into the parent's field |
+| any other `HasOne`, or a `HasMany` | after the parent, with the parent's key — one model for a `HasMany` |
+
+With `create()`, every related model is saved : a referenced row comes from the relation, not from
+a second row created for the foreign key. A name missing from the model's `relations()` throws an
+`InvalidArgumentException`.
+
+`with()` gives a copy : unlike `withSeed()`, the factory `Model::factory()` shares keeps making bare
+models. On a seeded factory, each relation gets a seed derived from it and from the related model,
+so the whole tree is the same from one run to the next.
 
 ### A factory of your own
 
@@ -364,7 +388,8 @@ factory of its own gets a `GenericModelFactory`, which fakes every field from it
 ### Factories in the API documentation
 
 The OpenAPI generator uses your factories too : the example of each model schema, and the shape and
-example of a `#[ResourceResponse]`, come from a model made with `Product::factory()->withSeed(...)->make()`.
+example of a `#[ResourceResponse]`, come from a model made with `Product::factory()->withSeed(...)->make()`,
+with the relations the attribute names in `with`.
 A factory giving realistic values gives a realistic documentation. See
 [API documentation](./15-api-documentation.md#describing-a-response).
 

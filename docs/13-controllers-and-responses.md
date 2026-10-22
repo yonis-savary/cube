@@ -258,8 +258,10 @@ return UserResource::of(User::select()->fetchBunch());     // a list
 return ['everyone' => UserResource::of($users)];           // nested anywhere
 ```
 
-`of()` needs a model or a list : guard a relation that may be `null` before shaping it. The
-resource is built by the `Injector`, so its constructor can receive dependencies.
+`of()` needs a model or a list : guard a relation that may be `null` before shaping it. Load
+relations in the controller and read them in the resource, rather than calling `load()` inside it :
+the endpoint knows what it loads, and declares it to the API documentation. The resource is built by
+the `Injector`, so its constructor can receive dependencies.
 
 A model can have as many resources as it has representations : nothing is picked for you. A
 `ModelAPI` answers with the one its `getModelResource()` gives (see

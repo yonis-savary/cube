@@ -8,9 +8,11 @@ use Cube\Tests\Units\Data\Resources\Gadget;
 use Cube\Tests\Units\Data\Resources\ProductFactory;
 use Cube\Tests\Units\Database\TestMultipleDrivers;
 use Cube\Tests\Units\Models\Module;
+use Cube\Tests\Units\Models\ModuleUser;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Models\UserType;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -61,5 +63,76 @@ class ModelFactoryTest extends TestCase
         $this->assertNotNull(User::find($user->id(), database: $database));
         $this->assertNotNull(UserType::find($user->type, database: $database));
         $this->assertCount(2, User::factory()->createMany(2, ['type' => $user->type], $database));
+    }
+
+    public function testARelationTheModelReferencesIsMadeFirstAndItsKeyCopied()
+    {
+        $user = User::factory()->with('_type')->make();
+
+        $this->assertInstanceOf(UserType::class, $user->_type);
+        $this->assertEquals($user->_type->id, $user->type);
+    }
+
+    public function testARelationReferencingTheModelGetsItsKey()
+    {
+        $userType = UserType::factory()->with('users')->make();
+
+        $this->assertCount(1, $userType->users);
+        $this->assertEquals($userType->id, $userType->users[0]->type);
+    }
+
+    public function testNestedRelationsAreMadeThroughTheirOwnFactory()
+    {
+        $user = User::factory()->with('modules._module')->make();
+
+        $moduleUser = $user->modules[0];
+        $this->assertInstanceOf(ModuleUser::class, $moduleUser);
+        $this->assertEquals($user->id, $moduleUser->user);
+        $this->assertInstanceOf(Module::class, $moduleUser->_module);
+        $this->assertEquals($moduleUser->_module->id, $moduleUser->module);
+    }
+
+    /** `Model::factory()` is shared : configuring relations on it would give them to every following call. */
+    public function testRelationsOnlyApplyToTheConfiguredCopy()
+    {
+        User::factory()->with('_type')->make();
+
+        $this->assertEmpty(User::factory()->make()->references);
+    }
+
+    public function testASeededFactoryPassesADerivedSeedToItsRelations()
+    {
+        $first = User::factory()->withSeed(42)->with('modules._module')->make()->toArray();
+        $second = User::factory()->withSeed(42)->with('modules._module')->make()->toArray();
+
+        $this->assertEquals($first, $second);
+    }
+
+    /** Each model reseeded its relation, so every related model got the same values. */
+    public function testRelatedModelsOfManyModelsDiffer()
+    {
+        $userTypes = UserType::factory()->withSeed(42)->with('users')->makeMany(2);
+
+        $this->assertNotEquals($userTypes[0]->users[0]->login, $userTypes[1]->users[0]->login);
+    }
+
+    public function testAnUnknownRelationThrows()
+    {
+        $this->expectException(InvalidArgumentException::class);
+        User::factory()->with('unknown')->make();
+    }
+
+    /** The referenced row comes from the relation, not from a second row created for the foreign key. */
+    #[DataProvider('getDatabases')]
+    public function testCreatingSavesTheRelations(Database $database)
+    {
+        $userTypeCount = count(UserType::select()->fetch($database));
+        $user = User::factory()->with('_type')->create(database: $database);
+
+        $this->assertCount($userTypeCount + 1, UserType::select()->fetch($database));
+        $this->assertEquals($user->_type->id, UserType::find($user->type, database: $database)->id);
+
+        $userType = UserType::factory()->with('users')->create(database: $database);
+        $this->assertEquals($userType->users[0]->id, User::findWhere(['type' => $userType->id], database: $database)?->id);
     }
 }

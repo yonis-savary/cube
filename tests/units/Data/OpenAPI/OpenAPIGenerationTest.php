@@ -109,6 +109,52 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertStringNotContainsString('real-row-', $document);
     }
 
+    public function testAResourceExampleHoldsTheRelationsTheEndpointLoads() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsLoadedType"]));
+
+        $content = $this->generateAsArray($router)['paths']['/user']['get']['responses'][200]['content']['application/json'];
+
+        $this->assertIsString($content['example']['type']);
+        $this->assertEquals('string', $content['schema']['properties']['type']['type']);
+    }
+
+    public function testAResourceReadingARelationTheEndpointDoesNotDeclareFails() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithoutItsType"]));
+
+        $this->expectException(RuntimeException::class);
+        $this->generateAsArray($router);
+    }
+
+    public function testAModelSchemaReferencesItsRelationsAsOptional() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsRelations"]));
+
+        $schemas = $this->generateAsArray($router)['components']['schemas'];
+
+        $this->assertEquals(['oneOf' => [['$ref' => '#/components/schemas/UserType'], ['type' => 'null']]], $schemas['User']['properties']['_type']);
+        $this->assertEquals(['type' => 'array', 'items' => ['$ref' => '#/components/schemas/ModuleUser']], $schemas['User']['properties']['modules']);
+        $this->assertNotContains('_type', $schemas['User']['required']);
+        $this->assertArrayHasKey('UserType', $schemas, 'A model only reached through a relation still gets its schema');
+        $this->assertArrayHasKey('Module', $schemas);
+    }
+
+    public function testAModelResponseRequiresTheRelationsTheEndpointLoads() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsRelations"]));
+
+        $schema = $this->generateAsArray($router)['paths']['/user']['get']['responses'][200]['content']['application/json']['schema'];
+
+        $this->assertEquals(['allOf' => [
+            ['$ref' => '#/components/schemas/User'],
+            [
+                'required' => ['_type', 'modules'],
+                'properties' => ['modules' => ['items' => ['required' => ['_module']]]],
+            ],
+        ]], $schema);
+    }
+
     /** Every array-callback route was documented, internal ones included. */
     public function testAHiddenRouteIsLeftOut() {
         $router = $this->getStandaloneRouter();

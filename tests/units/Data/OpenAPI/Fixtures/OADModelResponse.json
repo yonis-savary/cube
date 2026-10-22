@@ -85,29 +85,9 @@
                         ]
                     },
                     "managers": {
-                        "type": [
-                            "array",
-                            "null"
-                        ],
+                        "type": "array",
                         "items": {
-                            "type": [
-                                "object",
-                                "null"
-                            ],
-                            "properties": {
-                                "product": {
-                                    "type": [
-                                        "integer",
-                                        "null"
-                                    ]
-                                },
-                                "manager": {
-                                    "type": "string"
-                                }
-                            },
-                            "required": [
-                                "manager"
-                            ]
+                            "$ref": "#\/components\/schemas\/ProductManager"
                         }
                     }
                 },
@@ -119,6 +99,35 @@
                     "id": 588,
                     "created_at": "2003-10-19 18:06:12",
                     "name": "natus sit consequatur"
+                }
+            },
+            "ProductManager": {
+                "type": "object",
+                "properties": {
+                    "product": {
+                        "type": "integer"
+                    },
+                    "manager": {
+                        "type": "string"
+                    },
+                    "_product": {
+                        "oneOf": [
+                            {
+                                "$ref": "#\/components\/schemas\/Product"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "product",
+                    "manager"
+                ],
+                "example": {
+                    "product": 838,
+                    "manager": "soluta reiciendis aut"
                 }
             }
         }

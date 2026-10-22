@@ -107,6 +107,9 @@ change it asks from your application.
 - `Bunch::fromAssoc()`, `Bunch::rangeFrom()`, and `Bunch` is iterable with `foreach`.
 - `ModelResource`, `ModelFactory` / `Model::factory()`, and their OpenAPI support
   (`#[ResourceResponse]`).
+- `ModelFactory::with()` makes the named relations along with the model, and `#[ResourceResponse]` /
+  `#[ModelResponse]` take a `with` list of the relations an endpoint loads. In the OpenAPI document,
+  a model schema now references the schema of each relation's model, optional, instead of inlining it.
 - `ModelField::references()` accepts a model class as well as a table name.
 - `TestContext::useTemporaryStorage()`, `Configuration::removeFromCache()`, `Router::cleanCache()`.
 - `CubeTestCase` resets `MockServers` after each test, and `assertModelExists()` works.

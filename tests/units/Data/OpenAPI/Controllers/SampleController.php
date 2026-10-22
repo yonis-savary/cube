@@ -8,6 +8,7 @@ use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Tests\Units\Web\Classes\UserResource;
+use Cube\Tests\Units\Web\Classes\UserWithLoadedTypeResource;
 use Cube\Tests\Units\Web\Classes\UserWithTypeResource;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\CustomRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\EnumRequestFormat;
@@ -42,6 +43,21 @@ class SampleController extends Controller
 
     #[ResourceResponse(UserWithTypeResource::class)]
     public function userWithItsType() {
+
+    }
+
+    #[ResourceResponse(UserWithLoadedTypeResource::class, with: ['_type'])]
+    public function userWithItsLoadedType() {
+
+    }
+
+    #[ResourceResponse(UserWithLoadedTypeResource::class)]
+    public function userWithoutItsType() {
+
+    }
+
+    #[ModelResponse(User::class, with: ['_type', 'modules._module'])]
+    public function userWithItsRelations() {
 
     }
 
