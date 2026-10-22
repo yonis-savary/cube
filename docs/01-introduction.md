@@ -118,9 +118,7 @@ $response = (new Request('GET', 'https://api.example.org/products'))->fetch();
 $response->getBody();
 
 // Scheduling, see Schedules
-Cube\everyMinute(function () {
-    Logger::getInstance()->info('Launched every 5 minutes');
-}, 5);
+Cube\everyMinute([StockSynchronizer::class, 'synchronize'], 5);   // every 5 minutes, in its own process
 ```
 
 Pages : [Logging](./09-logging.md), [Collections](./07-collections.md),

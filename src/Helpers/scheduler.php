@@ -5,25 +5,37 @@ namespace Cube;
 use Cube\Routine\CronExpression;
 use Cube\Routine\Scheduler;
 
-function schedule(string $cronExpression, callable $callback)
+/**
+ * @param array{class-string,string}|class-string $task `[Class::class, 'method']` or an invokable class
+ */
+function schedule(string $cronExpression, array|string $task, bool $lock = true)
 {
-    Scheduler::getInstance()->add(new CronExpression($cronExpression), $callback);
+    Scheduler::getInstance()->add(new CronExpression($cronExpression), $task, $lock);
 }
 
-function everyMinute(callable $callback, int $step = 1)
+/**
+ * @param array{class-string,string}|class-string $task `[Class::class, 'method']` or an invokable class
+ */
+function everyMinute(array|string $task, int $step = 1, bool $lock = true)
 {
     $step = 1 == $step ? '*' : "*/{$step}";
-    Scheduler::getInstance()->add(new CronExpression("{$step} * * * *"), $callback);
+    Scheduler::getInstance()->add(new CronExpression("{$step} * * * *"), $task, $lock);
 }
 
-function everyHour(callable $callback, int $step = 1)
+/**
+ * @param array{class-string,string}|class-string $task `[Class::class, 'method']` or an invokable class
+ */
+function everyHour(array|string $task, int $step = 1, bool $lock = true)
 {
     $step = 1 == $step ? '*' : "*/{$step}";
-    Scheduler::getInstance()->add(new CronExpression("0 {$step} * * *"), $callback);
+    Scheduler::getInstance()->add(new CronExpression("0 {$step} * * *"), $task, $lock);
 }
 
-function daily(callable $callback, int $step = 1)
+/**
+ * @param array{class-string,string}|class-string $task `[Class::class, 'method']` or an invokable class
+ */
+function daily(array|string $task, int $step = 1, bool $lock = true)
 {
     $step = 1 == $step ? '*' : "*/{$step}";
-    Scheduler::getInstance()->add(new CronExpression("0 0 {$step} * *"), $callback);
+    Scheduler::getInstance()->add(new CronExpression("0 0 {$step} * *"), $task, $lock);
 }

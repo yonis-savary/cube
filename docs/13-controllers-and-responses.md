@@ -381,8 +381,16 @@ removes the transfers whose `info.json` file is older than the given number of s
 [Schedules](./28-schedules.md))
 
 ```php
+class DeleteStaleUploads
+{
+    public function __invoke(LargeUploadManager $uploads): void
+    {
+        $uploads->deleteOlderThan(Cache::DAY);
+    }
+}
+
 // App/Schedules/large-uploads.php
-Cube\schedule('0 * * * *', fn () => LargeUploadManager::getInstance()->deleteOlderThan(Cache::DAY));
+Cube\schedule('0 * * * *', DeleteStaleUploads::class);
 ```
 
 ### Reference

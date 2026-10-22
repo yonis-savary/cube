@@ -2,9 +2,9 @@
 
 # Schedules
 
-A schedule runs a callback at given moments, described by a cron expression. The `Scheduler`
+A schedule runs a task at given moments, described by a cron expression. The `Scheduler`
 component holds every schedule, and the `routine:launch` command, called every minute, runs the ones
-that match.
+that match, each in its own process.
 
 Declare a schedule from any file loaded at boot — a `Schedules/`, `Cron/` or `Requires/` file of your
 application, as described in [Applications and discovery](./04-applications-and-discovery.md#directory-structure)
@@ -12,7 +12,7 @@ application, as described in [Applications and discovery](./04-applications-and-
 ```php
 // App/Schedules/reports.php
 
-Cube\schedule('0 6 * * 1', fn () => ReportMailer::sendWeekly());   // mondays at 06:00
+Cube\schedule('0 6 * * 1', [ReportMailer::class, 'sendWeekly']);   // mondays at 06:00
 ```
 
 Then let the host's cron call Cube every minute
@@ -27,6 +27,37 @@ With the Docker stack of the server files, `make launch-scheduler` runs it insid
 * * * * * cd /srv/shop && make launch-scheduler
 ```
 
+## Writing a task
+
+A task is a public method, given as `[Class::class, 'method']`, or an invokable class, given by its
+name. Cube runs it in a separate process, so it must be something that process can find again from
+a name : a closure is refused, and so are arguments
+
+```php
+Cube\daily([Invoice::class, 'archiveOld']);         // a static method, or an instance method
+Cube\everyHour(DeleteStaleUploads::class);          // an invokable class
+```
+
+The class is built by the `Injector`, and the method's parameters are injected the way a controller's
+are
+
+```php
+class DeleteStaleUploads
+{
+    public function __invoke(LargeUploadManager $uploads): void
+    {
+        $uploads->deleteOlderThan(Cache::DAY);
+    }
+}
+```
+
+A task needing a value is a method of its own, or a [command](./10-commands.md) if the value comes
+from whoever runs it. To run several things one after the other, write a class calling them in
+order and schedule that class.
+
+A class that does not exist, or that has no such public method, throws an
+`InvalidArgumentException` as soon as the schedule is declared.
+
 ## Helpers for common rhythms
 
 Three helpers cover the usual cases, so you only write a cron expression when you need a precise
@@ -34,22 +65,19 @@ moment
 
 | Helper | Runs |
 |---|---|
-| `Cube\everyMinute(callable $callback, int $step = 1)` | every minute, or every `$step` minutes |
-| `Cube\everyHour(callable $callback, int $step = 1)` | at minute 0, every hour or every `$step` hours |
-| `Cube\daily(callable $callback, int $step = 1)` | at midnight, every day or every `$step` days of the month |
-| `Cube\schedule(string $cronExpression, callable $callback)` | whenever the cron expression matches |
+| `Cube\everyMinute(array\|string $task, int $step = 1, bool $lock = true)` | every minute, or every `$step` minutes |
+| `Cube\everyHour(array\|string $task, int $step = 1, bool $lock = true)` | at minute 0, every hour or every `$step` hours |
+| `Cube\daily(array\|string $task, int $step = 1, bool $lock = true)` | at midnight, every day or every `$step` days of the month |
+| `Cube\schedule(string $cronExpression, array\|string $task, bool $lock = true)` | whenever the cron expression matches |
 
 Here is an example
 
 ```php
-Cube\everyMinute(fn () => Heartbeat::ping());
-Cube\everyMinute(fn () => Product::refreshStockLevels(), 5);   // every 5 minutes
-Cube\everyHour(fn () => Cache::getInstance()->delete('rates'), 6);   // every 6 hours
-Cube\daily(fn () => Invoice::archiveOld());
+Cube\everyMinute([Heartbeat::class, 'ping']);
+Cube\everyMinute([Product::class, 'refreshStockLevels'], 5);   // every 5 minutes
+Cube\everyHour(ClearExchangeRates::class, 6);                    // every 6 hours
+Cube\daily([Invoice::class, 'archiveOld']);
 ```
-
-Prefer a static method or an invokable class over a long closure : the schedule file stays a list
-you can read at a glance.
 
 ## Cron expressions
 
@@ -57,11 +85,11 @@ The expression is the standard five-field cron syntax — minute, hour, day of t
 the week — separated by single spaces
 
 ```php
-Cube\schedule('*/15 * * * *', ...);    // every quarter of an hour
-Cube\schedule('30 2 1 * *', ...);      // 02:30, first day of the month
-Cube\schedule('0 8 * * 1-5', ...);     // 08:00 on weekdays
-Cube\schedule('0 9,14 * * *', ...);    // 09:00 and 14:00
-Cube\schedule('0 0 */2 * *', ...);     // midnight on the 1st, 3rd, 5th... of the month
+Cube\schedule('*/15 * * * *', $task);    // every quarter of an hour
+Cube\schedule('30 2 1 * *', $task);      // 02:30, first day of the month
+Cube\schedule('0 8 * * 1-5', $task);     // 08:00 on weekdays
+Cube\schedule('0 9,14 * * *', $task);    // 09:00 and 14:00
+Cube\schedule('0 0 */2 * *', $task);     // midnight on the 1st, 3rd, 5th... of the month
 ```
 
 Each field accepts one of these forms
@@ -110,45 +138,87 @@ php do routine:generate
 Since the expressions are matched against *now*, running the command more or less often than once a
 minute makes some schedules fire twice or not at all.
 
-Schedules run one after the other, in the order they were declared, inside the `routine:launch`
-process. A callback that throws does not stop the others : the exception is logged and the next
-schedule runs. For work that takes long, push it to a [queue](./29-queues.md) from the schedule
-rather than doing it inline
+`routine:launch` starts one `routine:run` process per task due, all at once, then waits for every
+one of them before it exits
 
-```php
-Cube\daily(fn () => ExportQueue::queue('daily-sales'));
 ```
+cron, every minute
+  └─ php do routine:launch
+       ├─ php do routine:run "App\Reports\ReportMailer" sendWeekly
+       ├─ php do routine:run "App\Uploads\DeleteStaleUploads"
+       └─ waits for both, logs any that exits with an error
+```
+
+A slow task does not delay the others, and a task that throws, or dies on a fatal error, leaves them
+untouched : the exception is logged by its own process, and `routine:launch` logs its exit code.
+Each task starts from a fresh process, so nothing it leaves in a component reaches the next one.
 
 `routine:launch` does **not** run your queues : schedules and queue workers are launched separately.
 
+## Overlapping runs
+
+A task never runs alongside itself : `routine:run` holds a lock on the task while it runs. When a
+task takes longer than the time between two of its runs — 7 minutes for a task due every 5 — the
+next `routine:launch` skips it, logs a warning, and runs the other tasks due. The lock is a
+`flock()` on a file of `Storage/Scheduler`, which the system releases even when the process dies,
+so a crashed run never blocks the next one.
+
+A task with nothing to protect can run alongside itself : give `lock: false` when you schedule it
+
+```php
+Cube\everyMinute([Heartbeat::class, 'ping'], lock: false);
+```
+
+`routine:launch` then calls `routine:run --without-lock` for it. The lock only works between
+processes of one machine : running `routine:launch` from several servers runs each task once per
+server.
+
+## Running one task by hand
+
+`routine:run` runs a single task, whether it is due or not, with the same lock as a scheduled run.
+It takes the class, then the method — the class alone for an invokable class
+
+```sh
+php do routine:run "App\Reports\ReportMailer" sendWeekly
+php do routine:run "App\Uploads\DeleteStaleUploads"               # an invokable class
+php do routine:run "App\Reports\ReportMailer" sendWeekly --without-lock
+```
+
+It answers `1` when the task throws, and `0` when it ran or was skipped by the lock.
+
 ## Where the logs go
 
-While the schedules run, `routine:launch` installs its own logger as the global `Logger` : what your
-callbacks log through `Logger::getInstance()` lands in `Storage/Logs/launch.csv`, along with the
-exceptions they throw.
+While a task runs, `routine:run` installs the logger of `Storage/Logs/launch.csv` as the global
+`Logger` : what your tasks log through `Logger::getInstance()`, or through an injected `Logger`, lands
+there along with the exceptions they throw, the skipped runs and the failed exit codes.
 
 ## Testing a schedule
 
-The `Scheduler` component can be driven by hand with any date, which is how you check an expression
-does what you meant
+Check an expression against any date, and run a task in the test's own process with
+`Scheduler::run()`, which takes the same lock as `routine:run`
 
 ```php
 $this->assertTrue((new CronExpression('0 8 * * 1-5'))->matches('2026-10-12 08:00'));
 
-Scheduler::getInstance()->launch('2026-10-12 08:00');   // runs what matches that minute
+Scheduler::getInstance()->run([Invoice::class, 'archiveOld']);
 ```
+
+`Scheduler::launch()` starts real `php do routine:run` processes from your project root, so call it
+from a test only when that is what you mean to check.
 
 ## Reference
 
 | Command | Does |
 |---|---|
-| `php do routine:launch` | runs the schedules matching the current minute |
+| `php do routine:launch` | runs the schedules matching the current minute, one process each |
+| `php do routine:run <class> [method] [--without-lock]` | runs one task now, the class alone for an invokable class |
 | `php do routine:generate` | prints the crontab lines calling `routine:launch` for this project, with and without Docker |
 
 | Method | Does |
 |---|---|
-| `Scheduler::add(CronExpression $expression, callable $callback)` | what the helpers call |
-| `Scheduler::launch(DateTime\|string $datetime = 'now')` | runs the schedules matching that minute |
+| `Scheduler::add(CronExpression $expression, array\|string $task, bool $lock = true)` | what the helpers call |
+| `Scheduler::launch(DateTime\|string $datetime = 'now')` | starts a `routine:run` process per schedule matching that minute, and waits for them |
+| `Scheduler::run(array\|string $task, bool $lock = true)` | runs one task in the current process, `false` when the lock was taken |
 | `CronExpression::matches(DateTime\|string $datetime = 'now')` | whether the expression matches that minute |
 | `CronExpression::everyMinute()`, `everyHour()`, `everyDayOfTheMonth()`, `everyDayOfTheWeek()` | named constructors, each taking an optional `$step` |
 

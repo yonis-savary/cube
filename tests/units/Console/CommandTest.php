@@ -98,6 +98,7 @@ class CommandTest extends TestCase
             'models:to-types',
             'routine:generate',
             'routine:launch',
+            'routine:run',
             'unix:serve',
             'web:serve',
             'websocket:serve',

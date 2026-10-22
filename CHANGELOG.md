@@ -67,6 +67,11 @@ change it asks from your application.
 - SQLite quotes every table and column name it renders.
 
 **Background work and CLI**
+- Schedules take `[Class::class, 'method']` or an invokable class name instead of a callable :
+  `routine:launch` runs every task due in its own `routine:run` process, in parallel, and a task
+  still running is skipped by the next launch instead of running twice at once (`lock: false` lets
+  it overlap). Turn each closure given to `Cube\schedule()`, `everyMinute()`, `everyHour()`,
+  `daily()` or `Scheduler::add()` into a method or an invokable class.
 - Cron expressions combine a restricted day of the month and a restricted day of the week with OR,
   like crontab.
 - `cube:queue --queue=<name>` and `cube:dispatch --event=<name>` refuse a short name matching several
