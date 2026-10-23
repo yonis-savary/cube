@@ -30,7 +30,7 @@ class SQLite extends SQLPlan
             $fieldsExpressions->push("{$this->quote($field->name)} {$this->getModelFieldSQLQuery($field)}");
 
             if ($field->hasReference())
-                $relationsAndIndex->push("FOREIGN KEY ({$this->quote($field->name)}) REFERENCES {$this->quote($field->getReferenceTable())}({$this->quote($field->referenceField)})");
+                $relationsAndIndex->push("FOREIGN KEY ({$this->quote($field->name)}) REFERENCES {$this->quote($field->getReferenceTable())}({$this->quote($field->referenceField)}) {$this->getOnDeleteClause($field->onDeleteBehavior)}");
         }
 
         $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";

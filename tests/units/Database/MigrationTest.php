@@ -389,4 +389,28 @@ class MigrationTest extends TestCase
         $this->expectException(\PDOException::class);
         $database->exec('INSERT INTO user_agency (app_user, agency) VALUES (1, 1)');
     }
+
+    /** The SQLite plan wrote its foreign keys without their ON DELETE clause */
+    #[ DataProvider('getDatabases') ]
+    public function testForeignKeysApplyTheirDeleteBehavior(Database $database)
+    {
+        $plan = $this->getDatabasePlan($database);
+        $plan->create('customer', [ModelField::id()]);
+        $plan->create('customer_order', [
+            ModelField::id(),
+            ModelField::integer('customer')->references('customer', 'id')->notNull()->onDeleteCascade(),
+        ]);
+        $plan->create('customer_note', [
+            ModelField::id(),
+            ModelField::integer('customer')->references('customer', 'id')->onDeleteSetNull(),
+        ]);
+
+        $database->exec('INSERT INTO customer (id) VALUES (1)');
+        $database->exec('INSERT INTO customer_order (id, customer) VALUES (1, 1)');
+        $database->exec('INSERT INTO customer_note (id, customer) VALUES (1, 1)');
+        $database->exec('DELETE FROM customer WHERE id = 1');
+
+        $this->assertCount(0, $database->query('SELECT id FROM customer_order'));
+        $this->assertNull($database->query('SELECT customer FROM customer_note')[0]['customer']);
+    }
 }
