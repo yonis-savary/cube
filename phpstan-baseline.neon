@@ -2323,18 +2323,6 @@ parameters:
 			path: src/Data/OpenAPI/Specs/OASRoot.php
 
 		-
-			message: '#^Method Cube\\Data\\OpenAPI\\Specs\\OASRoot\:\:getRefForClass\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/OpenAPI/Specs/OASRoot.php
-
-		-
-			message: '#^Method Cube\\Data\\OpenAPI\\Specs\\OASRoot\:\:getRefForSchema\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/OpenAPI/Specs/OASRoot.php
-
-		-
 			message: '#^Method Cube\\Data\\OpenAPI\\Specs\\OASRoot\:\:getValueTypeSchema\(\) has parameter \$meta with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -2846,18 +2834,6 @@ parameters:
 
 		-
 			message: '#^Method Cube\\Data\\OpenAPI\\Specs\\Paths\\Responses\\OASResponse\:\:getModelKeySchema\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/OpenAPI/Specs/Paths/Responses/OASResponse.php
-
-		-
-			message: '#^Method Cube\\Data\\OpenAPI\\Specs\\Paths\\Responses\\OASResponse\:\:getRefForClass\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Data/OpenAPI/Specs/Paths/Responses/OASResponse.php
-
-		-
-			message: '#^Method Cube\\Data\\OpenAPI\\Specs\\Paths\\Responses\\OASResponse\:\:getRefForSchema\(\) has parameter \$schema with no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Data/OpenAPI/Specs/Paths/Responses/OASResponse.php

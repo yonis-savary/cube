@@ -1,0 +1,279 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "My Test Application",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "\/album": {
+            "get": {
+                "summary": "endpointReturningAnAlbum",
+                "description": "SampleController.endpointReturningAnAlbum",
+                "operationId": "endpointReturningAnAlbum",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/Album"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/any-value": {
+            "post": {
+                "summary": "postEndpointWithAnyValueRequest",
+                "description": "SampleController.postEndpointWithAnyValueRequest",
+                "operationId": "postEndpointWithAnyValueRequest",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "payload": {},
+                                    "tags": {
+                                        "type": "array",
+                                        "items": {}
+                                    },
+                                    "options": {
+                                        "type": "object",
+                                        "properties": {}
+                                    }
+                                },
+                                "required": [
+                                    "payload",
+                                    "tags",
+                                    "options"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "422": {
+                        "description": "The request does not follow its rules, errors are keyed by field",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/ValidationErrors"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/untyped-raw": {
+            "get": {
+                "summary": "endpointReturningUntypedRawData",
+                "description": "SampleController.endpointReturningUntypedRawData",
+                "operationId": "endpointReturningUntypedRawData",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "nested": {
+                                            "type": "object",
+                                            "properties": {
+                                                "value": {}
+                                            }
+                                        },
+                                        "list": {
+                                            "type": "array",
+                                            "items": {}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/albums": {
+            "get": {
+                "summary": "endpointReturningAPageOfAlbums",
+                "description": "SampleController.endpointReturningAPageOfAlbums",
+                "operationId": "endpointReturningAPageOfAlbums",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "items": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Album"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/chunk": {
+            "post": {
+                "summary": "endpointReceivingAChunk",
+                "description": "SampleController.endpointReceivingAChunk",
+                "operationId": "endpointReceivingAChunk",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/octet-stream": {
+                            "schema": {
+                                "type": "string",
+                                "format": "binary"
+                            }
+                        }
+                    },
+                    "description": "A chunk of the uploaded file"
+                }
+            }
+        },
+        "\/track": {
+            "get": {
+                "summary": "endpointStreamingATrack",
+                "description": "SampleController.endpointStreamingATrack",
+                "operationId": "endpointStreamingATrack",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "audio\/mpeg": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/cover": {
+            "get": {
+                "summary": "endpointWithSeveralResponses",
+                "description": "SampleController.endpointWithSeveralResponses",
+                "operationId": "endpointWithSeveralResponses",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/Album"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "The album has no cover"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ValidationErrors": {
+                "anyOf": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#\/components\/schemas\/ValidationErrors"
+                        }
+                    }
+                ]
+            },
+            "Album": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "last_update": {
+                        "type": "string",
+                        "pattern": "\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}\\:\\d{2}\\:\\d{2}"
+                    },
+                    "released_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "format": "date"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "last_update",
+                    "released_at"
+                ],
+                "example": {
+                    "id": 705,
+                    "name": "et aut magnam",
+                    "last_update": "2018-05-19 17:44:51",
+                    "released_at": "2019-09-11"
+                }
+            }
+        }
+    }
+}

@@ -296,6 +296,16 @@ abstract class Model extends EventDispatcher
             ->withTransformer(fn($data) => $data ? new static($data): null);
     }
 
+    /**
+     * Shape of the model once read : `select()` answers every field, so each one is required
+     */
+    public static function toResponseObjectParam(): ObjectParam
+    {
+        return Param::object(
+            array_map(fn (ModelField $field) => $field->toRule(), static::fields())
+        );
+    }
+
     public static function find(mixed $primaryKeyValue, array $with = [], ?Database $database = null): ?static
     {
         $database ??= Database::getInstance();

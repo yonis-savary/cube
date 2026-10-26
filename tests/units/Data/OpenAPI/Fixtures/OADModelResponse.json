@@ -73,7 +73,7 @@
                             "string",
                             "null"
                         ],
-                        "format": "date-time"
+                        "pattern": "\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}\\:\\d{2}\\:\\d{2}"
                     },
                     "name": {
                         "type": "string"
@@ -92,7 +92,10 @@
                     }
                 },
                 "required": [
-                    "name"
+                    "id",
+                    "created_at",
+                    "name",
+                    "price_dollar"
                 ],
                 "example": {
                     "price_dollar": "9.99000",

@@ -341,6 +341,10 @@ In those rules an auto-increment field is left out, a field is optional when its
 or has a database default, and so are the relations : only the columns an insert cannot do without
 are required.
 
+`toResponseObjectParam()` is the other direction, the shape of a model once read : every field,
+primary key included, required, a nullable column still accepting `null`. The
+[API documentation](./15-api-documentation.md) describes your models with it.
+
 Returning a model (or a `Bunch` of models) from a controller is enough : the router converts it to
 JSON, whole, every loaded relation and a password hash included. To choose what a model answers,
 use a `ModelResource` — see

@@ -5,15 +5,19 @@ namespace Cube\Tests\Units\Data\OpenAPI\Controllers;
 use Cube\Data\OpenAPI\Attributes\Endpoint;
 use Cube\Data\OpenAPI\Attributes\Hidden;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
+use Cube\Data\OpenAPI\Attributes\NoContentResponse;
+use Cube\Data\OpenAPI\Attributes\RawBody;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Tests\Units\Web\Classes\UserResource;
 use Cube\Tests\Units\Web\Classes\UserWithLoadedTypeResource;
 use Cube\Tests\Units\Web\Classes\UserWithTypeResource;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\AnyValueRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\CustomRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\EnumRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\ListRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\QueryRequestFormat;
+use Cube\Tests\Units\Data\OpenAPI\Models\Album;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Web\Controller;
@@ -156,6 +160,43 @@ class SampleController extends Controller
     }
 
     public function getEndpointWithEnumRequest(EnumRequestFormat $request) {
+
+    }
+
+    #[ModelResponse(Album::class)]
+    public function endpointReturningAnAlbum() {
+
+    }
+
+    public function postEndpointWithAnyValueRequest(AnyValueRequestFormat $request) {
+
+    }
+
+    #[RawResponse(['nested' => ['value' => null], 'list' => [null]])]
+    public function endpointReturningUntypedRawData() {
+
+    }
+
+    #[RawResponse(['items' => [Album::class], 'total' => 0])]
+    public function endpointReturningAPageOfAlbums() {
+
+    }
+
+    #[RawBody(description: 'A chunk of the uploaded file')]
+    public function endpointReceivingAChunk(Request $request) {
+
+    }
+
+    #[RawResponse(mimeType: 'audio/mpeg')]
+    public function endpointStreamingATrack() {
+
+    }
+
+    #[ModelResponse(Album::class)]
+    #[NoContentResponse('The album has no cover')]
+    #[RawResponse(['error' => 'Album is locked'], responseCode: 409)]
+    #[RawResponse(['error' => 'Album is archived'], responseCode: 410)]
+    public function endpointWithSeveralResponses() {
 
     }
 }

@@ -17,9 +17,12 @@ use DateTime;
 use ReflectionIntersectionType;
 use ReflectionNamedType;
 use ReflectionUnionType;
+use stdClass;
 
 trait MakesSchemas
 {
+    use ModelRef;
+
     private function mutateParameterWithMethodType(?string $type, array &$schema) {
         if (!$type)
             return;
@@ -45,7 +48,7 @@ trait MakesSchemas
             'any'      => [],
             'date'     => ['type' => 'string', 'format' => 'date'],
             'time'     => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['time']],
-            'datetime' => ['type' => 'string', 'format' => 'date-time'],
+            'datetime' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']],
             'hex'      => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
             'uuid'     => ['type' => 'string', 'format' => 'uuid'],
             default    => ['type' => 'string', 'pattern' => $slugType]
@@ -71,6 +74,7 @@ trait MakesSchemas
         $schema['type'] = 'array';
         $schema['items'] = [];
         $this->mutateParameterWithRule($rule->getChildRule(), $schema['items']);
+        $schema['items'] = $this->toEncodableSchema($schema['items']);
     }
 
     private function mutateParameterWithValueRule(Rule $rule, array &$schema) {
@@ -103,7 +107,7 @@ trait MakesSchemas
             'boolean'  => ['type' => 'boolean'],
             'date'     => ['type' => 'string', 'format' => 'date'],
             'time'     => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['time']],
-            'date-time'=> ['type' => 'string', 'format' => 'date-time'],
+            'date-time'=> ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']],
             'hex'      => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
             'uuid'     => ['type' => 'string', 'format' => 'uuid'],
         };
@@ -117,13 +121,25 @@ trait MakesSchemas
         foreach ($rule->getRules() as $key => $subrule) {
             $schema['properties'][$key] = [];
             $this->mutateParameterWithRule($subrule, $schema['properties'][$key]);
+            $schema['properties'][$key] = $this->toEncodableSchema($schema['properties'][$key]);
 
             if (!$subrule->isOptional())
                 $required[] = $key;
         }
 
+        $schema['properties'] = $this->toEncodableSchema($schema['properties']);
         if (count($required))
             $schema['required'] = $required;
+    }
+
+    // json_encode writes an empty array as [], but an empty schema must be the object {}
+    /**
+     * @param array<string,mixed> $schema
+     * @return array<string,mixed>|stdClass
+     */
+    protected function toEncodableSchema(array $schema): array|stdClass
+    {
+        return $schema ?: new stdClass();
     }
 
     /**
@@ -153,11 +169,15 @@ trait MakesSchemas
             foreach ($data as $key => $subvalue) {
                 $schema['properties'][$key] = [];
                 $this->mutateParameterFromRawData($subvalue, $schema['properties'][$key]);
+                $schema['properties'][$key] = $this->toEncodableSchema($schema['properties'][$key]);
             }
         } else if (is_array($data)) {
             $schema['type'] = 'array';
             $schema['items'] = [];
             $this->mutateParameterFromRawData($data[0], $schema['items']);
+            $schema['items'] = $this->toEncodableSchema($schema['items']);
+        } else if (is_string($data) && Autoloader::extends($data, Model::class)) {
+            $schema = ['$ref' => $this->getRefForClass($data)];
         } else if (is_string($data)) {
             $schema = ['type' => 'string'];
         } else if (is_float($data)) {

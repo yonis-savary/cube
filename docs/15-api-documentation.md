@@ -59,6 +59,7 @@ method to document : it is skipped too, with a warning in the generation logs.
 | a typed slug `{int:id}` | a path parameter of that type (`int`, `float`, `date`, `time`, `datetime`, `hex`, `uuid`, or your regex as a `pattern`) |
 | a `Request` subclass with `getRules()`, on `GET` / `DELETE` | one query parameter per rule |
 | a `Request` subclass with `getRules()`, on `POST` / `PUT` / `PATCH` | a required JSON request body |
+| `#[RawBody]`, on `POST` / `PUT` / `PATCH` | a required binary request body, see [Receiving a raw body](#receiving-a-raw-body) |
 | the same `Request` subclass | a `422` response, its body described by the shared `ValidationErrors` schema |
 | a slug received as a model (`Product $product`) | a `404` response |
 | a model return type (`: Product`) | a `200` response with the `Product` schema |
@@ -67,12 +68,16 @@ method to document : it is skipped too, with a warning in the generation logs.
 
 From the rules, a `nullable` rule becomes a nullable type, a rule that is not `optional()` a required
 key or parameter, `inArray()` an `enum` of the rule's type and `isBetween()` a `minimum` and a
-`maximum` — on a number only, OpenAPI has no bound for a date or a string.
+`maximum` — on a number only, OpenAPI has no bound for a date or a string. A datetime is a string
+with the `YYYY-MM-DD HH:MM:SS` `pattern` Cube reads and answers, not the RFC 3339 `date-time` format.
+A rule without a type (`new Param()`) gives the empty schema `{}`, which accepts any value.
 
-Every model a response refers to is described once in `components.schemas`, from its fields, with
-an example made by its factory (see [Testing](./33-testing.md#faking-models)) : that is what a model
-answered as is gives. Each relation is an optional property pointing to the schema of its model,
-since a relation only appears once loaded
+Every model a response refers to is described once in `components.schemas`, from
+`Model::toResponseObjectParam()`, with an example made by its factory (see
+[Testing](./33-testing.md#faking-models)) : that is what a model answered as is gives. A model read
+from the database holds all its columns, so every field is a required property, the primary key
+included, and a nullable column is typed `[type, null]`. Each relation is an optional property
+pointing to the schema of its model, since a relation only appears once loaded
 
 | Relation | Property, named after the relation |
 |---|---|
@@ -117,6 +122,19 @@ public function healthCheck(): Response
 }
 ```
 
+## Receiving a raw body
+
+A route reading the raw body (an uploaded chunk, an image) declares it with `#[RawBody]` : the
+request body becomes a binary string of the given content type, `application/octet-stream` by
+default
+
+```php
+#[RawBody('image/png', description: 'The new cover')]
+public function uploadCover(Request $request, Album $album): Response
+```
+
+It replaces the JSON body the request rules would give.
+
 ## Describing a response
 
 A response Cube cannot read from your return type is declared with an attribute. An attribute wins
@@ -156,9 +174,31 @@ public function detailedStats(): array
 ```
 
 The example is only read for its shape : `120` becomes an integer, `[1, 2, 3]` a list of integers
-(read from its first item), an associative array an object. Give `file` relative to your project
-root, or as an absolute path inside it as `__DIR__` does : the attribute checks the file exists
-before anything else.
+(read from its first item), an associative array an object, `null` any value (`{}`), and the class
+name of a model a `$ref` to its schema. Give `file` relative to your project root, or as an absolute
+path inside it as `__DIR__` does : the attribute checks the file exists before anything else.
+
+```php
+#[RawResponse(['items' => [Album::class], 'total' => 0])]
+public function page(Request $request): array
+// items : a list of #/components/schemas/Album
+```
+
+With a content type other than JSON, `#[RawResponse]` needs no example : the response is a binary
+string
+
+```php
+#[RawResponse(mimeType: 'audio/mpeg')]
+public function stream(Track $track): Response
+```
+
+`#[NoContentResponse]` adds a `204`, next to the other responses of the endpoint
+
+```php
+#[ModelResponse(Album::class)]
+#[NoContentResponse('The album has no cover')]
+public function cover(Album $album): Response
+```
 
 `#[ResourceResponse]` answers what a `ModelResource` gives (see
 [Controllers and responses](./13-controllers-and-responses.md#shaping-what-a-model-answers)) : Cube
@@ -187,7 +227,7 @@ itself : on the example, `load()` would query an empty database and replace the 
 with `null`. A resource reading a relation missing from `with` stops the generation with a
 `RuntimeException`, since the model has no such value.
 
-Each of the three takes the same optional arguments
+`#[ModelResponse]`, `#[ResourceResponse]` and `#[RawResponse]` take the same optional arguments
 
 | Argument | Default | Does |
 |---|---|---|
@@ -198,9 +238,8 @@ Each of the three takes the same optional arguments
 `#[ModelResponse]` and `#[ResourceResponse]` take a `with` list of relation names too, empty by
 default.
 
-`#[ResourceResponse]` can be repeated on a method, one per status code. `#[ModelResponse]` and
-`#[RawResponse]` cannot : put at most one of each on a method, and use the other attributes for
-another status code.
+`#[ModelResponse]`, `#[ResourceResponse]` and `#[RawResponse]` can be repeated on a method, one per
+status code : two attributes describing the same code keep the last one read.
 
 ## Authentication
 

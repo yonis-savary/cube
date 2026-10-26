@@ -11,11 +11,9 @@ use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
-use Cube\Data\OpenAPI\Specs\Common\ModelRef;
 
 class OASResponse extends AutoDataToObject
 {
-    use ModelRef;
     use MakesSchemas;
 
     public string $description = '';
@@ -48,9 +46,9 @@ class OASResponse extends AutoDataToObject
         $this->description = 'No item matches the given slug';
     }
 
-    public function noContentResponse()
+    public function noContentResponse(?string $description = null)
     {
-        $this->description = 'No content';
+        $this->description = $description ?? 'No content';
     }
 
     public function modelResponse(ModelResponse $modelResponse)
@@ -113,8 +111,13 @@ class OASResponse extends AutoDataToObject
 
     public function rawResponse(RawResponse $rawResponse) {
         $this->description = $rawResponse->description ?? '';
-        $schema = [ 'schema' => [] ];
-        $this->mutateParameterFromRawData($rawResponse->data, $schema['schema']);
-        $this->content[$rawResponse->mimeType] = $schema;
+        if ($rawResponse->isBinary()) {
+            $this->content[$rawResponse->mimeType] = ['schema' => ['type' => 'string', 'format' => 'binary']];
+            return;
+        }
+
+        $schema = [];
+        $this->mutateParameterFromRawData($rawResponse->data, $schema);
+        $this->content[$rawResponse->mimeType] = ['schema' => $this->toEncodableSchema($schema)];
     }
 }

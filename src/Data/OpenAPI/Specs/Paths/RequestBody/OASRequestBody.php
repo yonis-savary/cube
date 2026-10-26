@@ -3,6 +3,7 @@
 namespace Cube\Data\OpenAPI\Specs\Paths\RequestBody;
 
 use Cube\Data\AutoDataToObject;
+use Cube\Data\OpenAPI\Attributes\RawBody;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Web\Http\Rules\ObjectParam;
@@ -31,6 +32,11 @@ class OASRequestBody extends AutoDataToObject
 
     public function processBodyParameters(Route $route) 
     {
+        if ($rawBody = $route->getReflectionMethod()->getAttributes(RawBody::class)[0] ?? null) {
+            $this->processRawBody($rawBody->newInstance());
+            return;
+        }
+
         if (!$rules = $this->getRequestRules($route))
             return;
 
@@ -46,5 +52,18 @@ class OASRequestBody extends AutoDataToObject
             $rules,
             $this->requestBody['content']['application/json']['schema']
         );
+        $this->requestBody['content']['application/json']['schema'] = $this->toEncodableSchema(
+            $this->requestBody['content']['application/json']['schema']
+        );
+    }
+
+    private function processRawBody(RawBody $rawBody): void
+    {
+        $this->context->log(" - Adding raw [{$rawBody->mimeType}] body");
+
+        $this->requestBody['required'] = true;
+        $this->requestBody['content'] = [$rawBody->mimeType => ['schema' => ['type' => 'string', 'format' => 'binary']]];
+        if ($rawBody->description)
+            $this->requestBody['description'] = $rawBody->description;
     }
 }

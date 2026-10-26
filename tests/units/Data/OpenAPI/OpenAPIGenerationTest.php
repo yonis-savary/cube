@@ -18,6 +18,7 @@ use Cube\Web\Router\RouterConfiguration;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use stdClass;
 
 class OpenAPIGenerationTest extends TestCase
 {
@@ -484,5 +485,98 @@ class OpenAPIGenerationTest extends TestCase
         }
 
         $this->assertEquals(json_decode($this->readFixture('RawResponseSource.json'), true), $response->data);
+    }
+
+    protected function getOutputShapesRouter(): Router
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/album", [SampleController::class, "endpointReturningAnAlbum"]),
+            Route::post("/any-value", [SampleController::class, "postEndpointWithAnyValueRequest"]),
+            Route::get("/untyped-raw", [SampleController::class, "endpointReturningUntypedRawData"]),
+            Route::get("/albums", [SampleController::class, "endpointReturningAPageOfAlbums"]),
+            Route::post("/chunk", [SampleController::class, "endpointReceivingAChunk"]),
+            Route::get("/track", [SampleController::class, "endpointStreamingATrack"]),
+            Route::get("/cover", [SampleController::class, "endpointWithSeveralResponses"]),
+        );
+
+        return $router;
+    }
+
+    public function testOutputShapesGeneration() {
+        $file = $this->getSimpleGenerator()->generate($this->getOutputShapesRouter());
+        $fixture = $this->readFixture("OADOutputShapes.json");
+
+        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADOutputShapes.json fixture");
+    }
+
+    /** The model schema came from toObjectParam(), the shape of a write : no auto-incremented key, and fields with a default were optional. */
+    public function testAModelSchemaDescribesTheModelAsRead() {
+        $schema = $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album'];
+
+        $this->assertEquals(['id', 'name', 'last_update', 'released_at'], $schema['required']);
+        $this->assertEquals(['type' => 'integer'], $schema['properties']['id']);
+        $this->assertEquals(['type' => ['string', 'null'], 'format' => 'date'], $schema['properties']['released_at']);
+    }
+
+    /** Datetimes were announced as RFC 3339 date-time, while Cube reads and writes them as `Y-m-d H:i:s`. */
+    public function testADatetimeIsDescribedByItsPattern() {
+        $schema = $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album'];
+
+        $this->assertEquals(['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']], $schema['properties']['last_update']);
+        $this->assertMatchesRegularExpression('~^' . Route::SLUG_FORMATS['datetime'] . '$~', $schema['example']['last_update']);
+    }
+
+    /** An untyped schema was encoded as an empty JSON array, which is not a schema. */
+    public function testAnUntypedSchemaIsAnEmptyObject() {
+        $file = $this->getSimpleGenerator()->generate($this->getOutputShapesRouter());
+        $paths = json_decode(file_get_contents($file), flags: JSON_THROW_ON_ERROR)->paths;
+
+        $body = $paths->{'/any-value'}->post->requestBody->content->{'application/json'}->schema->properties;
+        $this->assertEquals(new stdClass(), $body->payload);
+        $this->assertEquals(new stdClass(), $body->tags->items);
+        $this->assertEquals(new stdClass(), $body->options->properties);
+
+        $raw = $paths->{'/untyped-raw'}->get->responses->{'200'}->content->{'application/json'}->schema->properties;
+        $this->assertEquals(new stdClass(), $raw->nested->properties->value);
+        $this->assertEquals(new stdClass(), $raw->list->items);
+    }
+
+    public function testARawResponseReferencesAModelByItsClass() {
+        $document = $this->generateAsArray($this->getOutputShapesRouter());
+        $schema = $document['paths']['/albums']['get']['responses'][200]['content']['application/json']['schema'];
+
+        $this->assertEquals(['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Album']], $schema['properties']['items']);
+        $this->assertArrayHasKey('Album', $document['components']['schemas']);
+    }
+
+    public function testARawBodyIsBinary() {
+        $requestBody = $this->generateAsArray($this->getOutputShapesRouter())['paths']['/chunk']['post']['requestBody'];
+
+        $this->assertEquals([
+            'required' => true,
+            'content' => ['application/octet-stream' => ['schema' => ['type' => 'string', 'format' => 'binary']]],
+            'description' => 'A chunk of the uploaded file',
+        ], $requestBody);
+    }
+
+    public function testANonJsonRawResponseWithoutDataIsBinary() {
+        $responses = $this->generateAsArray($this->getOutputShapesRouter())['paths']['/track']['get']['responses'];
+
+        $this->assertEquals(['audio/mpeg' => ['schema' => ['type' => 'string', 'format' => 'binary']]], $responses[200]['content']);
+    }
+
+    public function testAJsonRawResponseStillNeedsData() {
+        $this->expectException(InvalidArgumentException::class);
+        new RawResponse(mimeType: 'application/problem+json');
+    }
+
+    /** A 204 could only come from the return type, and ModelResponse / RawResponse could not be repeated. */
+    public function testResponsesCombineOnOneEndpoint() {
+        $responses = $this->generateAsArray($this->getOutputShapesRouter())['paths']['/cover']['get']['responses'];
+
+        $this->assertEqualsCanonicalizing([200, 204, 409, 410], array_keys($responses));
+        $this->assertEquals(['description' => 'The album has no cover'], $responses[204]);
+        $this->assertEquals(['error' => ['type' => 'string']], $responses[410]['content']['application/json']['schema']['properties']);
     }
 }

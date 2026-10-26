@@ -7,6 +7,7 @@ use Cube\Data\AutoDataToObject;
 use Cube\Data\Bunch;
 use Cube\Data\Models\Model;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
+use Cube\Data\OpenAPI\Attributes\NoContentResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
@@ -72,6 +73,9 @@ class OASResponses extends AutoDataToObject
             $response->rawResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
+
+        foreach ($method->getAttributes(NoContentResponse::class) as $noContentReflectionAttribute)
+            $this->addNoContentResponse($noContentReflectionAttribute->newInstance()->description);
     }
 
     protected function addReturnTypeResponses(ReflectionMethod $method): void
@@ -97,10 +101,10 @@ class OASResponses extends AutoDataToObject
             $this->addNoContentResponse();
     }
 
-    protected function addNoContentResponse(): void
+    protected function addNoContentResponse(?string $description = null): void
     {
         $response = new OASResponse();
-        $response->noContentResponse();
+        $response->noContentResponse($description);
         $this->responses[StatusCode::NO_CONTENT] = $response->toArray();
     }
 

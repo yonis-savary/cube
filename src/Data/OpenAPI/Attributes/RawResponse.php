@@ -7,11 +7,11 @@ use Cube\Utils\Path;
 use Cube\Web\Http\StatusCode;
 use InvalidArgumentException;
 
-#[Attribute(Attribute::TARGET_METHOD)]
+#[Attribute(Attribute::TARGET_METHOD | Attribute::IS_REPEATABLE)]
 class RawResponse
 {
     /**
-     * **Either data or file must be given**
+     * **Either data or file must be given** for a JSON response, without them any other mime type is a binary body
      */
     public function __construct(
         public mixed $data=null,
@@ -21,8 +21,8 @@ class RawResponse
         public string $mimeType = "application/json"
     )
     {
-        if (is_null($this->data) && is_null($this->file))
-            throw new InvalidArgumentException("Either data or file argument must be given");
+        if (is_null($this->data) && is_null($this->file) && $this->isJson())
+            throw new InvalidArgumentException("Either data or file argument must be given for a [{$this->mimeType}] response");
 
         if ($file) {
             $path = Path::relative($file);
@@ -32,5 +32,15 @@ class RawResponse
             $this->data = json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
         }
 
+    }
+
+    public function isJson(): bool
+    {
+        return (bool) preg_match('~^application/(.+\+)?json$~', $this->mimeType);
+    }
+
+    public function isBinary(): bool
+    {
+        return is_null($this->data) && !$this->isJson();
     }
 }

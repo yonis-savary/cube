@@ -9,13 +9,11 @@ use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
-use Cube\Data\OpenAPI\Specs\Common\ModelRef;
 use Cube\Web\Router\Router;
 
 class OASRoot extends DataAutoDataToObject
 {
     use MakesSchemas;
-    use ModelRef;
 
     public function __construct(
         public string $openapi,
@@ -62,7 +60,7 @@ class OASRoot extends DataAutoDataToObject
         $basename = preg_replace("~.+\\\\~", "", $model);
         $this->components['schemas'][$basename] = [];
         $schema = &$this->components['schemas'][$basename];
-        $this->mutateParameterWithRule($model::toObjectParam(), $schema);
+        $this->mutateParameterWithRule($model::toResponseObjectParam(), $schema);
 
         $instance = new $model();
         foreach ($model::relations() as $name) {
