@@ -2,14 +2,18 @@
 
 namespace Cube\Data\OpenAPI\Specs\Paths\Responses;
 
+use Cube\Core\Autoloader;
 use Cube\Data\AutoDataToObject;
 use Cube\Data\Database\Database;
 use Cube\Data\Models\Model;
+use Cube\Data\Models\ModelResource;
 use Cube\Data\Models\RelationTree;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
+use Cube\Data\OpenAPI\Attributes\ObjectResponse;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
+use Cube\Data\OpenAPI\Attributes\ResourceSchema;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 
 class OASResponse extends AutoDataToObject
@@ -65,24 +69,55 @@ class OASResponse extends AutoDataToObject
             : ['schema' => $ref];
     }
 
-    // A resource only has toArray() : its shape is read from what it answers for a model its factory made
     public function resourceResponse(ResourceResponse $resourceResponse)
     {
-        $resourceClass = $resourceResponse->resourceClass;
-        $modelClass = $resourceClass::getModelClass();
-
-        $model = $modelClass::factory()
-            ->withSeed(crc32($modelClass))
-            ->with(...$resourceResponse->with)
-            ->make();
-
-        // A resource may load relations : on an empty database in dry-run mode, the example never reads a real row
-        $exampleDatabase = new Database();
-        $data = $exampleDatabase->dryRun(fn () => Database::withInstance($exampleDatabase, fn () => $resourceClass::of($model)));
+        $data = $this->getResourceExample($resourceResponse->resourceClass, $resourceResponse->with);
         $example = $resourceResponse->isArray ? [$data] : $data;
 
         $this->rawResponse(new RawResponse($example, description: $resourceResponse->description, mimeType: $resourceResponse->mimeType));
         $this->content[$resourceResponse->mimeType]['example'] = $example;
+    }
+
+    public function objectResponse(ObjectResponse $objectResponse): void
+    {
+        $data = $this->withResourcesShaped($objectResponse->schema);
+
+        $this->rawResponse(new RawResponse($data, description: $objectResponse->description, mimeType: $objectResponse->mimeType));
+    }
+
+    private function withResourcesShaped(mixed $schema): mixed
+    {
+        if (is_array($schema))
+            return array_map($this->withResourcesShaped(...), $schema);
+
+        if ($schema instanceof ResourceSchema)
+            return $this->getResourceExample($schema->resourceClass, $schema->with);
+
+        if (is_string($schema) && Autoloader::extends($schema, ModelResource::class))
+            return $this->getResourceExample($schema);
+
+        return $schema;
+    }
+
+    /**
+     * A resource only has toArray() : its shape is read from what it answers for a model its factory made
+     *
+     * @param class-string<ModelResource<Model,array<string,mixed>>> $resourceClass
+     * @param string[] $with
+     * @return array<mixed>
+     */
+    private function getResourceExample(string $resourceClass, array $with = []): array
+    {
+        $modelClass = $resourceClass::getModelClass();
+
+        $model = $modelClass::factory()
+            ->withSeed(crc32($modelClass))
+            ->with(...$with)
+            ->make();
+
+        // A resource may load relations : on an empty database in dry-run mode, the example never reads a real row
+        $exampleDatabase = new Database();
+        return $exampleDatabase->dryRun(fn () => Database::withInstance($exampleDatabase, fn () => $resourceClass::of($model)));
     }
 
     /**

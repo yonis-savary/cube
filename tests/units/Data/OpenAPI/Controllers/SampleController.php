@@ -6,9 +6,11 @@ use Cube\Data\OpenAPI\Attributes\Endpoint;
 use Cube\Data\OpenAPI\Attributes\Hidden;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\NoContentResponse;
+use Cube\Data\OpenAPI\Attributes\ObjectResponse;
 use Cube\Data\OpenAPI\Attributes\RawBody;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
+use Cube\Data\OpenAPI\Attributes\ResourceSchema;
 use Cube\Tests\Units\Web\Classes\UserResource;
 use Cube\Tests\Units\Web\Classes\UserWithLoadedTypeResource;
 use Cube\Tests\Units\Web\Classes\UserWithTypeResource;
@@ -20,6 +22,7 @@ use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\QueryRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Models\Album;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
+use Cube\Tests\Units\Models\UserType;
 use Cube\Web\Controller;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -197,6 +200,17 @@ class SampleController extends Controller
     #[RawResponse(['error' => 'Album is locked'], responseCode: 409)]
     #[RawResponse(['error' => 'Album is archived'], responseCode: 410)]
     public function endpointWithSeveralResponses() {
+
+    }
+
+    #[ObjectResponse([
+        'owner' => UserResource::class,
+        'members' => [UserResource::class],
+        'admins' => [new ResourceSchema(UserWithLoadedTypeResource::class, with: ['_type'])],
+        'type' => UserType::class,
+        'total' => 0,
+    ])]
+    public function endpointReturningAUserDirectory() {
 
     }
 }

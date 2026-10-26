@@ -227,7 +227,46 @@ itself : on the example, `load()` would query an empty database and replace the 
 with `null`. A resource reading a relation missing from `with` stops the generation with a
 `RuntimeException`, since the model has no such value.
 
-`#[ModelResponse]`, `#[ResourceResponse]` and `#[RawResponse]` take the same optional arguments
+`#[ObjectResponse]` describes a route answering several models or resources at once, a page for
+instance. Its schema is an example value, like `#[RawResponse]`'s, where a `ModelResource` class
+stands for what the resource answers, and a `Model` class for the model's schema
+
+```php
+#[ObjectResponse([
+    'album' => AlbumResource::class,     // the shape AlbumResource answers
+    'tracks' => [TrackResource::class],  // a list of what TrackResource answers
+    'label' => Label::class,             // #/components/schemas/Label
+    'total' => 0,                        // an integer
+])]
+public function page(Request $request, Album $album): array
+```
+
+Only the document reads it : the route answers whatever it returns. Each resource is applied to a
+model its factory made, the way `#[ResourceResponse]` does. A bare resource class gets a model
+without relations : when the resource reads some, wrap it in a `ResourceSchema` naming the relations
+the endpoint loads, dot-separated for nested ones
+
+```php
+#[ObjectResponse([
+    'album' => new ResourceSchema(AlbumResource::class, with: ['label', 'tracks.artist']),
+    'related' => [AlbumResource::class],  // no relation read : the class alone is enough
+])]
+public function page(Request $request, Album $album): array
+{
+    return [
+        'album' => AlbumResource::of($album->load('label', 'tracks.artist')),
+        'related' => AlbumResource::of(Album::select()->whereAssoc(['label' => $album->label])->fetchBunch()),
+    ];
+}
+```
+
+A `ResourceSchema` goes anywhere a resource class does, in a list too
+(`[new ResourceSchema(TrackResource::class, with: ['artist'])]`). A resource reading a relation its
+`with` does not name stops the generation with a `RuntimeException`, since the example model has no
+such value.
+
+`#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]` and `#[RawResponse]` take the same
+optional arguments
 
 | Argument | Default | Does |
 |---|---|---|
@@ -238,8 +277,8 @@ with `null`. A resource reading a relation missing from `with` stops the generat
 `#[ModelResponse]` and `#[ResourceResponse]` take a `with` list of relation names too, empty by
 default.
 
-`#[ModelResponse]`, `#[ResourceResponse]` and `#[RawResponse]` can be repeated on a method, one per
-status code : two attributes describing the same code keep the last one read.
+`#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]` and `#[RawResponse]` can be repeated
+on a method, one per status code : two attributes describing the same code keep the last one read.
 
 ## Authentication
 

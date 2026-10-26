@@ -498,6 +498,7 @@ class OpenAPIGenerationTest extends TestCase
             Route::post("/chunk", [SampleController::class, "endpointReceivingAChunk"]),
             Route::get("/track", [SampleController::class, "endpointStreamingATrack"]),
             Route::get("/cover", [SampleController::class, "endpointWithSeveralResponses"]),
+            Route::get("/directory", [SampleController::class, "endpointReturningAUserDirectory"]),
         );
 
         return $router;
@@ -578,5 +579,18 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEqualsCanonicalizing([200, 204, 409, 410], array_keys($responses));
         $this->assertEquals(['description' => 'The album has no cover'], $responses[204]);
         $this->assertEquals(['error' => ['type' => 'string']], $responses[410]['content']['application/json']['schema']['properties']);
+    }
+
+    public function testAnObjectResponseShapesTheResourcesItHolds() {
+        $document = $this->generateAsArray($this->getOutputShapesRouter());
+        $properties = $document['paths']['/directory']['get']['responses'][200]['content']['application/json']['schema']['properties'];
+
+        $this->assertEquals(['id', 'login'], array_keys($properties['owner']['properties']));
+        $this->assertEquals('array', $properties['members']['type']);
+        $this->assertEquals(['id', 'login'], array_keys($properties['members']['items']['properties']));
+        $this->assertEquals(['$ref' => '#/components/schemas/UserType'], $properties['type']);
+        $this->assertEquals(['type' => 'integer'], $properties['total']);
+        $this->assertEquals(['type' => 'string'], $properties['admins']['items']['properties']['type'], 'The relation named by the ResourceSchema is made on the example model');
+        $this->assertArrayHasKey('UserType', $document['components']['schemas']);
     }
 }

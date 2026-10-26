@@ -220,6 +220,72 @@
                     }
                 }
             }
+        },
+        "\/directory": {
+            "get": {
+                "summary": "endpointReturningAUserDirectory",
+                "description": "SampleController.endpointReturningAUserDirectory",
+                "operationId": "endpointReturningAUserDirectory",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "owner": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "login": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "members": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "login": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "admins": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "login": {
+                                                        "type": "string"
+                                                    },
+                                                    "type": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "type": {
+                                            "$ref": "#\/components\/schemas\/UserType"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -272,6 +338,140 @@
                     "name": "et aut magnam",
                     "last_update": "2018-05-19 17:44:51",
                     "released_at": "2019-09-11"
+                }
+            },
+            "UserType": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "users": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/User"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "label"
+                ],
+                "example": {
+                    "id": 595,
+                    "label": "cum veritatis non"
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "login": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "integer"
+                    },
+                    "modules": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/ModuleUser"
+                        }
+                    },
+                    "_type": {
+                        "oneOf": [
+                            {
+                                "$ref": "#\/components\/schemas\/UserType"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "id",
+                    "login",
+                    "password",
+                    "type"
+                ],
+                "example": {
+                    "id": 644,
+                    "login": "omnis dolorem ipsam",
+                    "password": "magni fugiat quia",
+                    "type": 105
+                }
+            },
+            "ModuleUser": {
+                "type": "object",
+                "properties": {
+                    "user": {
+                        "type": "integer"
+                    },
+                    "module": {
+                        "type": "integer"
+                    },
+                    "_module": {
+                        "oneOf": [
+                            {
+                                "$ref": "#\/components\/schemas\/Module"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "_user": {
+                        "oneOf": [
+                            {
+                                "$ref": "#\/components\/schemas\/User"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "user",
+                    "module"
+                ],
+                "example": {
+                    "user": 48,
+                    "module": 956
+                }
+            },
+            "Module": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "users": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/ModuleUser"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "label"
+                ],
+                "example": {
+                    "id": 145,
+                    "label": "quia voluptas ut"
                 }
             }
         }
