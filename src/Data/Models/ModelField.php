@@ -281,6 +281,9 @@ class ModelField
 
     public function format(mixed $value): mixed
     {
+        if (self::BOOLEAN === $this->type)
+            return $this->parse($value);
+
         if (!$value instanceof \DateTimeInterface) {
             return $value;
         }

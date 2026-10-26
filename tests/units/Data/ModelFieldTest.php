@@ -62,6 +62,18 @@ class ModelFieldTest extends TestCase
         $this->assertSame($expected, ModelField::boolean('active')->parse($stored));
     }
 
+    /** A boolean column came back from MySQL and SQLite as 0/1 and was answered as is, while the API documentation announces a boolean. */
+    #[DataProvider('getBooleanValues')]
+    public function testABooleanIsFormattedAsABoolean(mixed $stored, bool $expected)
+    {
+        $this->assertSame($expected, ModelField::boolean('active')->format($stored));
+    }
+
+    public function testANullBooleanIsFormattedAsNull()
+    {
+        $this->assertNull(ModelField::boolean('active')->format(null));
+    }
+
     public function testNullIsParsedAsNull()
     {
         $this->assertNull(ModelField::boolean('active')->parse(null));

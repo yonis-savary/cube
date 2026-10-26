@@ -143,18 +143,19 @@ A field is nullable unless you call `notNull()`. A `generated()` field is never 
 (the database computes it). [Migrations](./17-migrations.md#describing-columns) use these same
 builders to describe columns.
 
-Field values are **parsed when read** and **formatted when written**
+Field values are **formatted** when written, and by `toArray()`, so the same way when a route
+answers the model
 
-| Type | Read as | Written as |
-|---|---|---|
-| `INTEGER` | `int` | as is |
-| `FLOAT` | `float` | as is |
-| `BOOLEAN` | `bool` (`1`, `true`, `t`, `y`, `yes`, `on` are true) | as is |
-| `DATE` | `DateTime` | `Y-m-d` |
-| `DATETIME` | `DateTime` | `Y-m-d H:i:s` |
-| `STRING`, `DECIMAL`, `TIMESTAMP` | `string` | as is |
+| Type | Written and answered as |
+|---|---|
+| `BOOLEAN` | `bool` (`1`, `true`, `t`, `y`, `yes`, `on` are true), whatever the driver returns |
+| `DATE` | `Y-m-d`, from a `DateTime` |
+| `DATETIME` | `Y-m-d H:i:s`, from a `DateTime` |
+| other types | as is |
 
-`toArray()` formats a `DateTime` the same way, so it leaves your application as text.
+Reading a model keeps its fields as the database driver returns them : a MySQL or SQLite boolean is
+`0`/`1` on `$model->active`, a date is a string. Only the `HasOne` relations a query joins through `with()` are parsed
+(`int`, `float`, `bool`, `DateTime`).
 
 ## Reading
 
