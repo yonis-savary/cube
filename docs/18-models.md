@@ -282,6 +282,14 @@ $user->loadMissing('modules');         // only loads what is not loaded yet
 A `HasMany` without any row loads an empty array, and a `HasOne` without a matching row loads
 `null`. Only a relation that was never loaded throws.
 
+`isLoaded()` tells a relation already read, even empty or `null`, from one never loaded. With dot
+notation, every model along the path must have it loaded
+
+```php
+$user->isLoaded('modules');            // false until load('modules')
+$user->isLoaded('modules._module');    // true once each loaded ModuleUser has its _module
+```
+
 You can also load them while reading
 
 ```php

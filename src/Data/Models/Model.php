@@ -561,6 +561,35 @@ abstract class Model extends EventDispatcher
         return $this;
     }
 
+    /**
+     * @param string $relation Dot-separated for nested ones : every model along the path must have it loaded
+     */
+    public function isLoaded(string $relation): bool
+    {
+        $relationTree= (new RelationTree($relation))->getTree();
+        return $this->isTreeLoaded($relationTree);
+    }
+
+    /**
+     * @param array<string,array<mixed>> $tree
+     */
+    protected function isTreeLoaded(array $tree): bool
+    {
+        foreach ($tree as $relation => $subtree)
+        {
+            if (!array_key_exists($relation, $this->references))
+                return false;
+
+            $areAllLoaded = Bunch::wrap(self::modelsOf($this->references[$relation]))
+                ->all(fn (Model $child) => $child->isTreeLoaded($subtree));
+
+            if (!$areAllLoaded)
+                return false;
+        }
+
+        return true;
+    }
+
     public function onSaved(callable $callback)
     {
         $this->on(SavedModel::class, $callback);

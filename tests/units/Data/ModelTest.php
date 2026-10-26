@@ -360,6 +360,22 @@ class ModelTest extends TestCase
         });
     }
 
+    public function testIsLoadedTellsAReadRelationFromAMissingOne()
+    {
+        $product = new Product(['name' => 'screen']);
+        $this->assertFalse($product->isLoaded('managers'));
+
+        $product->setReference('managers', []);
+        $this->assertTrue($product->isLoaded('managers'), 'A relation read with no row is loaded');
+
+        $manager = new ProductManager(['manager' => 'Bob']);
+        $product->setReference('managers', [$manager]);
+        $this->assertFalse($product->isLoaded('managers._product'));
+
+        $manager->setReference('_product', null);
+        $this->assertTrue($product->isLoaded('managers._product'), 'A HasOne matching no row is loaded as null');
+    }
+
     public function testMergeWithArray()
     {
         $product = new Product(['id' => 1, 'name' => 'screen', 'price_dollar' => 10]);
