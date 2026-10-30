@@ -181,14 +181,16 @@ services:
 
 ## Running workers in production
 
-A worker is a long-running process : give it a supervisor that restarts it, one service per queue
+A worker is a long-running process : give it a supervisor that restarts it, one service per queue.
+With the Docker stack, that is one more service on your application image (see
+[Deployment](./34-deployment.md#background-services))
 
 ```yaml
 services:
   invoice-mailer:
-    image: my-app
+    image: ${COMPOSE_PROJECT_NAME}-php
     command: ["php", "do", "cube:queue", "--queue=App\\Queue\\InvoiceMailerQueue", "-l"]
-    restart: always
+    restart: unless-stopped
 ```
 
 The worker holds your code in memory : restart it after a deployment, or it keeps running the old

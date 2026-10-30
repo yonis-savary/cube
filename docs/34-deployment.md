@@ -157,9 +157,11 @@ Long-running and scheduled work does not go through php-fpm
 
 - add a line printed by `php do routine:generate` to your crontab : it runs `php do routine:launch`
   every minute, which launches your [schedules](./28-schedules.md) (not your [queues](./29-queues.md)) ;
-- supervise the long-running servers, `php do websocket:serve` ([Websockets](./30-websockets.md)) and
-  `php do unix:serve` ([Unix socket server](./31-unix-socket-server.md)), and restart them on each
-  release : they keep running the code they started with.
+- supervise the long-running processes, `php do cube:queue` ([Queues](./29-queues.md)),
+  `php do websocket:serve` ([Websockets](./30-websockets.md)) and `php do unix:serve`
+  ([Unix socket server](./31-unix-socket-server.md)), and restart them on each release : they keep
+  running the code they started with. With the Docker stack, each one is a service (see
+  [Background services](#background-services)).
 
 ## The Docker stack
 
@@ -179,18 +181,15 @@ The server files include two stacks built from the same `Docker/Dockerfile.php` 
 Both run php-fpm with APCu (also enabled for the CLI) and nginx serving `/var/www/Public` on port
 `8081`, and both mount `Storage/` (persistent) and `.env` (read-only, kept out of the image).
 
-`Storage/` belongs to your user on the host, while php-fpm runs as `www-data` : the container
-entrypoint (`Docker/entrypoint.sh`) gives it to `www-data` each time a container starts as root. Run
-your commands as `www-data` too, or the files they create in `Storage/` are left to root until the
-next start
+Every process of the stack runs as `www-data`, never as root, and the image gives `www-data` the
+user and group ids of the host user owning `Storage/` and `.env`. A file written in `Storage/` by a
+container is yours on the host, and a file you create there is writable by the containers. See
+[Container user](#container-user).
 
 ```sh
-docker compose exec --user www-data php-fpm php do cache:clear
-make exec   # a bash in php-fpm, as www-data
+docker compose exec php-fpm php do cache:clear
+make exec   # a bash in php-fpm
 ```
-
-`chown` changes the owner on the host as well : delete files from `Storage/` through the container,
-or with `sudo`.
 
 Docker reads `docker-compose.override.yml` on its own whenever it is present : a plain
 `docker compose up` starts the **development** stack. The Makefile production targets pass
@@ -218,25 +217,105 @@ Xdebug is ready to enable in development : uncomment its lines in the `dev` stag
 git pull
 docker compose -f docker-compose.yml build
 docker compose -f docker-compose.yml down
-docker compose -f docker-compose.yml run --rm php-fpm runuser -u www-data -- php do migrate:migrate
-docker compose -f docker-compose.yml run --rm php-fpm runuser -u www-data -- php do cube:dispatch --event PostDeployment
-docker compose -f docker-compose.yml run --rm php-fpm runuser -u www-data -- php do configuration:cache
+docker compose -f docker-compose.yml run --rm php-fpm php do migrate:migrate
+docker compose -f docker-compose.yml run --rm php-fpm php do cube:dispatch --event PostDeployment
+docker compose -f docker-compose.yml run --rm php-fpm php do configuration:cache
 docker compose -f docker-compose.yml up -d
 ```
 
 The image is built while the previous release still answers. The release tasks then run on the new
 image while no php-fpm serves requests, so the new php-fpm starts with an empty APCu and fresh disk
 caches : no request can put the old discovery cache back. Remove the `configuration:cache` line if
-you do not cache your configuration. The commands go through `runuser` rather than `--user www-data`
-so that the entrypoint, which needs root, hands `Storage/` over first.
+you do not cache your configuration.
 
 nginx reads your code through a volume shared with php-fpm : always `down` before `up` when you
 change the image, as `make deploy` does. An `up -d` alone keeps the previous content of that volume,
 and nginx keeps serving the previous `Public/`.
 
+## Background services
+
+With the Docker stack, each long-running process is one more service on the image php-fpm builds,
+`${COMPOSE_PROJECT_NAME}-php`. Compose names the project after its directory, unless your `.env`
+sets `COMPOSE_PROJECT_NAME` (see `.env.example`) : the prefix keeps two projects on the same
+machine from sharing one image.
+
+Here is a queue worker, in `docker-compose.yml`
+
+```yaml
+  invoice-mailer:
+    image: ${COMPOSE_PROJECT_NAME}-php
+    command: ["php", "do", "cube:queue", "--queue=App\\Queue\\InvoiceMailerQueue", "-l"]
+    restart: unless-stopped
+    volumes:
+      - ./Storage:/var/www/Storage
+      - ./.env:/var/www/.env:ro
+    depends_on:
+      - php-fpm # builds the image
+```
+
+And in `docker-compose.override.yml`, so that it runs your mounted code in development
+
+```yaml
+  invoice-mailer:
+    volumes:
+      - .:/var/www
+      - vendor:/var/www/vendor
+```
+
+| Process | Command | Notes |
+|---|---|---|
+| a queue worker | `cube:queue --queue=<class> -l` | one service per queue |
+| the websocket server | `websocket:serve -l` | `ports:` the frontend port, `expose:` the backend one, see [Websockets](./30-websockets.md#running-the-server) |
+| the unix socket server | `unix:serve <path>` | put the socket in a volume shared with php-fpm |
+
+- `-l` sends the process log to stdout, read by `docker compose logs`.
+- Other services reach a process by its service name : `BroadcastConfiguration(httpHost: 'websocket')`.
+- The image includes `pcntl` : on `docker compose stop`, a worker finishes its current item before
+  leaving.
+- `make deploy` restarts every service on the new image. In development, run
+  `docker compose restart <service>` after changing the code it runs.
+- Schedules are not a service : they stay in the host's crontab (`php do routine:generate`).
+
+## Container user
+
+A container writing in a directory mounted from the host writes with its own user id : files
+created as root, or as the `www-data` of the image (uid 33), cannot be modified by your user on the
+host, and files you create there cannot be written by the container. The Docker stack avoids it by
+building the image for your ids, given in `.env`
+
+```sh
+UID=1000   # id -u
+GID=1000   # id -g
+```
+
+`Docker/Dockerfile.php` gives them to `www-data` and runs every process as that user : php-fpm,
+`make exec`, the commands of `make deploy` and your [background services](#background-services).
+Without them, the ids default to `1000`, the first user of most Linux systems.
+
+The ids are written into the image when it is built : rebuild it after changing them (`make dev`,
+or `make build` then `make up`).
+
+The Makefile creates `Storage/` before starting the stack : a mounted directory missing on the host
+would be created by Docker, as root, and the containers could not write in it.
+
+### Limits
+
+- **An image built elsewhere.** An image pushed to a registry carries the ids of the machine that
+  built it. Choose the target ids beforehand, the ones of the user owning the project on your
+  servers, and build with them : `UID=1001 GID=1001 make build`, or set them in your CI. Every
+  server running that image must have its `Storage/` and `.env` owned by those ids.
+- **Several users on one server.** The image has one owner : every person deploying the project
+  runs it with the same ids, those of the user owning the project directory.
+- **Docker Desktop (macOS, Windows).** Its file sharing already hides the ownership of mounted
+  files, so the ids change nothing there. They do no harm either.
+- **Upgrading from a stack running as uid 33.** Your `Storage/` belongs to `www-data` of the
+  former image : give it back to your user once, `sudo chown -R $(id -u):$(id -g) Storage`.
+
 ## Checklist
 
 - [ ] `env=prod` in the `.env`, and an `APP_KEY` of at least 32 bytes (`php do key:generate`)
+- [ ] with Docker, `UID` and `GID` in the `.env` match the owner of `Storage/` and `.env`, or the
+      target ids chosen for an image built elsewhere (see [Container user](#container-user))
 - [ ] `composer install --no-dev --optimize-autoloader`
 - [ ] the web server serves `Public/` only ; `Storage` is outside the web root, readable by the
       application only

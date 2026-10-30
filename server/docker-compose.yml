@@ -2,10 +2,14 @@
 # this file only. A plain `docker compose up` also reads docker-compose.override.yml : the dev stack.
 services:
   php-fpm:
+    image: ${COMPOSE_PROJECT_NAME}-php # Reused by every background service (queues, websocket...)
     build:
       context: .
       dockerfile: Docker/Dockerfile.php
       target: prod
+      args:
+        UID: ${UID:-1000} # The owner of Storage/ and .env on the host, see .env.example
+        GID: ${GID:-1000}
     volumes:
       - /var/www # Shared with nginx through its volumes_from
       - ./Storage:/var/www/Storage # Persistent Storage

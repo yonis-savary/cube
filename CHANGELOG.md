@@ -97,9 +97,14 @@ change it asks from your application.
   it, both as `www-data` ; call the latter from the host's cron.
 - The Docker stack answered no request : nginx and php-fpm each declared their own `/var/www` volume,
   so nginx's stayed empty (nginx now takes php-fpm's volumes with `volumes_from`), and the mounted
-  `Storage/` belonged to the host user, so php-fpm could not even write its logs (the new
-  `Docker/entrypoint.sh` gives it to `www-data` when the container starts). `make deploy` runs its
-  commands with `runuser -u www-data` so that this entrypoint runs first.
+  `Storage/` belonged to the host user, so php-fpm could not even write its logs. The image now
+  gives `www-data` the ids of the host user, `UID` and `GID` in `.env` (`1000` by default), and every
+  process runs as that user, never as root : rebuild the image, and if a previous stack left
+  `Storage/` to uid 33, `sudo chown -R $(id -u):$(id -g) Storage` once. The Makefile creates
+  `Storage/` before starting the stack.
+- `docker-compose.yml` names the image `${COMPOSE_PROJECT_NAME}-php`, so that background services
+  (queue workers, websocket server) run on it, and `Docker/Dockerfile.php` installs `pcntl`, so that
+  a worker stopped by Docker finishes its current item.
 - `Tests/bootstrap.php` : `TestContext::useTemporaryStorage()`, which removes `Storage/Tests-*` at the
   end of the run.
 - New `AGENTS.md` and `CLAUDE.md`, pointing coding agents to `vendor/yonis-savary/cube/ai/FRAMEWORK.md`.

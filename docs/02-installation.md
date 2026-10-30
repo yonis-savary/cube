@@ -128,9 +128,11 @@ php do web:serve 8080   # another port
 ```
 
 The server files also include a Docker stack (php-fpm with APCu, and nginx), in two flavours. Create
-your `.env` **before** the first start : it is mounted into the container rather than copied into the
-image, which would carry your secrets in its layers, and Docker creates a directory in place of a
-missing file.
+your `.env` **before** the first start, from `.env.example` : it is mounted into the container rather
+than copied into the image, which would carry your secrets in its layers, and Docker creates a
+directory in place of a missing file. Set `UID` and `GID` in it to the output of `id -u` and `id -g` :
+the containers run as that user, so the files they write in `Storage/` stay yours (see
+[Deployment](./34-deployment.md#container-user)).
 
 For development, your whole project is mounted : a change to `App/`, `cube.php`, `Public/` or your
 tests applies without rebuilding
@@ -151,7 +153,7 @@ make down
 Both work with the running stack
 
 ```sh
-make exec               # a bash in php-fpm, as www-data
+make exec               # a bash in php-fpm
 make launch-scheduler   # php do routine:launch, see Schedules
 ```
 

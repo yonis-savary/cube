@@ -583,6 +583,65 @@ public function read(SearchProductRequest $request): array
 Always give a `Request` subclass : its rules decide which columns a client may write and filter on.
 A plain `Request` is refused by the write methods.
 
+## Background processes as Docker services
+
+The application runs on the Docker stack of the server files : `php-fpm` builds the image
+`${COMPOSE_PROJECT_NAME}-php`, `nginx` serves it. **Every long-running process is one more service
+on that same image**, declared in `docker-compose.yml`. When you add one of these, add its service
+in the same change, without waiting to be asked :
+
+| You add | Service to declare |
+|---|---|
+| a `Queue` subclass | one worker per queue : `php do cube:queue --queue=<FQCN> -l` |
+| a websocket `Channel` (the first one) | `websocket` : `php do websocket:serve -l`, its two ports |
+| routes for the unix socket server | `unix-socket` : `php do unix:serve <path>`, the socket in a shared volume |
+| a Redis driver (`RedisQueue`, `RedisCache`) | `redis`, plus the `redis` extension in `Docker/Dockerfile.php` |
+| a MySQL or Postgres `DatabaseConfiguration` | the database service, its host is the service name |
+
+A worker, in `docker-compose.yml`
+
+```yaml
+  invoice-mailer:
+    image: ${COMPOSE_PROJECT_NAME}-php
+    command: ["php", "do", "cube:queue", "--queue=App\\Queue\\InvoiceMailerQueue", "-l"]
+    restart: unless-stopped
+    volumes:
+      - ./Storage:/var/www/Storage
+      - ./.env:/var/www/.env:ro
+    depends_on:
+      - php-fpm # builds the image
+```
+
+And its development counterpart, in `docker-compose.override.yml`, so that it runs the mounted code
+
+```yaml
+  invoice-mailer:
+    volumes:
+      - .:/var/www
+      - vendor:/var/www/vendor
+```
+
+### Rules
+
+- **Never a second Dockerfile or a second `build:`** : every PHP process runs the image php-fpm
+  builds. A missing PHP extension goes into `Docker/Dockerfile.php`, for all of them.
+- **No `user:` and no root.** The image already runs every process as `www-data`, with the ids
+  of the host user (`UID`/`GID` in `.env`), so that the files written in `Storage/` stay theirs.
+- **One service per process.** One worker per queue, never a shell loop running several commands.
+- **`-l` on every long-running command** : it sends its log to stdout, where `docker compose logs`
+  reads it. Without it, `websocket:serve` logs nothing, and `cube:queue` only writes to its file in
+  `Storage/Logs`.
+- **Service names are host names.** `BroadcastConfiguration(httpHost: 'websocket')`,
+  `RedisQueue('redis')`, `DatabaseConfiguration(host: env('DB_HOST'))` with `DB_HOST=mysql` in `.env`.
+  A process the others call binds `0.0.0.0` inside its container (`WebsocketConfiguration(httpHost:
+  '0.0.0.0')`), and only `ports:` what a browser must reach : `expose:` the rest.
+- **A long-running process keeps the code it started with.** `make deploy` restarts every service;
+  in development, `docker compose restart <service>` after changing the code it runs.
+- **Schedules are not a service.** The ops team adds the line printed by `php do routine:generate`
+  to the host's crontab. When you add a schedule, tell the user that line must be in place; do not
+  create a scheduler container.
+- Secrets go in `.env` (and `.env.example` without their value), never in `docker-compose.yml`.
+
 ## Code style expected in a Cube application
 
 - **Type everything** and keep the IDE informed : `@template`, `class-string<T>`,

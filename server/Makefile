@@ -2,10 +2,14 @@
 
 # Production reads docker-compose.yml only, never the development override
 PROD = docker compose -f docker-compose.yml
-DO = $(PROD) run --rm php-fpm runuser -u www-data -- php do
-EXEC = docker compose exec --user www-data php-fpm
+DO = $(PROD) run --rm php-fpm php do
+EXEC = docker compose exec php-fpm
 
-dev:
+# Docker would create a missing mounted directory as root, which the containers could not write in
+Storage:
+	mkdir -p Storage
+
+dev: Storage
 	docker compose up -d --build
 
 dev-down:
@@ -14,13 +18,13 @@ dev-down:
 build:
 	$(PROD) build
 
-up:
+up: Storage
 	$(PROD) up -d
 
 down:
 	$(PROD) down
 
-deploy:
+deploy: Storage
 	git pull
 	$(MAKE) build
 	$(MAKE) down

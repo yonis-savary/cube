@@ -260,8 +260,8 @@ public network
 ```yaml
 services:
   websocket:
-    image: my-app
-    command: ["php", "do", "websocket:serve"]
+    image: ${COMPOSE_PROJECT_NAME}-php
+    command: ["php", "do", "websocket:serve", "-l"]
     ports:
       - "8088:8088"   # frontend
     expose:
