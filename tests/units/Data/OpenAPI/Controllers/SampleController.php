@@ -11,7 +11,9 @@ use Cube\Data\OpenAPI\Attributes\RawBody;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceSchema;
+use Cube\Tests\Units\Web\Classes\UserProfileResource;
 use Cube\Tests\Units\Web\Classes\UserResource;
+use Cube\Tests\Units\Web\Classes\UserWithAMistypedKeyResource;
 use Cube\Tests\Units\Web\Classes\UserWithLoadedTypeResource;
 use Cube\Tests\Units\Web\Classes\UserWithTypeResource;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\AnyValueRequestFormat;
@@ -60,6 +62,21 @@ class SampleController extends Controller
 
     #[ResourceResponse(UserWithLoadedTypeResource::class)]
     public function userWithoutItsType() {
+
+    }
+
+    #[ResourceResponse(UserProfileResource::class)]
+    public function userProfile() {
+
+    }
+
+    #[ObjectResponse(['profiles' => [UserProfileResource::class]])]
+    public function userProfiles() {
+
+    }
+
+    #[ResourceResponse(UserWithAMistypedKeyResource::class)]
+    public function userWithAMistypedKey() {
 
     }
 

@@ -463,6 +463,21 @@ return UserResource::of($users);  // an array or a Bunch of models
 A model can have as many resources as it has representations : nothing picks one for you. Answer
 every model that holds sensitive fields through a resource.
 
+The OpenAPI document reads a resource's types from an example, which cannot show that a key may be
+`null` or missing. **When you write a resource, declare both on its class** : `#[Nullable]` for
+every key that can be `null`, starting with the keys holding a field declared nullable in the
+model's `fields()`, and `#[Optional]` for every key the resource may leave out. Nothing is read from
+the columns : an undeclared key is documented as never null and always present.
+
+```php
+#[Nullable(['phone', 'address.city', 'tags.*'])] // dot-separated for nested keys, * for list items
+#[Optional(['agency'])]
+class UserResource extends ModelResource
+```
+
+A resource nested through `of()` does not bring its declarations : repeat its keys on the outer
+resource, by their path (`'agency.website'`).
+
 ## OpenAPI documentation
 
 `php do make:openapi` writes the OpenAPI 3.1 document from your routes. Most of it comes from your

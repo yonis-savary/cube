@@ -4,18 +4,24 @@ namespace Cube\Data\OpenAPI\Specs\Paths\Responses;
 
 use Cube\Core\Autoloader;
 use Cube\Data\AutoDataToObject;
+use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelResource;
 use Cube\Data\Models\RelationTree;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
+use Cube\Data\OpenAPI\Attributes\Nullable;
 use Cube\Data\OpenAPI\Attributes\ObjectResponse;
+use Cube\Data\OpenAPI\Attributes\Optional;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceSchema;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Utils\Utils;
+use InvalidArgumentException;
+use ReflectionClass;
+use stdClass;
 
 class OASResponse extends AutoDataToObject
 {
@@ -73,10 +79,12 @@ class OASResponse extends AutoDataToObject
     public function resourceResponse(ResourceResponse $resourceResponse)
     {
         $data = $this->getResourceExample($resourceResponse->resourceClass, $resourceResponse->with);
-        $example = $resourceResponse->isArray ? [$data] : $data;
+        $schema = $this->toEncodableSchema($this->getResourceSchema($resourceResponse->resourceClass, $data));
 
-        $this->rawResponse(new RawResponse($example, description: $resourceResponse->description, mimeType: $resourceResponse->mimeType));
-        $this->content[$resourceResponse->mimeType]['example'] = $example;
+        $this->description = $resourceResponse->description ?? '';
+        $this->content[$resourceResponse->mimeType] = $resourceResponse->isArray
+            ? ['schema' => ['type' => 'array', 'items' => $schema], 'example' => [$data]]
+            : ['schema' => $schema, 'example' => $data];
     }
 
     public function objectResponse(ObjectResponse $objectResponse): void
@@ -91,10 +99,10 @@ class OASResponse extends AutoDataToObject
     private function getObjectSchema(mixed $schema): array
     {
         if ($schema instanceof ResourceSchema)
-            return $this->getRawDataSchema($this->getResourceExample($schema->resourceClass, $schema->with));
+            return $this->getResourceSchema($schema->resourceClass, $this->getResourceExample($schema->resourceClass, $schema->with));
 
         if (is_string($schema) && Autoloader::extends($schema, ModelResource::class))
-            return $this->getRawDataSchema($this->getResourceExample($schema));
+            return $this->getResourceSchema($schema, $this->getResourceExample($schema));
 
         if (is_string($schema) && Autoloader::extends($schema, Model::class))
             return ['$ref' => $this->getRefForClass($schema)];
@@ -119,6 +127,98 @@ class OASResponse extends AutoDataToObject
         $schema = [];
         $this->mutateParameterFromRawData($data, $schema);
         return $schema;
+    }
+
+    /**
+     * The example gives the types, the resource's #[Nullable] and #[Optional] what it cannot show
+     *
+     * @param class-string<ModelResource<Model,array<string,mixed>>> $resourceClass
+     * @param array<mixed> $example
+     * @return array<string,mixed>
+     */
+    private function getResourceSchema(string $resourceClass, array $example): array
+    {
+        $resource = new ReflectionClass($resourceClass);
+        $nullableKeys = ($resource->getAttributes(Nullable::class)[0] ?? null)?->newInstance()->keys ?? [];
+        $optionalKeys = ($resource->getAttributes(Optional::class)[0] ?? null)?->newInstance()->keys ?? [];
+
+        $schema = $this->getRawDataSchema($example);
+
+        $unknownKey = Bunch::wrap([...$nullableKeys, ...$optionalKeys])->diff($this->getSchemaPaths($schema))->first();
+        if ($unknownKey !== null)
+            throw new InvalidArgumentException("{$resourceClass} declares the key [{$unknownKey}], which is not in what its toArray() answers");
+
+        return $this->withDeclaredKeys($schema, $nullableKeys, $optionalKeys);
+    }
+
+    /**
+     * @param array<string,mixed>|stdClass $schema
+     * @return string[]
+     */
+    private function getSchemaPaths(array|stdClass $schema, string $path = ''): array
+    {
+        $paths = [];
+        foreach ($this->getChildSchemas($schema) as $key => $child) {
+            $childPath = $this->getChildPath($path, $key);
+            $paths = [...$paths, $childPath, ...$this->getSchemaPaths($child, $childPath)];
+        }
+
+        return $paths;
+    }
+
+    /**
+     * @param array<string,mixed>|stdClass $schema
+     * @param string[] $nullableKeys
+     * @param string[] $optionalKeys
+     * @return array<string,mixed>|stdClass
+     */
+    private function withDeclaredKeys(array|stdClass $schema, array $nullableKeys, array $optionalKeys, string $path = ''): array|stdClass
+    {
+        if ($schema instanceof stdClass)
+            return $schema;
+
+        $children = $this->getChildSchemas($schema);
+        foreach ($children as $key => $child)
+            $children[$key] = $this->withDeclaredKeys($child, $nullableKeys, $optionalKeys, $this->getChildPath($path, $key));
+
+        if ($schema['type'] === 'array' && $children)
+            $schema['items'] = $children['*'];
+
+        if ($schema['type'] === 'object') {
+            $schema['properties'] = $children;
+            $required = Bunch::wrap(array_keys($children))
+                ->filter(fn ($key) => !in_array($this->getChildPath($path, $key), $optionalKeys, true))
+                ->values()
+                ->toArray();
+            if ($required)
+                $schema['required'] = $required;
+        }
+
+        if (in_array($path, $nullableKeys, true))
+            $schema['type'] = [$schema['type'], 'null'];
+
+        return $schema;
+    }
+
+    /**
+     * @param array<string,mixed>|stdClass $schema
+     * @return array<string,array<string,mixed>|stdClass>
+     */
+    private function getChildSchemas(array|stdClass $schema): array
+    {
+        if ($schema instanceof stdClass)
+            return [];
+
+        return match ($schema['type']) {
+            'object' => $schema['properties'],
+            'array' => isset($schema['items']) ? ['*' => $schema['items']] : [],
+            default => [],
+        };
+    }
+
+    private function getChildPath(string $path, string|int $key): string
+    {
+        return $path === '' ? (string) $key : "{$path}.{$key}";
     }
 
     /**

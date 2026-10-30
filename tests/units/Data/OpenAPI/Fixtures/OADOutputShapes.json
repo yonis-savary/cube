@@ -243,7 +243,11 @@
                                                 "login": {
                                                     "type": "string"
                                                 }
-                                            }
+                                            },
+                                            "required": [
+                                                "id",
+                                                "login"
+                                            ]
                                         },
                                         "members": {
                                             "type": "array",
@@ -256,7 +260,11 @@
                                                     "login": {
                                                         "type": "string"
                                                     }
-                                                }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "login"
+                                                ]
                                             }
                                         },
                                         "admins": {
@@ -270,7 +278,11 @@
                                                     "type": {
                                                         "type": "string"
                                                     }
-                                                }
+                                                },
+                                                "required": [
+                                                    "login",
+                                                    "type"
+                                                ]
                                             }
                                         },
                                         "type": {

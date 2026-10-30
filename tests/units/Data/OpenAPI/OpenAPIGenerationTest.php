@@ -120,6 +120,53 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals('string', $content['schema']['properties']['type']['type']);
     }
 
+    public function testAResourceKeyIsRequiredUnlessDeclaredOptional() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(
+            Route::get("/users", [SampleController::class, "usersAsResource"]),
+            Route::get("/profile", [SampleController::class, "userProfile"]),
+        );
+        $paths = $this->generateAsArray($router)['paths'];
+
+        $this->assertEquals(['id', 'login'], $paths['/users']['get']['responses'][200]['content']['application/json']['schema']['items']['required']);
+
+        $profile = $paths['/profile']['get']['responses'][200]['content']['application/json']['schema'];
+        $this->assertEquals(['id', 'nickname', 'tags'], $profile['required']);
+        $this->assertEquals(['city'], $profile['properties']['address']['required']);
+    }
+
+    public function testANullableResourceKeyAddsNullToItsType() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/profile", [SampleController::class, "userProfile"]));
+
+        $properties = $this->generateAsArray($router)['paths']['/profile']['get']['responses'][200]['content']['application/json']['schema']['properties'];
+
+        $this->assertEquals('integer', $properties['id']['type']);
+        $this->assertEquals(['string', 'null'], $properties['nickname']['type']);
+        $this->assertEquals(['string', 'null'], $properties['address']['properties']['city']['type']);
+        $this->assertEquals('string', $properties['address']['properties']['zip']['type']);
+        $this->assertEquals(['string', 'null'], $properties['tags']['items']['type']);
+    }
+
+    public function testAnObjectResponseAppliesTheDeclarationsOfItsResources() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/profiles", [SampleController::class, "userProfiles"]));
+
+        $profile = $this->generateAsArray($router)['paths']['/profiles']['get']['responses'][200]['content']['application/json']['schema']['properties']['profiles']['items'];
+
+        $this->assertEquals(['string', 'null'], $profile['properties']['nickname']['type']);
+        $this->assertEquals(['id', 'nickname', 'tags'], $profile['required']);
+    }
+
+    public function testDeclaringAKeyTheResourceDoesNotAnswerFails() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithAMistypedKey"]));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('[nick]');
+        $this->generateAsArray($router);
+    }
+
     public function testAResourceReadingARelationTheEndpointDoesNotDeclareFails() {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(Route::get("/user", [SampleController::class, "userWithoutItsType"]));

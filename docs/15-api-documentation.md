@@ -222,6 +222,43 @@ itself : on the example, `load()` would query an empty database and replace the 
 with `null`. A resource reading a relation missing from `with` stops the generation with a
 `RuntimeException`, since the model has no such value.
 
+The example only shows values : it cannot tell that a key may be `null`, or may be missing. Declare
+it on the resource class. A `#[Nullable]` key gets `null` added to its type, and every key not
+declared `#[Optional]` is listed in `required`
+
+```php
+#[Nullable(['phone', 'address.city', 'tags.*'])]
+#[Optional(['agency'])]
+class UserResource extends ModelResource
+{
+    // ...
+
+    public function toArray(Model $model): array
+    {
+        return [
+            'id' => $model->id,
+            'phone' => $model->phone,                              // a nullable column
+            'address' => ['city' => $model->city, 'zip' => $model->zip],
+            'tags' => $model->tags,                                // a list whose items may be null
+            ...($model->isLoaded('agency') ? ['agency' => AgencyResource::of($model->agency)] : []),
+        ];
+    }
+}
+```
+
+| Key | Points to |
+|---|---|
+| `'phone'` | a key of the resource |
+| `'address.city'` | a key of a nested object, dot-separated |
+| `'tags.*'` | the items of a list |
+
+Cube reads nothing from your columns : a key holding a nullable column is only nullable once you
+declare it. The declarations follow the resource wherever it is described, `#[ResourceResponse]`,
+`#[ObjectResponse]` or `ResourceSchema`, but not into another resource it nests through `of()` :
+declare the nested keys on the outer resource, by their path. Every declared key must be in the
+example — load in `with` the relations an optional key depends on — : a key the example does not
+hold stops the generation with an `InvalidArgumentException` naming it, which catches a typo too.
+
 `#[ObjectResponse]` describes a route answering several models or resources at once, a page for
 instance. Its schema is an example value read like `#[RawResponse]`'s, except that a `ModelResource`
 class stands for what the resource answers, and a `Model` class for a `$ref` to the model's schema
