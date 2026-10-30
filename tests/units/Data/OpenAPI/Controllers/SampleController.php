@@ -180,8 +180,13 @@ class SampleController extends Controller
 
     }
 
-    #[RawResponse(['items' => [Album::class], 'total' => 0])]
+    #[ObjectResponse(['items' => [Album::class], 'total' => 0])]
     public function endpointReturningAPageOfAlbums() {
+
+    }
+
+    #[RawResponse(['model' => Album::class])]
+    public function endpointReturningAModelClassName() {
 
     }
 

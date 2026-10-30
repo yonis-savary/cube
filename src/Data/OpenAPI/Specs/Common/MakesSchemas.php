@@ -176,8 +176,6 @@ trait MakesSchemas
             $schema['items'] = [];
             $this->mutateParameterFromRawData($data[0], $schema['items']);
             $schema['items'] = $this->toEncodableSchema($schema['items']);
-        } else if (is_string($data) && Autoloader::extends($data, Model::class)) {
-            $schema = ['$ref' => $this->getRefForClass($data)];
         } else if (is_string($data)) {
             $schema = ['type' => 'string'];
         } else if (is_float($data)) {

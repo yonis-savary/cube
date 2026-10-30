@@ -15,6 +15,7 @@ use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceSchema;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
+use Cube\Utils\Utils;
 
 class OASResponse extends AutoDataToObject
 {
@@ -80,22 +81,43 @@ class OASResponse extends AutoDataToObject
 
     public function objectResponse(ObjectResponse $objectResponse): void
     {
-        $data = $this->withResourcesShaped($objectResponse->schema);
-
-        $this->rawResponse(new RawResponse($data, description: $objectResponse->description, mimeType: $objectResponse->mimeType));
+        $this->description = $objectResponse->description ?? '';
+        $this->content[$objectResponse->mimeType] = ['schema' => $this->toEncodableSchema($this->getObjectSchema($objectResponse->schema))];
     }
 
-    private function withResourcesShaped(mixed $schema): mixed
+    /**
+     * @return array<string,mixed>
+     */
+    private function getObjectSchema(mixed $schema): array
     {
-        if (is_array($schema))
-            return array_map($this->withResourcesShaped(...), $schema);
-
         if ($schema instanceof ResourceSchema)
-            return $this->getResourceExample($schema->resourceClass, $schema->with);
+            return $this->getRawDataSchema($this->getResourceExample($schema->resourceClass, $schema->with));
 
         if (is_string($schema) && Autoloader::extends($schema, ModelResource::class))
-            return $this->getResourceExample($schema);
+            return $this->getRawDataSchema($this->getResourceExample($schema));
 
+        if (is_string($schema) && Autoloader::extends($schema, Model::class))
+            return ['$ref' => $this->getRefForClass($schema)];
+
+        if (!is_array($schema) || $schema === [])
+            return $this->getRawDataSchema($schema);
+
+        if (Utils::isList($schema))
+            return ['type' => 'array', 'items' => $this->toEncodableSchema($this->getObjectSchema($schema[0]))];
+
+        return [
+            'type' => 'object',
+            'properties' => array_map(fn ($value) => $this->toEncodableSchema($this->getObjectSchema($value)), $schema),
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function getRawDataSchema(mixed $data): array
+    {
+        $schema = [];
+        $this->mutateParameterFromRawData($data, $schema);
         return $schema;
     }
 

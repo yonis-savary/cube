@@ -174,15 +174,10 @@ public function detailedStats(): array
 ```
 
 The example is only read for its shape : `120` becomes an integer, `[1, 2, 3]` a list of integers
-(read from its first item), an associative array an object, `null` any value (`{}`), and the class
-name of a model a `$ref` to its schema. Give `file` relative to your project root, or as an absolute
-path inside it as `__DIR__` does : the attribute checks the file exists before anything else.
-
-```php
-#[RawResponse(['items' => [Album::class], 'total' => 0])]
-public function page(Request $request): array
-// items : a list of #/components/schemas/Album
-```
+(read from its first item), an associative array an object, `null` any value (`{}`), and any string
+a string, even a model's class name : to reference a model's schema, use `#[ObjectResponse]`. Give
+`file` relative to your project root, or as an absolute path inside it as `__DIR__` does : the
+attribute checks the file exists before anything else.
 
 With a content type other than JSON, `#[RawResponse]` needs no example : the response is a binary
 string
@@ -228,8 +223,8 @@ with `null`. A resource reading a relation missing from `with` stops the generat
 `RuntimeException`, since the model has no such value.
 
 `#[ObjectResponse]` describes a route answering several models or resources at once, a page for
-instance. Its schema is an example value, like `#[RawResponse]`'s, where a `ModelResource` class
-stands for what the resource answers, and a `Model` class for the model's schema
+instance. Its schema is an example value read like `#[RawResponse]`'s, except that a `ModelResource`
+class stands for what the resource answers, and a `Model` class for a `$ref` to the model's schema
 
 ```php
 #[ObjectResponse([

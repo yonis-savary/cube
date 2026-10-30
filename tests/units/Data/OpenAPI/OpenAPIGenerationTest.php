@@ -543,12 +543,21 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(new stdClass(), $raw->list->items);
     }
 
-    public function testARawResponseReferencesAModelByItsClass() {
+    public function testAnObjectResponseReferencesAModelByItsClass() {
         $document = $this->generateAsArray($this->getOutputShapesRouter());
         $schema = $document['paths']['/albums']['get']['responses'][200]['content']['application/json']['schema'];
 
         $this->assertEquals(['type' => 'array', 'items' => ['$ref' => '#/components/schemas/Album']], $schema['properties']['items']);
         $this->assertArrayHasKey('Album', $document['components']['schemas']);
+    }
+
+    public function testARawResponseReadsAModelClassNameAsAString() {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get("/model-class-name", [SampleController::class, "endpointReturningAModelClassName"]));
+
+        $schema = $this->generateAsArray($router)['paths']['/model-class-name']['get']['responses'][200]['content']['application/json']['schema'];
+
+        $this->assertEquals(['type' => 'string'], $schema['properties']['model']);
     }
 
     public function testARawBodyIsBinary() {
