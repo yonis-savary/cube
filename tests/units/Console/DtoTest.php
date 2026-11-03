@@ -17,21 +17,16 @@ use PHPUnit\Framework\TestCase;
  */
 class DtoTest extends TestCase
 {
-    protected const FIXTURE = 'tests/units/Data/DataToObject/Generator/Fixtures/openapi-billing.json';
-
     protected ?string $receivedAuthorization = null;
 
     protected function setUp(): void
     {
-        $document = file_get_contents(Path::relative(self::FIXTURE));
-
         MockServers::getInstance()->set(HttpClient::class, HttpMockServer::fromArray([
-            '/openapi.json' => function (Request $request) use ($document) {
+            '/album.json' => function (Request $request) {
                 $this->receivedAuthorization = $request->getHeader('Authorization');
 
-                return Response::ok($document);
+                return Response::json(['title' => 'Blue Train']);
             },
-            '/index.html' => Response::ok('<html></html>'),
         ]));
     }
 
@@ -41,57 +36,65 @@ class DtoTest extends TestCase
     }
 
     /**
+     * An invalid --name stops the command right after the sample is read, before anything is written
+     *
      * @param string[] $argv
      *
      * @return array{int,string} exit code, output
      */
-    protected function callCommand(array $argv): array
+    protected function readSample(array $argv): array
     {
         ob_start();
-        $code = Dto::call(Args::fromArgv($argv));
+        $code = Dto::call(Args::fromArgv([...$argv, '--name=album']));
 
         return [$code, ob_get_clean()];
     }
 
-    public function testADocumentIsFetchedFromAUrlWithTheGivenHeaders()
+    public function testASampleIsReadFromAJsonText()
     {
-        // An endpoint matching nothing stops the command right after the document is read, before anything is written
-        [$code, $output] = $this->callCommand(['https://billing.example.com/openapi.json', '--header=Authorization: Bearer secret', '--endpoint=nothing']);
+        [, $output] = $this->readSample(['{"title": "Blue Train"}']);
 
-        $this->assertEquals(1, $code);
-        $this->assertStringContainsString('No operation matches [nothing]', $output);
+        $this->assertStringContainsString('--name [album] is not a class name', $output);
+    }
+
+    public function testASampleIsReadFromAFile()
+    {
+        $file = Path::join(sys_get_temp_dir(), 'dto-sample-'.bin2hex(random_bytes(6)).'.json');
+        file_put_contents($file, '{"title": "Blue Train"}');
+
+        try {
+            [, $output] = $this->readSample([$file]);
+        } finally {
+            unlink($file);
+        }
+
+        $this->assertStringContainsString('--name [album] is not a class name', $output);
+    }
+
+    public function testASampleIsFetchedFromAUrlWithTheGivenHeaders()
+    {
+        [, $output] = $this->readSample(['https://music.example.com/album.json', '--header=Authorization: Bearer secret']);
+
+        $this->assertStringContainsString('--name [album] is not a class name', $output);
         $this->assertEquals('Bearer secret', $this->receivedAuthorization);
     }
 
-    public function testAnUnsuccessfulAnswerStopsTheCommand()
+    public function testAnArgumentThatIsNeitherAFileAUrlNorJsonIsRejected()
     {
-        [$code, $output] = $this->callCommand(['https://billing.example.com/missing.json']);
+        [$code, $output] = $this->readSample(['album.json']);
 
         $this->assertEquals(1, $code);
-        $this->assertStringContainsString('Could not fetch https://billing.example.com/missing.json : the server answered 404', $output);
+        $this->assertStringContainsString('[album.json] is neither a file, an http(s) URL nor a valid JSON text', $output);
     }
 
-    public function testAnAnswerThatIsNotJsonStopsTheCommand()
+    public function testAListOrAScalarIsRejected()
     {
-        [$code, $output] = $this->callCommand(['https://billing.example.com/index.html']);
-
+        [$code, $output] = $this->readSample(['[{"title": "Blue Train"}]']);
         $this->assertEquals(1, $code);
-        $this->assertStringContainsString('https://billing.example.com/index.html is not a valid JSON document', $output);
-    }
+        $this->assertStringContainsString('The sample is a JSON list', $output);
 
-    public function testAHeaderNeedsAUrl()
-    {
-        [$code, $output] = $this->callCommand([self::FIXTURE, '--header=Authorization: Bearer secret']);
-
+        [$code, $output] = $this->readSample(['12']);
         $this->assertEquals(1, $code);
-        $this->assertStringContainsString('--header only applies when the document is fetched from a URL', $output);
-    }
-
-    public function testAHeaderWithoutColonIsRejected()
-    {
-        [$code, $output] = $this->callCommand(['https://billing.example.com/openapi.json', '--header=Authorization']);
-
-        $this->assertEquals(1, $code);
-        $this->assertStringContainsString('Header [Authorization] is not of the form "Name: value"', $output);
+        $this->assertStringContainsString('holds a JSON scalar', $output);
     }
 }

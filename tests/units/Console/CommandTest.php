@@ -90,7 +90,7 @@ class CommandTest extends TestCase
             'cube:test',
             'key:generate',
             'make:dto',
-            'make:dto-from-json',
+            'make:integration',
             'make:migration',
             'make:openapi',
             'migrate:migrate',

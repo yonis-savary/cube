@@ -10,12 +10,12 @@ use Cube\Utils\Shell;
 use Symfony\Component\Process\Process;
 
 /**
- * The application describes itself with `make:openapi`, `make:dto` turns that document into classes,
+ * The application describes itself with `make:openapi`, `make:integration` turns that document into classes,
  * and the real answers of the application must hydrate them : the three have to agree
  *
  * @internal
  */
-class OpenApiDtoTest extends CubeTestCase
+class OpenApiIntegrationTest extends CubeTestCase
 {
     protected const NAMESPACE = 'Tests\\Generated\\IntegrationApi';
     protected const DIRECTORY = 'Tests/Generated';
@@ -29,7 +29,7 @@ class OpenApiDtoTest extends CubeTestCase
 
         foreach ([
             ['php', 'do', 'make:openapi'],
-            ['php', 'do', 'make:dto', 'Storage/openapi.json', '--namespace='.self::NAMESPACE],
+            ['php', 'do', 'make:integration', 'Storage/openapi.json', '--namespace='.self::NAMESPACE],
         ] as $command) {
             $process = new Process($command, $root);
             $process->run();

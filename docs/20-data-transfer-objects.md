@@ -124,13 +124,13 @@ and body.
 
 ## Generating a client from an OpenAPI document
 
-When the API you consume publishes an OpenAPI document, `make:dto` generates a ready-made
+When the API you consume publishes an OpenAPI document, `make:integration` generates a ready-made
 [`HttpClient`](./27-http-client.md) for it : one method per operation, typed classes for what you send
 and what you receive. A schema declares which fields are required, which are nullable and what a list
 contains, so the generated types are exact : this is the way to prefer
 
 ```bash
-php do make:dto https://billing.example.com/openapi.json --namespace='App\Integration\Billing'
+php do make:integration https://billing.example.com/openapi.json --namespace='App\Integration\Billing'
 ```
 
 Declare your credential in your `cube.php`, under the name of the document's security scheme, then
@@ -241,7 +241,7 @@ When the API serves its document behind authentication, pass the headers the req
 `--header`, as `"Name: value"`. Repeat it to send several
 
 ```bash
-php do make:dto https://billing.example.com/openapi.json --header='Authorization: Bearer my-token'
+php do make:integration https://billing.example.com/openapi.json --header='Authorization: Bearer my-token'
 ```
 
 The command stops without writing anything when the server answers anything but a `2xx`, or when its
@@ -273,7 +273,7 @@ one operation, given as its `operationId` or as `"METHOD /path"`, and to the sch
 to select several
 
 ```bash
-php do make:dto billing-openapi.json --endpoint=createProduct --endpoint='GET /invoices/{id}'
+php do make:integration billing-openapi.json --endpoint=createProduct --endpoint='GET /invoices/{id}'
 ```
 
 The command stops without writing anything when an endpoint matches no operation.
@@ -308,14 +308,20 @@ Header and cookie parameters are not generated yet, and query values are encoded
 ## Generating the classes from a sample
 
 When the API publishes no OpenAPI document, or for a webhook documented only by an example,
-`make:dto-from-json` writes the classes from a sample payload instead
+`make:dto` writes the classes from a sample payload instead. Give the sample as a file, an `http(s)`
+URL, or the JSON text itself, and the name of the root class with `--name`
 
 ```bash
-php do make:dto-from-json
+php do make:dto storage/album-sample.json --name=Album
+php do make:dto https://music.example.com/albums/1 --name=Album --header='Authorization: Bearer my-token'
+php do make:dto '{"name": "Blue Train", "artist": {"name": "John Coltrane"}}' --name=Album
 ```
 
-It asks for the application to write into, a JSON sample, and the name of the root class (starting
-with an uppercase letter). It writes the root class in
+Without an argument, the command asks for the JSON sample, and it asks for the root class name when
+`--name` is missing. The sample must be a JSON object : for an endpoint answering a list, give one of
+its elements.
+
+It asks for the application to write into, then writes the root class in
 `<Application>/Integration/DataToObject/<Root>/<Root>.php`, and each nested object as its own class
 in a sub-directory. Keys that are not valid camel-cased PHP names (`created_at`, `unit-price`) get a
 `keys()` entry mapping the parameter back to them.
@@ -324,7 +330,7 @@ Pass `--namespace` to choose where the classes go instead of picking an applicat
 sit under a PSR-4 prefix of your `composer.json`, so that the classes can be autoloaded
 
 ```bash
-php do make:dto-from-json --namespace='App\Integration\Spotify'
+php do make:dto album.json --name=Album --namespace='App\Integration\Spotify'
 # App\Integration\Spotify\Album\Album, App\Integration\Spotify\Album\Artist\Artist...
 ```
 
