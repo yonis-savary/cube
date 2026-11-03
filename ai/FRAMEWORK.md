@@ -31,6 +31,7 @@ Cube already provides most plumbing. Use the framework tool before implementing 
 | logging | `Logger::getInstance()`, `Cube\info()`, `Cube\error()`... |
 | react to something | `Event` + `EventDispatcher` |
 | API documentation | `php do make:openapi`, plus OpenAPI attributes |
+| call an API that publishes an OpenAPI document | `php do make:dto <openapi.json\|url>`, then the generated `<Name>Client` |
 
 ## Configuration
 
@@ -358,6 +359,7 @@ derived from its class : `App\Commands\CountProducts` answers `php do app:count-
 | `php do models:generate` | regenerates the models from the database |
 | `php do models:to-types` | writes TypeScript types for the models |
 | `php do make:openapi` | writes the OpenAPI document |
+| `php do make:dto <openapi.json\|url>` | generates an `HttpClient` and its request/response classes from an OpenAPI document |
 | `php do configuration:cache` | caches `cube.php` |
 | `php do cache:clear` | empties the cache |
 | `php do key:generate` | prints a new `APP_KEY` |

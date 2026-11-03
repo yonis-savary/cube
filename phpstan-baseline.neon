@@ -31,48 +31,6 @@ parameters:
 			path: src/Console/Command.php
 
 		-
-			message: '#^Method Cube\\Console\\Commands\\DataToObject\\Classes\\DataToObjectGenClass\:\:__construct\(\) has parameter \$sampleData with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Console/Commands/DataToObject/Classes/DataToObjectGenClass.php
-
-		-
-			message: '#^Method Cube\\Console\\Commands\\DataToObject\\Classes\\DataToObjectGenClass\:\:attributeName\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Console/Commands/DataToObject/Classes/DataToObjectGenClass.php
-
-		-
-			message: '#^Method Cube\\Console\\Commands\\DataToObject\\Classes\\DataToObjectGenClass\:\:className\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Console/Commands/DataToObject/Classes/DataToObjectGenClass.php
-
-		-
-			message: '#^Method Cube\\Console\\Commands\\DataToObject\\Classes\\DataToObjectGenClass\:\:generateInto\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Console/Commands/DataToObject/Classes/DataToObjectGenClass.php
-
-		-
-			message: '#^Method Cube\\Console\\Commands\\DataToObject\\Classes\\DataToObjectGenClass\:\:parseSampleData\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Console/Commands/DataToObject/Classes/DataToObjectGenClass.php
-
-		-
-			message: '#^Method Cube\\Console\\Commands\\DataToObject\\Classes\\DataToObjectGenClass\:\:parseSampleData\(\) has parameter \$data with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Console/Commands/DataToObject/Classes/DataToObjectGenClass.php
-
-		-
-			message: '#^Method Cube\\Console\\Commands\\DataToObject\\Classes\\DataToObjectGenClass\:\:parseSampleValue\(\) has no return type specified\.$#'
-			identifier: missingType.return
-			count: 1
-			path: src/Console/Commands/DataToObject/Classes/DataToObjectGenClass.php
-
-		-
 			message: '#^Match expression does not handle remaining value\: string$#'
 			identifier: match.unhandled
 			count: 1

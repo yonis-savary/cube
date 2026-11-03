@@ -63,6 +63,13 @@ class PathTest extends TestCase
         $this->assertEquals('App', Path::pathToNamespace(Path::relative('tests/integration-root/App')));
     }
 
+    public function testNamespaceToPathFollowsTheLongestPsr4Prefix()
+    {
+        $this->assertEquals(realpath('tests/units/Utils'), Path::namespaceToPath('Cube\\Tests\\Units\\Utils'));
+        $this->assertEquals(Path::join(realpath('tests/integration-root/App'), 'Integration/Billing'), Path::namespaceToPath('\\App\\Integration\\Billing\\'));
+        $this->assertNull(Path::namespaceToPath('Nowhere\\Integration'));
+    }
+
     public function testConfinedResolvesDotSegmentsInsideTheReference()
     {
         $this->assertEquals('/data/b.txt', Path::confined('a/../b.txt', '/data'));

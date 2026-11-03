@@ -2,8 +2,14 @@
 
 namespace Cube\Tests\Units\Console;
 
-use Cube\Console\Commands\DataToObject\Classes\DataToObjectGenClass;
-use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
+use Cube\Console\Args;
+use Cube\Console\Commands\DataToObject\Dto;
+use Cube\Utils\Path;
+use Cube\Web\Http\HttpClient;
+use Cube\Web\Http\HttpMockServer;
+use Cube\Web\Http\MockServers;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -11,23 +17,81 @@ use PHPUnit\Framework\TestCase;
  */
 class DtoTest extends TestCase
 {
-    use HasTemporaryStorage;
+    protected const FIXTURE = 'tests/units/Data/DataToObject/Generator/Fixtures/openapi-billing.json';
 
-    /** An ISO date generated a `?\Datetime` parameter, which fromData() then filled with the raw string : TypeError. */
-    public function testAnIsoDateIsGeneratedAsAString()
+    protected ?string $receivedAuthorization = null;
+
+    protected function setUp(): void
     {
-        $this->setUpTemporaryStorage('dto-test-');
+        $document = file_get_contents(Path::relative(self::FIXTURE));
 
-        try {
-            (new DataToObjectGenClass('Invoice', ['created_at' => '2025-02-03T08:47:06.000Z']))
-                ->generateInto($this->storage);
+        MockServers::getInstance()->set(HttpClient::class, HttpMockServer::fromArray([
+            '/openapi.json' => function (Request $request) use ($document) {
+                $this->receivedAuthorization = $request->getHeader('Authorization');
 
-            $generated = $this->storage->read('Invoice.php');
+                return Response::ok($document);
+            },
+            '/index.html' => Response::ok('<html></html>'),
+        ]));
+    }
 
-            $this->assertStringContainsString('public ?string $createdAt', $generated);
-            $this->assertStringNotContainsStringIgnoringCase('datetime', $generated);
-        } finally {
-            $this->tearDownTemporaryStorage();
-        }
+    protected function tearDown(): void
+    {
+        MockServers::removeInstance();
+    }
+
+    /**
+     * @param string[] $argv
+     *
+     * @return array{int,string} exit code, output
+     */
+    protected function callCommand(array $argv): array
+    {
+        ob_start();
+        $code = Dto::call(Args::fromArgv($argv));
+
+        return [$code, ob_get_clean()];
+    }
+
+    public function testADocumentIsFetchedFromAUrlWithTheGivenHeaders()
+    {
+        // An endpoint matching nothing stops the command right after the document is read, before anything is written
+        [$code, $output] = $this->callCommand(['https://billing.example.com/openapi.json', '--header=Authorization: Bearer secret', '--endpoint=nothing']);
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString('No operation matches [nothing]', $output);
+        $this->assertEquals('Bearer secret', $this->receivedAuthorization);
+    }
+
+    public function testAnUnsuccessfulAnswerStopsTheCommand()
+    {
+        [$code, $output] = $this->callCommand(['https://billing.example.com/missing.json']);
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString('Could not fetch https://billing.example.com/missing.json : the server answered 404', $output);
+    }
+
+    public function testAnAnswerThatIsNotJsonStopsTheCommand()
+    {
+        [$code, $output] = $this->callCommand(['https://billing.example.com/index.html']);
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString('https://billing.example.com/index.html is not a valid JSON document', $output);
+    }
+
+    public function testAHeaderNeedsAUrl()
+    {
+        [$code, $output] = $this->callCommand([self::FIXTURE, '--header=Authorization: Bearer secret']);
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString('--header only applies when the document is fetched from a URL', $output);
+    }
+
+    public function testAHeaderWithoutColonIsRejected()
+    {
+        [$code, $output] = $this->callCommand(['https://billing.example.com/openapi.json', '--header=Authorization']);
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString('Header [Authorization] is not of the form "Name: value"', $output);
     }
 }

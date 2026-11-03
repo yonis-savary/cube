@@ -14,6 +14,16 @@ abstract class AutoDataToObject
     const TREAT_AS_ANY = "any";
 
     /**
+     * Property name => key written by `toArray()`, for keys that are not valid PHP names
+     *
+     * @return array<string,string>
+     */
+    public static function keys(): array
+    {
+        return [];
+    }
+
+    /**
      * When encoding to JSON, we need to know how to treat empty PHP Arrays
      * (Are they objects or true arrays)
      * this method shall return keys that should be treated as objects when encoded
@@ -121,7 +131,12 @@ abstract class AutoDataToObject
                 unset($array[$skipKey]);
         }
 
-        return $array;
+        $keys = static::keys();
+        $renamed = [];
+        foreach ($array as $property => $value)
+            $renamed[$keys[$property] ?? $property] = $value;
+
+        return $renamed;
     }
 
     public function toJSON(int $jsonEncodeFlags= JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR): string {

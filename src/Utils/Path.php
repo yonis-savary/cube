@@ -153,6 +153,29 @@ class Path
             ->join('\\');
     }
 
+    /**
+     * Directory of `$namespace` under the longest matching composer PSR-4 prefix, `null` when no prefix matches
+     */
+    public static function namespaceToPath(string $namespace): ?string
+    {
+        $namespace = trim($namespace, '\\').'\\';
+
+        $matchingPrefix = '';
+        $matchingRoot = null;
+        foreach (Autoloader::getClassLoader()->getPrefixesPsr4() as $prefix => $roots) {
+            if (!str_starts_with($namespace, $prefix) || strlen($prefix) <= strlen($matchingPrefix))
+                continue;
+
+            $matchingPrefix = $prefix;
+            $matchingRoot = realpath($roots[0]) ?: $roots[0];
+        }
+
+        if (null === $matchingRoot)
+            return null;
+
+        return self::join($matchingRoot, str_replace('\\', '/', substr($namespace, strlen($matchingPrefix))));
+    }
+
     public static function resolveProjectPath(?string $forceProjectPath = null): void
     {
         if ($forceProjectPath) {

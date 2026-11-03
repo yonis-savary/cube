@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Controllers\Requests\StoreProductRequest;
 use App\Models\Product;
+use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Controller;
@@ -20,6 +21,7 @@ class ProductController extends Controller
         );
     }
 
+    #[ModelResponse(Product::class, with: ['managers'])]
     public static function storeProduct(StoreProductRequest $request)
     {
         $product = Product::fromRequest($request);
@@ -30,6 +32,7 @@ class ProductController extends Controller
         return Response::json($product);
     }
 
+    #[ModelResponse(Product::class, with: ['managers'])]
     public static function getProduct(Request $request, Product $product)
     {
         $product->managers()->load();

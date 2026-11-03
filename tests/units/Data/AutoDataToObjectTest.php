@@ -39,4 +39,37 @@ class AutoDataToObjectTest extends TestCase
             $webhook->toArray()
         );
     }
+
+    public function testKeysRenameTheExportedProperties()
+    {
+        $line = new class(3, ['size' => 'L']) extends AutoDataToObject {
+            public ?string $comment;
+
+            public function __construct(public int $unitCount, public array $variantOptions) {}
+
+            public static function keys(): array
+            {
+                return ['unitCount' => 'unit-count', 'variantOptions' => 'variant_options'];
+            }
+
+            protected function objectKeys(): array
+            {
+                return ['variantOptions'];
+            }
+        };
+
+        $this->assertSame(['unit-count' => 3, 'variant_options' => ['size' => 'L']], $line->toArray());
+    }
+
+    public function testAnUninitializedPropertyIsLeftOutWhileANullOneIsKept()
+    {
+        $patch = new class extends AutoDataToObject {
+            public ?string $name;
+            public ?string $comment;
+        };
+
+        $patch->comment = null;
+
+        $this->assertSame(['comment' => null], $patch->toArray());
+    }
 }

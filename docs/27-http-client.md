@@ -12,7 +12,9 @@ $products = $response->getJSON();
 ```
 
 The form worth writing for a real integration is a **connector** : one `HttpClient` subclass per
-remote service, so the base URL, the credentials and the endpoints live in one place.
+remote service, so the base URL, the credentials and the endpoints live in one place. When the service
+publishes an OpenAPI document, `make:dto` writes that connector for you, with typed requests and
+responses (see [Generating a client](./20-data-transfer-objects.md#generating-a-client-from-an-openapi-document)).
 
 ## A connector
 

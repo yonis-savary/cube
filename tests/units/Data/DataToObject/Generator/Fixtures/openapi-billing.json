@@ -1,0 +1,283 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Billing API",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://{region}.billing.example.com/v1/",
+            "variables": {
+                "region": {
+                    "default": "eu"
+                }
+            }
+        }
+    ],
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ],
+    "paths": {
+        "/products": {
+            "get": {
+                "operationId": "listProducts",
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Product"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "label-contains",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "security": []
+            },
+            "post": {
+                "operationId": "createProduct",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "label"
+                                ],
+                                "properties": {
+                                    "label": {
+                                        "type": "string"
+                                    },
+                                    "unit-price": {
+                                        "type": "number"
+                                    },
+                                    "category": {
+                                        "$ref": "#/components/schemas/Category"
+                                    },
+                                    "reference": {
+                                        "type": "string",
+                                        "readOnly": true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json; charset=utf-8": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Product"
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "dry_run",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ]
+            }
+        },
+        "/invoices/{id}": {
+            "get": {
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/InvoiceResponse"
+                    },
+                    "404": {
+                        "description": ""
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "responses": {
+            "InvoiceResponse": {
+                "description": "",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Invoice"
+                        }
+                    }
+                }
+            }
+        },
+        "schemas": {
+            "Status": {
+                "type": "string",
+                "enum": [
+                    "draft",
+                    "paid"
+                ]
+            },
+            "Category": {
+                "type": "object",
+                "required": [
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "parent": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Category"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                }
+            },
+            "Product": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "label",
+                    "category"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "$ref": "#/components/schemas/Category"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "attributes": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "internal_note": {
+                        "type": "string",
+                        "writeOnly": true
+                    }
+                }
+            },
+            "Timestamped": {
+                "type": "object",
+                "required": [
+                    "created_at"
+                ],
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Invoice": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Timestamped"
+                    },
+                    {
+                        "type": "object",
+                        "required": [
+                            "number",
+                            "status",
+                            "lines"
+                        ],
+                        "properties": {
+                            "number": {
+                                "type": "string"
+                            },
+                            "status": {
+                                "$ref": "#/components/schemas/Status"
+                            },
+                            "paid_at": {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            "lines": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "product"
+                                    ],
+                                    "properties": {
+                                        "product": {
+                                            "$ref": "#/components/schemas/Product"
+                                        },
+                                        "quantity": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            },
+                            "payer": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/Category"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/Product"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    }
+}

@@ -54,6 +54,7 @@ class Utils
             ],
             'require-dev' => [
                 'phpunit/phpunit' => '13.0.5',
+                'fakerphp/faker' => '^1.24',
             ],
             'repositories' => [
                 [

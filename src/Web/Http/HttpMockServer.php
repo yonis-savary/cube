@@ -54,7 +54,7 @@ class HttpMockServer
     protected function removeHostFromUrl(string $url): string 
     {
         $url = preg_replace('~^https?://~', '', $url);
-        $url = preg_replace('~^.+?/~', '', $url);
+        $url = preg_replace('~^[^/]+~', '', $url);
         return $url;
     }
 

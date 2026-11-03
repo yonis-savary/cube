@@ -50,7 +50,10 @@ change it asks from your application.
 
 **Data**
 - `SavedModel::$database` is never `null`.
-- `make:dto` generates ISO dates as `?string`.
+- `make:dto` now generates the classes from an OpenAPI document (`php do make:dto <openapi.json>`).
+  Generating them from a pasted JSON sample, its former behaviour, is `make:dto-from-json`. The sample
+  generator also writes ISO dates as `?string`, a `keys()` entry for renamed keys only, and no date in
+  the header of the class.
 - `AutoDataToObject::toArray()` exports public properties only.
 - The migration history is ordered by insertion id rather than `created_at`.
 - A `HasOne` without a matching row is `null`, through `load()` as well as a query's `with()` (which
@@ -112,6 +115,16 @@ change it asks from your application.
 ### Added
 
 - `php do migrate:rollback [--steps=N]`, calling `Migration::down()`.
+- `php do make:dto <openapi.json|url>` generates, from an OpenAPI 3.0 / 3.1 JSON document read from a
+  file or fetched from a URL (`--header` adds a header to that request), an `HttpClient` with one method
+  per operation and the `ConfigurationElement` holding its URL and one credential per security scheme,
+  each operation sending the credentials of the schemes it accepts. Responses are read into
+  `DataToObject` classes (`Refs\Output`, `Http\Responses\<Operation>Response`), requests are built as
+  `AutoDataToObject` classes (`Refs\Input`, `Http\Requests\<Operation>Request`) whose unset optional
+  properties are not sent.
+  `--endpoint` selects operations, `--lenient` makes every property optional.
+  `make:dto` and `make:dto-from-json` take `--namespace` to choose where the classes go.
+- `AutoDataToObject::keys()` writes a property under another key, the mirror of `DataToObject::keys()`.
 - `php do routine:generate` also prints the crontab line for the Docker stack, `make launch-scheduler`,
   before the plain one.
 - `Bunch::fromAssoc()`, `Bunch::rangeFrom()`, and `Bunch` is iterable with `foreach`.
@@ -143,3 +156,5 @@ Also fixed :
 - `TestContext::useTemporaryStorage()` no longer empties a directory a symbolic link points to.
 - A `#[ResourceResponse]` example never reads the database : a relation the resource loads is `null`.
 - A `Logger` destroyed at shutdown after PHP closed its stream no longer throws a `TypeError`.
+- An `HttpMockServer` answers a request built with an absolute URL (`new Request('GET', 'https://...')`),
+  which always got a 404 because the slash after the host was removed along with it.

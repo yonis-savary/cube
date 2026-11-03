@@ -4,6 +4,7 @@ namespace Cube\Tests\Units\Web\HttpClient;
 
 use Cube\Env\Logger\NullLogger;
 use Cube\Utils\Text;
+use Cube\Web\Http\HttpClient;
 use Cube\Web\Http\HttpMockServer;
 use Cube\Web\Http\MockServers;
 use Cube\Web\Http\Request;
@@ -145,6 +146,18 @@ class HttpClientTest extends TestCase
         );
 
         $this->assertEquals('from the register', (new ExposedHttpClient('http://unreachable.invalid/'))->get('/products')->getBody());
+    }
+
+    /** The host was removed along with the slash after it, so an absolute URL never matched its route. */
+    public function testAMockAnswersARequestBuiltWithAnAbsoluteUrl()
+    {
+        MockServers::getInstance()->set(HttpClient::class, HttpMockServer::fromArray(['/products' => Response::ok('from the mock')]));
+
+        try {
+            $this->assertEquals('from the mock', (new Request('GET', 'https://unreachable.invalid/products'))->fetch()->getBody());
+        } finally {
+            MockServers::removeInstance();
+        }
     }
 
     public function testAsyncFetchIsShortCircuitedByAMock()

@@ -202,7 +202,8 @@ It returns the exit code.
 | `key:generate` | print a random `APP_KEY` to paste in your `.env` |
 | `make:migration [NAME]` | create a migration file in your application, asking the name when not given (see [Migrations](./17-migrations.md)) |
 | `make:openapi` | write the OpenAPI document of your API (see [API documentation](./15-api-documentation.md)) |
-| `make:dto` | generate data transfer object classes from a sample JSON you paste (see [Data transfer objects](./20-data-transfer-objects.md)) |
+| `make:dto <FILE\|URL> [--namespace=NS] [--endpoint=E...] [--lenient] [--header=H...]` | generate an `HttpClient` and its data transfer objects from an OpenAPI JSON document, read from a file or fetched from a URL (see [Data transfer objects](./20-data-transfer-objects.md#generating-a-client-from-an-openapi-document)) |
+| `make:dto-from-json [--namespace=NS]` | generate data transfer object classes from a sample JSON you paste (see [Data transfer objects](./20-data-transfer-objects.md#generating-the-classes-from-a-sample)) |
 | `migrate:migrate [-s]` | apply the pending migrations ; outside production it then runs `models:generate`, unless `-s`/`--skip-generation` |
 | `migrate:rollback [--steps=N] [-s]` | revert the `N` last applied migrations, 1 by default, newest first ; outside production it then runs `models:generate`, unless `-s`/`--skip-generation` (see [Migrations](./17-migrations.md#rolling-back)) |
 | `models:generate [-a]` | generate a model class per table, and with `-a`/`--apis` a `ModelAPI` subclass per model (see [Models](./18-models.md)) |
