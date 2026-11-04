@@ -11,7 +11,7 @@ readonly class ClientOperation
      * @param string                $name            PascalCased, from the operationId or the method and path
      * @param array<string,DtoType> $pathParameters  name in the path => type
      * @param ?DtoType              $request         the body, or the query string when `$requestInQuery`
-     * @param bool                  $requestRequired a body is always required, a query string when one of its parameters is
+     * @param bool                  $requestRequired a body when its `requestBody.required` says so (`false` by default), a query string when one of its parameters is
      * @param DtoProperty[]         $queryParameters query parameters of an operation that also has a body
      * @param ?DtoType              $response        `null` when the response is not JSON
      * @param string[]              $security        the security schemes the operation accepts

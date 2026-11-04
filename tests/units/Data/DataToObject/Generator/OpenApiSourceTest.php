@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Data\DataToObject\Generator;
 
+use Cube\Data\DataToObject\Generator\Descriptors\Client\ServerVariable;
 use Cube\Data\DataToObject\Generator\Sources\OpenApiSource;
 use Cube\Utils\Path;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -262,6 +263,34 @@ class OpenApiSourceTest extends TestCase
 
         $document['servers'] = [['url' => '../v4/']];
         $this->assertEquals('https://petstore.example.com/api/v4', (new OpenApiSource($document, documentUrl: 'https://petstore.example.com/api/v3/openapi.json'))->toClient()->url);
+    }
+
+    public function testAProtocolRelativeServerUrlTakesTheSchemeOfTheDocument()
+    {
+        $document = ['openapi' => '3.0.4', 'servers' => [['url' => '//api.helpdesk.example.com/v2/']], 'paths' => []];
+
+        $this->assertEquals('https://api.helpdesk.example.com/v2', (new OpenApiSource($document, documentUrl: 'https://docs.helpdesk.example.com/openapi.json'))->toClient()->url);
+        $this->assertNull((new OpenApiSource($document))->toClient()->url, 'A file gives no scheme');
+    }
+
+    public function testServerVariablesAreLeftInTheUrlAndDescribed()
+    {
+        $document = json_decode(file_get_contents(Path::join(__DIR__, 'Fixtures', 'openapi-helpdesk.json')), true, flags: JSON_THROW_ON_ERROR);
+        $client = (new OpenApiSource($document))->toClient();
+
+        $this->assertEquals('https://{tenant}.helpdesk.example.com/api/{version}', $client->url);
+        $this->assertEquals([new ServerVariable('tenant', 'acme'), new ServerVariable('version', 'v2', ['v1', 'v2'])], $client->serverVariables);
+    }
+
+    public function testAnUndeclaredPlaceholderIsAVariableWithoutDefault()
+    {
+        $document = ['openapi' => '3.0.3', 'servers' => [['url' => 'https://{region}.api.example.com/{stage}', 'variables' => ['stage' => ['default' => 'beta', 'enum' => ['live']]]]], 'paths' => []];
+
+        $this->assertEquals(
+            [new ServerVariable('region'), new ServerVariable('stage', 'beta', ['live', 'beta'])],
+            (new OpenApiSource($document))->toClient()->serverVariables,
+            'A default missing from the enum is one of its values',
+        );
     }
 
     public function testEachOperationAcceptsItsOwnSecuritySchemes()

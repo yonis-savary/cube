@@ -1,0 +1,335 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Helpdesk API",
+        "version": "2.1.0",
+        "description": "Written for the Cube test suite : the cases real documents seldom show (cookie, basic and openIdConnect security, scalar and free-form bodies, scalar responses)"
+    },
+    "servers": [
+        {
+            "url": "https://{tenant}.helpdesk.example.com/api/{version}",
+            "variables": {
+                "tenant": {
+                    "default": "acme"
+                },
+                "version": {
+                    "default": "v2",
+                    "enum": [
+                        "v1",
+                        "v2"
+                    ]
+                }
+            }
+        }
+    ],
+    "paths": {
+        "/tickets": {
+            "get": {
+                "operationId": "listTickets",
+                "security": [
+                    {
+                        "session": [],
+                        "csrf": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Ticket"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{ticketId}/comments": {
+            "post": {
+                "operationId": "addComment",
+                "security": [
+                    {
+                        "basic": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "ticketId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "notify",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Comment"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{ticketId}/tags": {
+            "put": {
+                "operationId": "replaceTags",
+                "security": [
+                    {
+                        "sso": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "ticketId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/tickets/{ticketId}/fields": {
+            "patch": {
+                "operationId": "updateCustomFields",
+                "parameters": [
+                    {
+                        "name": "ticketId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/tickets/{ticketId}/metadata": {
+            "put": {
+                "operationId": "replaceMetadata",
+                "parameters": [
+                    {
+                        "name": "ticketId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {}
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/tickets/{ticketId}/subject": {
+            "get": {
+                "operationId": "getTicketSubject",
+                "parameters": [
+                    {
+                        "name": "ticketId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/tickets/{ticketId}/assignees": {
+            "put": {
+                "operationId": "assignTicket",
+                "parameters": [
+                    {
+                        "name": "ticketId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "description": "Team name => who handles the ticket in it",
+                                "additionalProperties": {
+                                    "$ref": "#/components/schemas/Assignment"
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Ticket": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "subject"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "subject": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Comment": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "body"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "body": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Assignment": {
+                "type": "object",
+                "required": [
+                    "agent-id"
+                ],
+                "properties": {
+                    "agent-id": {
+                        "type": "integer"
+                    },
+                    "note": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "session": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "helpdesk_session"
+            },
+            "csrf": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "csrf_token"
+            },
+            "basic": {
+                "type": "http",
+                "scheme": "basic"
+            },
+            "sso": {
+                "type": "openIdConnect",
+                "openIdConnectUrl": "https://acme.helpdesk.example.com/.well-known/openid-configuration"
+            }
+        }
+    }
+}

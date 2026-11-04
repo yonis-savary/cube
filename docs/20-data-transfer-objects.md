@@ -172,7 +172,8 @@ and after upgrading Cube.
 
 ### Calling an operation
 
-Each method is named after its operation, and takes its arguments in this order
+Each method is named after its operation, and takes its arguments in this order, the required ones
+first
 
 | Argument | When |
 |---|---|
@@ -180,8 +181,10 @@ Each method is named after its operation, and takes its arguments in this order
 | `<Operation>Request $request` | when the operation sends a body, or has query parameters |
 | one per query parameter, optional ones defaulting to `null` | only when the operation also sends a body |
 
-A request built from query parameters is optional unless one of them is required. What the method
-returns depends on the response
+A body is optional, defaulting to `null`, unless its `requestBody` declares `required: true` : OpenAPI
+makes it optional by default. An optional body goes after the required query parameters, and is not
+sent when left to `null`. A request built from query parameters is optional unless one of them is
+required. What the method returns depends on the response
 
 | Response | Returned |
 |---|---|
@@ -220,9 +223,23 @@ after the scheme (`api_key` gives `apiKey`, `BearerAuth` gives `bearerAuth`). De
 new PetstoreConfiguration(url: env('PETSTORE_URL'), apiKey: env('PETSTORE_API_KEY')),
 ```
 
-The URL defaults to the first URL of the document's `servers`, its variables replaced by their default
-value. A relative one (`/api/v3`) is resolved against the URL the document was fetched from : generated
-from a file, it stays `null` until you declare it.
+The URL defaults to the first URL of the document's `servers`. A relative one (`/api/v3`) is resolved
+against the URL the document was fetched from : generated from a file, it stays `null` until you
+declare it.
+
+When that URL holds variables (`https://{tenant}.helpdesk.example.com/api/{version}`), each of them is a
+property of the configuration, defaulting to the document's `default`. A variable that lists its values
+(`enum`) is typed by a generated enum, `<Name><Variable>`. The client builds the URL from them, and
+`url` overrides the whole of it
+
+```php
+// cube.php
+new HelpdeskConfiguration(tenant: 'globex', version: HelpdeskVersion::V1, session: env('HELPDESK_SESSION')),
+new HelpdeskConfiguration(url: 'https://staging.helpdesk.example.com/api'),   // variables ignored
+```
+
+A variable without `default` defaults to `null` : until you configure it, or `url`, every call throws a
+`RuntimeException` naming it (`Cannot build the URL of the API : set [tenant] or url in HelpdeskConfiguration`).
 
 Each method sends the credentials of the schemes its operation accepts : its own `security`, or the
 document's when it declares none (`security: []` sends none). Of those, the client sends every
@@ -232,7 +249,7 @@ credential you configured
 |---|---|
 | `http` `bearer` | `Authorization: Bearer <credential>` |
 | `http` `basic` | `Authorization: Basic <credential>` : give the base64 of `user:password` |
-| `apiKey` in a header, the query string or a cookie | the credential under the declared name |
+| `apiKey` in a header, the query string or a cookie | the credential under the declared name, every cookie in the same `Cookie` header (`session=…; csrf_token=…`) |
 | `oauth2`, `openIdConnect` | `Authorization: Bearer <credential>` : the flow is not run, give an access token |
 
 ### Reading the document
@@ -315,8 +332,8 @@ The client follows the same rule wherever two names collide :
 
 Header and cookie parameters are not generated yet. A list in the query is sent as one parameter per
 item (`?tags=friendly&tags=young`), what OpenAPI expects by default (`explode: true`) : `style` and
-`explode: false` are not read yet. The other values are encoded by `http_build_query()` (a boolean
-becomes `1` or `0`). Only references inside the document
+`explode: false` are not read yet. A boolean is sent as `true` or `false`, in the query as in the path.
+The other values are encoded by `http_build_query()`. Only references inside the document
 (`#/components/...`) are followed : a reference to another file stops the generation.
 
 ## Generating the classes from a sample

@@ -3,12 +3,17 @@
 namespace Cube\Data\DataToObject\Generator;
 
 use Cube\Data\Bunch;
+use Cube\Data\DataToObject\Generator\Descriptors\Client\ClientAuthentication;
 use Cube\Data\DataToObject\Generator\Descriptors\Client\ClientOperation;
 use Cube\Data\DataToObject\Generator\Descriptors\Client\DtoClient;
+use Cube\Data\DataToObject\Generator\Descriptors\Client\ServerVariable;
 use Cube\Data\DataToObject\Generator\Descriptors\DtoProperty;
 use Cube\Data\DataToObject\Generator\Descriptors\Types\ClassType;
 use Cube\Data\DataToObject\Generator\Descriptors\Types\DtoType;
 use Cube\Data\DataToObject\Generator\Descriptors\Types\ListType;
+use Cube\Data\DataToObject\Generator\Descriptors\Types\MapType;
+use Cube\Data\DataToObject\Generator\Descriptors\Types\Scalar;
+use Cube\Data\DataToObject\Generator\Descriptors\Types\ScalarType;
 use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Utils\Text;
 use Cube\Web\Http\HttpClient;
@@ -38,7 +43,18 @@ class ClientWriter
      */
     public function write(DtoClient $client): array
     {
+        $files = [];
+
+        $enums = $this->serverVariableEnumsOf($client);
+        foreach ($client->serverVariables as $variable) {
+            if (!isset($enums[$variable->name]))
+                continue;
+
+            $files[] = $this->target->write('', $enums[$variable->name], $this->renderEnum($enums[$variable->name], $variable));
+        }
+
         return [
+            ...$files,
             $this->target->write('', $this->configurationName(), $this->renderConfiguration($client)),
             $this->target->write('', $this->clientName(), $this->renderClient($client)),
         ];
@@ -66,24 +82,119 @@ class ClientWriter
         foreach (array_keys($client->authentications) as $scheme)
             $properties[(string) $scheme] = DtoNames::unique(
                 lcfirst(DtoNames::propertyName((string) $scheme)),
-                ['url', ...$properties]
+                ['url', ...array_values($this->serverVariablePropertiesOf($client)), ...$properties]
             );
 
         return $properties;
     }
 
+    /**
+     * The configuration property of each server variable, after `url`
+     *
+     * @return array<string,string> variable => property
+     */
+    public function serverVariablePropertiesOf(DtoClient $client): array
+    {
+        $properties = [];
+        foreach ($client->serverVariables as $variable)
+            $properties[$variable->name] = DtoNames::unique(lcfirst(DtoNames::propertyName($variable->name)), ['url', ...$properties]);
+
+        return $properties;
+    }
+
+    /**
+     * The enum of each server variable that declares its values, `HelpdeskTenant` for `{tenant}`
+     *
+     * @return array<string,string> variable => enum name
+     */
+    public function serverVariableEnumsOf(DtoClient $client): array
+    {
+        $enums = [];
+        foreach ($client->serverVariables as $variable) {
+            if (!count($variable->enum))
+                continue;
+
+            $enums[$variable->name] = DtoNames::unique($this->baseName().DtoNames::className($variable->name), [$this->clientName(), $this->configurationName(), ...$enums]);
+        }
+
+        return $enums;
+    }
+
     public function renderConfiguration(DtoClient $client): string
     {
+        $variables = $this->serverVariablePropertiesOf($client);
+        $enums = $this->serverVariableEnumsOf($client);
+
+        // A URL with variables is built by the client from their configured values : `url` only overrides it
+        $url = null === $client->url || count($variables) ? 'null' : var_export($client->url, true);
+
         $parameters = [
-            '        public readonly ?string $url = '.(null === $client->url ? 'null' : var_export($client->url, true)).',',
+            "        public readonly ?string \$url = {$url},",
+            ...Bunch::wrap($client->serverVariables)
+                ->map(fn (ServerVariable $variable) => $this->variableParameterOf($variable, $variables[$variable->name], $enums[$variable->name] ?? null))
+                ->toArray(),
             ...array_map(fn (string $property) => '        public readonly ?string $'.$property.' = null,', array_values($this->credentialPropertiesOf($client))),
         ];
 
-        return $this->file($this->configurationName(), ConfigurationElement::class, Text::interpolate(Text::toFile('
+        $doc = count($variables)
+            ? "    /**\n     * @param ?string \$url the whole URL of the API : built from \$".implode(', $', $variables)." when null\n     */\n"
+            : '';
+
+        return $this->file($this->configurationName(), ConfigurationElement::class, $doc.Text::interpolate(Text::toFile('
                 public function __construct(
             {parameters}
                 ) {}
             ', 3), ['parameters' => implode("\n", $parameters)]), new PhpReferences($this->target->namespace, $this->configurationName(), [ConfigurationElement::class]));
+    }
+
+    public function renderEnum(string $name, ServerVariable $variable): string
+    {
+        $cases = Bunch::unzip($this->enumCasesOf($variable))
+            ->map(fn (array $pair) => "    case {$pair[1]} = ".var_export((string) $pair[0], true).';')
+            ->join("\n");
+
+        return Text::interpolate(Text::toFile('
+            <?php
+
+            namespace {namespace};
+
+            /**
+             * The values of `{{variable}}` in the server URL. Generated by {generator}, regenerate it rather than editing it
+             */
+            enum {name}: string
+            {
+            {cases}
+            }
+            ', 3), [
+            'namespace' => $this->target->namespace,
+            'variable' => $variable->name,
+            'generator' => $this->generator,
+            'name' => $name,
+            'cases' => $cases,
+        ])."\n";
+    }
+
+    /**
+     * @return array<string,string> value => case name
+     */
+    protected function enumCasesOf(ServerVariable $variable): array
+    {
+        $cases = [];
+        foreach ($variable->enum as $value)
+            $cases[$value] = DtoNames::unique(DtoNames::className($value), $cases);
+
+        return $cases;
+    }
+
+    protected function variableParameterOf(ServerVariable $variable, string $property, ?string $enum): string
+    {
+        $default = match (true) {
+            null === $variable->default => 'null',
+            null !== $enum => $enum.'::'.$this->enumCasesOf($variable)[$variable->default],
+            default => var_export($variable->default, true),
+        };
+
+        return '        public readonly ?'.($enum ?? 'string')." \${$property} = {$default},";
     }
 
     public function renderClient(DtoClient $client): string
@@ -106,7 +217,7 @@ class ClientWriter
         $authenticates = count($client->authentications) > 0;
 
         $blocks = [
-            $this->baseUrlMethod(),
+            $this->baseUrlMethod($client),
             ...Bunch::wrap($client->operations)->map(fn (ClientOperation $operation) => $this->operationMethod($operation, $types))->toArray(),
             $this->sendMethod($references, $authenticates),
             $this->toQueryStringMethod(),
@@ -117,14 +228,50 @@ class ClientWriter
         return $this->file($this->clientName(), HttpClient::class, implode("\n\n", $blocks), $references);
     }
 
-    protected function baseUrlMethod(): string
+    protected function baseUrlMethod(DtoClient $client): string
     {
+        if (!count($client->serverVariables)) {
+            return Text::interpolate(Text::toFile('
+                    public function baseURL(): ?string
+                    {
+                        return {configuration}::resolve()->url;
+                    }
+                ', 4), ['configuration' => $this->configurationName()]);
+        }
+
+        $properties = $this->serverVariablePropertiesOf($client);
+        $enums = $this->serverVariableEnumsOf($client);
+
+        $values = Bunch::wrap($client->serverVariables)
+            ->map(fn (ServerVariable $variable) => var_export($properties[$variable->name], true).' => $configuration->'.$properties[$variable->name].(isset($enums[$variable->name]) ? '?->value' : ''))
+            ->join(', ');
+
+        $replacements = Bunch::wrap($client->serverVariables)
+            ->map(fn (ServerVariable $variable) => var_export('{'.$variable->name.'}', true).' => $variables['.var_export($properties[$variable->name], true).']')
+            ->join(', ');
+
         return Text::interpolate(Text::toFile('
+                /**
+                 * The configured URL, or the server URL of the document built from the configured variables
+                 */
                 public function baseURL(): ?string
                 {
-                    return {configuration}::resolve()->url;
+                    $configuration = {configuration}::resolve();
+                    if (null !== $configuration->url)
+                        return $configuration->url;
+
+                    $variables = [{values}];
+                    if (in_array(null, $variables, true))
+                        throw new \RuntimeException(\'Cannot build the URL of the API : set [\'.implode(\'], [\', array_keys($variables, null, true)).\'] or url in {configuration}\');
+
+                    return strtr({template}, [{replacements}]);
                 }
-            ', 3), ['configuration' => $this->configurationName()]);
+            ', 3), [
+            'configuration' => $this->configurationName(),
+            'values' => $values,
+            'template' => var_export($client->url, true),
+            'replacements' => $replacements,
+        ]);
     }
 
     /**
@@ -164,30 +311,37 @@ class ClientWriter
     protected function operationMethod(ClientOperation $operation, TypeRenderer $types): string
     {
         $names = $this->argumentNamesOf($operation);
-        $arguments = [];
         $docs = [];
 
+        // A required argument after an optional one is deprecated : an optional body goes after the required query parameters
+        $required = [];
+        $optional = [];
+
         foreach ($operation->pathParameters as $name => $type)
-            $arguments[] = $types->nativeTypeOf($type).' $'.$names['path'][$name];
+            $required[] = $types->nativeTypeOf($type).' $'.$names['path'][$name];
 
         if ($request = $operation->request) {
             $argument = $names['request'];
-            $nativeType = $types->nativeTypeOf($request);
-            $arguments[] = $operation->requestRequired || 'mixed' === $nativeType
-                ? "{$nativeType} \${$argument}"
-                : "?{$nativeType} \${$argument} = null";
+
+            if ($operation->requestRequired)
+                $required[] = $types->nativeTypeOf($request).' $'.$argument;
+            else
+                $optional[] = $this->optionalArgumentOf($types->nativeTypeOf($request), $argument);
 
             if ($types->needsDocType($request))
-                $docs[] = '@param '.$types->docTypeOf($request).' $'.$argument;
+                $docs[] = '@param '.$types->docTypeOf($request).($operation->requestRequired ? '' : '|null').' $'.$argument;
         }
 
-        list($requiredQuery, $optionalQuery) = Bunch::wrap($operation->queryParameters)->partitionFilter(fn (DtoProperty $parameter) => !$parameter->required);
-        foreach ([...$requiredQuery, ...$optionalQuery] as $parameter) {
+        foreach ($operation->queryParameters as $parameter) {
             $nativeType = $types->nativeTypeOf($parameter->type);
-            $arguments[] = $parameter->required || 'mixed' === $nativeType
-                ? $nativeType.' $'.$names['query'][$parameter->key]
-                : '?'.$nativeType.' $'.$names['query'][$parameter->key].' = null';
+
+            if ($parameter->required)
+                $required[] = $nativeType.' $'.$names['query'][$parameter->key];
+            else
+                $optional[] = $this->optionalArgumentOf($nativeType, $names['query'][$parameter->key]);
         }
+
+        $arguments = [...$required, ...$optional];
 
         if ($this->isListOfClasses($operation->response))
             $docs[] = '@return '.$types->docTypeOf($operation->response);
@@ -212,6 +366,29 @@ class ClientWriter
     /**
      * @param array{path:array<string,string>,request:?string,query:array<string,string>} $names
      */
+    /**
+     * A list or a map of classes is converted item by item, and a map is a JSON object even when empty, where
+     * json_encode([]) writes a list. An optional body left to null sends no body
+     */
+    protected function encodedBodyOf(ClientOperation $operation, string $argument): string
+    {
+        $request = $operation->request;
+
+        $encoded = match (true) {
+            $this->isListOfClasses($request) => "array_map(fn (\$item) => \$item->toArray(), {$argument})",
+            $request instanceof MapType && $request->value instanceof ClassType => "(object) array_map(fn (\$item) => \$item->toArray(), {$argument})",
+            $request instanceof MapType => "(object) {$argument}",
+            default => $argument,
+        };
+
+        return $operation->requestRequired || $encoded === $argument ? $encoded : "null === {$argument} ? null : {$encoded}";
+    }
+
+        protected function optionalArgumentOf(string $nativeType, string $name): string
+    {
+        return ('mixed' === $nativeType ? 'mixed' : "?{$nativeType}")." \${$name} = null";
+    }
+
     protected function callOf(ClientOperation $operation, array $names): string
     {
         $argument = $names['request']
@@ -230,9 +407,8 @@ class ClientWriter
 
         $body = match (true) {
             null === $argument || $operation->requestInQuery => null,
-            $operation->request instanceof ClassType => "{$argument}->toArray()",
-            $this->isListOfClasses($operation->request) => "array_map(fn (\$item) => \$item->toArray(), {$argument})",
-            default => $argument,
+            $operation->request instanceof ClassType => $argument.($operation->requestRequired ? '->' : '?->').'toArray()',
+            default => $this->encodedBodyOf($operation, $argument),
         };
 
         $schemes = count($operation->security)
@@ -309,13 +485,18 @@ class ClientWriter
 
                 $assignment = match ($authentication->location) {
                     'query' => '$query['.var_export($authentication->name, true)."] = {$value};",
-                    'cookie' => "\$headers['Cookie'] = ".var_export($authentication->name.'=', true).".{$value};",
+                    'cookie' => '$cookies[] = '.var_export($authentication->name.'=', true).".{$value};",
                     default => '$headers['.var_export($authentication->name, true).'] = '.($authentication->prefix ? var_export($authentication->prefix, true).'.' : '')."{$value};",
                 };
 
                 return '        if (in_array('.var_export($scheme, true).", \$schemes, true) && null !== {$value})\n            {$assignment}";
             })
             ->join("\n\n");
+
+        // A request carries one Cookie header : each cookie scheme adds its cookie to it
+        $sendsCookies = Bunch::fromValues($client->authentications)->any(fn (ClientAuthentication $authentication) => 'cookie' === $authentication->location);
+        if ($sendsCookies)
+            $statements .= "\n\n        if (count(\$cookies))\n            \$headers['Cookie'] = implode('; ', \$cookies);";
 
         return Text::interpolate(Text::toFile('
                 /**
@@ -327,7 +508,7 @@ class ClientWriter
                 {
                     $configuration = {configuration}::resolve();
                     $headers = [];
-                    $query = [];
+                    $query = [];{cookies}
 
             {statements}
 
@@ -335,6 +516,7 @@ class ClientWriter
                 }
             ', 3), [
             'configuration' => $this->configurationName(),
+            'cookies' => $sendsCookies ? "\n        \$cookies = [];" : '',
             'statements' => $statements,
         ]);
     }
@@ -343,12 +525,18 @@ class ClientWriter
     {
         return Text::toFile('
                 /**
-                 * A list is sent as one parameter per item (`tags=a&tags=b`), as OpenAPI expects from a query by default
+                 * A list is sent as one parameter per item (`tags=a&tags=b`) and a boolean as `true` or `false`,
+                 * as OpenAPI expects from a query by default
                  *
                  * @param array<string,mixed> $parameters
                  */
                 protected function toQueryString(array $parameters): string
                 {
+                    array_walk_recursive($parameters, function (mixed &$value) {
+                        if (is_bool($value))
+                            $value = $value ? \'true\' : \'false\';
+                    });
+
                     $pairs = [];
                     foreach ($parameters as $name => $value) {
                         foreach (is_array($value) && array_is_list($value) ? $value : [$value] as $item)
@@ -384,6 +572,7 @@ class ClientWriter
         foreach (preg_split('/\{([^}]+)\}/', $operation->path, flags: PREG_SPLIT_DELIM_CAPTURE) as $index => $part) {
             $fragments[] = match (true) {
                 0 === $index % 2 => '' === $part ? null : var_export($part, true),
+                isset($pathNames[$part]) && $this->isBoolean($operation->pathParameters[$part]) => "(\${$pathNames[$part]} ? 'true' : 'false')",
                 isset($pathNames[$part]) => 'rawurlencode((string) $'.$pathNames[$part].')',
                 default => var_export('{'.$part.'}', true),
             };
@@ -414,6 +603,11 @@ class ClientWriter
             $this->isListOfClasses($request) => 'items',
             default => 'body',
         };
+    }
+
+    protected function isBoolean(DtoType $type): bool
+    {
+        return $type instanceof ScalarType && Scalar::Bool === $type->scalar;
     }
 
     protected function isListOfClasses(?DtoType $type): bool

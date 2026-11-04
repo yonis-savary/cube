@@ -6,6 +6,7 @@ use Cube\Data\Bunch;
 use Cube\Data\DataToObject\Generator\Descriptors\Client\ClientAuthentication;
 use Cube\Data\DataToObject\Generator\Descriptors\Client\ClientOperation;
 use Cube\Data\DataToObject\Generator\Descriptors\Client\DtoClient;
+use Cube\Data\DataToObject\Generator\Descriptors\Client\ServerVariable;
 use Cube\Data\DataToObject\Generator\Descriptors\DtoClass;
 use Cube\Data\DataToObject\Generator\Descriptors\DtoDirection;
 use Cube\Data\DataToObject\Generator\Descriptors\DtoProperty;
@@ -73,7 +74,9 @@ class OpenApiSource implements DtoSource
     {
         $this->read();
 
-        return new DtoClient($this->serverUrl(), $this->authentications(), $this->clientOperations);
+        $url = $this->serverUrl();
+
+        return new DtoClient($url, $this->authentications(), $this->clientOperations, $this->serverVariables($url));
     }
 
     /**
@@ -193,8 +196,9 @@ class OpenApiSource implements DtoSource
 
         $body = in_array($method, self::BODY_METHODS, true) ? $this->requestSchemaOf($operation) : null;
 
+        // An empty schema (`{}`) accepts any JSON : it is still a body
         $request = null;
-        if ($body) {
+        if (null !== $body) {
             $request = $this->endpointType($name.'Request', $body, DtoDirection::Input);
         } elseif (count($queryParameters)) {
             $this->addClass(new DtoClass(self::REQUESTS_NAMESPACE, $name.'Request', $queryParameters, direction: DtoDirection::Input));
@@ -209,9 +213,11 @@ class OpenApiSource implements DtoSource
             $path,
             $pathParameters,
             $request,
-            !$body && null !== $request,
-            null !== $body || Bunch::wrap($queryParameters)->any(fn (DtoProperty $parameter) => $parameter->required),
-            $body ? $queryParameters : [],
+            null === $body && null !== $request,
+            null !== $body
+                ? true === ($this->resolve($operation['requestBody'])['required'] ?? false)
+                : Bunch::wrap($queryParameters)->any(fn (DtoProperty $parameter) => $parameter->required),
+            null !== $body ? $queryParameters : [],
             $response ? $this->endpointType($name.'Response', $response, DtoDirection::Output) : null,
             $this->securityOf($operation),
         );
@@ -394,7 +400,8 @@ class OpenApiSource implements DtoSource
     }
 
     /**
-     * A relative server URL is relative to where the document was fetched from : left unknown for a file
+     * A relative server URL is relative to where the document was fetched from : left unknown for a file.
+     * Its `{variables}` are left in place, the client fills them from its configuration
      */
     protected function serverUrl(): ?string
     {
@@ -402,7 +409,7 @@ class OpenApiSource implements DtoSource
         if (!is_array($server) || !isset($server['url']))
             return null;
 
-        $url = preg_replace_callback('/\{([^}]+)\}/', fn ($variable) => (string) ($server['variables'][$variable[1]]['default'] ?? $variable[0]), $server['url']);
+        $url = $server['url'];
 
         if (preg_match('~^https?://~i', $url))
             return rtrim($url, '/');
@@ -433,6 +440,33 @@ class OpenApiSource implements DtoSource
         }
 
         return rtrim("{$scheme}//{$host}/".implode('/', $segments), '/');
+    }
+
+    /**
+     * Every placeholder of the server URL, declared or not. A default missing from the `enum` is one of its values
+     *
+     * @return ServerVariable[]
+     */
+    protected function serverVariables(?string $url): array
+    {
+        if (null === $url)
+            return [];
+
+        preg_match_all('/\{([^}]+)\}/', $url, $placeholders);
+        $declared = $this->document['servers'][0]['variables'] ?? [];
+
+        $variables = [];
+        foreach (array_unique($placeholders[1]) as $name) {
+            $default = isset($declared[$name]['default']) ? (string) $declared[$name]['default'] : null;
+            $enum = array_map(strval(...), $declared[$name]['enum'] ?? []);
+
+            if (null !== $default && count($enum) && !in_array($default, $enum, true))
+                $enum[] = $default;
+
+            $variables[] = new ServerVariable($name, $default, $enum);
+        }
+
+        return $variables;
     }
 
     /**

@@ -59,6 +59,7 @@
             "post": {
                 "operationId": "createProduct",
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
