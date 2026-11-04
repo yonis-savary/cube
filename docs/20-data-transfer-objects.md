@@ -167,7 +167,8 @@ client and its configuration sit at the root of the namespace, so you find them 
 
 Without `--namespace`, the command asks for an application and writes in
 `<Application>/Integration/<Title>`, `<Title>` being the PascalCased `info.title` of the document. The
-classes are meant to be regenerated rather than edited : rerun the command when the document changes.
+classes are meant to be regenerated rather than edited : rerun the command when the document changes,
+and after upgrading Cube.
 
 ### Calling an operation
 
@@ -189,7 +190,8 @@ returns depends on the response
 | anything else (no content, a file, a scalar) | the `Response` itself |
 
 A response that is not a `2xx` throws a `RuntimeException`. A method whose name would override one of
-`HttpClient` gets an `Operation` suffix (`delete` becomes `deleteOperation()`).
+`HttpClient`, public or protected, gets an `Operation` suffix (`delete` becomes `deleteOperation()`,
+`path` becomes `pathOperation()`).
 
 ### Building a request
 

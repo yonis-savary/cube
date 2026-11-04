@@ -392,11 +392,17 @@ class ClientWriter
         return implode('.', array_filter($fragments));
     }
 
+    /**
+     * Every method of `HttpClient` is taken, whatever its visibility : the generated client extends it
+     */
     protected function methodName(ClientOperation $operation): string
     {
         $name = lcfirst($operation->name);
 
-        $taken = array_map(strtolower(...), [...get_class_methods(HttpClient::class), ...self::HELPER_METHODS]);
+        $taken = array_map(strtolower(...), [
+            ...array_map(fn (\ReflectionMethod $method) => $method->name, (new \ReflectionClass(HttpClient::class))->getMethods()),
+            ...self::HELPER_METHODS,
+        ]);
 
         return in_array(strtolower($name), $taken, true) ? $name.'Operation' : $name;
     }

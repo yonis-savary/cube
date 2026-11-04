@@ -2,16 +2,19 @@
 
 namespace Cube\Tests\Units\Data\DataToObject\Generator;
 
+use Cube\Data\Bunch;
 use Cube\Data\DataToObject\Generator\ClientWriter;
 use Cube\Data\DataToObject\Generator\Sources\OpenApiSource;
 use Cube\Env\Configuration;
 use Cube\Utils\Path;
+use Cube\Web\Http\HttpClient;
 use Cube\Web\Http\HttpMockServer;
 use Cube\Web\Http\MockServers;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Router\Route;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Process\Process;
 
 /**
  * @internal
@@ -305,6 +308,36 @@ class ClientWriterTest extends TestCase
         $this->assertEquals('PetstoreClient', $writer->clientName());
         $this->assertEquals('PetstoreConfiguration', $writer->configurationName());
         $this->assertStringContainsString('return PetstoreConfiguration::resolve()->url;', $writer->renderClient($this->petstore()->toClient()));
+    }
+
+    /**
+     * An operation named after a protected method of HttpClient (`path`) overrode it with another
+     * signature : a fatal error when the class loads, that `php -l` does not see. A magic method gives no
+     * clash, its name losing its underscores (`__construct` gives `construct`)
+     */
+    public function testAnOperationNamedAfterAnHttpClientMethodGetsASuffix()
+    {
+        $names = Bunch::wrap((new \ReflectionClass(HttpClient::class))->getMethods())
+            ->map(fn (\ReflectionMethod $method) => $method->name)
+            ->filter(fn (string $name) => !str_starts_with($name, '__'))
+            ->push('send', 'credentials', 'successful')
+            ->toArray();
+
+        $paths = [];
+        foreach ($names as $name)
+            $paths["/{$name}"] = ['get' => ['operationId' => $name, 'responses' => ['204' => ['description' => '']]]];
+
+        $source = new OpenApiSource(['openapi' => '3.1.0', 'paths' => $paths]);
+        $client = $this->clientWriter()->write($source->toClient())[1];
+
+        $rendered = file_get_contents($client);
+        foreach ($names as $name)
+            $this->assertStringContainsString("public function {$name}Operation(): Response", $rendered);
+
+        $load = new Process([PHP_BINARY, '-r', 'require '.var_export(Path::relative('vendor/autoload.php'), true).'; require '.var_export($client, true).';']);
+        $load->run();
+
+        $this->assertTrue($load->isSuccessful(), $load->getOutput().$load->getErrorOutput());
     }
 }
 
