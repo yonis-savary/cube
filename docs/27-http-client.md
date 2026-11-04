@@ -70,6 +70,7 @@ Everything a connector answers for is a method you may override
 | `baseHeaders()` | `[]` | merged into every request's headers |
 | `baseURLParameters()` | `[]` | merged into every query string |
 | `basePostParameters()` | `[]` | merged into every body |
+| `toQueryString(array $parameters)` | `http_build_query()` : a list gives `tags[0]=a&tags[1]=b` | how the query string is written, for an API that expects another convention |
 | `baseLogger()` | a `NullLogger` | where the exchange is logged — nothing is logged unless you override it |
 | `baseUserAgent()` | a Firefox user agent | the `User-Agent` header, when no `$userAgent` is given |
 

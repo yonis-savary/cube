@@ -237,6 +237,37 @@ class HttpClientTest extends TestCase
         fclose($server);
     }
 
+    public function testAListParameterFollowsThePhpConventionByDefault()
+    {
+        $handle = (new HttpClient())->toCurlHandle(new Request('GET', 'http://some-api.org/pets', ['tags' => ['friendly', 'young']]));
+
+        $this->assertEquals('http://some-api.org/pets?tags%5B0%5D=friendly&tags%5B1%5D=young', curl_getinfo($handle, CURLINFO_EFFECTIVE_URL));
+    }
+
+    public function testASubclassChoosesHowTheQueryIsWritten()
+    {
+        $client = new class extends HttpClient {
+            protected function toQueryString(array $parameters): string
+            {
+                return 'tags='.implode(',', $parameters['tags']);
+            }
+        };
+
+        $handle = $client->toCurlHandle(new Request('GET', 'http://some-api.org/pets', ['tags' => ['friendly', 'young']]));
+        $this->assertEquals('http://some-api.org/pets?tags=friendly,young', curl_getinfo($handle, CURLINFO_EFFECTIVE_URL));
+
+        $server = stream_socket_server('tcp://127.0.0.1:0');
+        $port = (int) substr(strrchr(stream_socket_get_name($server, false), ':'), 1);
+
+        $this->assertTrue($client->fetchAsync(new Request('GET', "http://127.0.0.1:{$port}/pets", ['tags' => ['friendly', 'young']])));
+
+        $connection = stream_socket_accept($server, 1);
+        $this->assertStringStartsWith('GET /pets?tags=friendly,young HTTP/1.1', stream_get_contents($connection));
+
+        fclose($connection);
+        fclose($server);
+    }
+
     /** A client built for one API sent its credentials to any absolute URL it was given. */
     public function testBaseValuesStayOnTheBaseOrigin()
     {

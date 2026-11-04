@@ -6,6 +6,9 @@ use Cube\Data\Bunch;
 
 class DtoNames
 {
+    /** What a name given on the command line must look like : a class name starting with an uppercase letter */
+    public const CLASS_NAME_FORMAT = '/^[A-Z][a-zA-Z0-9]+$/';
+
     protected const RESERVED_CLASS_NAMES = [
         'abstract', 'and', 'array', 'as', 'bool', 'break', 'callable', 'case', 'catch', 'class', 'clone',
         'const', 'continue', 'declare', 'default', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare',

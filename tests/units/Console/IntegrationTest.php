@@ -4,6 +4,9 @@ namespace Cube\Tests\Units\Console;
 
 use Cube\Console\Args;
 use Cube\Console\Commands\DataToObject\Integration;
+use Cube\Core\Autoloader\Applications;
+use Cube\Env\Configuration;
+use Cube\Tests\Units\Console\Classes\GeneratesIntoATestNamespace;
 use Cube\Utils\Path;
 use Cube\Web\Http\HttpClient;
 use Cube\Web\Http\HttpMockServer;
@@ -17,7 +20,10 @@ use PHPUnit\Framework\TestCase;
  */
 class IntegrationTest extends TestCase
 {
+    use GeneratesIntoATestNamespace;
+
     protected const FIXTURE = 'tests/units/Data/DataToObject/Generator/Fixtures/openapi-billing.json';
+    protected const PETSTORE = 'tests/units/Data/DataToObject/Generator/Fixtures/openapi-petstore.json';
 
     protected ?string $receivedAuthorization = null;
 
@@ -38,6 +44,7 @@ class IntegrationTest extends TestCase
     protected function tearDown(): void
     {
         MockServers::removeInstance();
+        $this->removeGeneratedDirectory();
     }
 
     /**
@@ -94,4 +101,111 @@ class IntegrationTest extends TestCase
         $this->assertEquals(1, $code);
         $this->assertStringContainsString('Header [Authorization] is not of the form "Name: value"', $output);
     }
+
+    public function testADocumentGeneratesItsClientAndClassesIntoTheNamespace()
+    {
+        $namespace = $this->generatedNamespace().'\\Petstore';
+
+        [$code, $output] = $this->callCommand([self::PETSTORE, "--namespace={$namespace}"]);
+
+        $this->assertEquals(0, $code, $output);
+
+        $files = $this->writtenFiles($output);
+        $this->assertCount(21, $files, 'One file per class, the client and its configuration');
+        $this->assertContains(Path::join($this->generatedDirectory, 'Petstore/PetstoreClient.php'), $files);
+        $this->assertContains(Path::join($this->generatedDirectory, 'Petstore/PetstoreConfiguration.php'), $files);
+        $this->assertContains(Path::join($this->generatedDirectory, 'Petstore/Refs/Output/Pet.php'), $files);
+        $this->assertContains(Path::join($this->generatedDirectory, 'Petstore/Http/Requests/FindPetsByStatusRequest.php'), $files);
+        $this->assertGeneratedFilesAreValid($files);
+
+        $getPetById = new \ReflectionMethod("{$namespace}\\PetstoreClient", 'getPetById');
+        $this->assertEquals("{$namespace}\\Http\\Responses\\GetPetByIdResponse", (string) $getPetById->getReturnType());
+        $this->assertEquals('https://petstore3.swagger.io/api/v3', (new ("{$namespace}\\PetstoreConfiguration"))->url);
+    }
+
+    public function testTheDefaultNamespaceIsNamedAfterTheDocumentTitle()
+    {
+        $this->generatedNamespace();
+        mkdir($this->generatedDirectory);
+
+        [$code, $output] = (new Configuration(new Applications($this->generatedDirectory)))
+            ->asGlobalInstance(fn () => $this->callCommand([self::PETSTORE, '--endpoint=getInventory']));
+
+        $this->assertEquals(0, $code, $output);
+        $this->assertEqualsCanonicalizing([
+            Path::join($this->generatedDirectory, 'Integration/SwaggerPetstoreOpenAPI30/SwaggerPetstoreOpenAPI30Configuration.php'),
+            Path::join($this->generatedDirectory, 'Integration/SwaggerPetstoreOpenAPI30/SwaggerPetstoreOpenAPI30Client.php'),
+        ], $this->writtenFiles($output));
+    }
+
+    public function testEndpointsRestrictTheGenerationToWhatTheyUse()
+    {
+        $namespace = $this->generatedNamespace().'\\Petstore';
+
+        [$code, $output] = $this->callCommand([self::PETSTORE, "--namespace={$namespace}", '--endpoint=getPetById', '--endpoint=post /store/order']);
+
+        $this->assertEquals(0, $code, $output);
+        $this->assertEqualsCanonicalizing(array_map(fn (string $file) => Path::join($this->generatedDirectory, "Petstore/{$file}.php"), [
+            'Refs/Output/Category', 'Refs/Output/Tag', 'Refs/Output/Pet', 'Refs/Output/Order', 'Refs/Input/Order',
+            'Http/Responses/GetPetByIdResponse', 'Http/Requests/PlaceOrderRequest', 'Http/Responses/PlaceOrderResponse',
+            'PetstoreConfiguration', 'PetstoreClient',
+        ]), $this->writtenFiles($output));
+    }
+
+    public function testLenientMakesEveryPropertyOptional()
+    {
+        $namespace = $this->generatedNamespace().'\\Petstore';
+
+        [$code, $output] = $this->callCommand([self::PETSTORE, "--namespace={$namespace}", '--endpoint=getPetById', '--lenient']);
+
+        $this->assertEquals(0, $code, $output);
+        $this->assertStringContainsString('public ?string $name = null,', file_get_contents(Path::join($this->generatedDirectory, 'Petstore/Refs/Output/Pet.php')));
+    }
+
+    public function testADocumentThatIsNotOpenApi3IsRejected()
+    {
+        $file = Path::join(sys_get_temp_dir(), 'swagger-'.bin2hex(random_bytes(6)).'.json');
+        file_put_contents($file, '{"swagger": "2.0", "info": {"title": "Legacy", "version": "1"}, "paths": {}}');
+
+        try {
+            [$code, $output] = $this->callCommand([$file]);
+        } finally {
+            unlink($file);
+        }
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString("{$file} is not an OpenAPI 3 document", $output);
+    }
+
+    public function testANamespaceOutsideEveryPsr4PrefixIsRejected()
+    {
+        [$code, $output] = $this->callCommand([self::PETSTORE, '--namespace=Nowhere\\Petstore']);
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString('Namespace [Nowhere\\Petstore] is outside every PSR-4 prefix of composer.json', $output);
+    }
+
+    public function testTheClientNameOptionNamesTheClientAndItsConfiguration()
+    {
+        $this->generatedNamespace();
+        mkdir($this->generatedDirectory);
+
+        [$code, $output] = (new Configuration(new Applications($this->generatedDirectory)))
+            ->asGlobalInstance(fn () => $this->callCommand([self::PETSTORE, '--endpoint=getInventory', '--client-name=Petstore']));
+
+        $this->assertEquals(0, $code, $output);
+        $this->assertEqualsCanonicalizing([
+            Path::join($this->generatedDirectory, 'Integration/SwaggerPetstoreOpenAPI30/PetstoreConfiguration.php'),
+            Path::join($this->generatedDirectory, 'Integration/SwaggerPetstoreOpenAPI30/PetstoreClient.php'),
+        ], $this->writtenFiles($output), 'The namespace still comes from the title');
+    }
+
+    public function testAClientNameThatIsNotAClassNameIsRejected()
+    {
+        [$code, $output] = $this->callCommand([self::PETSTORE, '--client-name=pet-store']);
+
+        $this->assertEquals(1, $code);
+        $this->assertStringContainsString('--client-name [pet-store] is not a class name starting with an uppercase letter', $output);
+    }
 }
+

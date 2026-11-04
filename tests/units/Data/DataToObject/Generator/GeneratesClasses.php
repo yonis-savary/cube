@@ -7,7 +7,6 @@ use Cube\Data\DataToObject\Generator\Descriptors\DtoClass;
 use Cube\Data\DataToObject\Generator\DtoWriter;
 use Cube\Data\DataToObject\Generator\GenerationTarget;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
-use Symfony\Component\Process\Process;
 
 /**
  * Writes generated classes into a temporary directory, under a namespace of their own so that two tests
@@ -16,6 +15,7 @@ use Symfony\Component\Process\Process;
 trait GeneratesClasses
 {
     use HasTemporaryStorage;
+    use LintsGeneratedFiles;
 
     protected string $generatedNamespace;
     protected ?\Closure $generatedClassesLoader = null;
@@ -70,23 +70,6 @@ trait GeneratesClasses
     {
         $this->writer($lenient)->write($classes);
         $this->autoloadGeneratedClasses();
-    }
-
-    /**
-     * Lints every file before anything requires it : an invalid one fails the test instead of the process
-     *
-     * @param string[] $files
-     */
-    protected function assertGeneratedFilesAreValid(array $files): void
-    {
-        $this->assertContainsOnlyString($files);
-
-        foreach ($files as $file) {
-            $lint = new Process([PHP_BINARY, '-l', $file]);
-            $lint->run();
-
-            $this->assertTrue($lint->isSuccessful(), $lint->getOutput().$lint->getErrorOutput().file_get_contents($file));
-        }
     }
 
     protected function autoloadGeneratedClasses(): void

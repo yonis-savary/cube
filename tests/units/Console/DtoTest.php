@@ -4,6 +4,9 @@ namespace Cube\Tests\Units\Console;
 
 use Cube\Console\Args;
 use Cube\Console\Commands\DataToObject\Dto;
+use Cube\Core\Autoloader\Applications;
+use Cube\Env\Configuration;
+use Cube\Tests\Units\Console\Classes\GeneratesIntoATestNamespace;
 use Cube\Utils\Path;
 use Cube\Web\Http\HttpClient;
 use Cube\Web\Http\HttpMockServer;
@@ -17,6 +20,11 @@ use PHPUnit\Framework\TestCase;
  */
 class DtoTest extends TestCase
 {
+    use GeneratesIntoATestNamespace;
+
+    /** The examples of the `Pet` schema of the Swagger Petstore, see Fixtures/openapi-petstore.json */
+    protected const PET_SAMPLE = '{"id": 10, "name": "doggie", "category": {"id": 1, "name": "Dogs"}, "photoUrls": ["https://petstore.example.com/doggie.png"], "tags": [{"id": 3, "name": "friendly"}], "status": "available"}';
+
     protected ?string $receivedAuthorization = null;
 
     protected function setUp(): void
@@ -33,6 +41,20 @@ class DtoTest extends TestCase
     protected function tearDown(): void
     {
         MockServers::removeInstance();
+        $this->removeGeneratedDirectory();
+    }
+
+    /**
+     * @param string[] $argv
+     *
+     * @return array{int,string} exit code, output
+     */
+    protected function callCommand(array $argv): array
+    {
+        ob_start();
+        $code = Dto::call(Args::fromArgv($argv));
+
+        return [$code, ob_get_clean()];
     }
 
     /**
@@ -44,10 +66,7 @@ class DtoTest extends TestCase
      */
     protected function readSample(array $argv): array
     {
-        ob_start();
-        $code = Dto::call(Args::fromArgv([...$argv, '--name=album']));
-
-        return [$code, ob_get_clean()];
+        return $this->callCommand([...$argv, '--name=album']);
     }
 
     public function testASampleIsReadFromAJsonText()
@@ -96,5 +115,38 @@ class DtoTest extends TestCase
         [$code, $output] = $this->readSample(['12']);
         $this->assertEquals(1, $code);
         $this->assertStringContainsString('holds a JSON scalar', $output);
+    }
+
+    public function testASampleGeneratesItsClassesIntoTheNamespace()
+    {
+        $namespace = $this->generatedNamespace();
+
+        [$code, $output] = $this->callCommand([self::PET_SAMPLE, '--name=Pet', "--namespace={$namespace}"]);
+
+        $this->assertEquals(0, $code, $output);
+
+        $files = $this->writtenFiles($output);
+        $this->assertEqualsCanonicalizing([
+            Path::join($this->generatedDirectory, 'Pet/Pet.php'),
+            Path::join($this->generatedDirectory, 'Pet/Category/Category.php'),
+            Path::join($this->generatedDirectory, 'Pet/Tags/Tags.php'),
+        ], $files);
+        $this->assertGeneratedFilesAreValid($files);
+
+        $pet = "{$namespace}\\Pet\\Pet"::fromData(json_decode(self::PET_SAMPLE, true));
+        $this->assertEquals('Dogs', $pet->category->name);
+        $this->assertEquals('friendly', $pet->tags[0]->name);
+    }
+
+    public function testTheDefaultNamespaceIsTheDataToObjectDirectoryOfTheApplication()
+    {
+        $this->generatedNamespace();
+        mkdir($this->generatedDirectory);
+
+        [$code, $output] = (new Configuration(new Applications($this->generatedDirectory)))
+            ->asGlobalInstance(fn () => $this->callCommand(['{"id": 1, "name": "Dogs"}', '--name=Category']));
+
+        $this->assertEquals(0, $code, $output);
+        $this->assertEquals([Path::join($this->generatedDirectory, 'Integration/DataToObject/Category/Category.php')], $this->writtenFiles($output));
     }
 }

@@ -17,15 +17,20 @@ use Cube\Web\Http\Response;
 
 /**
  * Writes an `HttpClient` with one method per operation, and the configuration element it reads its URL
- * and credentials from. Both are named after the last segment of the namespace (`SpotifyClient`, `SpotifyConfiguration`)
+ * and credentials from. Both are named after `$name`, by default the last segment of the namespace
+ * (`SpotifyClient`, `SpotifyConfiguration`)
  */
 class ClientWriter
 {
-    protected const HELPER_METHODS = ['send', 'credentials', 'successful'];
+    protected const HELPER_METHODS = ['send', 'credentials', 'successful', 'toQueryString'];
 
+    /**
+     * @param ?string $name what the client and its configuration are named after, `Spotify` for `SpotifyClient`
+     */
     public function __construct(
         protected GenerationTarget $target,
         protected string $generator,
+        protected ?string $name = null,
     ) {}
 
     /**
@@ -104,6 +109,7 @@ class ClientWriter
             $this->baseUrlMethod(),
             ...Bunch::wrap($client->operations)->map(fn (ClientOperation $operation) => $this->operationMethod($operation, $types))->toArray(),
             $this->sendMethod($references, $authenticates),
+            $this->toQueryStringMethod(),
             ...($authenticates ? [$this->credentialsMethod($client)] : []),
             ...($readsLists ? [$this->successfulMethod($references)] : []),
         ];
@@ -333,6 +339,27 @@ class ClientWriter
         ]);
     }
 
+    protected function toQueryStringMethod(): string
+    {
+        return Text::toFile('
+                /**
+                 * A list is sent as one parameter per item (`tags=a&tags=b`), as OpenAPI expects from a query by default
+                 *
+                 * @param array<string,mixed> $parameters
+                 */
+                protected function toQueryString(array $parameters): string
+                {
+                    $pairs = [];
+                    foreach ($parameters as $name => $value) {
+                        foreach (is_array($value) && array_is_list($value) ? $value : [$value] as $item)
+                            $pairs[] = http_build_query([$name => $item], \'\', \'&\');
+                    }
+
+                    return implode(\'&\', array_filter($pairs));
+                }
+            ', 3);
+    }
+
     protected function successfulMethod(PhpReferences $references): string
     {
         return Text::interpolate(Text::toFile('
@@ -414,6 +441,6 @@ class ClientWriter
 
     protected function baseName(): string
     {
-        return preg_replace('/.+\\\/', '', $this->target->namespace);
+        return $this->name ?? preg_replace('/.+\\\/', '', $this->target->namespace);
     }
 }

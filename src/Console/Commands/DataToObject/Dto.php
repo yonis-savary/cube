@@ -4,6 +4,7 @@ namespace Cube\Console\Commands\DataToObject;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
+use Cube\Data\DataToObject\Generator\DtoNames;
 use Cube\Data\DataToObject\Generator\DtoWriter;
 use Cube\Data\DataToObject\Generator\GenerationTarget;
 use Cube\Data\DataToObject\Generator\Sources\SampleSource;
@@ -13,8 +14,6 @@ use Cube\Utils\Path;
 class Dto extends Command
 {
     use ReadsJsonDocuments;
-
-    protected const CLASS_NAME_FORMAT = '/^[A-Z][a-zA-Z0-9]+$/';
 
     public function getScope(): string
     {
@@ -52,10 +51,10 @@ class Dto extends Command
             return $this->abort('The sample is a JSON list : give one of its objects');
 
         $rootName = $args->getValue(long: 'name');
-        if ($rootName && !preg_match(self::CLASS_NAME_FORMAT, $rootName))
+        if ($rootName && !preg_match(DtoNames::CLASS_NAME_FORMAT, $rootName))
             return $this->abort("--name [{$rootName}] is not a class name starting with an uppercase letter");
 
-        while (!$rootName || !preg_match(self::CLASS_NAME_FORMAT, $rootName))
+        while (!$rootName || !preg_match(DtoNames::CLASS_NAME_FORMAT, $rootName))
             $rootName = readline('Root class name ? ');
 
         $namespace = $args->getValue(long: 'namespace');

@@ -270,6 +270,17 @@ class HttpClient
     }
 
     // Base values often carry credentials : an absolute URL to another origin than baseURL() never receives them
+    /**
+     * Writes the URL parameters of a request, as PHP reads them by default : a list `tags` becomes
+     * `tags[0]=a&tags[1]=b`. Override it for an API that expects another convention
+     *
+     * @param array<string,mixed> $parameters
+     */
+    protected function toQueryString(array $parameters): string
+    {
+        return http_build_query($parameters, '', '&');
+    }
+
     protected function mergeWithBase(string $url, array $baseValues, array $values): array
     {
         if (!$this->isBaseOrigin($url))
@@ -323,7 +334,7 @@ class HttpClient
 
         $getParams = $this->mergeWithBase($path, $this->baseURLParameters(), $request->get() ?? []);
         $urlParams = count($getParams)
-            ? '?'.http_build_query($getParams, '', '&')
+            ? '?'.$this->toQueryString($getParams)
             : '';
 
         $url = trim($path.$urlParams);
@@ -549,7 +560,7 @@ class HttpClient
 
         $getParams = $this->mergeWithBase($path, $this->baseURLParameters(), $request->get() ?? []);
         $urlParams = count($getParams)
-            ? '?'.http_build_query($getParams, '', '&')
+            ? '?'.$this->toQueryString($getParams)
             : '';
 
         $url = trim($path.$urlParams);

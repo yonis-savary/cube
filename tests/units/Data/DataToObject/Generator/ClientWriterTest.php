@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Data\DataToObject\Generator;
 
+use Cube\Data\DataToObject\Generator\ClientWriter;
 use Cube\Data\DataToObject\Generator\Sources\OpenApiSource;
 use Cube\Env\Configuration;
 use Cube\Utils\Path;
@@ -25,6 +26,11 @@ class ClientWriterTest extends TestCase
     protected function source(): OpenApiSource
     {
         return new OpenApiSource(json_decode(file_get_contents(Path::join(__DIR__, 'Fixtures', 'openapi-billing.json')), true, flags: JSON_THROW_ON_ERROR));
+    }
+
+    protected function petstore(): OpenApiSource
+    {
+        return new OpenApiSource(json_decode(file_get_contents(Path::join(__DIR__, 'Fixtures', 'openapi-petstore.json')), true, flags: JSON_THROW_ON_ERROR));
     }
 
     protected function generateClient(): object
@@ -219,4 +225,86 @@ class ClientWriterTest extends TestCase
         $this->assertEquals('header-key', $sent->getHeader('X-Key'));
         $this->assertEquals('Bearer token', $sent->getHeader('Authorization'));
     }
+
+    public function testThePetstoreFindsPetsByARequiredQueryAndHydratesTheirTags()
+    {
+        $client = $this->clientOf($this->petstore(), Route::get('/pet/findByStatus', $this->answer(Response::json([
+            ['id' => 10, 'name' => 'doggie', 'photoUrls' => [], 'tags' => [['id' => 3, 'name' => 'friendly']], 'status' => 'available'],
+        ]))));
+
+        $pets = $client->findPetsByStatus(new ($this->generatedClass('Http\\Requests\\FindPetsByStatusRequest'))('available'));
+
+        $this->assertEquals(['status' => 'available'], $this->received[0]->get());
+        $this->assertInstanceOf($this->generatedClass('Refs\\Output\\Tag'), $pets[0]->tags[0]);
+        $this->assertEquals('friendly', $pets[0]->tags[0]->name);
+    }
+
+    public function testThePetstoreSendsEveryConfiguredCredentialAnOperationAccepts()
+    {
+        $client = $this->clientOf($this->petstore(), Route::get('/pet/{int:id}', $this->answer(Response::json(['id' => 10, 'name' => 'doggie', 'photoUrls' => []]))));
+        $configuration = fn (array $credentials) => new Configuration(new ($this->generatedClass('ApiConfiguration'))(...$credentials));
+
+        $pet = $configuration(['apiKey' => 'special-key'])->asGlobalInstance(fn () => $client->getPetById(10));
+        $configuration(['petstoreAuth' => 'oauth-token'])->asGlobalInstance(fn () => $client->getPetById(10));
+
+        $this->assertEquals('doggie', $pet->name);
+        $this->assertEquals('special-key', $this->received[0]->getHeader('api_key'));
+        $this->assertNull($this->received[0]->getHeader('Authorization'));
+        $this->assertEquals('Bearer oauth-token', $this->received[1]->getHeader('Authorization'));
+    }
+
+    public function testThePetstoreSendsAListOfUsersAsAJsonArray()
+    {
+        $client = $this->clientOf($this->petstore(), Route::post('/user/createWithList', $this->answer(Response::json(['id' => 1, 'username' => 'theUser']))));
+
+        $user = new ($this->generatedClass('Refs\\Input\\User'))();
+        $user->username = 'theUser';
+        $user->firstName = 'John';
+
+        $created = $client->createUsersWithListInput([$user]);
+
+        $this->assertEquals([['username' => 'theUser', 'firstName' => 'John']], json_decode($this->received[0]->getBody(), true));
+        $this->assertEquals('theUser', $created->username);
+    }
+
+    public function testThePetstoreInventoryIsAMapReturnedAsTheRawResponse()
+    {
+        $client = $this->clientOf($this->petstore(), Route::get('/store/inventory', $this->answer(Response::json(['available' => 12, 'sold' => 3]))));
+
+        $this->assertEquals(['available' => 12, 'sold' => 3], $client->getInventory()->getJSON());
+    }
+
+    public function testAListInTheQueryIsSentAsOneParameterPerItem()
+    {
+        $client = $this->clientOf($this->petstore(), Route::get('/pet/findByTags', $this->answer(Response::json([]))));
+
+        $client->findPetsByTags(new ($this->generatedClass('Http\\Requests\\FindPetsByTagsRequest'))(['friendly', 'young']));
+
+        $this->assertEquals(
+            'https://petstore3.swagger.io/api/v3/pet/findByTags?tags=friendly&tags=young',
+            curl_getinfo($client->toCurlHandle($this->received[0]), CURLINFO_EFFECTIVE_URL),
+        );
+    }
+
+    public function testTheOtherQueryValuesAreWrittenAsBefore()
+    {
+        $client = $this->clientOf($this->petstore());
+
+        $request = new Request('GET', '/user/login', ['username' => 'the user', 'remember' => true, 'filter' => ['status' => 'sold'], 'page' => null, 'tags' => []]);
+
+        $this->assertEquals(
+            'https://petstore3.swagger.io/api/v3/user/login?username=the+user&remember=1&filter%5Bstatus%5D=sold',
+            curl_getinfo($client->toCurlHandle($request), CURLINFO_EFFECTIVE_URL),
+        );
+    }
+
+    public function testTheClientIsNamedAfterTheGivenName()
+    {
+        $writer = new ClientWriter($this->target(), 'test', 'Petstore');
+
+        $this->assertEquals('PetstoreClient', $writer->clientName());
+        $this->assertEquals('PetstoreConfiguration', $writer->configurationName());
+        $this->assertStringContainsString('return PetstoreConfiguration::resolve()->url;', $writer->renderClient($this->petstore()->toClient()));
+    }
 }
+
