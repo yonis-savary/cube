@@ -169,7 +169,12 @@ class OpenApiSource implements DtoSource
     protected function addOperation(string $route, array $operation): void
     {
         [$method, $path] = explode(' ', $route, 2);
-        $name = DtoNames::className($operation['operationId'] ?? strtolower($method).' '.$path);
+        $name = DtoNames::unique(
+            DtoNames::className($operation['operationId'] ?? strtolower($method).' '.$path),
+            Bunch::wrap($this->clientOperations)
+                ->map(fn (ClientOperation $other) => $other->name)
+                ->toArray(),
+        );
 
         // Every placeholder of the path is an argument, typed as a string when the document forgets to declare it
         preg_match_all('/\{([^}]+)\}/', $path, $placeholders);

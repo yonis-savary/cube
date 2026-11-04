@@ -43,6 +43,23 @@ class DtoNames
     }
 
     /**
+     * `$name`, or `$name` followed by the first number that frees it (`url`, `url1`, `url2`...), compared
+     * case-insensitively as PHP compares method and class names
+     *
+     * @param string[] $taken
+     */
+    public static function unique(string $name, array $taken): string
+    {
+        $taken = array_map(strtolower(...), $taken);
+
+        $candidate = $name;
+        for ($suffix = 1; in_array(strtolower($candidate), $taken, true); ++$suffix)
+            $candidate = $name.$suffix;
+
+        return $candidate;
+    }
+
+    /**
      * @return list<string>
      */
     protected static function words(string $name): array

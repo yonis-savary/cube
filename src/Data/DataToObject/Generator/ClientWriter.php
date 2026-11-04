@@ -3,7 +3,6 @@
 namespace Cube\Data\DataToObject\Generator;
 
 use Cube\Data\Bunch;
-use Cube\Data\DataToObject\Generator\Descriptors\Client\ClientAuthentication;
 use Cube\Data\DataToObject\Generator\Descriptors\Client\ClientOperation;
 use Cube\Data\DataToObject\Generator\Descriptors\Client\DtoClient;
 use Cube\Data\DataToObject\Generator\Descriptors\DtoProperty;
@@ -51,20 +50,28 @@ class ClientWriter
     }
 
     /**
-     * The configuration property holding the credential of a security scheme
+     * The configuration property holding the credential of each security scheme, after `url` : two schemes
+     * giving the same name (`api_key` and `apiKey`) get a number
+     *
+     * @return array<string,string> scheme => property
      */
-    public function credentialPropertyOf(string $scheme): string
+    public function credentialPropertiesOf(DtoClient $client): array
     {
-        $property = lcfirst(DtoNames::propertyName($scheme));
+        $properties = [];
+        foreach (array_keys($client->authentications) as $scheme)
+            $properties[(string) $scheme] = DtoNames::unique(
+                lcfirst(DtoNames::propertyName((string) $scheme)),
+                ['url', ...$properties]
+            );
 
-        return 'url' === $property ? 'urlCredential' : $property;
+        return $properties;
     }
 
     public function renderConfiguration(DtoClient $client): string
     {
         $parameters = [
             '        public readonly ?string $url = '.(null === $client->url ? 'null' : var_export($client->url, true)).',',
-            ...array_map(fn (string $scheme) => '        public readonly ?string $'.$this->credentialPropertyOf($scheme).' = null,', array_keys($client->authentications)),
+            ...array_map(fn (string $property) => '        public readonly ?string $'.$property.' = null,', array_values($this->credentialPropertiesOf($client))),
         ];
 
         return $this->file($this->configurationName(), ConfigurationElement::class, Text::interpolate(Text::toFile('
@@ -97,7 +104,7 @@ class ClientWriter
             $this->baseUrlMethod(),
             ...Bunch::wrap($client->operations)->map(fn (ClientOperation $operation) => $this->operationMethod($operation, $types))->toArray(),
             $this->sendMethod($references, $authenticates),
-            ...($authenticates ? [$this->credentialsMethod($client->authentications)] : []),
+            ...($authenticates ? [$this->credentialsMethod($client)] : []),
             ...($readsLists ? [$this->successfulMethod($references)] : []),
         ];
 
@@ -114,16 +121,51 @@ class ClientWriter
             ', 3), ['configuration' => $this->configurationName()]);
     }
 
+    /**
+     * A path parameter, the request and a query parameter can give the same PHP name (`{id}` and `?id=`) :
+     * the later ones get a number, in the order of the signature
+     *
+     * @return array{path:array<string,string>,request:?string,query:array<string,string>} placeholder or key => PHP name
+     */
+    protected function argumentNamesOf(ClientOperation $operation): array
+    {
+        $taken = [];
+
+        $path = [];
+        foreach (array_keys($operation->pathParameters) as $placeholder)
+            $taken[] = $path[$placeholder] = DtoNames::unique(
+                DtoNames::propertyName((string) $placeholder),
+                $taken
+            );
+
+        $request = $operation->request
+            ? DtoNames::unique($this->requestArgumentName($operation->request), $taken)
+            : null;
+
+        if ($request)
+            $taken[] = $request;
+
+        $query = [];
+        foreach ($operation->queryParameters as $parameter)
+            $taken[] = $query[$parameter->key] = DtoNames::unique(
+                DtoNames::propertyName($parameter->key),
+                $taken
+            );
+
+        return ['path' => $path, 'request' => $request, 'query' => $query];
+    }
+
     protected function operationMethod(ClientOperation $operation, TypeRenderer $types): string
     {
+        $names = $this->argumentNamesOf($operation);
         $arguments = [];
         $docs = [];
 
         foreach ($operation->pathParameters as $name => $type)
-            $arguments[] = $types->nativeTypeOf($type).' $'.DtoNames::propertyName($name);
+            $arguments[] = $types->nativeTypeOf($type).' $'.$names['path'][$name];
 
         if ($request = $operation->request) {
-            $argument = $this->requestArgumentName($request);
+            $argument = $names['request'];
             $nativeType = $types->nativeTypeOf($request);
             $arguments[] = $operation->requestRequired || 'mixed' === $nativeType
                 ? "{$nativeType} \${$argument}"
@@ -137,14 +179,14 @@ class ClientWriter
         foreach ([...$requiredQuery, ...$optionalQuery] as $parameter) {
             $nativeType = $types->nativeTypeOf($parameter->type);
             $arguments[] = $parameter->required || 'mixed' === $nativeType
-                ? $nativeType.' $'.DtoNames::propertyName($parameter->key)
-                : '?'.$nativeType.' $'.DtoNames::propertyName($parameter->key).' = null';
+                ? $nativeType.' $'.$names['query'][$parameter->key]
+                : '?'.$nativeType.' $'.$names['query'][$parameter->key].' = null';
         }
 
         if ($this->isListOfClasses($operation->response))
             $docs[] = '@return '.$types->docTypeOf($operation->response);
 
-        [$returnType, $return] = $this->returnOf($operation, $types, $this->callOf($operation));
+        [$returnType, $return] = $this->returnOf($operation, $types, $this->callOf($operation, $names));
 
         $doc = $docs ? "    /**\n".implode("\n", array_map(fn (string $tag) => "     * {$tag}", $docs))."\n     */\n" : '';
 
@@ -161,15 +203,20 @@ class ClientWriter
         ]);
     }
 
-    protected function callOf(ClientOperation $operation): string
+    /**
+     * @param array{path:array<string,string>,request:?string,query:array<string,string>} $names
+     */
+    protected function callOf(ClientOperation $operation, array $names): string
     {
-        $argument = $operation->request ? '$'.$this->requestArgumentName($operation->request) : null;
+        $argument = $names['request']
+            ? '$'.$names['request']
+            : null;
 
         $query = match (true) {
             $operation->requestInQuery => $operation->requestRequired ? "{$argument}->toArray()" : "{$argument}?->toArray() ?? []",
             count($operation->queryParameters) > 0 => 'array_filter(['
                 .Bunch::wrap($operation->queryParameters)
-                    ->map(fn (DtoProperty $parameter) => var_export($parameter->key, true).' => $'.DtoNames::propertyName($parameter->key))
+                    ->map(fn (DtoProperty $parameter) => var_export($parameter->key, true).' => $'.$names['query'][$parameter->key])
                     ->join(', ')
                 .'], fn ($value) => null !== $value)',
             default => null,
@@ -188,7 +235,7 @@ class ClientWriter
 
         return '$this->send('.implode(', ', [
             var_export($operation->method, true),
-            $this->pathExpressionOf($operation),
+            $this->pathExpressionOf($operation, $names['path']),
             ...(null !== $query ? ["query: {$query}"] : []),
             ...(null !== $body ? ["body: {$body}"] : []),
             ...(null !== $schemes ? ["schemes: {$schemes}"] : []),
@@ -245,15 +292,14 @@ class ClientWriter
         ]);
     }
 
-    /**
-     * @param array<string,ClientAuthentication> $authentications
-     */
-    protected function credentialsMethod(array $authentications): string
+    protected function credentialsMethod(DtoClient $client): string
     {
-        $statements = Bunch::unzip($authentications)
-            ->map(function (array $pair) {
+        $properties = $this->credentialPropertiesOf($client);
+
+        $statements = Bunch::unzip($client->authentications)
+            ->map(function (array $pair) use ($properties) {
                 [$scheme, $authentication] = $pair;
-                $value = '$configuration->'.$this->credentialPropertyOf($scheme);
+                $value = '$configuration->'.$properties[$scheme];
 
                 $assignment = match ($authentication->location) {
                     'query' => '$query['.var_export($authentication->name, true)."] = {$value};",
@@ -302,14 +348,16 @@ class ClientWriter
 
     /**
      * `/invoices/{id}/lines` becomes `'/invoices/'.rawurlencode((string) $id).'/lines'`
+     *
+     * @param array<string,string> $pathNames placeholder => PHP name
      */
-    protected function pathExpressionOf(ClientOperation $operation): string
+    protected function pathExpressionOf(ClientOperation $operation, array $pathNames): string
     {
         $fragments = [];
         foreach (preg_split('/\{([^}]+)\}/', $operation->path, flags: PREG_SPLIT_DELIM_CAPTURE) as $index => $part) {
             $fragments[] = match (true) {
                 0 === $index % 2 => '' === $part ? null : var_export($part, true),
-                isset($operation->pathParameters[$part]) => 'rawurlencode((string) $'.DtoNames::propertyName($part).')',
+                isset($pathNames[$part]) => 'rawurlencode((string) $'.$pathNames[$part].')',
                 default => var_export('{'.$part.'}', true),
             };
         }

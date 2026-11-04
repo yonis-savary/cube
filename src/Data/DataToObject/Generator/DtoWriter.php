@@ -218,15 +218,11 @@ class DtoWriter
     protected function propertyNamesOf(DtoClass $class): array
     {
         $names = [];
-        foreach ($class->properties as $property) {
-            $name = DtoNames::propertyName($property->key);
-
-            $candidate = $name;
-            for ($suffix = 2; in_array($candidate, $names, true); ++$suffix)
-                $candidate = $name.$suffix;
-
-            $names[$property->key] = $candidate;
-        }
+        foreach ($class->properties as $property)
+            $names[$property->key] = DtoNames::unique(
+                DtoNames::propertyName($property->key),
+                $names
+            );
 
         return $names;
     }

@@ -29,26 +29,38 @@ class ClientWriterTest extends TestCase
 
     protected function generateClient(): object
     {
-        $source = $this->source();
-        $this->writer()->write($source->toClasses());
-        $this->clientWriter()->write($source->toClient());
+        return $this->clientOf(
+            $this->source(),
+            Route::post('/products', $this->answer(Response::json(['id' => 7, 'label' => 'Pen', 'category' => ['id' => 2]]))),
+            Route::get('/products', $this->answer(Response::json([['id' => 7, 'label' => 'Pen', 'category' => ['id' => 2]]]))),
+            Route::get('/invoices/{int:id}', $this->answer(Response::json(['created_at' => '2026-01-01', 'number' => 'F-1', 'status' => 'paid', 'lines' => []]))),
+        );
+    }
+
+    /**
+     * Generates the client of `$source`, served by `$routes`
+     */
+    protected function clientOf(OpenApiSource $source, Route ...$routes): object
+    {
+        $this->assertGeneratedFilesAreValid([...$this->writer()->write($source->toClasses()), ...$this->clientWriter()->write($source->toClient())]);
         $this->autoloadGeneratedClasses();
 
         $client = new ($this->generatedClass('ApiClient'))();
+        MockServers::getInstance()->set($client::class, HttpMockServer::fromRoutes(...$routes));
 
-        $remember = fn (Response $response) => function (Request $request) use ($response) {
+        return $client;
+    }
+
+    /**
+     * A route callback that records the request it receives in `$received`
+     */
+    protected function answer(Response $response): \Closure
+    {
+        return function (Request $request) use ($response) {
             $this->received[] = $request;
 
             return $response;
         };
-
-        MockServers::getInstance()->set($client::class, HttpMockServer::fromRoutes(
-            Route::post('/products', $remember(Response::json(['id' => 7, 'label' => 'Pen', 'category' => ['id' => 2]]))),
-            Route::get('/products', $remember(Response::json([['id' => 7, 'label' => 'Pen', 'category' => ['id' => 2]]]))),
-            Route::get('/invoices/{int:id}', $remember(Response::json(['created_at' => '2026-01-01', 'number' => 'F-1', 'status' => 'paid', 'lines' => []]))),
-        ));
-
-        return $client;
     }
 
     protected function tearDown(): void
@@ -145,5 +157,66 @@ class ClientWriterTest extends TestCase
 
         $this->assertEquals('F-1', $invoice->number);
         $this->assertEquals('/invoices/12', $this->received[0]->getPath());
+    }
+
+    public function testArgumentsGivingTheSameNameAreNumbered()
+    {
+        $string = ['type' => 'string'];
+        $source = new OpenApiSource(['openapi' => '3.1.0', 'servers' => [['url' => 'https://helpdesk.example.com']], 'paths' => [
+            '/requests/{request}/notes/{id}' => ['put' => [
+                'operationId' => 'updateRequest',
+                'parameters' => [
+                    ['name' => 'request', 'in' => 'path', 'required' => true, 'schema' => $string],
+                    ['name' => 'id', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'integer']],
+                    ['name' => 'id', 'in' => 'query', 'schema' => $string],
+                    ['name' => 'dry_run', 'in' => 'query', 'schema' => $string],
+                    ['name' => 'dryRun', 'in' => 'query', 'schema' => $string],
+                ],
+                'requestBody' => ['content' => ['application/json' => ['schema' => ['type' => 'object', 'required' => ['note'], 'properties' => ['note' => $string]]]]],
+                'responses' => ['204' => ['description' => '']],
+            ]],
+        ]]);
+
+        $this->assertStringContainsString(
+            'public function updateRequest(string $request, int $id, UpdateRequestRequest $request1, ?string $id1 = null, ?string $dryRun = null, ?string $dryRun1 = null): Response',
+            $this->clientWriter()->renderClient($source->toClient()),
+        );
+
+        $client = $this->clientOf($source, Route::put('/requests/{ticket}/notes/{int:note}', $this->answer(Response::noContent())));
+        $client->updateRequest('R-1', 3, new ($this->generatedClass('Http\\Requests\\UpdateRequestRequest'))('urgent'), id1: 'x', dryRun: 'yes', dryRun1: 'no');
+
+        $sent = $this->received[0];
+        $this->assertEquals('/requests/R-1/notes/3', $sent->getPath());
+        $this->assertEquals(['id' => 'x', 'dry_run' => 'yes', 'dryRun' => 'no'], $sent->get());
+        $this->assertEquals(['note' => 'urgent'], json_decode($sent->getBody(), true));
+    }
+
+    public function testSchemesGivingTheSameCredentialPropertyAreNumbered()
+    {
+        $source = new OpenApiSource([
+            'openapi' => '3.1.0',
+            'servers' => [['url' => 'https://helpdesk.example.com']],
+            'security' => [['api_key' => [], 'apiKey' => [], 'url' => []]],
+            'paths' => ['/ping' => ['get' => ['operationId' => 'ping', 'responses' => ['204' => ['description' => '']]]]],
+            'components' => ['securitySchemes' => [
+                'api_key' => ['type' => 'apiKey', 'in' => 'query', 'name' => 'key'],
+                'apiKey' => ['type' => 'apiKey', 'in' => 'header', 'name' => 'X-Key'],
+                'url' => ['type' => 'http', 'scheme' => 'bearer'],
+            ]],
+        ]);
+
+        $configuration = $this->clientWriter()->renderConfiguration($source->toClient());
+        $this->assertStringContainsString('public readonly ?string $apiKey = null,', $configuration);
+        $this->assertStringContainsString('public readonly ?string $apiKey1 = null,', $configuration);
+        $this->assertStringContainsString('public readonly ?string $url1 = null,', $configuration, '$url is the base URL of the API');
+
+        $client = $this->clientOf($source, Route::get('/ping', $this->answer(Response::noContent())));
+        (new Configuration(new ($this->generatedClass('ApiConfiguration'))(apiKey: 'query-key', apiKey1: 'header-key', url1: 'token')))
+            ->asGlobalInstance(fn () => $client->ping());
+
+        $sent = $this->received[0];
+        $this->assertEquals(['key' => 'query-key'], $sent->get());
+        $this->assertEquals('header-key', $sent->getHeader('X-Key'));
+        $this->assertEquals('Bearer token', $sent->getHeader('Authorization'));
     }
 }

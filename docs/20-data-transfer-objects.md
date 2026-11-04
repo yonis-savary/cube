@@ -299,7 +299,16 @@ Inline objects become classes named after their parent and their key (`lines` it
 `InvoiceLinesItem`). Those of a request or a response go to a sub-namespace named after it, under their
 key alone : the `owner` of `GetDirectoryResponse` is `Http\Responses\GetDirectoryResponse\Owner`. Schema names that are not valid PHP class names are PascalCased, and PHP reserved
 words get a `Dto` suffix (`List` gives `ListDto`). When two keys of one schema give the same property
-name (`first_name` and `firstName`), the later one gets a number (`$firstName2`).
+name (`first_name` and `firstName`), the later one gets a number (`$firstName1`, then `$firstName2`).
+
+The client follows the same rule wherever two names collide :
+
+| Collision | Generated names |
+|---|---|
+| two operations without `operationId` (`GET /order-lines`, `GET /order_lines`) | `getOrderLines()`, `getOrderLines1()` and their `GetOrderLines1Request`... |
+| a path parameter, the request and a query parameter (`{id}` and `?id=`) | `$id`, `$id1`, in the signature order |
+| two security schemes (`api_key`, `apiKey`) | `$apiKey`, `$apiKey1` in the configuration |
+| a security scheme named `url` | `$url1`, as `$url` holds the base URL |
 
 Header and cookie parameters are not generated yet, and query values are encoded by
 `http_build_query()` (a boolean becomes `1` or `0`). Only references inside the document

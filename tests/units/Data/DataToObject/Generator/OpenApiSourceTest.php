@@ -6,7 +6,6 @@ use Cube\Data\DataToObject\Generator\Sources\OpenApiSource;
 use Cube\Utils\Path;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Process\Process;
 
 /**
  * @internal
@@ -167,7 +166,7 @@ class OpenApiSourceTest extends TestCase
         ])))->toClasses())['Refs\\Output\\Contact'];
 
         $this->assertStringContainsString('$firstName = null,', $contact);
-        $this->assertStringContainsString('$firstName2 = null,', $contact);
+        $this->assertStringContainsString('$firstName1 = null,', $contact);
         $this->assertStringContainsString('$_firstName = null,', $contact);
     }
 
@@ -221,15 +220,27 @@ class OpenApiSourceTest extends TestCase
     public function testDocumentsGeneratedByCubeGiveValidClasses(string $file)
     {
         $source = new OpenApiSource(json_decode(file_get_contents($file), true));
-        $files = [...$this->writer()->write($source->toClasses()), ...$this->clientWriter()->write($source->toClient())];
 
-        $this->assertContainsOnlyString($files);
-        foreach ($files as $generated) {
-            $lint = new Process([PHP_BINARY, '-l', $generated]);
-            $lint->run();
+        $this->assertGeneratedFilesAreValid([...$this->writer()->write($source->toClasses()), ...$this->clientWriter()->write($source->toClient())]);
+    }
 
-            $this->assertTrue($lint->isSuccessful(), $lint->getOutput().file_get_contents($generated));
-        }
+    public function testOperationsGivingTheSameNameAreNumbered()
+    {
+        $listing = fn (string $parameter) => ['get' => [
+            'parameters' => [['name' => $parameter, 'in' => 'query', 'schema' => ['type' => 'string']]],
+            'responses' => ['204' => ['description' => '']],
+        ]];
+        $document = ['openapi' => '3.1.0', 'paths' => [
+            '/order-lines' => $listing('status'),
+            '/order_lines' => $listing('state'),
+            '/order.lines' => ['get' => ['responses' => ['204' => ['description' => '']]]],
+        ]];
+
+        $source = new OpenApiSource($document);
+
+        $this->assertEquals(['GetOrderLines', 'GetOrderLines1', 'GetOrderLines2'], array_map(fn ($operation) => $operation->name, $source->toClient()->operations));
+        $this->assertEqualsCanonicalizing(['Http\\Requests\\GetOrderLinesRequest', 'Http\\Requests\\GetOrderLines1Request'], array_keys($this->render($source->toClasses())));
+        $this->assertGeneratedFilesAreValid([...$this->writer()->write($source->toClasses()), ...$this->clientWriter()->write($source->toClient())]);
     }
 
     public function testExternalReferencesAreRejected()
