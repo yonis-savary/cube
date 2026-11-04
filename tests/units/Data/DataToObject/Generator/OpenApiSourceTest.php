@@ -188,6 +188,15 @@ class OpenApiSourceTest extends TestCase
         $this->assertNull($invoice->paidAt);
     }
 
+    public function testANullableObjectReceivedAsNullIsHydratedAsNull()
+    {
+        $this->writeAndAutoload((new OpenApiSource($this->billingDocument()))->toClasses());
+
+        $category = $this->generatedClass('Refs\\Output\\Category')::fromData(['id' => 2, 'parent' => null]);
+
+        $this->assertNull($category->parent);
+    }
+
     public function testGeneratedRequestsSendTheKeysOfTheDocument()
     {
         $this->writeAndAutoload((new OpenApiSource($this->billingDocument()))->toClasses());

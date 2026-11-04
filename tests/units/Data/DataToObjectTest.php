@@ -3,6 +3,8 @@
 namespace Cube\Tests\Units\Data;
 
 use Cube\Data\Bunch;
+use Cube\Data\Classes\ArrayOf;
+use Cube\Data\Classes\BunchOf;
 use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
@@ -87,5 +89,30 @@ class DataToObjectTest extends TestCase
         $this->assertEquals(1, $line->quantity);
         $this->assertEquals('none', $line->note);
         $this->assertEquals('fragile', $line->comment);
+    }
+
+    /** An explicit null reached fromData(), array() or bunch() of the nested class : TypeError instead of a null property. */
+    public function testAnExplicitNullStaysNullForNestedObjectsAndCollections()
+    {
+        $class = new class(null, null, null) extends DataToObject {
+            public function __construct(
+                public ?Artist $artist,
+                #[ArrayOf(Album::class)]
+                public ?array $albums,
+                #[BunchOf(Album::class)]
+                public ?Bunch $albumBunch,
+            ) {}
+
+            public static function keys(): array
+            {
+                return ['albumBunch' => 'album_bunch'];
+            }
+        };
+
+        $discography = $class::fromData(['artist' => null, 'albums' => null, 'album_bunch' => null]);
+
+        $this->assertNull($discography->artist);
+        $this->assertNull($discography->albums);
+        $this->assertNull($discography->albumBunch);
     }
 }

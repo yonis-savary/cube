@@ -49,6 +49,13 @@ abstract class DataToObject
             }
 
             $keyValue = $rawData[$parameterName];
+
+            if (null === $keyValue) {
+                $constructorValues[] = null;
+
+                continue;
+            }
+
             $type = static::getFirstParameterType($parameter->getType());
 
             if ($collectionType = $parameter->getAttributes(ArrayOf::class)[0] ?? null) {
