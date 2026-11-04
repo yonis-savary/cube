@@ -15,6 +15,7 @@ readonly class ClientOperation
      * @param DtoProperty[]         $queryParameters query parameters of an operation that also has a body
      * @param ?DtoType              $response        `null` when the response is not JSON
      * @param string[]              $security        the security schemes the operation accepts
+     * @param array<string,string>  $queryDelimiters query key => what joins the items of its list, sent as one parameter (`explode: false`)
      */
     public function __construct(
         public string $name,
@@ -27,5 +28,6 @@ readonly class ClientOperation
         public array $queryParameters = [],
         public ?DtoType $response = null,
         public array $security = [],
+        public array $queryDelimiters = [],
     ) {}
 }

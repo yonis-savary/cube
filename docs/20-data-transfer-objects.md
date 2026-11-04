@@ -330,10 +330,20 @@ The client follows the same rule wherever two names collide :
 | two security schemes (`api_key`, `apiKey`) | `$apiKey`, `$apiKey1` in the configuration |
 | a security scheme named `url` | `$url1`, as `$url` holds the base URL |
 
-Header and cookie parameters are not generated yet. A list in the query is sent as one parameter per
-item (`?tags=friendly&tags=young`), what OpenAPI expects by default (`explode: true`) : `style` and
-`explode: false` are not read yet. A boolean is sent as `true` or `false`, in the query as in the path.
-The other values are encoded by `http_build_query()`. Only references inside the document
+Header and cookie parameters are not generated yet. A boolean is sent as `true` or `false`, in the
+query as in the path. A list in the query follows the `style` and `explode` of its parameter :
+
+| Parameter | Sent as |
+|---|---|
+| `form`, `explode: true` (the default) | `?tags=friendly&tags=young` |
+| `form`, `explode: false` | `?tags=friendly,young` |
+| `spaceDelimited` | `?tags=friendly%20young` |
+| `pipeDelimited` | `?tags=friendly\|young` |
+
+The delimiter stays literal and each item is encoded, so a comma inside an item does not split it
+(`?tags=a%2Cb,young`). The other values, a `deepObject` map included (`?filter[status]=sold`), are
+encoded by `http_build_query()` ; an object sent with `explode: false` (`?filter=status,sold`) is not
+supported. Only references inside the document
 (`#/components/...`) are followed : a reference to another file stops the generation.
 
 ## Generating the classes from a sample

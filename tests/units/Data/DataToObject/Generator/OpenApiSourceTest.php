@@ -330,4 +330,28 @@ class OpenApiSourceTest extends TestCase
         ], array_keys($sources));
         $this->assertStringContainsString('public ?Owner $owner = null,', $sources['Http\\Responses\\GetDirectoryResponse']);
     }
+
+    public function testAListNotExplodedInTheQueryIsJoinedByTheDelimiterOfItsStyle()
+    {
+        $list = ['type' => 'array', 'items' => ['type' => 'string']];
+        $document = ['openapi' => '3.1.0', 'paths' => ['/tickets' => ['get' => [
+            'operationId' => 'listTickets',
+            'parameters' => [
+                ['name' => 'tags', 'in' => 'query', 'explode' => false, 'schema' => $list],
+                ['name' => 'owners', 'in' => 'query', 'style' => 'spaceDelimited', 'schema' => $list],
+                ['name' => 'states', 'in' => 'query', 'style' => 'pipeDelimited', 'explode' => false, 'schema' => $list],
+                ['name' => 'labels', 'in' => 'query', 'schema' => $list],
+                ['name' => 'teams', 'in' => 'query', 'style' => 'form', 'explode' => true, 'schema' => $list],
+                ['name' => 'sort', 'in' => 'query', 'explode' => false, 'schema' => ['type' => 'string']],
+                ['name' => 'filter', 'in' => 'query', 'style' => 'deepObject', 'explode' => false, 'schema' => $list],
+            ],
+            'responses' => ['204' => ['description' => '']],
+        ]]]];
+
+        $this->assertEquals(
+            ['tags' => ',', 'owners' => '%20', 'states' => '|'],
+            (new OpenApiSource($document))->toClient()->operations[0]->queryDelimiters,
+            'explode is false by default for every style but form, a scalar has nothing to join, deepObject describes a map',
+        );
+    }
 }

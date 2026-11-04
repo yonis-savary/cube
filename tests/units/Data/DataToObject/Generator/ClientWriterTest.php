@@ -588,5 +588,91 @@ class ClientWriterTest extends TestCase
         $this->assertEquals('csrf_token=8b2e', $this->received[1]->getHeader('Cookie'), 'Only the configured ones');
         $this->assertStringNotContainsString('$cookies', $this->clientWriter()->renderClient($this->petstore()->toClient()), 'No cookie scheme, no cookie to gather');
     }
-}
 
+    /**
+     * A document listing tickets by tags, whose query and body operations join some of their lists
+     */
+    protected function delimitedSource(): OpenApiSource
+    {
+        $list = ['type' => 'array', 'items' => ['type' => 'string']];
+        $parameters = [
+            ['name' => 'tags', 'in' => 'query', 'explode' => false, 'schema' => $list],
+            ['name' => 'owners', 'in' => 'query', 'style' => 'spaceDelimited', 'schema' => $list],
+            ['name' => 'states', 'in' => 'query', 'style' => 'pipeDelimited', 'schema' => ['type' => 'array', 'items' => ['type' => 'boolean']]],
+            ['name' => 'labels', 'in' => 'query', 'schema' => $list],
+        ];
+
+        return new OpenApiSource(['openapi' => '3.1.0', 'servers' => [['url' => 'https://helpdesk.example.com']], 'paths' => ['/tickets' => [
+            'get' => ['operationId' => 'listTickets', 'parameters' => $parameters, 'responses' => ['204' => ['description' => '']]],
+            'post' => [
+                'operationId' => 'exportTickets',
+                'parameters' => $parameters,
+                'requestBody' => ['content' => ['application/json' => ['schema' => ['type' => 'object', 'properties' => ['format' => ['type' => 'string']]]]]],
+                'responses' => ['204' => ['description' => '']],
+            ],
+        ]]]);
+    }
+
+    /**
+     * Generates the client of `delimitedSource()`, recording the URL of each request while it is sent : the
+     * delimiters are only known for that time
+     *
+     * @param string[] $urls
+     */
+    protected function delimitedClient(array &$urls): object
+    {
+        $client = null;
+        $record = function (Request $request) use (&$client, &$urls) {
+            $urls[] = curl_getinfo($client->toCurlHandle($request), CURLINFO_EFFECTIVE_URL);
+
+            return Response::noContent();
+        };
+
+        return $client = $this->clientOf($this->delimitedSource(), Route::get('/tickets', $record), Route::post('/tickets', $record));
+    }
+
+    public function testAListNotExplodedInTheQueryIsJoinedByALiteralDelimiter()
+    {
+        $urls = [];
+        $client = $this->delimitedClient($urls);
+
+        $request = new ($this->generatedClass('Http\\Requests\\ListTicketsRequest'))();
+        $request->tags = ['urgent', 'a,b'];
+        $request->owners = ['ada', 'grace hopper'];
+        $request->states = [true, false];
+        $request->labels = ['bug', 'ui'];
+
+        $export = new ($this->generatedClass('Http\\Requests\\ExportTicketsRequest'))();
+        $export->format = 'csv';
+
+        $client->listTickets($request);
+        $client->exportTickets($export, tags: ['urgent', 'vip'], labels: ['bug', 'ui']);
+        $client->listTickets();
+
+        $this->assertEquals([
+            'https://helpdesk.example.com/tickets?tags=urgent,a%2Cb&owners=ada%20grace%20hopper&states=true|false&labels=bug&labels=ui',
+            'https://helpdesk.example.com/tickets?tags=urgent,vip&labels=bug&labels=ui',
+            'https://helpdesk.example.com/tickets',
+        ], $urls, 'A delimiter inside an item is encoded, it would split it otherwise');
+    }
+
+    public function testTheDelimitersAreForgottenOnceTheRequestIsSent()
+    {
+        $urls = [];
+        $client = $this->delimitedClient($urls);
+        $client->listTickets();
+
+        $this->assertEquals(
+            'https://helpdesk.example.com/tickets?tags=urgent&tags=vip',
+            curl_getinfo($client->toCurlHandle(new Request('GET', '/tickets', ['tags' => ['urgent', 'vip']])), CURLINFO_EFFECTIVE_URL),
+        );
+    }
+
+    public function testAClientWithoutListToJoinHasNoDelimiter()
+    {
+        $rendered = $this->clientWriter()->renderClient($this->petstore()->toClient());
+
+        $this->assertStringNotContainsString('withDelimiters', $rendered);
+        $this->assertStringNotContainsString('$delimiters', $rendered);
+    }
+}

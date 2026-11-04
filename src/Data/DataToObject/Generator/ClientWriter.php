@@ -27,7 +27,7 @@ use Cube\Web\Http\Response;
  */
 class ClientWriter
 {
-    protected const HELPER_METHODS = ['send', 'credentials', 'successful', 'toQueryString'];
+    protected const HELPER_METHODS = ['send', 'credentials', 'successful', 'toQueryString', 'withDelimiters'];
 
     /**
      * @param ?string $name what the client and its configuration are named after, `Spotify` for `SpotifyClient`
@@ -215,12 +215,15 @@ class ClientWriter
 
         $readsLists = Bunch::wrap($client->operations)->any(fn (ClientOperation $operation) => $this->isListOfClasses($operation->response));
         $authenticates = count($client->authentications) > 0;
+        $delimits = Bunch::wrap($client->operations)->any(fn (ClientOperation $operation) => count($operation->queryDelimiters) > 0);
 
         $blocks = [
+            ...($delimits ? [$this->delimitersProperty()] : []),
             $this->baseUrlMethod($client),
             ...Bunch::wrap($client->operations)->map(fn (ClientOperation $operation) => $this->operationMethod($operation, $types))->toArray(),
             $this->sendMethod($references, $authenticates),
-            $this->toQueryStringMethod(),
+            $this->toQueryStringMethod($delimits),
+            ...($delimits ? [$this->withDelimitersMethod($references)] : []),
             ...($authenticates ? [$this->credentialsMethod($client)] : []),
             ...($readsLists ? [$this->successfulMethod($references)] : []),
         ];
@@ -415,13 +418,22 @@ class ClientWriter
             ? '['.implode(', ', array_map(fn (string $scheme) => var_export($scheme, true), $operation->security)).']'
             : null;
 
-        return '$this->send('.implode(', ', [
+        $send = '$this->send('.implode(', ', [
             var_export($operation->method, true),
             $this->pathExpressionOf($operation, $names['path']),
             ...(null !== $query ? ["query: {$query}"] : []),
             ...(null !== $body ? ["body: {$body}"] : []),
             ...(null !== $schemes ? ["schemes: {$schemes}"] : []),
         ]).')';
+
+        if (!count($operation->queryDelimiters))
+            return $send;
+
+        $delimiters = Bunch::fromValues(array_keys($operation->queryDelimiters))
+            ->map(fn (string $key) => var_export($key, true).' => '.var_export($operation->queryDelimiters[$key], true))
+            ->join(', ');
+
+        return "\$this->withDelimiters([{$delimiters}], fn () => {$send})";
     }
 
     /**
@@ -521,12 +533,38 @@ class ClientWriter
         ]);
     }
 
-    protected function toQueryStringMethod(): string
+    protected function toQueryStringMethod(bool $delimits): string
     {
+        if (!$delimits) {
+            return Text::toFile('
+                    /**
+                     * A list is sent as one parameter per item (`tags=a&tags=b`) and a boolean as `true` or `false`,
+                     * as OpenAPI expects from a query by default
+                     *
+                     * @param array<string,mixed> $parameters
+                     */
+                    protected function toQueryString(array $parameters): string
+                    {
+                        array_walk_recursive($parameters, function (mixed &$value) {
+                            if (is_bool($value))
+                                $value = $value ? \'true\' : \'false\';
+                        });
+
+                        $pairs = [];
+                        foreach ($parameters as $name => $value) {
+                            foreach (is_array($value) && array_is_list($value) ? $value : [$value] as $item)
+                                $pairs[] = http_build_query([$name => $item], \'\', \'&\');
+                        }
+
+                        return implode(\'&\', array_filter($pairs));
+                    }
+                ', 4);
+        }
+
         return Text::toFile('
                 /**
-                 * A list is sent as one parameter per item (`tags=a&tags=b`) and a boolean as `true` or `false`,
-                 * as OpenAPI expects from a query by default
+                 * A list is sent as one parameter per item (`tags=a&tags=b`), unless the operation joins its items
+                 * (`tags=a,b`), and a boolean as `true` or `false`, as OpenAPI expects from a query
                  *
                  * @param array<string,mixed> $parameters
                  */
@@ -539,6 +577,12 @@ class ClientWriter
 
                     $pairs = [];
                     foreach ($parameters as $name => $value) {
+                        // The delimiter stays literal : percent-encoded, it would be read as part of an item
+                        if (isset($this->delimiters[$name]) && is_array($value)) {
+                            $pairs[] = rawurlencode($name).\'=\'.implode($this->delimiters[$name], array_map(fn (mixed $item) => rawurlencode((string) $item), $value));
+                            continue;
+                        }
+
                         foreach (is_array($value) && array_is_list($value) ? $value : [$value] as $item)
                             $pairs[] = http_build_query([$name => $item], \'\', \'&\');
                     }
@@ -546,6 +590,36 @@ class ClientWriter
                     return implode(\'&\', array_filter($pairs));
                 }
             ', 3);
+    }
+
+    protected function delimitersProperty(): string
+    {
+        return Text::toFile('
+                /** @var array<string,string> query key => what joins the items of its list, for the request being sent */
+                protected array $delimiters = [];
+            ', 3);
+    }
+
+    protected function withDelimitersMethod(PhpReferences $references): string
+    {
+        return Text::interpolate(Text::toFile('
+                /**
+                 * Sends a request whose listed query parameters are joined instead of repeated (`explode: false`)
+                 *
+                 * @param array<string,string> $delimiters query key => what joins the items of its list
+                 * @param callable():{response} $send
+                 */
+                protected function withDelimiters(array $delimiters, callable $send): {response}
+                {
+                    $this->delimiters = $delimiters;
+
+                    try {
+                        return $send();
+                    } finally {
+                        $this->delimiters = [];
+                    }
+                }
+            ', 3), ['response' => $references->nameOf(Response::class)]);
     }
 
     protected function successfulMethod(PhpReferences $references): string

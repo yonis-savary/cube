@@ -184,6 +184,7 @@ class OpenApiSource implements DtoSource
         $pathParameters = array_fill_keys($placeholders[1], new ScalarType(Scalar::String));
 
         $queryParameters = [];
+        $queryDelimiters = [];
         foreach ($operation['parameters'] as $parameter) {
             $type = $this->typeOf($parameter['schema'] ?? [], self::REQUESTS_NAMESPACE.'\\'.$name.'Request', DtoNames::className($parameter['name']), DtoDirection::Input);
 
@@ -192,6 +193,9 @@ class OpenApiSource implements DtoSource
 
             if ('query' === $parameter['in'])
                 $queryParameters[] = new DtoProperty($parameter['name'], $type, $this->isNullable($parameter['schema'] ?? []), true === ($parameter['required'] ?? false));
+
+            if ('query' === $parameter['in'] && $type instanceof ListType && $delimiter = $this->delimiterOf($parameter))
+                $queryDelimiters[$parameter['name']] = $delimiter;
         }
 
         $body = in_array($method, self::BODY_METHODS, true) ? $this->requestSchemaOf($operation) : null;
@@ -220,7 +224,29 @@ class OpenApiSource implements DtoSource
             null !== $body ? $queryParameters : [],
             $response ? $this->endpointType($name.'Response', $response, DtoDirection::Output) : null,
             $this->securityOf($operation),
+            $queryDelimiters,
         );
+    }
+
+    /**
+     * What joins the items of a list sent as one query parameter, `null` when each item is a parameter of its
+     * own : `explode` is `true` by default for the `form` style only. `deepObject` describes maps, which
+     * `http_build_query()` already writes that way (`filter[status]=sold`)
+     *
+     * @param OpenApiObject $parameter
+     */
+    protected function delimiterOf(array $parameter): ?string
+    {
+        $style = $parameter['style'] ?? 'form';
+        if ($parameter['explode'] ?? ('form' === $style))
+            return null;
+
+        return match ($style) {
+            'form' => ',',
+            'spaceDelimited' => '%20',
+            'pipeDelimited' => '|',
+            default => null,
+        };
     }
 
     /**
