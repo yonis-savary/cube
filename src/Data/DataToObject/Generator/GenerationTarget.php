@@ -14,13 +14,12 @@ readonly class GenerationTarget
     ) {}
 
     /**
-     * `null` when `$namespace` is outside every PSR-4 prefix, as its classes could not be autoloaded
+     * `null` when `$namespace` is outside every PSR-4 prefix, as its classes could not be autoloaded.
      */
     public static function fromNamespace(string $namespace): ?self
     {
         if (!$directory = Path::namespaceToPath($namespace))
             return null;
-
         return new self(trim($namespace, '\\'), new Storage($directory));
     }
 

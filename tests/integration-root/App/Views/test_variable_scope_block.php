@@ -1,1 +1,1 @@
-<span>AA=<?= $a ?></span>
+<span>AA=<?php echo $a; ?></span>

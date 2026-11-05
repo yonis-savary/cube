@@ -7,6 +7,5 @@ class DefaultParamClass
     public function __construct(
         string $name,
         bool $someFlag = false
-    )
-    {}
+    ) {}
 }

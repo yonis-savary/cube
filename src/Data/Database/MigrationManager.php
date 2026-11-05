@@ -5,19 +5,15 @@ namespace Cube\Data\Database;
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
+use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
-use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Models\ModelField;
-use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
+use Cube\Env\Storage;
 use Cube\Utils\Console;
 use Cube\Utils\Text;
-use DateTime;
-use InvalidArgumentException;
-use RuntimeException;
-use Throwable;
 
 class MigrationManager
 {
@@ -28,14 +24,14 @@ class MigrationManager
     protected Database $database;
 
     /**
-     * @var Bunch<int,string> $migrationFiles
+     * @var Bunch<int,string>
      */
     protected Bunch $migrationFiles;
 
     protected ?\Throwable $lastError = null;
     protected ?string $lastErrorFile = null;
 
-    protected $logFunction = null;
+    protected $logFunction;
 
     public function __construct(
         Database $database,
@@ -55,13 +51,14 @@ class MigrationManager
         ;
     }
 
-    public function setLoggingFunction(callable $function) {
+    public function setLoggingFunction(callable $function)
+    {
         $this->logFunction = $function;
     }
 
-    protected function log(string $message): void {
-        if ($this->logFunction)
-            ($this->logFunction)($message);
+    protected function log(string $message): void
+    {
+        if ($this->logFunction)($this->logFunction)($message);
     }
 
     public function getMigrationTableName(): string
@@ -84,7 +81,8 @@ class MigrationManager
         return Query::select($this->getMigrationTableName())
             ->selectField('name')
             ->where('name', $name)
-            ->exists($this->database);
+            ->exists($this->database)
+        ;
     }
 
     public function createMigrationTableIfInexistant(): void
@@ -92,7 +90,6 @@ class MigrationManager
         $table = $this->getMigrationTableName();
         if ($this->database->hasTable($table))
             return;
-
         $this->getPlan()->create($table, [
             ModelField::id(),
             ModelField::string('name', 200)->notNull()->unique(),
@@ -104,15 +101,17 @@ class MigrationManager
     {
         Query::insert($this->getMigrationTableName())
             ->insertField(['name', 'created_at'])
-            ->values([$name, new DateTime()])
-            ->fetch($this->database);
+            ->values([$name, new \DateTime()])
+            ->fetch($this->database)
+        ;
     }
 
     public function markMigrationAsUndone(string $name): void
     {
         Query::delete($this->getMigrationTableName())
             ->where('name', $name)
-            ->fetch($this->database);
+            ->fetch($this->database)
+        ;
     }
 
     /** @return string[] */
@@ -125,7 +124,8 @@ class MigrationManager
                 ->fetch($this->database)
         )
             ->map(fn ($row) => $row->name)
-            ->toArray();
+            ->toArray()
+        ;
     }
 
     public function executeMigration(string $file): bool
@@ -142,10 +142,9 @@ class MigrationManager
         $migration = include $file;
 
         if ($error = $migration->execute($this->getPlan(), $this->database))
-            return $this->recordFailure($file, $error, "Error with $file ! ");
-
+            return $this->recordFailure($file, $error, "Error with {$file} ! ");
         $this->markMigrationAsDone($migrationName);
-        $this->log(Console::withGreenColor("Migration: $file applied"));
+        $this->log(Console::withGreenColor("Migration: {$file} applied"));
 
         return true;
     }
@@ -156,10 +155,9 @@ class MigrationManager
         $migration = include $file;
 
         if ($error = $migration->revert($this->getPlan(), $this->database))
-            return $this->recordFailure($file, $error, "Error while rolling back $file ! ");
-
+            return $this->recordFailure($file, $error, "Error while rolling back {$file} ! ");
         $this->markMigrationAsUndone(basename($file));
-        $this->log(Console::withGreenColor("Migration: $file rolled back"));
+        $this->log(Console::withGreenColor("Migration: {$file} rolled back"));
 
         return true;
     }
@@ -167,14 +165,14 @@ class MigrationManager
     public function rollback(int $steps = 1): void
     {
         if ($steps < 1)
-            throw new InvalidArgumentException("Cannot rollback [{$steps}] migrations, expected at least 1");
+            throw new \InvalidArgumentException("Cannot rollback [{$steps}] migrations, expected at least 1");
 
         $this->createMigrationTableIfInexistant();
 
         $names = array_slice(array_reverse($this->listDoneMigrations()), 0, $steps);
 
         if (!count($names)) {
-            $this->log(Console::withBlueColor("Nothing to rollback !"));
+            $this->log(Console::withBlueColor('Nothing to rollback !'));
             return;
         }
 
@@ -187,7 +185,7 @@ class MigrationManager
     protected function getMigrationFile(string $name): string
     {
         return $this->migrationFiles->first(fn ($file) => basename($file) === $name)
-            ?? throw new RuntimeException("Cannot find the file of the applied migration [{$name}] in any [{$this->configuration->directoryName}] directory");
+            ?? throw new \RuntimeException("Cannot find the file of the applied migration [{$name}] in any [{$this->configuration->directoryName}] directory");
     }
 
     protected function getPlan(): Plan
@@ -195,9 +193,9 @@ class MigrationManager
         return Plan::forDatabase($this->database);
     }
 
-    protected function recordFailure(string $file, Throwable $error, string $message): false
+    protected function recordFailure(string $file, \Throwable $error, string $message): false
     {
-        $this->log(Console::withRedColor($message . $error->getMessage()));
+        $this->log(Console::withRedColor($message.$error->getMessage()));
         $this->lastError = $error;
         $this->lastErrorFile = $file;
         Logger::getInstance()->error('Failed migration {file}', ['file' => $file]);
@@ -214,20 +212,17 @@ class MigrationManager
         $this->createMigrationTableIfInexistant();
 
         $files = $this->migrationFiles
-            ->filter(fn($file) => !$this->migrationWasMade(basename($file)))
-            ->toArray();
+            ->filter(fn ($file) => !$this->migrationWasMade(basename($file)))
+            ->toArray()
+        ;
 
-        if (count($files))
-        {
-            foreach ($files as $file) 
-            {
+        if (count($files)) {
+            foreach ($files as $file) {
                 if (!$this->executeMigration($file))
                     throw new FailedMigrationException($this->lastError, $this->lastErrorFile);
             }
-        }
-        else
-        {
-            $this->log(Console::withBlueColor("Nothing to migrate !"));
+        } else {
+            $this->log(Console::withBlueColor('Nothing to migrate !'));
         }
     }
 

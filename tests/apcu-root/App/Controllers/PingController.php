@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Controllers;
 
@@ -18,9 +18,9 @@ class PingController extends Controller
     public function routes(Router $router): void
     {
         $router->addRoutes(
-            Route::get("/", [self::class, "rootAndDeleteAPCU"]),
-            Route::get("/ping", [self::class, "ping"]),
-            Route::get("/provided-logger", [self::class, "providedLogger"])
+            Route::get('/', [self::class, 'rootAndDeleteAPCU']),
+            Route::get('/ping', [self::class, 'ping']),
+            Route::get('/provided-logger', [self::class, 'providedLogger'])
         );
     }
 
@@ -30,9 +30,10 @@ class PingController extends Controller
         return Response::noContent();
     }
 
-    public static function ping() {
+    public static function ping()
+    {
         return Response::json([
-            'message' => "OK",
+            'message' => 'OK',
             'loaded_with_apcu' => Autoloader::$loadedThroughApcu,
             'framework_loaded' => $GLOBALS['heard'][FrameworkLoaded::class] ?? false,
             'applications_loaded' => $GLOBALS['heard'][ApplicationsLoaded::class] ?? null,

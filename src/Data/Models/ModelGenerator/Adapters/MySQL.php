@@ -9,7 +9,7 @@ class MySQL extends DatabaseAdapter
 {
     public static function supports(string $driver): bool
     {
-        return $driver === 'mysql';
+        return 'mysql' === $driver;
     }
 
     protected function listTables(): array
@@ -41,7 +41,7 @@ class MySQL extends DatabaseAdapter
 
     protected function listColumns(string $table): array
     {
-        return $this->database->query("DESCRIBE `{}`", [$table]);
+        return $this->database->query('DESCRIBE `{}`', [$table]);
     }
 
     protected function getModelField(string $table, array $column, ?string &$primary): ModelField

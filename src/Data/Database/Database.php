@@ -3,10 +3,10 @@
 namespace Cube\Data\Database;
 
 use Cube\Core\Component;
-use Cube\Utils\Implementations;
 use Cube\Data\Database\Builders\QueryBuilder;
 use Cube\Env\Storage;
-use Throwable;
+use Cube\Utils\Implementations;
+use Pdo\Mysql;
 
 class Database
 {
@@ -23,7 +23,8 @@ class Database
         protected ?string $host = null,
         protected ?int $port = null,
         protected ?string $user = null,
-        #[\SensitiveParameter] protected ?string $password = null,
+        #[\SensitiveParameter]
+        protected ?string $password = null,
         protected ?QueryBuilder $queryBuilder = null,
         ?\PDO $connection = null
     ) {
@@ -33,8 +34,7 @@ class Database
 
             if ('mysql' === $this->driver)
                 self::assertQuotableCharset($connection);
-        }
-        else if ('sqlite' === $driver) {
+        } elseif ('sqlite' === $driver) {
             $this->database = $database
                 ? Storage::getInstance()->path($database)
                 : null;
@@ -45,15 +45,14 @@ class Database
 
             $this->connection = new \PDO($dsn);
             $this->exec('PRAGMA foreign_keys = ON');
-        }
-        else {
+        } else {
             $dsn = "{$driver}:dbname={$database};host={$host};port={$port}";
 
             $options = [];
 
             if ('mysql' === $driver) { // Values are escaped with PDO::quote(), whose safety depends on the connection charset
                 $dsn .= ';charset=utf8mb4';
-                $options[\Pdo\Mysql::ATTR_MULTI_STATEMENTS] = false;
+                $options[Mysql::ATTR_MULTI_STATEMENTS] = false;
             }
 
             $this->connection = new \PDO($dsn, $user, $password, $options);
@@ -92,7 +91,7 @@ class Database
             throw new \InvalidArgumentException("The given MySQL connection uses the [{$charset}] charset, values could not be escaped safely : build it with `charset=utf8mb4` in its DSN");
     }
 
-    public static function fromPDO(\PDO $connection, ?string $database=null): self
+    public static function fromPDO(\PDO $connection, ?string $database = null): self
     {
         return new self(database: $database, connection: $connection);
     }
@@ -218,7 +217,6 @@ class Database
 
         if ($this->dryRunMode)
             return [];
-
         $statement = $this->connection->query($queryWithContext);
         $this->lastStatement = $statement;
 
@@ -240,19 +238,17 @@ class Database
         $queryWithContext = $this->withContext($query, $context);
         if ($this->dryRunMode)
             return 0;
-
         return $this->connection->exec($queryWithContext);
     }
 
     /**
      * Without a context, `$query` is taken as finished SQL : `Query` hands over statements whose
-     * values are already quoted, and interpolating them again would turn a `{}` inside a value into `NULL`
+     * values are already quoted, and interpolating them again would turn a `{}` inside a value into `NULL`.
      */
     protected function withContext(string $query, array $context): string
     {
         if (!count($context))
             return $query;
-
         return $this->build($query, $context);
     }
 
@@ -280,12 +276,12 @@ class Database
     /**
      * @param \Closure(Database) $callback
      */
-    public function transaction(callable $callback): ?Throwable
+    public function transaction(callable $callback): ?\Throwable
     {
         return $this->queryBuilder->transaction($callback, $this);
     }
 
-    public function dryRun(callable $callback, bool $enableDryRun=true): mixed
+    public function dryRun(callable $callback, bool $enableDryRun = true): mixed
     {
         $original = $this->dryRunMode;
         $this->dryRunMode = $enableDryRun;

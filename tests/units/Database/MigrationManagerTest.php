@@ -4,9 +4,9 @@ namespace Cube\Tests\Units\Database;
 
 use Cube\Core\Autoloader\Applications;
 use Cube\Data\Database\Database;
-use Cube\Data\Database\MigrationManager;
 use Cube\Data\Database\Migration\FailedMigrationException;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
+use Cube\Data\Database\MigrationManager;
 use Cube\Env\Configuration;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
@@ -194,7 +194,7 @@ class MigrationManagerTest extends TestCase
         $this->setUpTemporaryStorage('migration-manager-test-');
 
         try {
-            $file = $this->writeMigration('2026_01_01_broken.php', 'throw new \\RuntimeException("broken migration");', '');
+            $file = $this->writeMigration('2026_01_01_broken.php', 'throw new \RuntimeException("broken migration");', '');
 
             $database = (new SQLiteProvider())->getEmptyDatabase();
             $manager = $this->makeManager($database);

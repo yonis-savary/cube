@@ -9,15 +9,16 @@ class MySQL extends SQLPlan
 {
     public static function supports(string $driver): bool
     {
-        return strtolower($driver) === 'mysql';
+        return 'mysql' === strtolower($driver);
     }
 
     protected function getAutoIncrementClause(): string
     {
-        return " AUTO_INCREMENT";
+        return ' AUTO_INCREMENT';
     }
 
-    public function alterColumn(string $table, string $field, ModelField $newProperties) {
+    public function alterColumn(string $table, string $field, ModelField $newProperties)
+    {
         $this->assertFieldExists($table, $field);
 
         if ($field !== $newProperties->name) {

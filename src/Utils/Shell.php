@@ -3,7 +3,6 @@
 namespace Cube\Utils;
 
 use Cube\Console\Command;
-use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -30,7 +29,7 @@ class Shell
         return $proc;
     }
 
-    public static function executeInDirectory(string $command, string $directory, ?callable $outputCallback=null): Process
+    public static function executeInDirectory(string $command, string $directory, ?callable $outputCallback = null): Process
     {
         $proc = Process::fromShellCommandline($command, $directory);
         $proc->run($outputCallback);

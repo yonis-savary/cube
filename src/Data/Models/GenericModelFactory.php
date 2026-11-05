@@ -4,6 +4,7 @@ namespace Cube\Data\Models;
 
 /**
  * @template TModel of Model
+ *
  * @extends ModelFactory<TModel>
  */
 final class GenericModelFactory extends ModelFactory

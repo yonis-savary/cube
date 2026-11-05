@@ -2,39 +2,39 @@
 
 namespace Cube\Tests\Units\Data\OpenAPI;
 
-use Cube\Core\Injector;
 use Cube\Data\Database\Database;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Configuration\Authentication\BearerToken;
 use Cube\Data\OpenAPI\Configuration\Authentication\OpenApiAuthScheme;
-use Cube\Data\OpenAPI\OpenAPIGenerator;
 use Cube\Data\OpenAPI\OpenAPIConfiguration;
+use Cube\Data\OpenAPI\OpenAPIGenerator;
 use Cube\Env\Storage;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\SampleController;
 use Cube\Utils\Path;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
-use stdClass;
 
+/**
+ * @internal
+ */
 class OpenAPIGenerationTest extends TestCase
 {
-    protected function readFixture(string $fixtureName) {
-        $path = Path::join(__DIR__, "Fixtures", $fixtureName);
+    protected function readFixture(string $fixtureName)
+    {
+        $path = Path::join(__DIR__, 'Fixtures', $fixtureName);
         if (!file_exists($path))
-            throw new InvalidArgumentException("Fixture $path does not exists");
+            throw new \InvalidArgumentException("Fixture {$path} does not exists");
 
         return file_get_contents($path);
     }
 
-    protected function getSimpleGenerator(?OpenApiAuthScheme $authenticationScheme=null): OpenAPIGenerator
+    protected function getSimpleGenerator(?OpenApiAuthScheme $authenticationScheme = null): OpenAPIGenerator
     {
         return new OpenAPIGenerator(
             new OpenAPIConfiguration(
-                Storage::getInstance()->path(uniqid() . ".json"),
+                Storage::getInstance()->path(uniqid().'.json'),
                 'My Test Application',
                 '0.1.0',
                 $authenticationScheme,
@@ -43,7 +43,7 @@ class OpenAPIGenerationTest extends TestCase
         );
     }
 
-    protected function generateAsArray(Router $router, ?OpenAPIGenerator $generator=null): array
+    protected function generateAsArray(Router $router, ?OpenAPIGenerator $generator = null): array
     {
         $generator ??= $this->getSimpleGenerator();
         return json_decode(file_get_contents($generator->generate($router)), true, flags: JSON_THROW_ON_ERROR);
@@ -56,35 +56,37 @@ class OpenAPIGenerationTest extends TestCase
         );
     }
 
-    public function testSimpleGeneration() {
+    public function testSimpleGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADSimple.json");
+        $fixture = $this->readFixture('OADSimple.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADSimple.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADSimple.json fixture");
     }
 
-
-    public function testSimpleOperationGeneration() {
+    public function testSimpleOperationGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/simple-route", [SampleController::class, "simpleRoute"]),
-            Route::get("/simple-endpoint", [SampleController::class, "simpleEndpoint"])
+            Route::get('/simple-route', [SampleController::class, 'simpleRoute']),
+            Route::get('/simple-endpoint', [SampleController::class, 'simpleEndpoint'])
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADSimpleOperation.json");
+        $fixture = $this->readFixture('OADSimpleOperation.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADSimpleOperation.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADSimpleOperation.json fixture");
     }
 
-    public function testAResourceResponseDescribesWhatTheResourceAnswers() {
+    public function testAResourceResponseDescribesWhatTheResourceAnswers()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/users", [SampleController::class, "usersAsResource"]));
+        $router->addRoutes(Route::get('/users', [SampleController::class, 'usersAsResource']));
 
         $schema = $this->generateAsArray($router)['paths']['/users']['get']['responses'][200]['content']['application/json']['schema'];
 
@@ -96,23 +98,25 @@ class OpenAPIGenerationTest extends TestCase
     }
 
     /** The example model kept random foreign keys, so a resource loading a relation put a real row of the database into the document. */
-    public function testAResourceExampleHoldsNoRowOfTheDatabase() {
+    public function testAResourceExampleHoldsNoRowOfTheDatabase()
+    {
         $database = new Database();
         $database->exec('CREATE TABLE user_type (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT NOT NULL)');
-        for ($id = 1; $id <= 1000; $id++)
+        for ($id = 1; $id <= 1000; ++$id)
             $database->exec("INSERT INTO user_type (id, label) VALUES ({$id}, 'real-row-{$id}')");
 
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsType"]));
+        $router->addRoutes(Route::get('/user', [SampleController::class, 'userWithItsType']));
 
         $document = Database::withInstance($database, fn () => json_encode($this->generateAsArray($router)));
 
         $this->assertStringNotContainsString('real-row-', $document);
     }
 
-    public function testAResourceExampleHoldsTheRelationsTheEndpointLoads() {
+    public function testAResourceExampleHoldsTheRelationsTheEndpointLoads()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsLoadedType"]));
+        $router->addRoutes(Route::get('/user', [SampleController::class, 'userWithItsLoadedType']));
 
         $content = $this->generateAsArray($router)['paths']['/user']['get']['responses'][200]['content']['application/json'];
 
@@ -120,11 +124,12 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals('string', $content['schema']['properties']['type']['type']);
     }
 
-    public function testAResourceKeyIsRequiredUnlessDeclaredOptional() {
+    public function testAResourceKeyIsRequiredUnlessDeclaredOptional()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/users", [SampleController::class, "usersAsResource"]),
-            Route::get("/profile", [SampleController::class, "userProfile"]),
+            Route::get('/users', [SampleController::class, 'usersAsResource']),
+            Route::get('/profile', [SampleController::class, 'userProfile']),
         );
         $paths = $this->generateAsArray($router)['paths'];
 
@@ -135,9 +140,10 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['city'], $profile['properties']['address']['required']);
     }
 
-    public function testANullableResourceKeyAddsNullToItsType() {
+    public function testANullableResourceKeyAddsNullToItsType()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/profile", [SampleController::class, "userProfile"]));
+        $router->addRoutes(Route::get('/profile', [SampleController::class, 'userProfile']));
 
         $properties = $this->generateAsArray($router)['paths']['/profile']['get']['responses'][200]['content']['application/json']['schema']['properties'];
 
@@ -148,9 +154,10 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['string', 'null'], $properties['tags']['items']['type']);
     }
 
-    public function testAnObjectResponseAppliesTheDeclarationsOfItsResources() {
+    public function testAnObjectResponseAppliesTheDeclarationsOfItsResources()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/profiles", [SampleController::class, "userProfiles"]));
+        $router->addRoutes(Route::get('/profiles', [SampleController::class, 'userProfiles']));
 
         $profile = $this->generateAsArray($router)['paths']['/profiles']['get']['responses'][200]['content']['application/json']['schema']['properties']['profiles']['items'];
 
@@ -158,26 +165,29 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['id', 'nickname', 'tags'], $profile['required']);
     }
 
-    public function testDeclaringAKeyTheResourceDoesNotAnswerFails() {
+    public function testDeclaringAKeyTheResourceDoesNotAnswerFails()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithAMistypedKey"]));
+        $router->addRoutes(Route::get('/user', [SampleController::class, 'userWithAMistypedKey']));
 
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('[nick]');
         $this->generateAsArray($router);
     }
 
-    public function testAResourceReadingARelationTheEndpointDoesNotDeclareFails() {
+    public function testAResourceReadingARelationTheEndpointDoesNotDeclareFails()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithoutItsType"]));
+        $router->addRoutes(Route::get('/user', [SampleController::class, 'userWithoutItsType']));
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->generateAsArray($router);
     }
 
-    public function testAModelSchemaReferencesItsRelationsAsOptional() {
+    public function testAModelSchemaReferencesItsRelationsAsOptional()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsRelations"]));
+        $router->addRoutes(Route::get('/user', [SampleController::class, 'userWithItsRelations']));
 
         $schemas = $this->generateAsArray($router)['components']['schemas'];
 
@@ -188,9 +198,10 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertArrayHasKey('Module', $schemas);
     }
 
-    public function testAModelResponseRequiresTheRelationsTheEndpointLoads() {
+    public function testAModelResponseRequiresTheRelationsTheEndpointLoads()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/user", [SampleController::class, "userWithItsRelations"]));
+        $router->addRoutes(Route::get('/user', [SampleController::class, 'userWithItsRelations']));
 
         $schema = $this->generateAsArray($router)['paths']['/user']['get']['responses'][200]['content']['application/json']['schema'];
 
@@ -204,11 +215,12 @@ class OpenAPIGenerationTest extends TestCase
     }
 
     /** Every array-callback route was documented, internal ones included. */
-    public function testAHiddenRouteIsLeftOut() {
+    public function testAHiddenRouteIsLeftOut()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/simple-route", [SampleController::class, "simpleRoute"]),
-            Route::get("/internal", [SampleController::class, "internalEndpoint"])
+            Route::get('/simple-route', [SampleController::class, 'simpleRoute']),
+            Route::get('/internal', [SampleController::class, 'internalEndpoint'])
         );
 
         $document = $this->generateAsArray($router);
@@ -217,59 +229,61 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertArrayNotHasKey('/internal', $document['paths']);
     }
 
-
-    public function testSlugOperationGeneration() {
+    public function testSlugOperationGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/simple-route/{firstSlug}", [SampleController::class, "simpleSlugEndpoint"]),
-            Route::get("/user-route/{user}", [SampleController::class, "modelSlugEndpoint"]),
+            Route::get('/simple-route/{firstSlug}', [SampleController::class, 'simpleSlugEndpoint']),
+            Route::get('/user-route/{user}', [SampleController::class, 'modelSlugEndpoint']),
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADRouteSlugs.json");
+        $fixture = $this->readFixture('OADRouteSlugs.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADRouteSlugs.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADRouteSlugs.json fixture");
     }
 
-    public function testCustomRequestGeneration() {
+    public function testCustomRequestGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::post("/post-route", [SampleController::class, "postEndpointWithCustomRequest"]),
-            Route::patch("/patch-route", [SampleController::class, "patchEndpointWithCustomRequest"]),
-            Route::put("/put-route", [SampleController::class, "putEndpointWithCustomRequest"]),
+            Route::post('/post-route', [SampleController::class, 'postEndpointWithCustomRequest']),
+            Route::patch('/patch-route', [SampleController::class, 'patchEndpointWithCustomRequest']),
+            Route::put('/put-route', [SampleController::class, 'putEndpointWithCustomRequest']),
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADCustomRequestFormat.json");
+        $fixture = $this->readFixture('OADCustomRequestFormat.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADCustomRequestFormat.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADCustomRequestFormat.json fixture");
     }
 
-    
-    public function testResponseGeneration() {
+    public function testResponseGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/products", [SampleController::class, "endpointReturningAListOfProducts"]),
-            Route::get("/product/{product}", [SampleController::class, "endpointReturningAProduct"]),
+            Route::get('/products', [SampleController::class, 'endpointReturningAListOfProducts']),
+            Route::get('/product/{product}', [SampleController::class, 'endpointReturningAProduct']),
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADModelResponse.json");
+        $fixture = $this->readFixture('OADModelResponse.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADModelResponse.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADModelResponse.json fixture");
     }
 
     /** A model schema only gave types : its factory now fills an example, the same at every generation. */
-    public function testAModelSchemaHoldsAStableExampleFromItsFactory() {
+    public function testAModelSchemaHoldsAStableExampleFromItsFactory()
+    {
         $generate = function () {
             $router = $this->getStandaloneRouter();
-            $router->addRoutes(Route::get("/product/{product}", [SampleController::class, "endpointReturningAProduct"]));
+            $router->addRoutes(Route::get('/product/{product}', [SampleController::class, 'endpointReturningAProduct']));
 
             return $this->generateAsArray($router)['components']['schemas']['Product'];
         };
@@ -281,67 +295,72 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals($schema['example'], $generate()['example']);
     }
 
-    public function testRawResponseGeneration() {
+    public function testRawResponseGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/raw", [SampleController::class, "endpointReturningARawDataType"]),
+            Route::get('/raw', [SampleController::class, 'endpointReturningARawDataType']),
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADRawResponse.json");
+        $fixture = $this->readFixture('OADRawResponse.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADRawResponse.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADRawResponse.json fixture");
     }
 
-    public function testRawFileResponseGeneration() {
+    public function testRawFileResponseGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/raw", [SampleController::class, "endpointReturningAFileDataType"]),
+            Route::get('/raw', [SampleController::class, 'endpointReturningAFileDataType']),
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADRawResponseFile.json");
+        $fixture = $this->readFixture('OADRawResponseFile.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADRawResponseFile.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADRawResponseFile.json fixture");
     }
 
-    public function testQueryParametersGeneration() {
+    public function testQueryParametersGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/query-route", [SampleController::class, "getEndpointWithQueryRequest"]),
+            Route::get('/query-route', [SampleController::class, 'getEndpointWithQueryRequest']),
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADQueryParameters.json");
+        $fixture = $this->readFixture('OADQueryParameters.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADQueryParameters.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADQueryParameters.json fixture");
     }
 
-    public function testSlugTypesGeneration() {
+    public function testSlugTypesGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/untyped/{first}/{second}", [SampleController::class, "simpleRoute"]),
-            Route::get("/typed/{hex:color}/{uuid:token}/{time:at}", [SampleController::class, "typedSlugsEndpoint"]),
+            Route::get('/untyped/{first}/{second}', [SampleController::class, 'simpleRoute']),
+            Route::get('/typed/{hex:color}/{uuid:token}/{time:at}', [SampleController::class, 'typedSlugsEndpoint']),
         );
 
         $generator = $this->getSimpleGenerator();
 
         $file = $generator->generate($router);
-        $fixture = $this->readFixture("OADSlugTypes.json");
+        $fixture = $this->readFixture('OADSlugTypes.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADSlugTypes.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADSlugTypes.json fixture");
     }
 
-    public function testEmptyRawListGeneration() {
+    public function testEmptyRawListGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/empty", [SampleController::class, "endpointReturningAnEmptyList"]),
+            Route::get('/empty', [SampleController::class, 'endpointReturningAnEmptyList']),
         );
 
         $document = $this->generateAsArray($router);
@@ -350,11 +369,12 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['type' => 'array'], $schema['properties']['items']);
     }
 
-    public function testClosureRoutesAreIgnored() {
+    public function testClosureRoutesAreIgnored()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/closure-route", fn() => null),
-            Route::get("/simple-route", [SampleController::class, "simpleRoute"]),
+            Route::get('/closure-route', fn () => null),
+            Route::get('/simple-route', [SampleController::class, 'simpleRoute']),
         );
 
         $document = $this->generateAsArray($router);
@@ -362,10 +382,11 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['/simple-route'], array_keys($document['paths']));
     }
 
-    public function testGenerationDoesNotAlterRoutes() {
+    public function testGenerationDoesNotAlterRoutes()
+    {
         $router = $this->getStandaloneRouter();
         $router->group('/api', routes: [
-            Route::get("/products", [SampleController::class, "simpleRoute"]),
+            Route::get('/products', [SampleController::class, 'simpleRoute']),
         ]);
 
         $first = $this->generateAsArray($router);
@@ -376,7 +397,8 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals('/api/products', $router->getRoutes()[0]->getPath());
     }
 
-    public function testSecuritySchemeGeneration() {
+    public function testSecuritySchemeGeneration()
+    {
         $router = $this->getStandaloneRouter();
         $generator = $this->getSimpleGenerator(new BearerToken());
 
@@ -389,11 +411,12 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals([['BearerAuth' => []]], $document['security']);
     }
 
-    public function testValidatedRequestAnswersUnprocessableContent() {
+    public function testValidatedRequestAnswersUnprocessableContent()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::post("/post-route", [SampleController::class, "postEndpointWithCustomRequest"]),
-            Route::get("/simple-route", [SampleController::class, "simpleRoute"]),
+            Route::post('/post-route', [SampleController::class, 'postEndpointWithCustomRequest']),
+            Route::get('/simple-route', [SampleController::class, 'simpleRoute']),
         );
 
         $document = $this->generateAsArray($router);
@@ -406,12 +429,13 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertArrayNotHasKey('responses', $document['paths']['/simple-route']['get']);
     }
 
-    public function testModelSlugAnswersNotFound() {
+    public function testModelSlugAnswersNotFound()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/product-model/{product}", [SampleController::class, "endpointReadingAProductSlug"]),
-            Route::get("/product-id/{product}", [SampleController::class, "endpointReturningAProduct"]),
-            Route::get("/user-union/{user}", [SampleController::class, "modelSlugEndpoint"]),
+            Route::get('/product-model/{product}', [SampleController::class, 'endpointReadingAProductSlug']),
+            Route::get('/product-id/{product}', [SampleController::class, 'endpointReturningAProduct']),
+            Route::get('/user-union/{user}', [SampleController::class, 'modelSlugEndpoint']),
         );
 
         $document = $this->generateAsArray($router);
@@ -424,14 +448,15 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertArrayNotHasKey('responses', $document['paths']['/user-union/{user}']['get']);
     }
 
-    public function testReturnTypeDescribesTheResponse() {
+    public function testReturnTypeDescribesTheResponse()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/product", [SampleController::class, "endpointTypedAsAProduct"]),
-            Route::get("/optional-product", [SampleController::class, "endpointTypedAsAnOptionalProduct"]),
-            Route::get("/void", [SampleController::class, "endpointTypedAsVoid"]),
-            Route::get("/response", [SampleController::class, "endpointTypedAsAResponse"]),
-            Route::get("/described-product", [SampleController::class, "endpointTypedAndDescribedAsAProduct"]),
+            Route::get('/product', [SampleController::class, 'endpointTypedAsAProduct']),
+            Route::get('/optional-product', [SampleController::class, 'endpointTypedAsAnOptionalProduct']),
+            Route::get('/void', [SampleController::class, 'endpointTypedAsVoid']),
+            Route::get('/response', [SampleController::class, 'endpointTypedAsAResponse']),
+            Route::get('/described-product', [SampleController::class, 'endpointTypedAndDescribedAsAProduct']),
         );
 
         $document = $this->generateAsArray($router);
@@ -450,41 +475,44 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertArrayHasKey('Product', $document['components']['schemas']);
     }
 
-    public function testUntypedSlugIsTypedByPosition() {
+    public function testUntypedSlugIsTypedByPosition()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/positional/{product}", [SampleController::class, "slugNamedDifferentlyEndpoint"]),
+            Route::get('/positional/{product}', [SampleController::class, 'slugNamedDifferentlyEndpoint']),
         );
 
         $document = $this->generateAsArray($router);
 
         $this->assertEquals(
-            ["type" => "integer"],
-            $document["paths"]["/positional/{product}"]["get"]["parameters"][0]["schema"]
+            ['type' => 'integer'],
+            $document['paths']['/positional/{product}']['get']['parameters'][0]['schema']
         );
     }
 
-    public function testDuplicateOperationIdIsRefused() {
+    public function testDuplicateOperationIdIsRefused()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            new Route("/product/{id}", [SampleController::class, "simpleRoute"], ["PUT", "PATCH"]),
+            new Route('/product/{id}', [SampleController::class, 'simpleRoute'], ['PUT', 'PATCH']),
         );
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("Duplicate operationId [simpleRoute] for PUT /product/{id} and PATCH /product/{id}");
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Duplicate operationId [simpleRoute] for PUT /product/{id} and PATCH /product/{id}');
 
         $this->generateAsArray($router);
     }
 
     /** A Route::any() names no method : it was left out of the document without a word. */
-    public function testARouteForAnyMethodIsLeftOutWithAWarning() {
+    public function testARouteForAnyMethodIsLeftOutWithAWarning()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::any("/anything", [SampleController::class, "simpleRoute"]),
-            Route::get("/simple-route", [SampleController::class, "simpleEndpoint"]),
+            Route::any('/anything', [SampleController::class, 'simpleRoute']),
+            Route::get('/simple-route', [SampleController::class, 'simpleEndpoint']),
         );
 
-        $generator = new OpenAPIGenerator(new OpenAPIConfiguration(Storage::getInstance()->path(uniqid() . ".json"), 'My Test Application', '0.1.0'));
+        $generator = new OpenAPIGenerator(new OpenAPIConfiguration(Storage::getInstance()->path(uniqid().'.json'), 'My Test Application', '0.1.0'));
 
         $this->expectOutputRegex('~Warning: ignored route accepting any method.*/anything~');
         $document = $this->generateAsArray($router, $generator);
@@ -493,10 +521,11 @@ class OpenAPIGenerationTest extends TestCase
     }
 
     /** Only an object of rules was read : a getRules() returning a single list rule gave no request body. */
-    public function testASingleRequestRuleDescribesTheBody() {
+    public function testASingleRequestRuleDescribesTheBody()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::post("/ids", [SampleController::class, "postEndpointWithListRequest"]),
+            Route::post('/ids', [SampleController::class, 'postEndpointWithListRequest']),
         );
 
         $operation = $this->generateAsArray($router)['paths']['/ids']['post'];
@@ -509,10 +538,11 @@ class OpenAPIGenerationTest extends TestCase
     }
 
     /** inArray() wrote a `string` type over the rule's own, so a list of integers was documented as strings. */
-    public function testAnEnumKeepsTheRuleType() {
+    public function testAnEnumKeepsTheRuleType()
+    {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/products", [SampleController::class, "getEndpointWithEnumRequest"]),
+            Route::get('/products', [SampleController::class, 'getEndpointWithEnumRequest']),
         );
 
         $parameter = $this->generateAsArray($router)['paths']['/products']['get']['parameters'][0];
@@ -521,7 +551,8 @@ class OpenAPIGenerationTest extends TestCase
     }
 
     /** The file was checked as given, so a path relative to the project root only worked from the project root. */
-    public function testARawResponseFileIsRelativeToTheProjectRoot() {
+    public function testARawResponseFileIsRelativeToTheProjectRoot()
+    {
         $workingDirectory = getcwd();
         chdir(sys_get_temp_dir());
 
@@ -538,28 +569,30 @@ class OpenAPIGenerationTest extends TestCase
     {
         $router = $this->getStandaloneRouter();
         $router->addRoutes(
-            Route::get("/album", [SampleController::class, "endpointReturningAnAlbum"]),
-            Route::post("/any-value", [SampleController::class, "postEndpointWithAnyValueRequest"]),
-            Route::get("/untyped-raw", [SampleController::class, "endpointReturningUntypedRawData"]),
-            Route::get("/albums", [SampleController::class, "endpointReturningAPageOfAlbums"]),
-            Route::post("/chunk", [SampleController::class, "endpointReceivingAChunk"]),
-            Route::get("/track", [SampleController::class, "endpointStreamingATrack"]),
-            Route::get("/cover", [SampleController::class, "endpointWithSeveralResponses"]),
-            Route::get("/directory", [SampleController::class, "endpointReturningAUserDirectory"]),
+            Route::get('/album', [SampleController::class, 'endpointReturningAnAlbum']),
+            Route::post('/any-value', [SampleController::class, 'postEndpointWithAnyValueRequest']),
+            Route::get('/untyped-raw', [SampleController::class, 'endpointReturningUntypedRawData']),
+            Route::get('/albums', [SampleController::class, 'endpointReturningAPageOfAlbums']),
+            Route::post('/chunk', [SampleController::class, 'endpointReceivingAChunk']),
+            Route::get('/track', [SampleController::class, 'endpointStreamingATrack']),
+            Route::get('/cover', [SampleController::class, 'endpointWithSeveralResponses']),
+            Route::get('/directory', [SampleController::class, 'endpointReturningAUserDirectory']),
         );
 
         return $router;
     }
 
-    public function testOutputShapesGeneration() {
+    public function testOutputShapesGeneration()
+    {
         $file = $this->getSimpleGenerator()->generate($this->getOutputShapesRouter());
-        $fixture = $this->readFixture("OADOutputShapes.json");
+        $fixture = $this->readFixture('OADOutputShapes.json');
 
-        $this->assertEquals($fixture, file_get_contents($file), "File $file does not match OADOutputShapes.json fixture");
+        $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADOutputShapes.json fixture");
     }
 
     /** The model schema came from toObjectParam(), the shape of a write : no auto-incremented key, and fields with a default were optional. */
-    public function testAModelSchemaDescribesTheModelAsRead() {
+    public function testAModelSchemaDescribesTheModelAsRead()
+    {
         $schema = $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album'];
 
         $this->assertEquals(['id', 'name', 'last_update', 'released_at'], $schema['required']);
@@ -568,29 +601,32 @@ class OpenAPIGenerationTest extends TestCase
     }
 
     /** Datetimes were announced as RFC 3339 date-time, while Cube reads and writes them as `Y-m-d H:i:s`. */
-    public function testADatetimeIsDescribedByItsPattern() {
+    public function testADatetimeIsDescribedByItsPattern()
+    {
         $schema = $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album'];
 
         $this->assertEquals(['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']], $schema['properties']['last_update']);
-        $this->assertMatchesRegularExpression('~^' . Route::SLUG_FORMATS['datetime'] . '$~', $schema['example']['last_update']);
+        $this->assertMatchesRegularExpression('~^'.Route::SLUG_FORMATS['datetime'].'$~', $schema['example']['last_update']);
     }
 
     /** An untyped schema was encoded as an empty JSON array, which is not a schema. */
-    public function testAnUntypedSchemaIsAnEmptyObject() {
+    public function testAnUntypedSchemaIsAnEmptyObject()
+    {
         $file = $this->getSimpleGenerator()->generate($this->getOutputShapesRouter());
         $paths = json_decode(file_get_contents($file), flags: JSON_THROW_ON_ERROR)->paths;
 
         $body = $paths->{'/any-value'}->post->requestBody->content->{'application/json'}->schema->properties;
-        $this->assertEquals(new stdClass(), $body->payload);
-        $this->assertEquals(new stdClass(), $body->tags->items);
-        $this->assertEquals(new stdClass(), $body->options->properties);
+        $this->assertEquals(new \stdClass(), $body->payload);
+        $this->assertEquals(new \stdClass(), $body->tags->items);
+        $this->assertEquals(new \stdClass(), $body->options->properties);
 
         $raw = $paths->{'/untyped-raw'}->get->responses->{'200'}->content->{'application/json'}->schema->properties;
-        $this->assertEquals(new stdClass(), $raw->nested->properties->value);
-        $this->assertEquals(new stdClass(), $raw->list->items);
+        $this->assertEquals(new \stdClass(), $raw->nested->properties->value);
+        $this->assertEquals(new \stdClass(), $raw->list->items);
     }
 
-    public function testAnObjectResponseReferencesAModelByItsClass() {
+    public function testAnObjectResponseReferencesAModelByItsClass()
+    {
         $document = $this->generateAsArray($this->getOutputShapesRouter());
         $schema = $document['paths']['/albums']['get']['responses'][200]['content']['application/json']['schema'];
 
@@ -598,16 +634,18 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertArrayHasKey('Album', $document['components']['schemas']);
     }
 
-    public function testARawResponseReadsAModelClassNameAsAString() {
+    public function testARawResponseReadsAModelClassNameAsAString()
+    {
         $router = $this->getStandaloneRouter();
-        $router->addRoutes(Route::get("/model-class-name", [SampleController::class, "endpointReturningAModelClassName"]));
+        $router->addRoutes(Route::get('/model-class-name', [SampleController::class, 'endpointReturningAModelClassName']));
 
         $schema = $this->generateAsArray($router)['paths']['/model-class-name']['get']['responses'][200]['content']['application/json']['schema'];
 
         $this->assertEquals(['type' => 'string'], $schema['properties']['model']);
     }
 
-    public function testARawBodyIsBinary() {
+    public function testARawBodyIsBinary()
+    {
         $requestBody = $this->generateAsArray($this->getOutputShapesRouter())['paths']['/chunk']['post']['requestBody'];
 
         $this->assertEquals([
@@ -617,19 +655,22 @@ class OpenAPIGenerationTest extends TestCase
         ], $requestBody);
     }
 
-    public function testANonJsonRawResponseWithoutDataIsBinary() {
+    public function testANonJsonRawResponseWithoutDataIsBinary()
+    {
         $responses = $this->generateAsArray($this->getOutputShapesRouter())['paths']['/track']['get']['responses'];
 
         $this->assertEquals(['audio/mpeg' => ['schema' => ['type' => 'string', 'format' => 'binary']]], $responses[200]['content']);
     }
 
-    public function testAJsonRawResponseStillNeedsData() {
-        $this->expectException(InvalidArgumentException::class);
+    public function testAJsonRawResponseStillNeedsData()
+    {
+        $this->expectException(\InvalidArgumentException::class);
         new RawResponse(mimeType: 'application/problem+json');
     }
 
     /** A 204 could only come from the return type, and ModelResponse / RawResponse could not be repeated. */
-    public function testResponsesCombineOnOneEndpoint() {
+    public function testResponsesCombineOnOneEndpoint()
+    {
         $responses = $this->generateAsArray($this->getOutputShapesRouter())['paths']['/cover']['get']['responses'];
 
         $this->assertEqualsCanonicalizing([200, 204, 409, 410], array_keys($responses));
@@ -637,7 +678,8 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['error' => ['type' => 'string']], $responses[410]['content']['application/json']['schema']['properties']);
     }
 
-    public function testAnObjectResponseShapesTheResourcesItHolds() {
+    public function testAnObjectResponseShapesTheResourcesItHolds()
+    {
         $document = $this->generateAsArray($this->getOutputShapesRouter());
         $properties = $document['paths']['/directory']['get']['responses'][200]['content']['application/json']['schema']['properties'];
 

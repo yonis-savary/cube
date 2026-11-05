@@ -6,6 +6,9 @@ use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Utils\Path;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class StorageTest extends TestCase
 {
     use HasTemporaryStorage;
@@ -20,14 +23,14 @@ class StorageTest extends TestCase
         $this->tearDownTemporaryStorage();
     }
 
-    public function test_the_root_directory_is_created_on_construction()
+    public function testTheRootDirectoryIsCreatedOnConstruction()
     {
         $this->assertTrue($this->storage->isDirectory('/'));
         $this->assertTrue($this->storage->isWritable());
         $this->assertTrue($this->storage->isReadable());
     }
 
-    public function test_path_resolves_under_the_root()
+    public function testPathResolvesUnderTheRoot()
     {
         $this->assertEquals(
             Path::join($this->storage->getRoot(), 'invoices/2026.csv'),
@@ -35,25 +38,25 @@ class StorageTest extends TestCase
         );
     }
 
-    public function test_path_leaves_an_already_absolute_path_alone()
+    public function testPathLeavesAnAlreadyAbsolutePathAlone()
     {
         $absolute = $this->storage->path('invoices.csv');
 
         $this->assertEquals($absolute, $this->storage->path($absolute));
     }
 
-    public function test_to_string_gives_the_root()
+    public function testToStringGivesTheRoot()
     {
         $this->assertEquals($this->storage->getRoot(), (string) $this->storage);
     }
 
-    public function test_write_then_read()
+    public function testWriteThenRead()
     {
         $this->assertTrue($this->storage->write('invoices.csv', 'first line'));
         $this->assertEquals('first line', $this->storage->read('invoices.csv'));
     }
 
-    public function test_write_succeeds_when_it_shortens_an_existing_file()
+    public function testWriteSucceedsWhenItShortensAnExistingFile()
     {
         $this->storage->write('invoices.csv', 'a long first content');
 
@@ -61,7 +64,7 @@ class StorageTest extends TestCase
         $this->assertEquals('short', $this->storage->read('invoices.csv'));
     }
 
-    public function test_write_appends_when_asked_to()
+    public function testWriteAppendsWhenAskedTo()
     {
         $this->storage->write('invoices.csv', 'first');
         $this->storage->write('invoices.csv', '-second', FILE_APPEND);
@@ -69,14 +72,14 @@ class StorageTest extends TestCase
         $this->assertEquals('first-second', $this->storage->read('invoices.csv'));
     }
 
-    public function test_write_reports_a_failure_instead_of_throwing()
+    public function testWriteReportsAFailureInsteadOfThrowing()
     {
         $this->storage->makeDirectory('reports');
 
         $this->assertFalse($this->storage->write('reports', 'a directory cannot be written over'));
     }
 
-    public function test_exists_distinguishes_files_from_directories()
+    public function testExistsDistinguishesFilesFromDirectories()
     {
         $this->storage->write('invoices.csv', 'content');
         $this->storage->makeDirectory('reports');
@@ -92,13 +95,13 @@ class StorageTest extends TestCase
         $this->assertFalse($this->storage->exists('nothing-here'));
     }
 
-    public function test_make_directory_creates_the_missing_parents()
+    public function testMakeDirectoryCreatesTheMissingParents()
     {
         $this->assertTrue($this->storage->makeDirectory('reports/2026/january'));
         $this->assertTrue($this->storage->isDirectory('reports/2026'));
     }
 
-    public function test_unlink_removes_the_file()
+    public function testUnlinkRemovesTheFile()
     {
         $this->storage->write('invoices.csv', 'content');
 
@@ -106,7 +109,7 @@ class StorageTest extends TestCase
         $this->assertFalse($this->storage->exists('invoices.csv'));
     }
 
-    public function test_files_and_directories_are_listed_apart_as_absolute_paths()
+    public function testFilesAndDirectoriesAreListedApartAsAbsolutePaths()
     {
         $this->storage->write('invoices.csv', 'content');
         $this->storage->makeDirectory('reports');
@@ -115,7 +118,7 @@ class StorageTest extends TestCase
         $this->assertEquals([$this->storage->path('reports')], $this->storage->directories());
     }
 
-    public function test_explore_walks_the_whole_tree()
+    public function testExploreWalksTheWholeTree()
     {
         $this->storage->write('invoices.csv', 'content');
         $this->storage->makeDirectory('reports/2026');
@@ -138,7 +141,7 @@ class StorageTest extends TestCase
         );
     }
 
-    public function test_child_scopes_a_new_storage_to_a_subdirectory()
+    public function testChildScopesANewStorageToASubdirectory()
     {
         $child = $this->storage->child('reports');
         $child->write('january.csv', 'content');
@@ -147,7 +150,7 @@ class StorageTest extends TestCase
         $this->assertTrue($this->storage->isFile('reports/january.csv'));
     }
 
-    public function test_parent_goes_back_up_one_level()
+    public function testParentGoesBackUpOneLevel()
     {
         $child = $this->storage->child('reports');
 
@@ -155,7 +158,7 @@ class StorageTest extends TestCase
     }
 
     /** path() joins the given path without resolving "..", so it can leave the root. */
-    public function test_path_does_not_escape_the_root()
+    public function testPathDoesNotEscapeTheRoot()
     {
         $this->assertStringStartsWith(
             $this->storage->getRoot(),

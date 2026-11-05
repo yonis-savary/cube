@@ -8,8 +8,6 @@ use Cube\Data\Bunch;
 use Cube\Env\Logger\Logger;
 use Cube\Env\Storage;
 use Cube\Utils\Path;
-use InvalidArgumentException;
-use ReflectionMethod;
 use Symfony\Component\Process\Process;
 
 class Scheduler
@@ -21,7 +19,7 @@ class Scheduler
 
     /**
      * @param array{class-string,string}|class-string $task `[Class::class, 'method']` or an invokable class
-     * @param bool $lock `false` lets a run start while the previous one is still running
+     * @param bool                                    $lock `false` lets a run start while the previous one is still running
      */
     public function add(CronExpression $expression, array|string $task, bool $lock = true): self
     {
@@ -49,6 +47,7 @@ class Scheduler
 
     /**
      * @param array{class-string,string}|class-string $task
+     *
      * @return bool `false` when its previous run still holds the lock
      */
     public function run(array|string $task, bool $lock = true): bool
@@ -103,7 +102,6 @@ class Scheduler
 
         if ($process->isSuccessful())
             return;
-
         Logger::getInstance()->error('Task {task} exited with code {code}', [
             'task' => $this->getTaskName($task),
             'code' => $process->getExitCode(),
@@ -124,22 +122,22 @@ class Scheduler
             return;
         }
 
-        $injector->instanciate($class)->$method(...$parameters);
+        $injector->instanciate($class)->{$method}(...$parameters);
     }
 
     /** @param array<mixed>|string $task What a schedule file or the command line gives */
     protected function assertIsTask(array|string $task): void
     {
         if (is_array($task) && (!array_is_list($task) || 2 !== count($task) || !is_string($task[0]) || !is_string($task[1])))
-            throw new InvalidArgumentException('A scheduled task is [Class::class, \'method\'] or an invokable class name, got '.json_encode($task));
+            throw new \InvalidArgumentException('A scheduled task is [Class::class, \'method\'] or an invokable class name, got '.json_encode($task));
 
         [$class, $method] = is_array($task) ? $task : [$task, '__invoke'];
 
         if (!class_exists($class))
-            throw new InvalidArgumentException("Cannot schedule [{$class}], no such class");
+            throw new \InvalidArgumentException("Cannot schedule [{$class}], no such class");
 
-        if (!method_exists($class, $method) || !(new ReflectionMethod($class, $method))->isPublic())
-            throw new InvalidArgumentException("Cannot schedule [{$class}], it has no public {$method}() method");
+        if (!method_exists($class, $method) || !(new \ReflectionMethod($class, $method))->isPublic())
+            throw new \InvalidArgumentException("Cannot schedule [{$class}], it has no public {$method}() method");
     }
 
     /** @param array{class-string,string}|class-string $task */

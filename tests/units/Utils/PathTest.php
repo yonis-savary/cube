@@ -59,15 +59,15 @@ class PathTest extends TestCase
     /** The PSR-4 lookup compares against arrays of directories and the fallback regexes have no capture groups. */
     public function testPathToNamespaceFollowsThePsr4Prefixes()
     {
-        $this->assertEquals('Cube\\Tests\\Units\\Utils', Path::pathToNamespace(Path::relative('tests/units/Utils')));
+        $this->assertEquals('Cube\Tests\Units\Utils', Path::pathToNamespace(Path::relative('tests/units/Utils')));
         $this->assertEquals('App', Path::pathToNamespace(Path::relative('tests/integration-root/App')));
     }
 
     public function testNamespaceToPathFollowsTheLongestPsr4Prefix()
     {
-        $this->assertEquals(realpath('tests/units/Utils'), Path::namespaceToPath('Cube\\Tests\\Units\\Utils'));
-        $this->assertEquals(Path::join(realpath('tests/integration-root/App'), 'Integration/Billing'), Path::namespaceToPath('\\App\\Integration\\Billing\\'));
-        $this->assertNull(Path::namespaceToPath('Nowhere\\Integration'));
+        $this->assertEquals(realpath('tests/units/Utils'), Path::namespaceToPath('Cube\Tests\Units\Utils'));
+        $this->assertEquals(Path::join(realpath('tests/integration-root/App'), 'Integration/Billing'), Path::namespaceToPath('\App\Integration\Billing\\'));
+        $this->assertNull(Path::namespaceToPath('Nowhere\Integration'));
     }
 
     public function testConfinedResolvesDotSegmentsInsideTheReference()
@@ -80,7 +80,7 @@ class PathTest extends TestCase
 
     public function testPathToNamespaceOutsideOfThePsr4PrefixesPascalCasesEachDirectory()
     {
-        $this->assertEquals('Storage\\MyModule\\SubDirectory', Path::pathToNamespace(Path::relative('Storage/my-module/sub_directory')));
+        $this->assertEquals('Storage\MyModule\SubDirectory', Path::pathToNamespace(Path::relative('Storage/my-module/sub_directory')));
     }
 
     /** chdir('..') never fails at `/`, so a directory outside any Cube project made the lookup loop forever. */

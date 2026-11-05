@@ -60,7 +60,7 @@ class ClientWriterTest extends TestCase
     }
 
     /**
-     * Generates the client of `$source`, served by `$routes`
+     * Generates the client of `$source`, served by `$routes`.
      */
     protected function clientOf(OpenApiSource $source, Route ...$routes): object
     {
@@ -74,7 +74,7 @@ class ClientWriterTest extends TestCase
     }
 
     /**
-     * A route callback that records the request it receives in `$received`
+     * A route callback that records the request it receives in `$received`.
      */
     protected function answer(Response $response): \Closure
     {
@@ -124,12 +124,12 @@ class ClientWriterTest extends TestCase
     {
         $client = $this->generateClient();
 
-        $request = new ($this->generatedClass('Http\\Requests\\CreateProductRequest'))('Pen');
+        $request = new ($this->generatedClass('Http\Requests\CreateProductRequest'))('Pen');
         $request->unitPrice = 1.5;
 
         $product = $client->createProduct($request, dryRun: true);
 
-        $this->assertInstanceOf($this->generatedClass('Http\\Responses\\CreateProductResponse'), $product);
+        $this->assertInstanceOf($this->generatedClass('Http\Responses\CreateProductResponse'), $product);
         $this->assertEquals(7, $product->id);
 
         $sent = $this->received[0];
@@ -163,12 +163,12 @@ class ClientWriterTest extends TestCase
     {
         $client = $this->generateClient();
 
-        $request = new ($this->generatedClass('Http\\Requests\\ListProductsRequest'))();
+        $request = new ($this->generatedClass('Http\Requests\ListProductsRequest'))();
         $request->labelContains = 'pe';
 
         $products = $client->listProducts($request);
 
-        $this->assertInstanceOf($this->generatedClass('Refs\\Output\\Product'), $products[0]);
+        $this->assertInstanceOf($this->generatedClass('Refs\Output\Product'), $products[0]);
         $this->assertEquals(['label-contains' => 'pe'], $this->received[0]->get());
     }
 
@@ -206,7 +206,7 @@ class ClientWriterTest extends TestCase
         );
 
         $client = $this->clientOf($source, Route::put('/requests/{ticket}/notes/{int:note}', $this->answer(Response::noContent())));
-        $client->updateRequest('R-1', 3, new ($this->generatedClass('Http\\Requests\\UpdateRequestRequest'))('urgent'), id1: 'x', dryRun: 'yes', dryRun1: 'no');
+        $client->updateRequest('R-1', 3, new ($this->generatedClass('Http\Requests\UpdateRequestRequest'))('urgent'), id1: 'x', dryRun: 'yes', dryRun1: 'no');
 
         $sent = $this->received[0];
         $this->assertEquals('/requests/R-1/notes/3', $sent->getPath());
@@ -235,7 +235,8 @@ class ClientWriterTest extends TestCase
 
         $client = $this->clientOf($source, Route::get('/ping', $this->answer(Response::noContent())));
         (new Configuration(new ($this->generatedClass('ApiConfiguration'))(apiKey: 'query-key', apiKey1: 'header-key', url1: 'token')))
-            ->asGlobalInstance(fn () => $client->ping());
+            ->asGlobalInstance(fn () => $client->ping())
+        ;
 
         $sent = $this->received[0];
         $this->assertEquals(['key' => 'query-key'], $sent->get());
@@ -249,10 +250,10 @@ class ClientWriterTest extends TestCase
             ['id' => 10, 'name' => 'doggie', 'photoUrls' => [], 'tags' => [['id' => 3, 'name' => 'friendly']], 'status' => 'available'],
         ]))));
 
-        $pets = $client->findPetsByStatus(new ($this->generatedClass('Http\\Requests\\FindPetsByStatusRequest'))('available'));
+        $pets = $client->findPetsByStatus(new ($this->generatedClass('Http\Requests\FindPetsByStatusRequest'))('available'));
 
         $this->assertEquals(['status' => 'available'], $this->received[0]->get());
-        $this->assertInstanceOf($this->generatedClass('Refs\\Output\\Tag'), $pets[0]->tags[0]);
+        $this->assertInstanceOf($this->generatedClass('Refs\Output\Tag'), $pets[0]->tags[0]);
         $this->assertEquals('friendly', $pets[0]->tags[0]->name);
     }
 
@@ -274,7 +275,7 @@ class ClientWriterTest extends TestCase
     {
         $client = $this->clientOf($this->petstore(), Route::post('/user/createWithList', $this->answer(Response::json(['id' => 1, 'username' => 'theUser']))));
 
-        $user = new ($this->generatedClass('Refs\\Input\\User'))();
+        $user = new ($this->generatedClass('Refs\Input\User'))();
         $user->username = 'theUser';
         $user->firstName = 'John';
 
@@ -295,7 +296,7 @@ class ClientWriterTest extends TestCase
     {
         $client = $this->clientOf($this->petstore(), Route::get('/pet/findByTags', $this->answer(Response::json([]))));
 
-        $client->findPetsByTags(new ($this->generatedClass('Http\\Requests\\FindPetsByTagsRequest'))(['friendly', 'young']));
+        $client->findPetsByTags(new ($this->generatedClass('Http\Requests\FindPetsByTagsRequest'))(['friendly', 'young']));
 
         $this->assertEquals(
             'https://petstore3.swagger.io/api/v3/pet/findByTags?tags=friendly&tags=young',
@@ -327,7 +328,7 @@ class ClientWriterTest extends TestCase
     /**
      * An operation named after a protected method of HttpClient (`path`) overrode it with another
      * signature : a fatal error when the class loads, that `php -l` does not see. A magic method gives no
-     * clash, its name losing its underscores (`__construct` gives `construct`)
+     * clash, its name losing its underscores (`__construct` gives `construct`).
      */
     public function testAnOperationNamedAfterAnHttpClientMethodGetsASuffix()
     {
@@ -335,7 +336,8 @@ class ClientWriterTest extends TestCase
             ->map(fn (\ReflectionMethod $method) => $method->name)
             ->filter(fn (string $name) => !str_starts_with($name, '__'))
             ->push('send', 'credentials', 'successful')
-            ->toArray();
+            ->toArray()
+        ;
 
         $paths = [];
         foreach ($names as $name)
@@ -393,10 +395,10 @@ class ClientWriterTest extends TestCase
     {
         $client = $this->clientOf($this->helpdesk(), Route::put('/tickets/{int:ticket}/assignees', $this->answer(Response::noContent())));
 
-        $assignment = new ($this->generatedClass('Refs\\Input\\Assignment'))(12);
+        $assignment = new ($this->generatedClass('Refs\Input\Assignment'))(12);
         $assignment->note = 'Back on monday';
 
-        $client->assignTicket(4, ['billing' => $assignment, 'support' => new ($this->generatedClass('Refs\\Input\\Assignment'))(7)]);
+        $client->assignTicket(4, ['billing' => $assignment, 'support' => new ($this->generatedClass('Refs\Input\Assignment'))(7)]);
         $client->assignTicket(4, []);
 
         $this->assertEquals(
@@ -474,7 +476,7 @@ class ClientWriterTest extends TestCase
         $files = $this->clientWriter()->write($source->toClient());
 
         $this->assertContains($this->storage->path('ApiVersion.php'), $files);
-        $this->assertStringContainsString("public readonly ?ApiVersion \$version = ApiVersion::V2,", file_get_contents($this->storage->path('ApiConfiguration.php')));
+        $this->assertStringContainsString('public readonly ?ApiVersion $version = ApiVersion::V2,', file_get_contents($this->storage->path('ApiConfiguration.php')));
         $this->assertStringContainsString("public readonly ?string \$tenant = 'acme',", file_get_contents($this->storage->path('ApiConfiguration.php')), 'No enum : a string');
 
         $client = $this->clientOf($source);
@@ -590,7 +592,7 @@ class ClientWriterTest extends TestCase
     }
 
     /**
-     * A document listing tickets by tags, whose query and body operations join some of their lists
+     * A document listing tickets by tags, whose query and body operations join some of their lists.
      */
     protected function delimitedSource(): OpenApiSource
     {
@@ -615,7 +617,7 @@ class ClientWriterTest extends TestCase
 
     /**
      * Generates the client of `delimitedSource()`, recording the URL of each request while it is sent : the
-     * delimiters are only known for that time
+     * delimiters are only known for that time.
      *
      * @param string[] $urls
      */
@@ -636,13 +638,13 @@ class ClientWriterTest extends TestCase
         $urls = [];
         $client = $this->delimitedClient($urls);
 
-        $request = new ($this->generatedClass('Http\\Requests\\ListTicketsRequest'))();
+        $request = new ($this->generatedClass('Http\Requests\ListTicketsRequest'))();
         $request->tags = ['urgent', 'a,b'];
         $request->owners = ['ada', 'grace hopper'];
         $request->states = [true, false];
         $request->labels = ['bug', 'ui'];
 
-        $export = new ($this->generatedClass('Http\\Requests\\ExportTicketsRequest'))();
+        $export = new ($this->generatedClass('Http\Requests\ExportTicketsRequest'))();
         $export->format = 'csv';
 
         $client->listTickets($request);

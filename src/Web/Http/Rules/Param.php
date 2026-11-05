@@ -2,30 +2,26 @@
 
 namespace Cube\Web\Http\Rules;
 
-use Cube\Core\Autoloader;
 use Cube\Data\Database\Database;
-use Cube\Web\Http\Rules\Rule;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Utils\Text;
-use InvalidArgumentException;
 
 class Param extends Rule
 {
     protected mixed $value;
 
-    public static function from(Rule|array $rule, bool $nullable=false): Rule
+    public static function from(array|Rule $rule, bool $nullable = false): Rule
     {
         if ($rule instanceof Rule)
             return $rule;
-
         return static::object($rule, $nullable);
     }
 
     public function __construct(bool $nullable = false)
     {
         $this->nullable = $nullable;
-        $this->withCondition(fn(mixed $value) => $this->nullable || (null !== $value), '{key} cannot be null');
+        $this->withCondition(fn (mixed $value) => $this->nullable || (null !== $value), '{key} cannot be null');
     }
 
     /**
@@ -68,17 +64,17 @@ class Param extends Rule
         return $object->withMetadata([self::META_TYPE => 'string']);
     }
 
-    public static function array(Rule|array $childRule, bool $nullable = false): ArrayParam
+    public static function array(array|Rule $childRule, bool $nullable = false): ArrayParam
     {
         return new ArrayParam($childRule, $nullable);
     }
 
-    public static function object(array $rules=[], bool $nullable = false): ObjectParam
+    public static function object(array $rules = [], bool $nullable = false): ObjectParam
     {
         return new ObjectParam($rules, $nullable);
     }
 
-    public static function anyKeyObject(Rule|array $valueRule, bool $nullable = false): AnyKeyObjectParam
+    public static function anyKeyObject(array|Rule $valueRule, bool $nullable = false): AnyKeyObjectParam
     {
         return new AnyKeyObjectParam($valueRule, $nullable);
     }
@@ -123,10 +119,9 @@ class Param extends Rule
     public static function date(bool $nullable = false): static
     {
         return (new static($nullable))
-            ->withValueCondition(function (mixed $value){
+            ->withValueCondition(function (mixed $value) {
                 if (!is_string($value) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $matches))
                     return false;
-
                 list($_, $y, $m, $d) = $matches;
                 return checkdate((int) $m, (int) $d, (int) $y);
             }, '{key} must be a Date (yyyy-mm-dd, an existing day), got [{value}]')
@@ -136,32 +131,32 @@ class Param extends Rule
 
     /**
      * Accept any date with YYYY-MM-DD HH:mm:ss format.
+     *
      * @param bool $addTimeIfMissing If `true`, will add `00:00:00` if timestamp is missing
      */
-    public static function datetime(bool $nullable = false, bool $addTimeIfMissing=false): static
+    public static function datetime(bool $nullable = false, bool $addTimeIfMissing = false): static
     {
         $rule = (new static($nullable));
 
         if ($addTimeIfMissing)
-            $rule->withValueTransformer(function($value) {
+            $rule->withValueTransformer(function ($value) {
                 if (!is_string($value) || preg_match('/(\d{2}):(\d{2}):(\d{2})$/', $value))
                     return $value;
-
-                return $value . " 00:00:00";
+                return $value.' 00:00:00';
             });
 
-        return $rule->withValueCondition(function (mixed $value){
-            if (!is_string($value) || !preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $value, $matches))
-                return false;
-
-            list($_, $y, $m, $d, $h, $mm, $s) = $matches;
-            return
-                checkdate((int) $m, (int) $d, (int) $y) &&
-                (00 <= $h && $h<= 23) &&
-                (00 <= $mm && $mm <= 59) &&
-                (00 <= $s && $s <= 59);
-        }, 
-        '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS, an existing day, HH=00-23, MM=00-59, SS=00-59), got [{value}]'
+        return $rule->withValueCondition(
+            function (mixed $value) {
+                if (!is_string($value) || !preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $value, $matches))
+                    return false;
+                list($_, $y, $m, $d, $h, $mm, $s) = $matches;
+                return
+                    checkdate((int) $m, (int) $d, (int) $y)
+                    && (00 <= $h && $h <= 23)
+                    && (00 <= $mm && $mm <= 59)
+                    && (00 <= $s && $s <= 59);
+            },
+            '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS, an existing day, HH=00-23, MM=00-59, SS=00-59), got [{value}]'
         )
             ->withMetadata([self::META_TYPE => 'date-time'])
         ;
@@ -174,34 +169,32 @@ class Param extends Rule
     {
         return (new static($nullable))
             ->withValueCondition(
-                fn($value)=> is_string($value) && (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower($value)),
+                fn ($value) => is_string($value) && (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower($value)),
                 '{key} must be an UUID, got [{value}]'
             )
             ->withMetadata([self::META_TYPE => 'uuid'])
         ;
     }
 
-
     /**
      * @param class-string<Model> $modelClass
      */
     public static function model(
         string $modelClass,
-        ?string $column=null,
+        ?string $column = null,
         bool $nullable = false,
-        array $with=[],
-        ?Database $database=null
-    ): Rule
-    {
+        array $with = [],
+        ?Database $database = null
+    ): Rule {
         $column ??= $modelClass::primaryKey();
         if (!$column) {
-            throw new InvalidArgumentException('No $column given nor primary key in model');
+            throw new \InvalidArgumentException('No $column given nor primary key in model');
         }
 
-        /** @var ModelField|false $modelField */
+        /** @var false|ModelField $modelField */
         $modelField = $modelClass::fields()[$column] ?? false;
         if (!$modelField) {
-            throw new InvalidArgumentException("Column $column not found");
+            throw new \InvalidArgumentException("Column {$column} not found");
         }
 
         $database ??= Database::getInstance();
@@ -224,7 +217,8 @@ class Param extends Rule
             fn ($value) => in_array($value, $array),
             Text::interpolate('{key} must be in values {array}, got {value}', ['array' => join(',', $array)])
         )
-        ->withMetadata([self::META_ENUM => $array]);
+            ->withMetadata([self::META_ENUM => $array])
+        ;
     }
 
     /**
@@ -239,30 +233,30 @@ class Param extends Rule
             ? $this->withValueCondition(fn ($value) => $min <= $value && $value <= $max, "{key} must be between {$min} and {$max} (can be equal), got {value}")
             : $this->withValueCondition(fn ($value) => $min < $value && $value < $max, "{key} must be between {$min} and {$max} (cannot be equal), got {value}")
         )
-        ->withMetadata([self::META_MIN => $min, self::META_MAX => $max]);
+            ->withMetadata([self::META_MIN => $min, self::META_MAX => $max])
+        ;
     }
-
 
     /**
      * Check if the value exists in a table as primary key (or given column).
+     *
      * @param class-string<Model> $modelClass
      */
     public static function exists(
         string $modelClass,
-        ?string $column=null,
+        ?string $column = null,
         bool $nullable = false,
-        ?Database $database=null
-    ): Rule
-    {
+        ?Database $database = null
+    ): Rule {
         $column ??= $modelClass::primaryKey();
         if (!$column) {
-            throw new InvalidArgumentException('No $column given nor primary key in model');
+            throw new \InvalidArgumentException('No $column given nor primary key in model');
         }
 
-        /** @var ModelField|false $modelField */
+        /** @var false|ModelField $modelField */
         $modelField = $modelClass::fields()[$column] ?? false;
         if (!$modelField) {
-            throw new InvalidArgumentException("Column $column not found");
+            throw new \InvalidArgumentException("Column {$column} not found");
         }
 
         $database ??= Database::getInstance();
@@ -270,7 +264,7 @@ class Param extends Rule
             ->withValueCondition(
                 function (mixed $columnValue) use ($modelClass, $column, $database) {
                     $result = $modelClass::findWhere([$column => $columnValue], [], $database);
-                    return $result !== null;
+                    return null !== $result;
                 },
                 Text::interpolate('{key} must be a valid {column} in table {table}, got {value}', ['table' => $modelClass::table(), 'column' => $column])
             )

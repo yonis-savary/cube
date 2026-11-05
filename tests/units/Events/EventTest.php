@@ -12,12 +12,12 @@ use PHPUnit\Framework\TestCase;
  */
 class EventTest extends TestCase
 {
-    public function test_an_event_is_named_after_its_class()
+    public function testAnEventIsNamedAfterItsClass()
     {
         $this->assertEquals(ProductWasShipped::class, (new ProductWasShipped('PRD-1'))->getName());
     }
 
-    public function test_a_custom_event_is_named_after_its_first_argument()
+    public function testACustomEventIsNamedAfterItsFirstArgument()
     {
         $event = new CustomEvent('product-was-shipped', ['reference' => 'PRD-1']);
 
@@ -25,12 +25,12 @@ class EventTest extends TestCase
         $this->assertEquals(['reference' => 'PRD-1'], $event->data);
     }
 
-    public function test_a_custom_event_carries_no_data_by_default()
+    public function testACustomEventCarriesNoDataByDefault()
     {
         $this->assertNull((new CustomEvent('product-was-shipped'))->data);
     }
 
-    public function test_dispatch_reaches_the_global_dispatcher()
+    public function testDispatchReachesTheGlobalDispatcher()
     {
         $received = null;
 
@@ -45,7 +45,7 @@ class EventTest extends TestCase
         $this->assertEquals('PRD-1', $received);
     }
 
-    public function test_dispatch_can_target_another_dispatcher()
+    public function testDispatchCanTargetAnotherDispatcher()
     {
         $global = new Events();
         $local = new Events();
@@ -62,7 +62,7 @@ class EventTest extends TestCase
         $this->assertEquals(1, $localCalls);
     }
 
-    public function test_on_subscribes_to_the_global_dispatcher()
+    public function testOnSubscribesToTheGlobalDispatcher()
     {
         $received = null;
 
@@ -77,7 +77,7 @@ class EventTest extends TestCase
         $this->assertEquals('PRD-1', $received);
     }
 
-    public function test_on_can_target_another_dispatcher()
+    public function testOnCanTargetAnotherDispatcher()
     {
         $global = new Events();
         $local = new Events();
@@ -93,12 +93,12 @@ class EventTest extends TestCase
         $this->assertEquals(1, $calls);
     }
 
-    public function test_an_event_is_not_prevented_by_default()
+    public function testAnEventIsNotPreventedByDefault()
     {
         $this->assertFalse((new ProductWasShipped('PRD-1'))->isPrevented());
     }
 
-    public function test_prevent_marks_the_event_and_gives_it_back()
+    public function testPreventMarksTheEventAndGivesItBack()
     {
         $event = new ProductWasShipped('PRD-1');
 
@@ -106,7 +106,7 @@ class EventTest extends TestCase
         $this->assertTrue($event->isPrevented());
     }
 
-    public function test_dispatch_tells_whether_the_event_went_through()
+    public function testDispatchTellsWhetherTheEventWentThrough()
     {
         $dispatcher = new Events();
 

@@ -104,7 +104,7 @@ class IntegrationTest extends TestCase
 
     public function testADocumentGeneratesItsClientAndClassesIntoTheNamespace()
     {
-        $namespace = $this->generatedNamespace().'\\Petstore';
+        $namespace = $this->generatedNamespace().'\Petstore';
 
         [$code, $output] = $this->callCommand([self::PETSTORE, "--namespace={$namespace}"]);
 
@@ -129,7 +129,8 @@ class IntegrationTest extends TestCase
         mkdir($this->generatedDirectory);
 
         [$code, $output] = (new Configuration(new Applications($this->generatedDirectory)))
-            ->asGlobalInstance(fn () => $this->callCommand([self::PETSTORE, '--endpoint=getInventory']));
+            ->asGlobalInstance(fn () => $this->callCommand([self::PETSTORE, '--endpoint=getInventory']))
+        ;
 
         $this->assertEquals(0, $code, $output);
         $this->assertEqualsCanonicalizing([
@@ -140,7 +141,7 @@ class IntegrationTest extends TestCase
 
     public function testEndpointsRestrictTheGenerationToWhatTheyUse()
     {
-        $namespace = $this->generatedNamespace().'\\Petstore';
+        $namespace = $this->generatedNamespace().'\Petstore';
 
         [$code, $output] = $this->callCommand([self::PETSTORE, "--namespace={$namespace}", '--endpoint=getPetById', '--endpoint=post /store/order']);
 
@@ -154,7 +155,7 @@ class IntegrationTest extends TestCase
 
     public function testLenientMakesEveryPropertyOptional()
     {
-        $namespace = $this->generatedNamespace().'\\Petstore';
+        $namespace = $this->generatedNamespace().'\Petstore';
 
         [$code, $output] = $this->callCommand([self::PETSTORE, "--namespace={$namespace}", '--endpoint=getPetById', '--lenient']);
 
@@ -179,10 +180,10 @@ class IntegrationTest extends TestCase
 
     public function testANamespaceOutsideEveryPsr4PrefixIsRejected()
     {
-        [$code, $output] = $this->callCommand([self::PETSTORE, '--namespace=Nowhere\\Petstore']);
+        [$code, $output] = $this->callCommand([self::PETSTORE, '--namespace=Nowhere\Petstore']);
 
         $this->assertEquals(1, $code);
-        $this->assertStringContainsString('Namespace [Nowhere\\Petstore] is outside every PSR-4 prefix of composer.json', $output);
+        $this->assertStringContainsString('Namespace [Nowhere\Petstore] is outside every PSR-4 prefix of composer.json', $output);
     }
 
     public function testTheClientNameOptionNamesTheClientAndItsConfiguration()
@@ -191,7 +192,8 @@ class IntegrationTest extends TestCase
         mkdir($this->generatedDirectory);
 
         [$code, $output] = (new Configuration(new Applications($this->generatedDirectory)))
-            ->asGlobalInstance(fn () => $this->callCommand([self::PETSTORE, '--endpoint=getInventory', '--client-name=Petstore']));
+            ->asGlobalInstance(fn () => $this->callCommand([self::PETSTORE, '--endpoint=getInventory', '--client-name=Petstore']))
+        ;
 
         $this->assertEquals(0, $code, $output);
         $this->assertEqualsCanonicalizing([
@@ -208,4 +210,3 @@ class IntegrationTest extends TestCase
         $this->assertStringContainsString('--client-name [pet-store] is not a class name starting with an uppercase letter', $output);
     }
 }
-

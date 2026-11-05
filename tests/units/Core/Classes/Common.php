@@ -2,7 +2,4 @@
 
 namespace Cube\Tests\Units\Core\Classes;
 
-abstract class Common
-{
-
-}
+abstract class Common {}

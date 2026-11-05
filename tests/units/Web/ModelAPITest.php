@@ -17,7 +17,6 @@ use Cube\Tests\Units\Web\Examples\ProductRequest;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\ModelAPI\ModelAPI;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -46,6 +45,7 @@ class ModelAPITest extends TestCase
 
     /**
      * @param array<int,array<string,mixed>> $rows
+     *
      * @return string[]
      */
     protected function namesOf(array $rows): array
@@ -72,7 +72,7 @@ class ModelAPITest extends TestCase
     }
 
     /**
-     * The search used to quote its column with backticks, which Postgres refuses
+     * The search used to quote its column with backticks, which Postgres refuses.
      */
     #[DataProvider('getDatabases')]
     public function testReadingSearchesOnEveryDriver(Database $database)
@@ -95,7 +95,7 @@ class ModelAPITest extends TestCase
             Product::insertArray(['name' => '100% cotton']);
             Product::insertArray(['name' => '100 units']);
             Product::insertArray(['name' => 'snake_case']);
-            Product::insertArray(['name' => 'back\\slash']);
+            Product::insertArray(['name' => 'back\slash']);
 
             $names = fn (string $search) => $this->namesOf(
                 (new ProductAPI())->readItems(new ProductNameRequest('GET', '/product', ['name' => $search]))
@@ -103,7 +103,7 @@ class ModelAPITest extends TestCase
 
             $this->assertEquals(['100% cotton'], $names('100%'));
             $this->assertEquals(['snake_case'], $names('e_c'));
-            $this->assertEquals(['back\\slash'], $names('k\\s'));
+            $this->assertEquals(['back\slash'], $names('k\s'));
         });
     }
 
@@ -213,7 +213,7 @@ class ModelAPITest extends TestCase
             try {
                 $write();
                 $this->fail('A plain Request should not be written');
-            } catch (InvalidArgumentException $exception) {
+            } catch (\InvalidArgumentException $exception) {
                 $this->assertStringContainsString('needs a Request subclass', $exception->getMessage());
             }
         }
@@ -258,7 +258,7 @@ class ModelAPITest extends TestCase
 
     public function testAnItemOfAnotherModelIsRefused()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
 
         (new ProductAPI())->deleteItem(new User(['id' => 1]));
     }

@@ -14,9 +14,6 @@ use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Router\Route;
-use ReflectionMethod;
-use ReflectionNamedType;
-use ReflectionParameter;
 
 class OASResponses extends AutoDataToObject
 {
@@ -33,15 +30,13 @@ class OASResponses extends AutoDataToObject
     {
         $method = $route->getReflectionMethod();
 
-        if ($this->getRequestRules($route))
-        {
+        if ($this->getRequestRules($route)) {
             $response = new OASResponse();
             $response->validationErrorsResponse();
             $this->responses[StatusCode::UNPROCESSABLE_CONTENT] = $response->toArray();
         }
 
-        if ($this->receivesAModelSlug($route))
-        {
+        if ($this->receivesAModelSlug($route)) {
             $response = new OASResponse();
             $response->notFoundResponse();
             $this->responses[StatusCode::NOT_FOUND] = $response->toArray();
@@ -50,24 +45,21 @@ class OASResponses extends AutoDataToObject
         $this->addReturnTypeResponses($method);
 
         $modelResponses = $method->getAttributes(ModelResponse::class);
-        foreach ($modelResponses as $responseReflectionAttribute)
-        {
+        foreach ($modelResponses as $responseReflectionAttribute) {
             $responseAttribute = $responseReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->modelResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
 
-        foreach ($method->getAttributes(ResourceResponse::class) as $resourceReflectionAttribute)
-        {
+        foreach ($method->getAttributes(ResourceResponse::class) as $resourceReflectionAttribute) {
             $responseAttribute = $resourceReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->resourceResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
 
-        foreach ($method->getAttributes(ObjectResponse::class) as $objectReflectionAttribute)
-        {
+        foreach ($method->getAttributes(ObjectResponse::class) as $objectReflectionAttribute) {
             $responseAttribute = $objectReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->objectResponse($responseAttribute);
@@ -75,8 +67,7 @@ class OASResponses extends AutoDataToObject
         }
 
         $rawResponses = $method->getAttributes(RawResponse::class);
-        foreach ($rawResponses as $rawResponseAttribute)
-        {
+        foreach ($rawResponses as $rawResponseAttribute) {
             $responseAttribute = $rawResponseAttribute->newInstance();
             $response = new OASResponse();
             $response->rawResponse($responseAttribute);
@@ -87,21 +78,18 @@ class OASResponses extends AutoDataToObject
             $this->addNoContentResponse($noContentReflectionAttribute->newInstance()->description);
     }
 
-    protected function addReturnTypeResponses(ReflectionMethod $method): void
+    protected function addReturnTypeResponses(\ReflectionMethod $method): void
     {
         $type = $method->getReturnType();
-        if (!$type instanceof ReflectionNamedType)
+        if (!$type instanceof \ReflectionNamedType)
             return;
-
-        if ($type->getName() === 'void')
-        {
+        if ('void' === $type->getName()) {
             $this->addNoContentResponse();
             return;
         }
 
         if (!Autoloader::extends($type->getName(), Model::class))
             return;
-
         $response = new OASResponse();
         $response->modelResponse(new ModelResponse($type->getName()));
         $this->responses[StatusCode::OK] = $response->toArray();
@@ -121,13 +109,15 @@ class OASResponses extends AutoDataToObject
     {
         $slugCount = Bunch::fromExplode('/', $route->getPath())
             ->filter(fn ($part) => preg_match('/^\{.+\}$/', $part))
-            ->count();
+            ->count()
+        ;
 
         return Bunch::wrap($route->getReflectionMethod()->getParameters())
             ->slice(1, $slugCount)
-            ->any(fn (ReflectionParameter $parameter) =>
-                $parameter->getType() instanceof ReflectionNamedType
+            ->any(
+                fn (\ReflectionParameter $parameter) => $parameter->getType() instanceof \ReflectionNamedType
                 && Autoloader::extends($parameter->getType()->getName(), Model::class)
-            );
+            )
+        ;
     }
 }

@@ -12,7 +12,6 @@ use Cube\Env\Session\SessionConfiguration;
 use Cube\Security\Authentication\AuthenticationConfiguration;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 /**
  * @internal
@@ -44,7 +43,7 @@ class ConfigurationTest extends TestCase
         $this->assertEquals(['bob' => 'mike'], $generic);
     }
 
-    public function test_an_unknown_generic_falls_back_on_the_default()
+    public function testAnUnknownGenericFallsBackOnTheDefault()
     {
         $config = new Configuration();
 
@@ -52,7 +51,7 @@ class ConfigurationTest extends TestCase
         $this->assertEquals('fallback', $config->resolveGeneric('unknown', 'fallback'));
     }
 
-    public function test_a_typed_element_is_resolved_by_its_class()
+    public function testATypedElementIsResolvedByItsClass()
     {
         $element = new SessionConfiguration('shop');
         $config = new Configuration($element);
@@ -61,7 +60,7 @@ class ConfigurationTest extends TestCase
         $this->assertNull($config->resolve(CacheConfiguration::class));
     }
 
-    public function test_an_element_resolves_through_its_whole_fallback_chain()
+    public function testAnElementResolvesThroughItsWholeFallbackChain()
     {
         $registered = new Configuration(new SessionConfiguration('registered'));
         $empty = new Configuration();
@@ -72,15 +71,15 @@ class ConfigurationTest extends TestCase
     }
 
     /** An element without defaults fell back on new static() and died on an ArgumentCountError naming no configuration. */
-    public function test_a_missing_element_without_defaults_asks_to_declare_it()
+    public function testAMissingElementWithoutDefaultsAsksToDeclareIt()
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage(AuthenticationConfiguration::class.' has required options and no default');
 
         AuthenticationConfiguration::resolve(new Configuration());
     }
 
-    public function test_a_configuration_file_is_loaded_element_by_element()
+    public function testAConfigurationFileIsLoadedElementByElement()
     {
         $file = $this->writeConfigurationFile('[
             new \Cube\Env\Configuration\GenericElement("shop", ["currency" => "EUR"]),
@@ -94,7 +93,7 @@ class ConfigurationTest extends TestCase
         $this->assertEquals('shop', $config->resolve(SessionConfiguration::class)->namespace);
     }
 
-    public function test_loading_a_missing_file_names_it()
+    public function testLoadingAMissingFileNamesIt()
     {
         $missing = $this->storage->path('does-not-exist.php');
 
@@ -104,7 +103,7 @@ class ConfigurationTest extends TestCase
         (new Configuration())->loadFile($missing);
     }
 
-    public function test_a_configuration_file_must_return_an_array()
+    public function testAConfigurationFileMustReturnAnArray()
     {
         $file = $this->writeConfigurationFile('"not an array"');
 
@@ -113,7 +112,7 @@ class ConfigurationTest extends TestCase
         (new Configuration())->loadFile($file);
     }
 
-    public function test_a_configuration_file_must_only_return_elements()
+    public function testAConfigurationFileMustOnlyReturnElements()
     {
         $file = $this->writeConfigurationFile('["not an element"]');
 
@@ -122,7 +121,7 @@ class ConfigurationTest extends TestCase
         (new Configuration())->loadFile($file);
     }
 
-    public function test_an_import_brings_the_elements_of_another_file()
+    public function testAnImportBringsTheElementsOfAnotherFile()
     {
         $imported = $this->writeConfigurationFile('[
             new \Cube\Env\Configuration\GenericElement("imported", "from the other file"),
@@ -133,7 +132,7 @@ class ConfigurationTest extends TestCase
         $this->assertEquals('from the other file', $config->resolveGeneric('imported'));
     }
 
-    public function test_an_import_can_be_returned_by_a_configuration_file()
+    public function testAnImportCanBeReturnedByAConfigurationFile()
     {
         $imported = $this->writeConfigurationFile('[
             new \Cube\Env\Configuration\GenericElement("imported", "from the other file"),
@@ -148,14 +147,14 @@ class ConfigurationTest extends TestCase
         $this->assertEquals('from the other file', $config->resolveGeneric('imported'));
     }
 
-    public function test_an_import_of_a_missing_file_is_left_out()
+    public function testAnImportOfAMissingFileIsLeftOut()
     {
         $config = new Configuration(new Import($this->storage->path('does-not-exist.php')));
 
         $this->assertEquals('untouched', $config->resolveGeneric('imported', 'untouched'));
     }
 
-    public function test_a_configuration_makes_a_cache_round_trip()
+    public function testAConfigurationMakesACacheRoundTrip()
     {
         $cache = $this->newCache();
 
@@ -172,7 +171,7 @@ class ConfigurationTest extends TestCase
         $this->assertEquals('shop', $restored->resolve(SessionConfiguration::class)->namespace);
     }
 
-    public function test_a_cached_configuration_can_be_removed()
+    public function testACachedConfigurationCanBeRemoved()
     {
         $cache = $this->newCache();
         (new Configuration(new SessionConfiguration('shop')))->identify('removed')->putToCache($cache);
@@ -182,14 +181,14 @@ class ConfigurationTest extends TestCase
         $this->assertFalse((new Configuration())->identify('removed')->loadFromCache($cache));
     }
 
-    public function test_loading_an_absent_cache_entry_says_so()
+    public function testLoadingAnAbsentCacheEntrySaysSo()
     {
         $config = (new Configuration())->identify('never-cached');
 
         $this->assertFalse($config->loadFromCache($this->newCache()));
     }
 
-    public function test_the_cache_needs_an_identifier()
+    public function testTheCacheNeedsAnIdentifier()
     {
         $this->expectException(\InvalidArgumentException::class);
 

@@ -6,23 +6,23 @@ use Cube\Data\Bunch;
 use Cube\Utils\Text;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Request;
-use InvalidArgumentException;
 
 class ObjectParam extends Rule
 {
     protected Param $param;
 
     /** @var array<string,Rule> */
-    protected array $rules=[];
+    protected array $rules = [];
 
-    public function __construct(array $assocRules=[], bool $nullable=false)
+    public function __construct(array $assocRules = [], bool $nullable = false)
     {
         if (!Utils::isAssoc($assocRules))
-            throw new InvalidArgumentException('Given array must be an associative array');
+            throw new \InvalidArgumentException('Given array must be an associative array');
 
         $this->rules = $assocRules;
         $this->param = (new Param($nullable))
-            ->withValueCondition(fn ($array) => is_array($array) && Utils::isAssoc($array), '{key} must be an object, got {value}');
+            ->withValueCondition(fn ($array) => is_array($array) && Utils::isAssoc($array), '{key} must be an object, got {value}')
+        ;
     }
 
     /** @return array<string,Rule> */
@@ -31,18 +31,17 @@ class ObjectParam extends Rule
         return $this->rules;
     }
 
-    public function validate(mixed $value, ?string $key=null): ValidationReturn {
+    public function validate(mixed $value, ?string $key = null): ValidationReturn
+    {
         if ($value instanceof Request)
             $value = $value->all();
 
         if (null === $value && $this->param->isNullable())
             return new ValidationReturn();
-
         $value ??= [];
         $baseReturn = $this->param->validate($value, $key);
         if (!$baseReturn->isValid())
             return $baseReturn;
-
         $return = new ValidationReturn([]);
 
         foreach ($this->rules as $ruleKey => $rule) {
@@ -52,7 +51,6 @@ class ObjectParam extends Rule
             $isMissing = !array_key_exists($ruleKey, $value) && !$rule->hasDefault();
             if ($isMissing && $rule->isOptional())
                 continue;
-
             if ($isMissing) {
                 $return->addErrorKey($ruleKey, [Text::interpolate('{key} is required', ['key' => $ruleKey])]);
                 continue;
@@ -62,16 +60,15 @@ class ObjectParam extends Rule
 
             if ($valueReturn->isValid())
                 $return->setResultKey($ruleKey, $valueReturn->getResult());
-            else
-                $return->addErrorKey($ruleKey, $valueReturn->getErrors());
-
+            else $return->addErrorKey($ruleKey, $valueReturn->getErrors());
         }
         return $return->isValid()
             ? $this->runSteps($return->getResult(), $return, $key)
             : $return;
     }
 
-    public function without(array|string $paramsToDelete): static {
+    public function without(array|string $paramsToDelete): static
+    {
         foreach (Utils::toArray($paramsToDelete) as $param) {
             if (array_key_exists($param, $this->rules))
                 unset($this->rules[$param]);
@@ -79,25 +76,30 @@ class ObjectParam extends Rule
         return $this;
     }
 
-    public function withOptionalKeys(string|array $keys): static {
+    public function withOptionalKeys(array|string $keys): static
+    {
         Bunch::wrap($keys)
-        ->filter(fn($key) => array_key_exists($key, $this->rules))
-        ->forEach(fn($key) => $this->rules[$key]->optional());
+            ->filter(fn ($key) => array_key_exists($key, $this->rules))
+            ->forEach(fn ($key) => $this->rules[$key]->optional())
+        ;
 
         return $this;
     }
 
-    public function withRequiredKeys(string|array $keys): static {
+    public function withRequiredKeys(array|string $keys): static
+    {
         Bunch::wrap($keys)
-        ->filter(fn($key) => array_key_exists($key, $this->rules))
-        ->forEach(fn($key) => $this->rules[$key]->required());
+            ->filter(fn ($key) => array_key_exists($key, $this->rules))
+            ->forEach(fn ($key) => $this->rules[$key]->required())
+        ;
 
         return $this;
     }
 
-    public function with(array $newRules): static {
+    public function with(array $newRules): static
+    {
         if (!Utils::isAssoc($newRules))
-            throw new InvalidArgumentException("Given rules must be an associative array as name=>rule");
+            throw new \InvalidArgumentException('Given rules must be an associative array as name=>rule');
 
         $this->rules = array_merge($this->rules, $newRules);
         return $this;

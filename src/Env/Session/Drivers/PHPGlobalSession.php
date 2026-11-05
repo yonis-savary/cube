@@ -12,10 +12,10 @@ class PHPGlobalSession implements SessionDriverInterface
     public function __construct(
         public readonly string $sameSite = 'Lax',
         public readonly ?bool $secureCookie = null,
-    )
-    {}
+    ) {}
 
-    public function initialize(string $namespace) {
+    public function initialize(string $namespace)
+    {
         $this->namespace = $namespace;
 
         $status = session_status();
@@ -46,37 +46,41 @@ class PHPGlobalSession implements SessionDriverInterface
     {
         if (null !== $this->secureCookie)
             return $this->secureCookie;
-
         $https = strtolower($_SERVER['HTTPS'] ?? '');
         if ('' !== $https && 'off' !== $https)
             return true;
-
         return 'https' === strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '');
     }
 
-    public function get(string $key, mixed $default = null): mixed {
+    public function get(string $key, mixed $default = null): mixed
+    {
         return array_key_exists($key, $_SESSION['cube'][$this->namespace])
             ? $_SESSION['cube'][$this->namespace][$key]
             : $default;
     }
 
-    public function set(string $key, mixed $value) {
+    public function set(string $key, mixed $value)
+    {
         $_SESSION['cube'][$this->namespace][$key] = $value;
     }
 
-    public function has(string $key): bool {
+    public function has(string $key): bool
+    {
         return array_key_exists($key, $_SESSION['cube'][$this->namespace]);
     }
 
-    public function delete(string $key): void {
+    public function delete(string $key): void
+    {
         unset($_SESSION['cube'][$this->namespace][$key]);
     }
 
-    public function clear(): void {
+    public function clear(): void
+    {
         $_SESSION['cube'][$this->namespace] = [];
     }
 
-    public function regenerate() {
+    public function regenerate()
+    {
         if (headers_sent($file, $line)) {
             Logger::getInstance()->warning('Session id kept : output already started at {file}:{line}, a planted session id survives this login', ['file' => $file, 'line' => $line]);
             return;

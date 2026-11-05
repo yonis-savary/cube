@@ -37,12 +37,12 @@ class DispatchTest extends TestCase
         return (new Dispatch($this->events, Injector::getInstance()))->execute(Args::fromArgv($argv));
     }
 
-    public function test_the_identifier_is_cube_dispatch()
+    public function testTheIdentifierIsCubeDispatch()
     {
         $this->assertEquals('cube:dispatch', (new Dispatch(new Events(), Injector::getInstance()))->getFullIdentifier());
     }
 
-    public function test_an_event_is_dispatched_from_its_full_class_name()
+    public function testAnEventIsDispatchedFromItsFullClassName()
     {
         $this->assertEquals(0, $this->dispatch('--event', CatalogWasImported::class));
 
@@ -50,14 +50,14 @@ class DispatchTest extends TestCase
         $this->assertInstanceOf(CatalogWasImported::class, $this->received[0]);
     }
 
-    public function test_the_short_option_works_like_the_long_one()
+    public function testTheShortOptionWorksLikeTheLongOne()
     {
         $this->assertEquals(0, $this->dispatch('-e', CatalogWasImported::class));
 
         $this->assertCount(1, $this->received);
     }
 
-    public function test_an_event_is_dispatched_from_its_short_class_name()
+    public function testAnEventIsDispatchedFromItsShortClassName()
     {
         $this->assertEquals(0, $this->dispatch('--event', 'CatalogWasImported'));
 
@@ -65,7 +65,7 @@ class DispatchTest extends TestCase
         $this->assertInstanceOf(CatalogWasImported::class, $this->received[0]);
     }
 
-    public function test_the_framework_post_deployment_event_can_be_dispatched()
+    public function testTheFrameworkPostDeploymentEventCanBeDispatched()
     {
         $this->assertEquals(0, $this->dispatch('--event', 'PostDeployment'));
 
@@ -73,7 +73,7 @@ class DispatchTest extends TestCase
         $this->assertInstanceOf(PostDeployment::class, $this->received[0]);
     }
 
-    public function test_a_missing_event_option_aborts_with_status_1()
+    public function testAMissingEventOptionAbortsWithStatus1()
     {
         $this->expectOutputRegex('/-e\|--event/');
 
@@ -81,7 +81,7 @@ class DispatchTest extends TestCase
         $this->assertEmpty($this->received);
     }
 
-    public function test_an_unknown_event_name_aborts_with_status_2()
+    public function testAnUnknownEventNameAbortsWithStatus2()
     {
         $this->expectOutputRegex('/\[ProductWasLost\]/');
 
@@ -90,22 +90,22 @@ class DispatchTest extends TestCase
     }
 
     /** The first class whose name merely ended with the given one was dispatched, whichever it was. */
-    public function test_an_ambiguous_event_name_aborts_with_status_2()
+    public function testAnAmbiguousEventNameAbortsWithStatus2()
     {
         $this->expectOutputRegex('/several Event classes/');
 
         $this->assertEquals(2, $this->dispatch('--event', 'InvoiceWasSent'));
     }
 
-    public function test_a_namespace_suffix_chooses_between_events_of_the_same_name()
+    public function testANamespaceSuffixChoosesBetweenEventsOfTheSameName()
     {
         $this->events->on(BillingInvoiceWasSent::class, function (Event $event) { $this->received[] = $event; });
 
-        $this->assertEquals(0, $this->dispatch('--event', 'Billing\\InvoiceWasSent'));
+        $this->assertEquals(0, $this->dispatch('--event', 'Billing\InvoiceWasSent'));
         $this->assertInstanceOf(BillingInvoiceWasSent::class, $this->received[0]);
     }
 
-    public function test_a_class_that_is_not_an_event_aborts_with_status_2()
+    public function testAClassThatIsNotAnEventAbortsWithStatus2()
     {
         $this->expectOutputRegex('/does not extend from Event/');
 
@@ -113,7 +113,7 @@ class DispatchTest extends TestCase
         $this->assertEmpty($this->received);
     }
 
-    public function test_call_dispatches_through_the_global_events_instance()
+    public function testCallDispatchesThroughTheGlobalEventsInstance()
     {
         $this->events->asGlobalInstance(function () {
             $this->assertEquals(0, Dispatch::call(Args::fromArgv(['--event', CatalogWasImported::class])));

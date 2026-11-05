@@ -5,23 +5,26 @@ namespace Cube\Tests\Units\Env\Session\Drivers;
 use Cube\Env\Session\Drivers\PHPGlobalSession;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class PHPGlobalSessionTest extends TestCase
 {
-    public function test_initialize_starts_the_php_session()
+    public function testInitializeStartsThePhpSession()
     {
         $this->newDriver();
 
         $this->assertEquals(PHP_SESSION_ACTIVE, session_status());
     }
 
-    public function test_values_are_stored_under_the_namespace()
+    public function testValuesAreStoredUnderTheNamespace()
     {
         $this->newDriver('shop')->set('cart', ['a-product']);
 
         $this->assertEquals(['a-product'], $_SESSION['cube']['shop']['cart']);
     }
 
-    public function test_get_falls_back_on_the_given_default()
+    public function testGetFallsBackOnTheGivenDefault()
     {
         $driver = $this->newDriver();
 
@@ -32,7 +35,7 @@ class PHPGlobalSessionTest extends TestCase
         $this->assertEquals('content', $driver->get('cart', 'empty'));
     }
 
-    public function test_has_and_delete()
+    public function testHasAndDelete()
     {
         $driver = $this->newDriver();
 
@@ -45,7 +48,7 @@ class PHPGlobalSessionTest extends TestCase
         $this->assertFalse($driver->has('cart'));
     }
 
-    public function test_clear_only_empties_its_namespace()
+    public function testClearOnlyEmptiesItsNamespace()
     {
         $shop = $this->newDriver();
         $backOffice = $this->newDriver();
@@ -59,7 +62,7 @@ class PHPGlobalSessionTest extends TestCase
     }
 
     /** Behind a proxy terminating TLS, $_SERVER['HTTPS'] is empty : the cookie was never sent as Secure. */
-    public function test_the_cookie_is_secure_behind_a_tls_terminating_proxy()
+    public function testTheCookieIsSecureBehindATlsTerminatingProxy()
     {
         $server = $_SERVER;
         try {

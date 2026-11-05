@@ -7,18 +7,17 @@ use Cube\Console\Command;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
 use Cube\Utils\Console;
 use Cube\Utils\Path;
-use Cube\Web\Router\Router;
 
 class Openapi extends Command
 {
     public function getScope(): string
     {
-        return "make";
+        return 'make';
     }
 
     public function getHelp(): string
     {
-        return "Write the OpenAPI document of your API to the configured output file";
+        return 'Write the OpenAPI document of your API to the configured output file';
     }
 
     public function execute(Args $args): int
@@ -26,9 +25,8 @@ class Openapi extends Command
         $generator = OpenAPIGenerator::getInstance();
         $file = $generator->generate();
 
-        Console::print("\nmake:openapi - Generated output file : " . Path::toRelative($file));
+        Console::print("\nmake:openapi - Generated output file : ".Path::toRelative($file));
 
         return 0;
     }
-
 }

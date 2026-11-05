@@ -9,7 +9,6 @@ use Cube\Web\Http\StatusCode;
 use Cube\Web\Router\Route;
 use Cube\Web\Websocket\Broadcast\Broadcast;
 use Cube\Web\Websocket\Broadcast\BroadcastConfiguration;
-use Cube\Web\Websocket\Channel\ChannelSubscriber;
 use Psr\Http\Message\RequestInterface;
 use Ratchet\ConnectionInterface;
 
@@ -26,22 +25,24 @@ abstract class Channel implements ChannelInterface
 
     protected ?Logger $logger = null;
 
-    protected function getDummyRoute():Route {
-        return new Route($this->getRoute(), fn() => null);
+    protected function getDummyRoute(): Route
+    {
+        return new Route($this->getRoute(), fn () => null);
     }
 
     protected function log(string $message): void
     {
         $this->logger ??= Logger::getInstance();
-        $this->logger->info(preg_replace("~.+\\\\~", "", static::class) . " " . $message);
+        $this->logger->info(preg_replace('~.+\\\\~', '', static::class).' '.$message);
     }
 
     /**
      * This method act as a middleware called
-     * before a connection subscribes to the channel
+     * before a connection subscribes to the channel.
      *
-     * @param array<string,string> $slugs Slug values of the subscribed path
-     * @param RequestInterface $request Handshake request : read the client's cookies, headers or query string from it
+     * @param array<string,string> $slugs   Slug values of the subscribed path
+     * @param RequestInterface     $request Handshake request : read the client's cookies, headers or query string from it
+     *
      * @return ?string null => the subscription is authorized, string => error returned to the client through the socket
      */
     abstract public function authorize(array $slugs, RequestInterface $request): ?string;
@@ -49,8 +50,9 @@ abstract class Channel implements ChannelInterface
     /**
      * @return ?array Slug values if matching, null otherwise
      */
-    public function match(string $requestPath): ?array {
-        $request = new Request("GET", $requestPath);
+    public function match(string $requestPath): ?array
+    {
+        $request = new Request('GET', $requestPath);
         $match = $this->getDummyRoute()->match($request);
 
         return $match
@@ -58,47 +60,54 @@ abstract class Channel implements ChannelInterface
             : null;
     }
 
-    public function path(array $routeParams=[]): string {
+    public function path(array $routeParams = []): string
+    {
         return $this->cachedPath ?? $this->getDummyRoute()->buildPath($routeParams);
     }
 
-    public function emit(array $data, array $routeParams=[]): bool {
-        $data["__class"] = static::class;
+    public function emit(array $data, array $routeParams = []): bool
+    {
+        $data['__class'] = static::class;
         return Broadcast::getInstance()->emit(
             $this->path($routeParams),
             $data
         );
     }
 
-    public function lockParams(array $params=[]): void {
+    public function lockParams(array $params = []): void
+    {
         $this->routeParams = $params;
         $this->cachedPath = null;
         $this->cachedPath = $this->path($params);
     }
 
-    public function unlockParams(): void {
+    public function unlockParams(): void
+    {
         $this->routeParams = [];
         $this->cachedPath = null;
     }
 
-    public function subscribe(string $path, ConnectionInterface $connection) {
+    public function subscribe(string $path, ConnectionInterface $connection)
+    {
         $resourceId = $connection->resourceId;
-        $this->log("new subscriber $resourceId ($path)");
+        $this->log("new subscriber {$resourceId} ({$path})");
         $this->subscribers[$resourceId] = new ChannelSubscriber($path, $connection);
     }
 
-    public function dispatch(string $path, array $data=[]) {
+    public function dispatch(string $path, array $data = [])
+    {
         $dispatchedCount = 0;
         foreach ($this->subscribers as $_ => $subscriber) {
             if ($subscriber->path === $path) {
                 $subscriber->connection->send(json_encode($data, JSON_THROW_ON_ERROR));
-                $dispatchedCount++;
+                ++$dispatchedCount;
             }
         }
-        $this->log("dispatched event to $dispatchedCount subscribers ($path)");
+        $this->log("dispatched event to {$dispatchedCount} subscribers ({$path})");
     }
 
-    public function unsubscribe(ConnectionInterface $connection): bool {
+    public function unsubscribe(ConnectionInterface $connection): bool
+    {
         if (!array_key_exists($connection->resourceId, $this->subscribers)) {
             return false;
         }
@@ -106,16 +115,14 @@ abstract class Channel implements ChannelInterface
         return true;
     }
 
-
-    public function redirect(array $routeParams=[]): Response
+    public function redirect(array $routeParams = []): Response
     {
         $broadCastConfiguration = BroadcastConfiguration::resolve();
 
         $path = rtrim($broadCastConfiguration->getWebsocketOrigin(), '/').'/'.ltrim($this->path($routeParams), '/');
 
         return new Response(StatusCode::TEMPORARY_REDIRECT, headers: [
-            "Location" => $path
+            'Location' => $path,
         ]);
     }
-
 }

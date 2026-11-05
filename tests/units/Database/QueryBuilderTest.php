@@ -14,6 +14,12 @@ use PHPUnit\Framework\TestCase;
  */
 class QueryBuilderTest extends TestCase
 {
+    #[DataProvider('getQuotedIdentifiers')]
+    public function testQuoteWrapsAndEscapesTheIdentifier(QueryBuilder $builder, string $identifier, string $expected)
+    {
+        $this->assertSame($expected, $builder->quote($identifier));
+    }
+
     /** @return array<string,array{QueryBuilder,string,string}> */
     public static function getQuotedIdentifiers(): array
     {
@@ -25,11 +31,5 @@ class QueryBuilderTest extends TestCase
             'sqlite' => [new SQLite(), 'product', '`product`'],
             'sqlite delimiter' => [new SQLite(), 'odd`table', '`odd``table`'],
         ];
-    }
-
-    #[DataProvider('getQuotedIdentifiers')]
-    public function testQuoteWrapsAndEscapesTheIdentifier(QueryBuilder $builder, string $identifier, string $expected)
-    {
-        $this->assertSame($expected, $builder->quote($identifier));
     }
 }

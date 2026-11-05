@@ -2,17 +2,15 @@
 
 namespace Cube\Queue;
 
-use Cube\Core\Component;
 use Cube\Core\Injector;
 use Cube\Env\Logger\HasLogger;
 use Cube\Env\Logger\Logger;
 use Cube\Queue\Drivers\LocalDiskQueueDriver;
 use Cube\Queue\Drivers\QueueDriver;
-use RuntimeException;
 use Throwable;
 
 /**
- * Abstract Class to implement Queueing system
+ * Abstract Class to implement Queueing system.
  *
  * How to implements:
  * - Item processor : `public function __invoke($customArgs, $customArgs...)`
@@ -39,19 +37,21 @@ abstract class Queue
     protected bool $initialized = false;
     protected bool $shouldStop = false;
 
-    final public static function getIdentifier(): string {
+    final public static function getIdentifier(): string
+    {
         return md5(static::class);
     }
 
-    public static function queue(mixed ...$args): void {
+    public static function queue(mixed ...$args): void
+    {
         $instance = Injector::getInstance()->instanciate(static::class);
         $instance->push(...$args);
     }
 
-    protected function initialize(): void {
+    protected function initialize(): void
+    {
         if ($this->initialized)
             return;
-
         $this->initialized = true;
         $this->driver = $this->getDriver();
         $this->driver->setIdentifier(static::getIdentifier());
@@ -61,7 +61,7 @@ abstract class Queue
     protected function assertIsCallable(): void
     {
         if (!method_exists($this, '__invoke'))
-            throw new RuntimeException("__invoke method must be instanciated on class");
+            throw new \RuntimeException('__invoke method must be instanciated on class');
     }
 
     protected function getDriver(): QueueDriver
@@ -71,11 +71,11 @@ abstract class Queue
 
     /**
      * This method shall be called when a exception is raised
-     * when processing a queue item
+     * when processing a queue item.
      *
      * @return bool On `true`, the system will repush the failed job on queue, otherwise, the job is cancelled
      */
-    protected function onError(Throwable $thrown, array $args): bool
+    protected function onError(\Throwable $thrown, array $args): bool
     {
         return false;
     }
@@ -108,9 +108,9 @@ abstract class Queue
 
         try {
             return ($this)(...$args) ?? true;
-        } catch (Throwable $thrown) {
-            $this->warning("Caught an exception while processing an item");
-            $this->error($thrown->getMessage() . " " . $thrown->getFile() . "@". $thrown->getLine());
+        } catch (\Throwable $thrown) {
+            $this->warning('Caught an exception while processing an item');
+            $this->error($thrown->getMessage().' '.$thrown->getFile().'@'.$thrown->getLine());
 
             if ($this->onError($thrown, $args))
                 $this->driver->push($args);
@@ -124,7 +124,7 @@ abstract class Queue
         $this->shouldStop = true;
     }
 
-    public function loop(?Logger $attachedLogger=null): void
+    public function loop(?Logger $attachedLogger = null): void
     {
         $this->initialize();
         $this->assertIsCallable();
@@ -135,7 +135,7 @@ abstract class Queue
         $this->shouldStop = false;
         $this->listenToStopSignals();
 
-        $this->logger->info('Starting queue ' . static::class . ' ('.date('Y-m-d H:i:s').')');
+        $this->logger->info('Starting queue '.static::class.' ('.date('Y-m-d H:i:s').')');
 
         try {
             $this->logger->asGlobalInstance(function () {
@@ -148,7 +148,7 @@ abstract class Queue
             $this->releaseStopSignals();
         }
 
-        $this->logger->info('Stopped queue ' . static::class . ' ('.date('Y-m-d H:i:s').')');
+        $this->logger->info('Stopped queue '.static::class.' ('.date('Y-m-d H:i:s').')');
     }
 
     /**
@@ -163,7 +163,6 @@ abstract class Queue
     {
         if (!function_exists('pcntl_async_signals'))
             return;
-
         pcntl_async_signals(true);
 
         foreach ($this->stopSignals() as $signal)
@@ -174,7 +173,6 @@ abstract class Queue
     {
         if (!function_exists('pcntl_signal'))
             return;
-
         foreach ($this->stopSignals() as $signal)
             pcntl_signal($signal, SIG_DFL);
     }

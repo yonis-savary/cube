@@ -58,7 +58,7 @@ class DtoTest extends TestCase
     }
 
     /**
-     * An invalid --name stops the command right after the sample is read, before anything is written
+     * An invalid --name stops the command right after the sample is read, before anything is written.
      *
      * @param string[] $argv
      *
@@ -144,7 +144,8 @@ class DtoTest extends TestCase
         mkdir($this->generatedDirectory);
 
         [$code, $output] = (new Configuration(new Applications($this->generatedDirectory)))
-            ->asGlobalInstance(fn () => $this->callCommand(['{"id": 1, "name": "Dogs"}', '--name=Category']));
+            ->asGlobalInstance(fn () => $this->callCommand(['{"id": 1, "name": "Dogs"}', '--name=Category']))
+        ;
 
         $this->assertEquals(0, $code, $output);
         $this->assertEquals([Path::join($this->generatedDirectory, 'Integration/DataToObject/Category/Category.php')], $this->writtenFiles($output));

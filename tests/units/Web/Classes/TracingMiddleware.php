@@ -2,7 +2,6 @@
 
 namespace Cube\Tests\Units\Web\Classes;
 
-use Closure;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Middleware;
@@ -20,7 +19,7 @@ class TracingMiddleware implements Middleware
         self::$trace = [];
     }
 
-    public static function handle(Request $request, Closure $next): Request|Response
+    public static function handle(Request $request, \Closure $next): Request|Response
     {
         self::$trace[] = static::class;
 

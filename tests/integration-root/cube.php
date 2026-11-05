@@ -3,8 +3,8 @@
 use Cube\Core\Autoloader\Applications;
 use Cube\Data\Database\DatabaseConfiguration;
 use Cube\Web\Helpers\AssetServer;
-use Cube\Web\Router\RouterConfiguration;
 use Cube\Web\Helpers\StaticServer;
+use Cube\Web\Router\RouterConfiguration;
 use Cube\Web\Websocket\Broadcast\BroadcastConfiguration;
 use Cube\Web\Websocket\Servers\WebsocketConfiguration;
 
@@ -25,12 +25,16 @@ return [
     ),
 
     new WebsocketConfiguration(
-        "127.0.0.1", 9991,
-        "127.0.0.1", 9992,
+        '127.0.0.1',
+        9991,
+        '127.0.0.1',
+        9992,
     ),
 
     new BroadcastConfiguration(
-        "127.0.0.1", 9991,
-        "127.0.0.1", 9992,
-    )
+        '127.0.0.1',
+        9991,
+        '127.0.0.1',
+        9992,
+    ),
 ];

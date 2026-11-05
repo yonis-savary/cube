@@ -8,6 +8,9 @@ use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class LocalDiskCacheTest extends TestCase
 {
     use HasTemporaryStorage;
@@ -23,7 +26,7 @@ class LocalDiskCacheTest extends TestCase
     }
 
     /** child() re-initializes the shared driver, detaching references taken on the parent. */
-    public function test_a_child_cache_keeps_the_references_of_its_parent()
+    public function testAChildCacheKeepsTheReferencesOfItsParent()
     {
         $driver = new LocalDiskCache($this->storage);
         $cache = new Cache(new CacheConfiguration($driver));
@@ -40,7 +43,7 @@ class LocalDiskCacheTest extends TestCase
     }
 
     /** An expired element stays readable for the whole life of the process. */
-    public function test_an_expired_element_is_not_served_from_memory()
+    public function testAnExpiredElementIsNotServedFromMemory()
     {
         $cache = new Cache(new CacheConfiguration(new LocalDiskCache($this->storage)));
 
@@ -51,7 +54,7 @@ class LocalDiskCacheTest extends TestCase
     }
 
     /** A key holding a slash names a file in a missing directory, so it is never persisted. */
-    public function test_a_key_holding_a_slash_survives_a_reload()
+    public function testAKeyHoldingASlashSurvivesAReload()
     {
         $driver = new LocalDiskCache($this->storage);
         $driver->set('user/42', 'preferences');
@@ -63,7 +66,7 @@ class LocalDiskCacheTest extends TestCase
         $this->assertEquals('preferences', $reloaded->get('user/42'));
     }
 
-    public function test_an_element_nobody_reads_is_neither_loaded_nor_rewritten()
+    public function testAnElementNobodyReadsIsNeitherLoadedNorRewritten()
     {
         $this->storage->write('0_0_broken-invoices', 'not a serialized value');
 
@@ -75,7 +78,7 @@ class LocalDiskCacheTest extends TestCase
         $this->assertEquals('not a serialized value', file_get_contents($this->storage->path('0_0_broken-invoices')));
     }
 
-    public function test_an_element_removed_by_another_process_is_missing()
+    public function testAnElementRemovedByAnotherProcessIsMissing()
     {
         $driver = new LocalDiskCache($this->storage);
         $driver->set('invoices', ['first']);
@@ -89,7 +92,7 @@ class LocalDiskCacheTest extends TestCase
         $this->assertNull($reloaded->get('invoices'));
     }
 
-    public function test_an_element_read_then_changed_through_its_reference_is_saved()
+    public function testAnElementReadThenChangedThroughItsReferenceIsSaved()
     {
         $driver = new LocalDiskCache($this->storage);
         $driver->set('invoices', ['first']);
@@ -109,7 +112,7 @@ class LocalDiskCacheTest extends TestCase
     }
 
     /** get() falls back on the default when the stored value is null. */
-    public function test_a_stored_null_is_not_replaced_by_the_default()
+    public function testAStoredNullIsNotReplacedByTheDefault()
     {
         $cache = new Cache(new CacheConfiguration(new LocalDiskCache($this->storage)));
 

@@ -3,8 +3,8 @@
 namespace Cube\Data\Models\Events;
 
 use Cube\Data\Database\Database;
-use Cube\Event\Event;
 use Cube\Data\Models\Model;
+use Cube\Event\Event;
 
 class SavedModel extends Event
 {

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Web\Helpers\LargeUpload;
 
@@ -34,17 +34,15 @@ class LargeUploadManager
 
         if (!$this->isIdentifier($identifier) || !$storage->isDirectory($identifier))
             return null;
-
         return new LargeUpload($identifier, $storage, $this->configuration->maxSize);
     }
 
-    public function delete(string $identifier): bool 
+    public function delete(string $identifier): bool
     {
         $storage = $this->getStorage();
 
         if (!$this->isIdentifier($identifier) || !$storage->isDirectory($identifier))
             return false;
-
         $upload = new LargeUpload($identifier, $storage);
         $upload->delete();
         return true;
@@ -63,7 +61,8 @@ class LargeUploadManager
             ->filter(fn (string $identifier) => $this->isIdentifier($identifier))
             ->filter(fn (string $identifier) => (int) @filemtime($storage->path("{$identifier}/info.json")) < $deadline)
             ->forEach(fn (string $identifier) => $this->delete($identifier))
-            ->count();
+            ->count()
+        ;
     }
 
     protected function isIdentifier(string $identifier): bool

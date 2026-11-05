@@ -5,8 +5,10 @@ namespace Cube\Tests\Units\Core;
 use Cube\Tests\Units\Core\Classes\Counter;
 use Cube\Tests\Units\Core\Classes\SpecializedCounter;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
+/**
+ * @internal
+ */
 class ComponentTest extends TestCase
 {
     protected function setUp(): void
@@ -21,7 +23,7 @@ class ComponentTest extends TestCase
         SpecializedCounter::removeInstance();
     }
 
-    public function test_instance_is_built_once_and_reused()
+    public function testInstanceIsBuiltOnceAndReused()
     {
         $this->assertFalse(Counter::hasInstance());
 
@@ -31,19 +33,19 @@ class ComponentTest extends TestCase
         $this->assertSame($first, Counter::getInstance());
     }
 
-    public function test_default_instance_is_built_through_the_injector()
+    public function testDefaultInstanceIsBuiltThroughTheInjector()
     {
         $this->assertEquals('default', Counter::getInstance()->tag);
     }
 
-    public function test_set_instance_replaces_the_current_one()
+    public function testSetInstanceReplacesTheCurrentOne()
     {
         Counter::setInstance(new Counter('replaced'));
 
         $this->assertEquals('replaced', Counter::getInstance()->tag);
     }
 
-    public function test_remove_instance_gives_back_a_fresh_default()
+    public function testRemoveInstanceGivesBackAFreshDefault()
     {
         Counter::setInstance(new Counter('replaced'));
         Counter::removeInstance();
@@ -52,7 +54,7 @@ class ComponentTest extends TestCase
         $this->assertEquals('default', Counter::getInstance()->tag);
     }
 
-    public function test_a_subclass_keeps_its_own_instance()
+    public function testASubclassKeepsItsOwnInstance()
     {
         $specialized = SpecializedCounter::getInstance();
         $base = Counter::getInstance();
@@ -62,7 +64,7 @@ class ComponentTest extends TestCase
         $this->assertNotSame($specialized, $base);
     }
 
-    public function test_with_instance_scopes_then_restores()
+    public function testWithInstanceScopesThenRestores()
     {
         $original = new Counter('original');
         Counter::setInstance($original);
@@ -76,7 +78,7 @@ class ComponentTest extends TestCase
         $this->assertSame($original, Counter::getInstance());
     }
 
-    public function test_with_instance_hands_both_instances_to_the_callback()
+    public function testWithInstanceHandsBothInstancesToTheCallback()
     {
         $original = new Counter('original');
         $scoped = new Counter('scoped');
@@ -88,22 +90,22 @@ class ComponentTest extends TestCase
         });
     }
 
-    public function test_with_instance_restores_even_when_the_callback_throws()
+    public function testWithInstanceRestoresEvenWhenTheCallbackThrows()
     {
         $original = new Counter('original');
         Counter::setInstance($original);
 
         try {
             Counter::withInstance(new Counter('scoped'), function () {
-                throw new RuntimeException('boom');
+                throw new \RuntimeException('boom');
             });
-        } catch (RuntimeException $_) {
+        } catch (\RuntimeException $_) {
         }
 
         $this->assertSame($original, Counter::getInstance());
     }
 
-    public function test_with_instance_leaves_no_default_instance_behind()
+    public function testWithInstanceLeavesNoDefaultInstanceBehind()
     {
         $this->assertFalse(Counter::hasInstance());
 
@@ -112,7 +114,7 @@ class ComponentTest extends TestCase
         $this->assertFalse(Counter::hasInstance());
     }
 
-    public function test_as_global_instance_scopes_the_object_it_is_called_on()
+    public function testAsGlobalInstanceScopesTheObjectItIsCalledOn()
     {
         $scoped = new Counter('scoped');
 

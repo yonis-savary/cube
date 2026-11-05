@@ -3,21 +3,23 @@
 namespace Cube\Tests\Units\Database;
 
 use Cube\Data\Database\Database;
-use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Core\Classes\Habitat;
+use Cube\Tests\Units\Models\Product;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 use function Cube\env;
-use RuntimeException;
 
+/**
+ * @internal
+ */
 class DatabaseTest extends TestCase
 {
     use TestMultipleDrivers;
 
     /**
      * Values a user can legitimately store, and that the `{}` interpolation
-     * must give back untouched
+     * must give back untouched.
      *
      * @return array<string,string>
      */
@@ -27,7 +29,7 @@ class DatabaseTest extends TestCase
             'single quote' => "O'Brien",
             'doubled single quote' => "it''s",
             'double quote' => 'say "hello"',
-            'backslash' => 'C:\\Users\\cube',
+            'backslash' => 'C:\Users\cube',
             'backslash before quote' => "ends with \\'",
             'backtick' => '`product`',
             'percent and underscore' => '100% _sure',
@@ -38,7 +40,7 @@ class DatabaseTest extends TestCase
         ];
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBase(Database $database)
     {
         $this->assertNotNull(
@@ -46,7 +48,7 @@ class DatabaseTest extends TestCase
         );
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildQuotesStrings(Database $database)
     {
         $this->assertSame("SELECT 'screen'", $database->build('SELECT {}', ['screen']));
@@ -60,7 +62,7 @@ class DatabaseTest extends TestCase
         );
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildScalarValues(Database $database)
     {
         $this->assertSame('SELECT NULL', $database->build('SELECT {}', [null]));
@@ -68,7 +70,7 @@ class DatabaseTest extends TestCase
         $this->assertSame("SELECT '0'", $database->build('SELECT {}', [false]));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildArrayBecomesAList(Database $database)
     {
         $this->assertSame("SELECT ('a','b')", $database->build('SELECT {}', [['a', 'b']]));
@@ -83,7 +85,7 @@ class DatabaseTest extends TestCase
         );
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildModelBecomesItsPrimaryKey(Database $database)
     {
         $product = new Product(['id' => 12, 'name' => 'screen']);
@@ -91,13 +93,13 @@ class DatabaseTest extends TestCase
         $this->assertSame("SELECT '12'", $database->build('SELECT {}', [$product]));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildEnumBecomesItsValue(Database $database)
     {
         $this->assertSame("SELECT 'sky'", $database->build('SELECT {}', [Habitat::Sky]));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildDoesNotQuoteTwiceInsideQuotes(Database $database)
     {
         $this->assertSame(
@@ -115,7 +117,7 @@ class DatabaseTest extends TestCase
         );
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildFillsPlaceholdersInOrder(Database $database)
     {
         $this->assertSame(
@@ -124,7 +126,7 @@ class DatabaseTest extends TestCase
         );
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildDoesNotInterpolateInsertedValues(Database $database)
     {
         // A value containing a placeholder must not consume the next context value
@@ -134,20 +136,20 @@ class DatabaseTest extends TestCase
         );
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildWithMissingContextValue(Database $database)
     {
         // A placeholder without a value is currently interpolated as NULL
         $this->assertSame("SELECT 'a', NULL", $database->build('SELECT {}, {}', ['a']));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBuildWithExtraContextValues(Database $database)
     {
         $this->assertSame("SELECT 'a'", $database->build('SELECT {}', ['a', 'unused']));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testSpecialValuesSurviveARoundTrip(Database $database)
     {
         foreach ($this->getSpecialValues() as $label => $value) {
@@ -160,7 +162,7 @@ class DatabaseTest extends TestCase
         }
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testInjectionAttemptIsStoredAsData(Database $database)
     {
         $payload = "x'); DROP TABLE product; --";
@@ -171,7 +173,7 @@ class DatabaseTest extends TestCase
         $this->assertSame($payload, $database->query('SELECT name FROM product')[0]['name']);
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testInjectionAttemptInsideQuotedPlaceholder(Database $database)
     {
         $database->exec('INSERT INTO product (name) VALUES ({})', ['screen']);
@@ -184,7 +186,7 @@ class DatabaseTest extends TestCase
         $this->assertCount(0, $rows, 'The payload was interpreted instead of being escaped');
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testQueryFetchModes(Database $database)
     {
         $database->exec('INSERT INTO product (name) VALUES ({})', ['screen']);
@@ -196,7 +198,7 @@ class DatabaseTest extends TestCase
         $this->assertSame('screen', $num[0][0]);
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testExecReturnsAffectedRows(Database $database)
     {
         $database->exec('INSERT INTO product (name) VALUES ({})', ['screen']);
@@ -205,7 +207,7 @@ class DatabaseTest extends TestCase
         $this->assertSame(2, $database->exec('DELETE FROM product WHERE name IN {}', [['screen', 'mouse']]));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testLastInsertId(Database $database)
     {
         $database->exec('INSERT INTO product (name) VALUES ({})', ['screen']);
@@ -218,7 +220,7 @@ class DatabaseTest extends TestCase
         $this->assertEquals($id, $lastInsertId);
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testTransactionCommits(Database $database)
     {
         $error = $database->transaction(function (Database $database) {
@@ -229,20 +231,20 @@ class DatabaseTest extends TestCase
         $this->assertCount(1, $database->query('SELECT name FROM product'));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testTransactionRollsBackAndReturnsTheThrowable(Database $database)
     {
         $error = $database->transaction(function (Database $database) {
             $database->exec('INSERT INTO product (name) VALUES ({})', ['screen']);
 
-            throw new RuntimeException('Something went wrong');
+            throw new \RuntimeException('Something went wrong');
         });
 
-        $this->assertInstanceOf(RuntimeException::class, $error);
+        $this->assertInstanceOf(\RuntimeException::class, $error);
         $this->assertCount(0, $database->query('SELECT name FROM product'));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testDryRunBuildsWithoutExecuting(Database $database)
     {
         $return = $database->dryRun(function () use ($database) {
@@ -256,7 +258,7 @@ class DatabaseTest extends TestCase
         $this->assertCount(0, $database->query('SELECT name FROM product'));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testTableAndFieldIntrospection(Database $database)
     {
         $this->assertTrue($database->hasTable('product'));
@@ -267,7 +269,7 @@ class DatabaseTest extends TestCase
         $this->assertFalse($database->hasField('product', 'not_a_field'));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testCraftedTableNameHasNoSideEffect(Database $database)
     {
         $database->hasTable('product`; DROP TABLE product; --');
@@ -276,7 +278,7 @@ class DatabaseTest extends TestCase
         $this->assertTrue($database->hasTable('product'), 'The product table was dropped through an identifier');
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testConnectionAccessors(Database $database)
     {
         $this->assertTrue($database->isConnected());
@@ -298,12 +300,12 @@ class DatabaseTest extends TestCase
      * A callback throwing used to leave the connection in dry run, where every later query
      * silently does nothing while reporting success.
      */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testDryRunIsLeftBehindEvenWhenTheCallbackThrows(Database $database)
     {
         try {
-            $database->dryRun(fn () => throw new RuntimeException('failed halfway'));
-        } catch (RuntimeException) {
+            $database->dryRun(fn () => throw new \RuntimeException('failed halfway'));
+        } catch (\RuntimeException) {
         }
 
         $database->exec('CREATE TABLE after_dry_run (id INTEGER)');
@@ -311,7 +313,7 @@ class DatabaseTest extends TestCase
         $this->assertTrue($database->hasTable('after_dry_run'));
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testDryRunSwallowsWritesWhileItLasts(Database $database)
     {
         $database->dryRun(fn () => $database->exec('CREATE TABLE never_created (id INTEGER)'));
@@ -323,7 +325,7 @@ class DatabaseTest extends TestCase
      * A `{}` written inside an identifier quote used to get the string escaping of the driver,
      * which never doubles a backtick nor a double quote : the value closed the identifier.
      */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testIdentifierPlaceholderCannotBeClosedByItsValue(Database $database)
     {
         $this->assertFalse($database->hasTable('product` -- '));

@@ -4,19 +4,17 @@ namespace Cube\Web\Websocket\Servers;
 
 use Cube\Data\Bunch;
 use Cube\Env\Logger\Logger;
-use Psr\Http\Message\ServerRequestInterface;
-use Ratchet\MessageComponentInterface;
-use Ratchet\ConnectionInterface;
-use Throwable;
 use Cube\Web\Http\HttpMessage;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Websocket\Channel\Channel;
+use Psr\Http\Message\ServerRequestInterface;
+use Ratchet\ConnectionInterface;
+use Ratchet\MessageComponentInterface;
 use React\Http\Io\BufferedBody;
-use React\Http\Io\HttpBodyStream;
 use React\Http\Message\Response as ReactResponse;
 
 /**
- * This class is a Ratcher socket used to make socket communication through a subscription design pattern
+ * This class is a Ratcher socket used to make socket communication through a subscription design pattern.
  */
 class WebsocketRouter implements MessageComponentInterface
 {
@@ -24,7 +22,7 @@ class WebsocketRouter implements MessageComponentInterface
     private WebsocketConfiguration $configuration;
 
     /**
-     * @var array<class-string<Channel>,Channel> $channels
+     * @var array<class-string<Channel>,Channel>
      */
     protected array $channels = [];
 
@@ -32,17 +30,17 @@ class WebsocketRouter implements MessageComponentInterface
     {
         $this->logger = Logger::getInstance();
         $this->configuration = $configuration ?? WebsocketConfiguration::resolve();
-        $this->channels = Bunch::fromExtends(Channel::class)->zip(fn(Channel $instance) => [$instance::class, $instance]);
+        $this->channels = Bunch::fromExtends(Channel::class)->zip(fn (Channel $instance) => [$instance::class, $instance]);
 
         foreach (array_keys($this->channels) as $class) {
-            $this->logger->info("Registering channel $class...");
+            $this->logger->info("Registering channel {$class}...");
         }
     }
 
     public function onOpen(ConnectionInterface $connection)
     {
         $path = $connection->httpRequest->getUri()->getPath();
-        $this->logger->info("New connection : {id} ({path})", ['id' => $connection->resourceId, "path" => $path]);
+        $this->logger->info('New connection : {id} ({path})', ['id' => $connection->resourceId, 'path' => $path]);
 
         $origin = $connection->httpRequest->getHeaderLine('Origin');
         if (!$this->configuration->allowsOrigin($origin)) {
@@ -54,9 +52,8 @@ class WebsocketRouter implements MessageComponentInterface
         foreach ($this->channels as $channel) {
             if (null === $slugValues = $channel->match($path))
                 continue;
-
             if ($errorMessage = $channel->authorize($slugValues, $connection->httpRequest)) {
-                $this->logger->info("Connection refused by channel to path [$path] => $errorMessage");
+                $this->logger->info("Connection refused by channel to path [{$path}] => {$errorMessage}");
                 $connection->send(json_encode(['error' => $errorMessage], JSON_THROW_ON_ERROR));
                 $connection->close();
                 return;
@@ -66,36 +63,35 @@ class WebsocketRouter implements MessageComponentInterface
             return;
         }
 
-        $this->logger->info("No channel found for path [{path}], connection closed", ['path' => $path]);
+        $this->logger->info('No channel found for path [{path}], connection closed', ['path' => $path]);
         $connection->close();
     }
 
     public function onClose(ConnectionInterface $connection)
     {
         foreach ($this->channels as $channel) {
-            if (!$channel->unsubscribe($connection)) 
+            if (!$channel->unsubscribe($connection))
                 continue;
-
-            $this->logger->info("Connection closed ({id})", ["id" => $connection->resourceId]);
+            $this->logger->info('Connection closed ({id})', ['id' => $connection->resourceId]);
             return;
         }
     }
 
-    public function onError(ConnectionInterface $conn, Throwable $e)
+    public function onError(ConnectionInterface $conn, \Throwable $e)
     {
-        $this->logger->error("Error on websocket ({id})", ['id' => $conn->resourceId]);
+        $this->logger->error('Error on websocket ({id})', ['id' => $conn->resourceId]);
         $this->logger->logThrowable($e);
         $conn->close();
     }
 
     public function onMessage(ConnectionInterface $from, $msg)
     {
-        $this->logger->info(static::class . ": this class does not support the onMessage() method");
+        $this->logger->info(static::class.': this class does not support the onMessage() method');
     }
 
     public function broadcast($message)
     {
-        $this->logger->info(static::class . ": this class does not support the broadcast() method");
+        $this->logger->info(static::class.': this class does not support the broadcast() method');
     }
 
     public function dispatch(ServerRequestInterface $request, ReactResponse $response): ReactResponse
@@ -103,14 +99,14 @@ class WebsocketRouter implements MessageComponentInterface
         $path = $request->getUri()->getPath();
         $body = json_decode($request->getBody(), true);
 
-        if (!($class = $body["__class"] ?? false)) {
-            $this->logger->error("Received invalid message : __class missing");
-            return $response->withBody(new BufferedBody("__class missing"))->withStatus(StatusCode::BAD_REQUEST);
+        if (!($class = $body['__class'] ?? false)) {
+            $this->logger->error('Received invalid message : __class missing');
+            return $response->withBody(new BufferedBody('__class missing'))->withStatus(StatusCode::BAD_REQUEST);
         }
 
         if (!($channel = $this->channels[$class] ?? false)) {
-            $this->logger->error("Received invalid message : invalid __class");
-            return $response->withBody(new BufferedBody("invalid __class : $class"))->withStatus(StatusCode::UNPROCESSABLE_CONTENT);
+            $this->logger->error('Received invalid message : invalid __class');
+            return $response->withBody(new BufferedBody("invalid __class : {$class}"))->withStatus(StatusCode::UNPROCESSABLE_CONTENT);
         }
 
         unset($body['__class']);
@@ -118,7 +114,6 @@ class WebsocketRouter implements MessageComponentInterface
         $channel->dispatch($path, $body);
         return $response;
     }
-
 
     protected function isAllowedToBroadcast(ServerRequestInterface $request): bool
     {
@@ -136,11 +131,11 @@ class WebsocketRouter implements MessageComponentInterface
             $path = $request->getUri()->getPath();
 
             $logger = Logger::getInstance();
-            $logger->info("{method} {path}", ['method' => $method, 'path' => $path]);
+            $logger->info('{method} {path}', ['method' => $method, 'path' => $path]);
 
-            $response = ReactResponse::plaintext("OK")->withStatus(StatusCode::OK);
+            $response = ReactResponse::plaintext('OK')->withStatus(StatusCode::OK);
 
-            if ($method !== 'POST') {
+            if ('POST' !== $method) {
                 return $response->withStatus(StatusCode::BAD_REQUEST);
             }
 

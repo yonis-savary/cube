@@ -11,15 +11,14 @@ use Cube\Data\OpenAPI\Specs\Paths\RequestBody\OASRequestBody;
 use Cube\Data\OpenAPI\Specs\Paths\Responses\OASResponses;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
-use InvalidArgumentException;
 
 class OASEndPoint extends AutoDataToObject
 {
     use MakesSchemas;
 
-    public string $summary = "";
-    public string $description = "";
-    public string $operationId = "";
+    public string $summary = '';
+    public string $description = '';
+    public string $operationId = '';
     public OASParameters $parameters;
     public OASRequestBody $requestBody;
     public OASResponses $responses;
@@ -37,7 +36,7 @@ class OASEndPoint extends AutoDataToObject
     public function __construct(Route $route)
     {
         if (!is_array($route->getCallback())) {
-            throw new InvalidArgumentException("Given route must have a Array-type callback");
+            throw new \InvalidArgumentException('Given route must have a Array-type callback');
         }
 
         $context = OpenAPIGenerationContext::getInstance();
@@ -46,16 +45,16 @@ class OASEndPoint extends AutoDataToObject
         /** @var \ReflectionAttribute<Endpoint>[] $endpointDescriptions */
         $endpointDescriptions = $method->getAttributes(Endpoint::class);
         if ($description = array_pop($endpointDescriptions)) {
-            $context->log(" - Using Endpoint attribute");
+            $context->log(' - Using Endpoint attribute');
             $endpoint = $description->newInstance();
             $this->summary = $endpoint->summary;
             $this->description = $endpoint->description;
             $this->operationId = $endpoint->operationId ?? Text::camelCaseString($endpoint->summary);
         } else {
-            $context->log(" - No [Endpoint] found, using Controller.method syntax");
+            $context->log(' - No [Endpoint] found, using Controller.method syntax');
             [$controllerName, $methodName] = $route->getCallback();
             $this->summary = $methodName;
-            $this->description = preg_replace("/.+\\\\/", '', $controllerName) . "." . $methodName;
+            $this->description = preg_replace('/.+\\\\/', '', $controllerName).'.'.$methodName;
             $this->operationId = Text::camelCaseString($this->summary);
         }
 

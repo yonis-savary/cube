@@ -5,11 +5,12 @@ namespace Cube\Tests\Units\Env\Session\Drivers;
 use Cube\Env\Session\Drivers\RedisSession;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
-use Redis;
 
 /**
  * The save handler can only be chosen while no session is active : each test runs in its own
  * process and closes the session the bootstrap opened with the default handler.
+ *
+ * @internal
  */
 #[RunTestsInSeparateProcesses]
 class RedisSessionTest extends TestCase
@@ -19,7 +20,7 @@ class RedisSessionTest extends TestCase
         session_write_close();
     }
 
-    public function test_the_session_is_written_to_redis()
+    public function testTheSessionIsWrittenToRedis()
     {
         $driver = $this->newDriver();
         $driver->set('cart', ['a-product']);
@@ -30,7 +31,7 @@ class RedisSessionTest extends TestCase
         $this->assertEquals(1, $this->redis()->exists("PHPREDIS_SESSION:{$sessionId}"));
     }
 
-    public function test_the_session_is_read_back_from_redis()
+    public function testTheSessionIsReadBackFromRedis()
     {
         $this->newDriver('shop')->set('cart', ['a-product']);
         $this->reopenSession(session_id());
@@ -38,7 +39,7 @@ class RedisSessionTest extends TestCase
         $this->assertEquals(['a-product'], $_SESSION['cube']['shop']['cart']);
     }
 
-    public function test_a_regenerated_id_keeps_the_values()
+    public function testARegeneratedIdKeepsTheValues()
     {
         $driver = $this->newDriver('shop');
         $driver->set('cart', ['a-product']);
@@ -70,15 +71,15 @@ class RedisSessionTest extends TestCase
         session_start();
     }
 
-    protected function redis(): Redis
+    protected function redis(): \Redis
     {
-        $redis = new Redis();
+        $redis = new \Redis();
         $redis->connect('127.0.0.1', 6379);
 
         return $redis;
     }
 
-    public function test_the_password_reaches_the_save_path()
+    public function testThePasswordReachesTheSavePath()
     {
         $this->assertEquals('tcp://127.0.0.1:6379', (new RedisSession('127.0.0.1'))->getSavePath());
         $this->assertEquals('tcp://127.0.0.1:6379?auth=p%40ss%26word', (new RedisSession('127.0.0.1', password: 'p@ss&word'))->getSavePath());

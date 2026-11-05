@@ -15,7 +15,7 @@ use Cube\Utils\Utils;
 
 /**
  * Infers the classes from one example payload : every field is nullable, nested objects get their own
- * sub-namespace, and a list is typed after its first element
+ * sub-namespace, and a list is typed after its first element.
  */
 class SampleSource implements DtoSource
 {
@@ -69,10 +69,8 @@ class SampleSource implements DtoSource
 
         if (!count($value))
             return new ListType(new MixedType());
-
         if (!Utils::isList($value))
             return $this->addClass($namespace, $key, $value);
-
         return new ListType($this->typeOf($namespace, $key, $value[0]));
     }
 }

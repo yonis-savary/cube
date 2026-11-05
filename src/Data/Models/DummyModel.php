@@ -19,11 +19,13 @@ class DummyModel extends Model
         return [];
     }
 
-    protected function getAttributeDefaultValue(string $name): mixed {
+    protected function getAttributeDefaultValue(string $name): mixed
+    {
         return null;
     }
 
-    protected function allowNonTableAttributeSet(): bool {
+    protected function allowNonTableAttributeSet(): bool
+    {
         return true;
     }
 }

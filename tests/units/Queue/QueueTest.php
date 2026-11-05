@@ -16,39 +16,37 @@ use PHPUnit\Framework\TestCase;
 
 use function Cube\env;
 
+/**
+ * @internal
+ */
 class QueueTest extends TestCase
 {
     protected const DRIVER_TEST_IDENTIFIER = 'cube-driver-test';
 
-    public static function getQueueDrivers() {
-        return [
-            "redis" => [ new RedisQueue() ],
-            "local-disk" => [ new LocalDiskQueueDriver() ],
-        ];
-    }
-
-    #[DataProvider("getQueueDrivers")]
-    public function test_loop(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testLoop(QueueDriver $driver)
+    {
         $queue = new NumberQueue($driver);
         $queue->flush();
 
         $queue->push(1);
-        $queue->push(2,3,4);
+        $queue->push(2, 3, 4);
         $queue->push(5);
 
         $queue->processNext();
         $queue->processNext();
         $queue->processNext();
 
-        $this->assertEquals([1,2,3,4,5], $queue->numbers);
+        $this->assertEquals([1, 2, 3, 4, 5], $queue->numbers);
     }
 
     /**
      * A driver used to wait for an item to show up, which made processNext() hang forever on
      * an empty queue and left loop() unable to pace itself.
      */
-    #[DataProvider("getQueueDrivers")]
-    public function test_an_empty_queue_gives_the_hand_back(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testAnEmptyQueueGivesTheHandBack(QueueDriver $driver)
+    {
         $queue = new NumberQueue($driver);
         $queue->flush();
 
@@ -59,16 +57,18 @@ class QueueTest extends TestCase
         $this->assertLessThan(5, microtime(true) - $start);
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_a_driver_gives_null_when_it_holds_nothing(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testADriverGivesNullWhenItHoldsNothing(QueueDriver $driver)
+    {
         $driver->setIdentifier(self::DRIVER_TEST_IDENTIFIER);
         $driver->flush();
 
         $this->assertNull($driver->next());
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_a_driver_gives_the_arguments_back_untouched(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testADriverGivesTheArgumentsBackUntouched(QueueDriver $driver)
+    {
         $driver->setIdentifier(self::DRIVER_TEST_IDENTIFIER);
         $driver->flush();
 
@@ -77,8 +77,9 @@ class QueueTest extends TestCase
         $this->assertEquals(['first', ['nested' => true], 42], $driver->next());
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_a_driver_serves_its_items_in_order(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testADriverServesItsItemsInOrder(QueueDriver $driver)
+    {
         $driver->setIdentifier(self::DRIVER_TEST_IDENTIFIER);
         $driver->flush();
 
@@ -89,8 +90,9 @@ class QueueTest extends TestCase
         $this->assertEquals(['second'], $driver->next());
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_processing_one_item_leaves_the_others_alone(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testProcessingOneItemLeavesTheOthersAlone(QueueDriver $driver)
+    {
         $queue = new NumberQueue($driver);
         $queue->flush();
 
@@ -101,8 +103,9 @@ class QueueTest extends TestCase
         $this->assertEquals([1], $queue->numbers);
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_flush_empties_the_queue(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testFlushEmptiesTheQueue(QueueDriver $driver)
+    {
         $queue = new NumberQueue($driver);
 
         $queue->push(1);
@@ -113,8 +116,9 @@ class QueueTest extends TestCase
         $this->assertEquals([], $queue->numbers);
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_a_failing_item_is_dropped_by_default(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testAFailingItemIsDroppedByDefault(QueueDriver $driver)
+    {
         $queue = new FailingQueue($driver);
         $queue->flush();
 
@@ -127,8 +131,9 @@ class QueueTest extends TestCase
         $this->assertEquals(1, $queue->attempts); // nothing left to retry
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_on_error_can_push_the_failed_item_back(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testOnErrorCanPushTheFailedItemBack(QueueDriver $driver)
+    {
         $queue = new FailingQueue($driver);
         $queue->flush();
         $queue->repushOnError = true;
@@ -145,8 +150,9 @@ class QueueTest extends TestCase
         $queue->flush();
     }
 
-    #[DataProvider("getQueueDrivers")]
-    public function test_a_loop_leaves_when_the_queue_is_asked_to_stop(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testALoopLeavesWhenTheQueueIsAskedToStop(QueueDriver $driver)
+    {
         $queue = new SelfStoppingQueue($driver);
         $queue->flush();
 
@@ -165,8 +171,9 @@ class QueueTest extends TestCase
      * The signal a process manager sends is what has to end a worker : without a handler the
      * default action kills php on the spot, dropping the item being processed.
      */
-    #[DataProvider("getQueueDrivers")]
-    public function test_a_loop_leaves_on_sigterm(QueueDriver $driver) {
+    #[DataProvider('getQueueDrivers')]
+    public function testALoopLeavesOnSigterm(QueueDriver $driver)
+    {
         if (!function_exists('pcntl_async_signals') || !function_exists('posix_kill')) {
             $this->markTestSkipped('pcntl and posix are needed to signal a worker');
         }
@@ -185,7 +192,16 @@ class QueueTest extends TestCase
         $queue->flush();
     }
 
-    public function test_the_signal_handlers_are_given_back_after_a_loop() {
+    public static function getQueueDrivers()
+    {
+        return [
+            'redis' => [new RedisQueue()],
+            'local-disk' => [new LocalDiskQueueDriver()],
+        ];
+    }
+
+    public function testTheSignalHandlersAreGivenBackAfterALoop()
+    {
         if (!function_exists('pcntl_signal_get_handler')) {
             $this->markTestSkipped('pcntl is needed to read the installed handlers');
         }
@@ -201,12 +217,14 @@ class QueueTest extends TestCase
         $this->assertEquals(SIG_DFL, pcntl_signal_get_handler(SIGINT));
     }
 
-    public function test_the_identifier_is_stable_and_belongs_to_the_class() {
+    public function testTheIdentifierIsStableAndBelongsToTheClass()
+    {
         $this->assertEquals(md5(NumberQueue::class), NumberQueue::getIdentifier());
         $this->assertNotEquals(NumberQueue::getIdentifier(), FailingQueue::getIdentifier());
     }
 
-    public function test_the_static_entry_point_pushes_on_the_default_driver() {
+    public function testTheStaticEntryPointPushesOnTheDefaultDriver()
+    {
         GreetingQueue::$greeted = [];
 
         $queue = new GreetingQueue();

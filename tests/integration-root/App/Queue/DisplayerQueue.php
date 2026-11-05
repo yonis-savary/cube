@@ -15,6 +15,6 @@ class DisplayerQueue extends Queue
 
     public function __invoke(mixed $toDisplay)
     {
-        $this->logger->info("DISPLAY : ". print_r($toDisplay, true));
+        $this->logger->info('DISPLAY : '.print_r($toDisplay, true));
     }
 }

@@ -5,13 +5,12 @@ use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Models\ModelField;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(Plan $plan, Database $database)
     {
         $plan->create('module', [
             ModelField::id(),
-            ModelField::string('label', 50)->notNull()->unique()
+            ModelField::string('label', 50)->notNull()->unique(),
         ]);
 
         $database->exec("INSERT INTO module (label) VALUES ('product'), ('order'), ('crm'), ('admin');");
@@ -21,7 +20,7 @@ return new class extends Migration
             ModelField::integer('module')->notNull()->references('module', 'id'),
         ]);
 
-        $database->exec("INSERT INTO module_user (user, module) VALUES (1, 4);");
+        $database->exec('INSERT INTO module_user (user, module) VALUES (1, 4);');
     }
 
     public function down(Plan $plan, Database $database)

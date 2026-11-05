@@ -12,7 +12,6 @@ use Cube\Data\Database\Query;
 use Cube\Data\Database\Query\FieldComparaison;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\ProductManager;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -39,7 +38,8 @@ class QueryTest extends TestCase
             ->order('id', 'ASC')
             ->chunk($chunkSize, function (array $products) use (&$chunks) {
                 $chunks[] = array_map(fn (Product $product) => $product->name, $products);
-            }, $database);
+            }, $database)
+        ;
 
         return $chunks;
     }
@@ -101,7 +101,8 @@ class QueryTest extends TestCase
                 ->order('id', 'ASC')
                 ->chunk(2, function (array $products) use (&$chunks) {
                     $chunks[] = array_map(fn (Product $product) => $product->name, $products);
-                });
+                })
+            ;
 
             $this->assertEquals([
                 ['product-1', 'product-2'],
@@ -122,7 +123,8 @@ class QueryTest extends TestCase
                 ->limit(1)
                 ->chunk(2, function (array $products) use (&$chunks) {
                     $chunks[] = count($products);
-                });
+                })
+            ;
 
             $this->assertEquals([2, 1], $chunks);
         });
@@ -154,7 +156,8 @@ class QueryTest extends TestCase
                 ->chunk(2, function (array $products, Bunch $bunch) use (&$chunks) {
                     $this->assertEquals($products, $bunch->get());
                     $chunks[] = $bunch->map(fn (Product $product) => $product->name)->get();
-                });
+                })
+            ;
 
             $this->assertEquals([
                 ['product-1', 'product-2'],
@@ -174,20 +177,23 @@ class QueryTest extends TestCase
 
     /**
      * @param Query<Product> $query
+     *
      * @return string[]
      */
     protected function fetchNames(Query $query): array
     {
         return Bunch::wrap($query->order('id', 'ASC')->fetch())
             ->map(fn (Product $product) => $product->name)
-            ->get();
+            ->get()
+        ;
     }
 
     protected function productsManagedBy(string $manager): Query
     {
         return Query::select('product_manager')
             ->selectField('product', 'product_manager')
-            ->where('manager', $manager, table: 'product_manager');
+            ->where('manager', $manager, table: 'product_manager')
+        ;
     }
 
     #[DataProvider('getDatabases')]
@@ -282,7 +288,8 @@ class QueryTest extends TestCase
             $aliceProductsNamedOne = Query::select('product')
                 ->selectField('id', 'product')
                 ->where('id', $this->productsManagedBy('alice'), 'IN', 'product')
-                ->where('name', 'product-1', table: 'product');
+                ->where('name', 'product-1', table: 'product')
+            ;
 
             $this->assertEquals(
                 ['product-1'],
@@ -299,7 +306,8 @@ class QueryTest extends TestCase
 
             Query::delete('product_manager')
                 ->where('product', Query::select('product')->selectField('id', 'product')->where('name', 'product-4', table: 'product'), 'IN', 'product_manager')
-                ->fetch();
+                ->fetch()
+            ;
 
             $this->assertEquals(2, ProductManager::select()->count());
         });
@@ -396,7 +404,8 @@ class QueryTest extends TestCase
             $managers = ProductManager::select()
                 ->whereIn('product', [3, 4], 'product_manager')
                 ->order('product', 'ASC', 'product_manager')
-                ->fetch();
+                ->fetch()
+            ;
 
             $this->assertEquals(['alice', 'bob'], Bunch::wrap($managers)->map(fn (ProductManager $row) => $row->manager)->get());
         });
@@ -425,7 +434,8 @@ class QueryTest extends TestCase
                 ->selectField('manager', 'product_manager')
                 ->whereIn('product', [3, 4], 'product_manager')
                 ->order('product', 'ASC', 'product_manager')
-                ->fetch();
+                ->fetch()
+            ;
 
             $this->assertEquals(['alice', 'bob'], Bunch::wrap($rows)->map(fn ($row) => $row->manager)->get());
         });
@@ -518,14 +528,16 @@ class QueryTest extends TestCase
                 ['product-1', 'product-4'],
                 $this->fetchNames(
                     Product::select()
-                        ->whereGroup(fn (Query $query) => $query
-                            ->where('name', 'product-1')
-                            ->or()
-                            ->whereGroup(fn (Query $query) => $query
-                                ->where('id', 2, '>')
-                                ->whereGroup(fn (Query $query) => $query->where('name', 'product-5')->or()->where('name', 'product-4'))
-                                ->where('id', 5, '<')
-                            )
+                        ->whereGroup(
+                            fn (Query $query) => $query
+                                ->where('name', 'product-1')
+                                ->or()
+                                ->whereGroup(
+                                    fn (Query $query) => $query
+                                        ->where('id', 2, '>')
+                                        ->whereGroup(fn (Query $query) => $query->where('name', 'product-5')->or()->where('name', 'product-4'))
+                                        ->where('id', 5, '<')
+                                )
                         )
                 )
             );
@@ -557,13 +569,14 @@ class QueryTest extends TestCase
                 $this->fetchNames(
                     Product::select()
                         ->where('id', 3, '<')
-                        ->whereGroup(fn (Query $query) => $query
-                            ->whereIn('name', ['product-2'])
-                            ->or()
-                            ->whereRaw('1=0')
-                            ->or()
-                            ->whereIn('id', $this->productsManagedBy('alice'))
-                            ->where('name', 'product-1', '<>')
+                        ->whereGroup(
+                            fn (Query $query) => $query
+                                ->whereIn('name', ['product-2'])
+                                ->or()
+                                ->whereRaw('1=0')
+                                ->or()
+                                ->whereIn('id', $this->productsManagedBy('alice'))
+                                ->where('name', 'product-1', '<>')
                         )
                 )
             );
@@ -620,14 +633,15 @@ class QueryTest extends TestCase
             Query::delete('product')
                 ->where('id', 3, '>')
                 ->whereGroup(fn (Query $query) => $query->where('name', 'product-4')->or()->where('name', 'product-2'))
-                ->fetch();
+                ->fetch()
+            ;
 
             $this->assertEquals(['product-1', 'product-2', 'product-3'], $this->fetchNames(Product::select()));
         });
     }
 
     /**
-     * fetch() splits every alias on a dot to find its table, an alias written by hand has none
+     * fetch() splits every alias on a dot to find its table, an alias written by hand has none.
      */
     #[DataProvider('getDatabases')]
     public function testFetchAnAliasedExpression(Database $database)
@@ -654,7 +668,7 @@ class QueryTest extends TestCase
     }
 
     /**
-     * MySQL and SQLite both refuse an OFFSET that does not follow a LIMIT
+     * MySQL and SQLite both refuse an OFFSET that does not follow a LIMIT.
      */
     #[DataProvider('getDatabases')]
     public function testOffsetWithoutLimit(Database $database)
@@ -669,18 +683,8 @@ class QueryTest extends TestCase
         });
     }
 
-    /** @return array<string,array{QueryBuilder,string}> */
-    public static function getUpdateBuilders(): array
-    {
-        return [
-            'mysql' => [new MySQL(), '/WHERE\s+\(`product`\.id = `product_manager`\.product\)/'],
-            'pgsql' => [new Postgres(), '/WHERE\s+\("product"\.id = "product_manager"\.product\)/'],
-            'sqlite' => [new SQLite(), '/WHERE\s+\(`product`\.id = `product_manager`\.product\)/'],
-        ];
-    }
-
     /**
-     * Without any where(), the join conditions used to be written without their WHERE keyword
+     * Without any where(), the join conditions used to be written without their WHERE keyword.
      */
     #[DataProvider('getUpdateBuilders')]
     public function testUpdateWithAJoinAndNoConditionKeepsItsWhereKeyword(QueryBuilder $builder, string $expectedCondition)
@@ -690,9 +694,20 @@ class QueryTest extends TestCase
         $sql = Query::update('product')
             ->join('LEFT', 'product_manager', null, new FieldComparaison('product', 'id', '=', 'product_manager', 'product'))
             ->set('name', 'renamed', 'product')
-            ->build($database);
+            ->build($database)
+        ;
 
         $this->assertMatchesRegularExpression($expectedCondition, $sql);
+    }
+
+    /** @return array<string,array{QueryBuilder,string}> */
+    public static function getUpdateBuilders(): array
+    {
+        return [
+            'mysql' => [new MySQL(), '/WHERE\s+\(`product`\.id = `product_manager`\.product\)/'],
+            'pgsql' => [new Postgres(), '/WHERE\s+\("product"\.id = "product_manager"\.product\)/'],
+            'sqlite' => [new SQLite(), '/WHERE\s+\(`product`\.id = `product_manager`\.product\)/'],
+        ];
     }
 
     #[DataProvider('getDatabases')]
@@ -752,10 +767,11 @@ class QueryTest extends TestCase
             ->or()
             ->whereRaw('name = BRAND')
             ->or()
-            ->build($database);
+            ->build($database)
+        ;
 
         $this->assertStringContainsString('name = BRAND', $sql);
-        $this->assertDoesNotMatchRegularExpression('~\\b(OR|AND)\\s*$~', trim($sql));
+        $this->assertDoesNotMatchRegularExpression('~\b(OR|AND)\s*$~', trim($sql));
     }
 
     #[DataProvider('getDatabases')]
@@ -769,7 +785,8 @@ class QueryTest extends TestCase
                 ->where('name', 'screen')
                 ->or()
                 ->whereGroup(fn () => null)
-                ->where('name', 'mouse');
+                ->where('name', 'mouse')
+            ;
 
             $this->assertEquals(['screen', 'mouse'], $this->fetchNames($query));
         });
@@ -786,7 +803,8 @@ class QueryTest extends TestCase
                 ->where('name', 'screen')
                 ->whereGroup(fn () => null)
                 ->or()
-                ->where('name', 'mouse');
+                ->where('name', 'mouse')
+            ;
 
             $this->assertEquals(['screen', 'mouse'], $this->fetchNames($query));
         });
@@ -794,10 +812,19 @@ class QueryTest extends TestCase
 
     public function testAssocMethodsRefuseAList()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('whereAssoc() needs an associative array');
 
         Product::select()->whereAssoc(['product-1']);
+    }
+
+    /** Identifiers and operators are written into the SQL as is : only plain names may reach a builder. */
+    #[DataProvider('getInjectedIdentifiers')]
+    public function testIdentifiersMustBePlainNames(\Closure $buildQuery)
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $buildQuery();
     }
 
     /**
@@ -816,15 +843,6 @@ class QueryTest extends TestCase
             'join type' => [fn () => Product::select()->join('LEFT JOIN user ON 1=1 LEFT', 'manager')],
             'table' => [fn () => Query::select('product; DROP TABLE product')],
         ];
-    }
-
-    /** Identifiers and operators are written into the SQL as is : only plain names may reach a builder. */
-    #[DataProvider('getInjectedIdentifiers')]
-    public function testIdentifiersMustBePlainNames(\Closure $buildQuery)
-    {
-        $this->expectException(InvalidArgumentException::class);
-
-        $buildQuery();
     }
 
     #[DataProvider('getDatabases')]

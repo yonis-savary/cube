@@ -15,8 +15,8 @@ class ModelAPITest extends CubeTestCase
             'name' => 'Painting',
             'price_dollar' => 120,
         ])
-        ->assertCreated()
-        ->json()
+            ->assertCreated()
+            ->json()
         ;
 
         $this->assertIsArray($product[0]);
@@ -38,7 +38,8 @@ class ModelAPITest extends CubeTestCase
             ],
         ])
             ->assertCreated()
-            ->json();
+            ->json()
+        ;
 
         $this->assertCount(3, $products);
 

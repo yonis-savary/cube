@@ -9,7 +9,7 @@ class ProductChannel extends Channel
 {
     public function getRoute(): string
     {
-        return "/product/{id}";
+        return '/product/{id}';
     }
 
     public function authorize(array $slugs, RequestInterface $request): ?string

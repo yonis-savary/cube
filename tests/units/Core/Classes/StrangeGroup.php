@@ -8,6 +8,5 @@ class StrangeGroup
         protected Bird $bird,
         protected Dragon $dragon,
         protected Zombie $zombie
-    )
-    {}
+    ) {}
 }

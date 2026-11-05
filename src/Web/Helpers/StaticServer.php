@@ -85,9 +85,9 @@ class StaticServer extends WebAPI
     {
         if (str_ends_with(strtolower($path), '.php'))
             return true;
-
         return Bunch::fromExplode('/', $path)
-            ->any(fn (string $segment) => str_starts_with($segment, '.') && '.well-known' !== $segment);
+            ->any(fn (string $segment) => str_starts_with($segment, '.') && '.well-known' !== $segment)
+        ;
     }
 
     protected function isPathDangerous(string $path): bool
@@ -97,7 +97,6 @@ class StaticServer extends WebAPI
 
         if (!$root || !$target)
             return true;
-
         return $target !== $root
             && !str_starts_with($target, $root.DIRECTORY_SEPARATOR);
     }

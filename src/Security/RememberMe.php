@@ -2,17 +2,14 @@
 
 namespace Cube\Security;
 
-use Closure;
 use Cube\Core\Component;
-use Cube\Env\Cache;
-use Cube\Env\Storage;
-use Cube\Web\Http\Request;
-use Cube\Web\Http\Response;
 use Cube\Data\Models\Model;
-use Cube\Security\Authentication;
+use Cube\Env\Cache;
 use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\RememberMe\RememberedUser;
 use Cube\Security\RememberMe\UserRegisterConfiguration;
+use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
 use Cube\Web\Middleware;
 
 class RememberMe implements Middleware
@@ -94,7 +91,6 @@ class RememberMe implements Middleware
         // A login listener calls register() during the remember-me login too : the used token has to survive it
         if ($this->isRemembering && !$this->configuration->refreshTokenOnRemember)
             return;
-
         $userId = $user instanceof AuthenticatedUser
             ? $user->userId
             : $user->id();
@@ -110,14 +106,13 @@ class RememberMe implements Middleware
         $this->sendCookie($token, time() + $duration);
     }
 
-    public static function handle(Request $request, Closure $next): Request|Response
+    public static function handle(Request $request, \Closure $next): Request|Response
     {
         $handled = self::getInstance()->handleRequest($request);
 
         return $handled instanceof Response
             ? $handled
-            : $next($handled)
-        ;
+            : $next($handled);
     }
 
     public function forget(Request|string $requestOrToken): void
@@ -138,7 +133,7 @@ class RememberMe implements Middleware
     }
 
     // Every token carries the generation of its user when issued : a new one invalidates them all, with no token list to keep in sync
-    public function forgetUser(Model|int|string $user): void
+    public function forgetUser(int|Model|string $user): void
     {
         $userId = $user instanceof Model ? $user->id() : $user;
 
@@ -150,7 +145,6 @@ class RememberMe implements Middleware
         $entry = $this->tokens()->get(self::keyOf($token));
         if (!is_array($entry))
             return null;
-
         return $this->generationOf($entry['user']) === $entry['generation']
             ? $entry['user']
             : null;

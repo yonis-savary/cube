@@ -4,8 +4,8 @@ namespace Cube\Web\Http;
 
 use Cube\Data\Bunch;
 use Cube\Data\DataToObject;
-use Cube\Env\Logger\Logger;
 use Cube\Data\Models\Model;
+use Cube\Env\Logger\Logger;
 use Cube\Event\Events\DisplayingResponse;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Psr\Http\Message\ResponseInterface;
@@ -19,7 +19,7 @@ class Response extends HttpMessage
     protected int $statusCode;
 
     /** @var ?callable */
-    protected $displayCallback = null;
+    protected $displayCallback;
     protected bool $corsDefined = false;
 
     public function __construct(
@@ -37,7 +37,6 @@ class Response extends HttpMessage
     {
         if (is_null($content) || is_string($content))
             return new static($statusCode, $content);
-
         return static::json($content, $statusCode);
     }
 
@@ -384,7 +383,7 @@ class Response extends HttpMessage
     // RFC 6266 : a quoted ASCII fallback for old clients, then the exact UTF-8 name
     protected static function attachmentDisposition(string $filename): string
     {
-        $fallback = preg_replace('/[^\x20-\x7E]|["\\\\]/', '_', $filename);
+        $fallback = preg_replace('/[^\x20-\x7E]|["\\\]/', '_', $filename);
 
         return sprintf('attachment; filename="%s"; filename*=UTF-8\'\'%s', $fallback, rawurlencode($filename));
     }
@@ -492,12 +491,11 @@ class Response extends HttpMessage
             ob_start();
             ($callback)($this->statusCode, $this->body);
             return ob_get_clean();
-        } else {
-            return parent::getBody();
         }
+        return parent::getBody();
     }
 
-    public function withCORSHeaders(Request $request, ?array $allowedMethods=null, ?CORSConfiguration $configuration=null): static
+    public function withCORSHeaders(Request $request, ?array $allowedMethods = null, ?CORSConfiguration $configuration = null): static
     {
         $this->corsDefined = true;
 
@@ -515,10 +513,9 @@ class Response extends HttpMessage
 
         if (!$origin = $configuration->getAllowedOrigin($request->getHeader('origin')))
             return $this;
-
         $this->withHeaders([
             'Access-Control-Allow-Origin' => $origin,
-            'Access-Control-Allow-Methods' => $allowedMethods ? join(", ", $allowedMethods) : "*",
+            'Access-Control-Allow-Methods' => $allowedMethods ? join(', ', $allowedMethods) : '*',
             'Access-Control-Allow-Headers' => $configuration->allowHeaders,
             'Access-Control-Max-Age' => (string) $configuration->maxAge,
         ]);
@@ -544,7 +541,6 @@ class Response extends HttpMessage
     {
         if ($this->corsDefined)
             return $this;
-
         return $this->withCORSHeaders($request);
     }
 
@@ -552,11 +548,10 @@ class Response extends HttpMessage
     {
         if (!(new DisplayingResponse($this))->dispatch())
             return $this;
-
         if ($sendHeaders) {
             http_response_code($this->statusCode);
 
-            if (array_key_exists('cache-control', $this->headers)){
+            if (array_key_exists('cache-control', $this->headers)) {
                 header_remove('Pragma');
             }
 

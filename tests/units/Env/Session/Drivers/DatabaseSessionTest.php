@@ -10,12 +10,15 @@ use Cube\Tests\Units\Database\TestMultipleDrivers;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class DatabaseSessionTest extends TestCase
 {
     use TestMultipleDrivers;
 
     #[DataProvider('getDatabases')]
-    public function test_opening_creates_the_session_table(Database $database)
+    public function testOpeningCreatesTheSessionTable(Database $database)
     {
         $database->asGlobalInstance(function (Database $database) {
             $this->assertFalse($database->hasTable('__cube_session'));
@@ -28,7 +31,7 @@ class DatabaseSessionTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_a_written_session_is_read_back(Database $database)
+    public function testAWrittenSessionIsReadBack(Database $database)
     {
         $database->asGlobalInstance(function () {
             $handler = $this->openHandler();
@@ -46,7 +49,7 @@ class DatabaseSessionTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_validate_id_only_accepts_stored_sessions(Database $database)
+    public function testValidateIdOnlyAcceptsStoredSessions(Database $database)
     {
         $database->asGlobalInstance(function () {
             $handler = $this->openHandler();
@@ -58,7 +61,7 @@ class DatabaseSessionTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_destroy_removes_the_session(Database $database)
+    public function testDestroyRemovesTheSession(Database $database)
     {
         $database->asGlobalInstance(function () {
             $handler = $this->openHandler();
@@ -71,7 +74,7 @@ class DatabaseSessionTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_gc_removes_expired_sessions_only(Database $database)
+    public function testGcRemovesExpiredSessionsOnly(Database $database)
     {
         $database->asGlobalInstance(function () {
             $handler = $this->openHandler();
@@ -87,7 +90,7 @@ class DatabaseSessionTest extends TestCase
     }
 
     #[DataProvider('getDatabases')]
-    public function test_update_timestamp_keeps_a_session_alive(Database $database)
+    public function testUpdateTimestampKeepsASessionAlive(Database $database)
     {
         $database->asGlobalInstance(function () {
             $handler = $this->openHandler();
@@ -102,7 +105,7 @@ class DatabaseSessionTest extends TestCase
 
     /** Expiry relied on the garbage collector alone, which packaged PHP never runs : a stolen id stayed valid forever. */
     #[DataProvider('getDatabases')]
-    public function test_an_expired_session_is_refused_without_the_garbage_collector(Database $database)
+    public function testAnExpiredSessionIsRefusedWithoutTheGarbageCollector(Database $database)
     {
         $database->asGlobalInstance(function () {
             $handler = $this->openHandler();
@@ -119,7 +122,7 @@ class DatabaseSessionTest extends TestCase
 
     /** A request still running with the old id wrote it back after a logout destroyed it. */
     #[DataProvider('getDatabases')]
-    public function test_a_session_destroyed_meanwhile_is_not_written_back(Database $database)
+    public function testASessionDestroyedMeanwhileIsNotWrittenBack(Database $database)
     {
         $database->asGlobalInstance(function () {
             $this->openHandler()->write('session-id', 'logged in');
@@ -136,7 +139,7 @@ class DatabaseSessionTest extends TestCase
 
     /** The constructor resolved the global Database, whose PDO made `configuration:cache` fail on the SessionConfiguration. */
     #[DataProvider('getDatabases')]
-    public function test_a_session_configuration_can_be_cached(Database $database)
+    public function testASessionConfigurationCanBeCached(Database $database)
     {
         $database->asGlobalInstance(function (Database $database) {
             $configuration = unserialize(serialize(new SessionConfiguration(driver: new DatabaseSession())));

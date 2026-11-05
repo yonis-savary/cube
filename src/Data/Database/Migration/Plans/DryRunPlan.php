@@ -14,17 +14,20 @@ class DryRunPlan extends Plan
 {
     public function __construct(
         protected Database $database
-    ){}
+    ) {}
 
-    public static function supports(string $driver): bool {
+    public static function supports(string $driver): bool
+    {
         return false;
     }
 
     /**
-     * Create a new table
+     * Create a new table.
+     *
      * @param ModelField[] $fields
      */
-    public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
+    public function create(string $table, array $fields = [], ?string $additionnalSQL = null)
+    {
         $this->tableDiffAddTable($table);
         foreach ($fields as $field) {
             $this->addColumn($table, $field);
@@ -32,46 +35,49 @@ class DryRunPlan extends Plan
     }
 
     /**
-     * Edit existing table
+     * Edit existing table.
      */
-    public function dropTable(string $table) {
+    public function dropTable(string $table)
+    {
         if ($this->database->hasTable($table) || $this->tableDiffHasTable($table)) {
             $this->tableDiffDropTable($table);
             return true;
         }
 
-        throw new DryRunPlanException("Cannot drop table $table");
+        throw new DryRunPlanException("Cannot drop table {$table}");
     }
 
-    public function dropConstraint(string $table, string $constraintName) {
+    public function dropConstraint(string $table, string $constraintName) {}
 
-    }
-
-    protected function columnExists(string $table, string $column) {
+    protected function columnExists(string $table, string $column)
+    {
         return $this->database->hasField($table, $column) || $this->tableDiffHasField($table, $column);
     }
 
-    protected function tableExists(string $table) {
+    protected function tableExists(string $table)
+    {
         return $this->database->hasTable($table) || $this->tableDiffHasTable($table);
     }
 
-    public function dropColumn(string $table, string $column) {
+    public function dropColumn(string $table, string $column)
+    {
         if (!$this->columnExists($table, $column))
-            throw new DryRunPlanException("Cannot find $table.$column column");
+            throw new DryRunPlanException("Cannot find {$table}.{$column} column");
     }
 
     public function alterColumn(string $table, string $column, ModelField $newProperties)
     {
         if (!$this->columnExists($table, $column))
-            throw new DryRunPlanException("Cannot find $table.$column column");
+            throw new DryRunPlanException("Cannot find {$table}.{$column} column");
 
         $this->editTableField($table, $column, $newProperties);
     }
 
-    public function addColumn(string $table, ModelField $modelField) {
+    public function addColumn(string $table, ModelField $modelField)
+    {
         $column = $modelField->name;
         if ($this->columnExists($table, $column))
-            throw new DryRunPlanException("$table.$column already exists");
+            throw new DryRunPlanException("{$table}.{$column} already exists");
 
         $this->assertReferenceExists($table, $modelField);
 
@@ -82,7 +88,6 @@ class DryRunPlan extends Plan
     {
         if (!$referenceTable = $modelField->getReferenceTable())
             return;
-
         $referenceModel = $modelField->referenceModel;
         $referenceField = $modelField->referenceField;
 
@@ -93,44 +98,47 @@ class DryRunPlan extends Plan
         };
 
         if (!$exists)
-            throw new DryRunPlanException("$table.{$modelField->name} foreign key: $referenceTable.$referenceField does not exists");
+            throw new DryRunPlanException("{$table}.{$modelField->name} foreign key: {$referenceTable}.{$referenceField} does not exists");
     }
 
-    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
+    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior = null)
+    {
         if (!$this->columnExists($table, $field))
-            throw new DryRunPlanException("$table.$field does not exists");
+            throw new DryRunPlanException("{$table}.{$field} does not exists");
 
         if (!$this->columnExists($foreignTable, $foreignKey))
-            throw new DryRunPlanException("$foreignTable.$foreignKey does not exists");
+            throw new DryRunPlanException("{$foreignTable}.{$foreignKey} does not exists");
     }
 
     /**
-     * @param string[]|string $fields
+     * @param string|string[] $fields
      */
-    public function addUniqueIndex(string $table, string|array $fields) {
+    public function addUniqueIndex(string $table, array|string $fields)
+    {
         $fields = Bunch::wrap($fields)->toArray();
 
         foreach ($fields as $field) {
             if (!$this->columnExists($table, $field))
-                throw new DryRunPlanException("Unique Key : $table.$field does not exists");
+                throw new DryRunPlanException("Unique Key : {$table}.{$field} does not exists");
         }
     }
 
-    public function renameField(string $table, string $oldFieldName, string $newFieldName) {
+    public function renameField(string $table, string $oldFieldName, string $newFieldName)
+    {
         if (!$this->columnExists($table, $oldFieldName)) {
-            throw new DryRunPlanException("$table.$oldFieldName does not exists");
+            throw new DryRunPlanException("{$table}.{$oldFieldName} does not exists");
         }
 
         $this->renameTableDiffField($table, $oldFieldName, $newFieldName);
     }
 
-    public function renameTable(string $oldTableName, string $newTableName) 
+    public function renameTable(string $oldTableName, string $newTableName)
     {
         if (!$this->tableExists($oldTableName))
-            throw new DryRunPlanException("Table $oldTableName not found");
+            throw new DryRunPlanException("Table {$oldTableName} not found");
 
         if ($this->tableExists($newTableName))
-            throw new DryRunPlanException("Table $newTableName already exists");
+            throw new DryRunPlanException("Table {$newTableName} already exists");
 
         $this->renameTableDiffTable($oldTableName, $newTableName);
     }

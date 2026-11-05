@@ -21,8 +21,7 @@ class Order
         if ($table) {
             Identifier::assertName($table);
             Identifier::assertColumn($fieldOrAlias);
-        }
-        else {
+        } else {
             Identifier::assertName($fieldOrAlias);
         }
     }

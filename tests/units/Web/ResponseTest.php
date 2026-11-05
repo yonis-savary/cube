@@ -2,13 +2,13 @@
 
 namespace Cube\Tests\Units\Web;
 
+use Cube\Data\Bunch;
+use Cube\Env\Environment;
 use Cube\Env\Storage;
 use Cube\Event\Events;
 use Cube\Event\Events\DisplayingResponse;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Env\Classes\SpyLogger;
-use Cube\Data\Bunch;
-use Cube\Env\Environment;
 use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
@@ -200,7 +200,8 @@ class ResponseTest extends TestCase
     {
         $response = (new Response())
             ->withHeaders(['Vary' => 'Accept-Encoding'])
-            ->withCORSHeaders($this->fromOrigin('https://example.org'), configuration: new CORSConfiguration(['https://example.org']));
+            ->withCORSHeaders($this->fromOrigin('https://example.org'), configuration: new CORSConfiguration(['https://example.org']))
+        ;
 
         $this->assertEquals('Accept-Encoding, Origin', $response->getHeader('Vary'));
     }
@@ -278,7 +279,8 @@ class ResponseTest extends TestCase
     public function testAResponseCallbackReplacesTheBody()
     {
         $response = (new Response(StatusCode::OK, 'ignored'))
-            ->withResponseCallback(function () { echo 'from the callback'; });
+            ->withResponseCallback(function () { echo 'from the callback'; })
+        ;
 
         $this->assertEquals('from the callback', $response->getBody());
     }
@@ -296,7 +298,8 @@ class ResponseTest extends TestCase
     {
         $psrResponse = Response::ok()
             ->withCORSHeaders($this->fromOrigin('https://example.org'), ['GET'], new CORSConfiguration(['https://example.org']))
-            ->toPsrResponse();
+            ->toPsrResponse()
+        ;
 
         $this->assertEquals('GET', $psrResponse->getHeaderLine('access-control-allow-methods'));
     }
@@ -305,7 +308,8 @@ class ResponseTest extends TestCase
     {
         $psrResponse = (new Response(StatusCode::OK))
             ->withResponseCallback(function () { echo 'from the callback'; })
-            ->toPsrResponse();
+            ->toPsrResponse()
+        ;
 
         $this->assertEquals('from the callback', (string) $psrResponse->getBody());
     }

@@ -14,8 +14,6 @@ use Cube\Data\Database\Query\QueryBase;
 use Cube\Data\Database\Query\RawCondition;
 use Cube\Data\Database\Query\UpdateField;
 use Cube\Data\Models\Model;
-use Exception;
-use Throwable;
 
 abstract class QueryBuilder
 {
@@ -45,7 +43,6 @@ abstract class QueryBuilder
     {
         if (!in_array($delimiter, $this->getIdentifierDelimiters()))
             return $this->prepareString($value, false, $database);
-
         return str_replace($delimiter, $delimiter.$delimiter, (string) $value);
     }
 
@@ -60,7 +57,7 @@ abstract class QueryBuilder
         }
 
         if (is_array($value)) {
-            return "(". Bunch::wrap($value)->map(fn($v) => $this->prepareString($v, true, $database))->join(',') . ")";
+            return '('.Bunch::wrap($value)->map(fn ($v) => $this->prepareString($v, true, $database))->join(',').')';
         }
 
         if (is_object($value) && enum_exists($value::class)) {
@@ -150,7 +147,7 @@ abstract class QueryBuilder
     public function getSQLValue(mixed $value): string
     {
         return $value instanceof Query
-            ? "(" . (new static())->build($value, $this->database) . ")"
+            ? '('.(new static())->build($value, $this->database).')'
             : $this->database->build('{}', [$value]);
     }
 
@@ -170,7 +167,7 @@ abstract class QueryBuilder
     {
         $body = $this->getConditionsBody($conditions);
 
-        return $body ? "WHERE $body" : '';
+        return $body ? "WHERE {$body}" : '';
     }
 
     /**
@@ -181,8 +178,7 @@ abstract class QueryBuilder
         $body = '';
         $operator = 'AND';
 
-        foreach ($conditions as $condition)
-        {
+        foreach ($conditions as $condition) {
             if (is_string($condition)) {
                 $operator = $condition;
                 continue;
@@ -190,8 +186,7 @@ abstract class QueryBuilder
 
             if (!$stringCondition = $this->getCondition($condition))
                 continue;
-
-            $body .= $body ? " $operator $stringCondition" : $stringCondition;
+            $body .= $body ? " {$operator} {$stringCondition}" : $stringCondition;
             $operator = 'AND';
         }
 
@@ -201,8 +196,7 @@ abstract class QueryBuilder
     protected function getCondition(array|FieldComparaison|FieldCondition|RawCondition $condition): string
     {
         if (is_array($condition))
-            return ($group = $this->getConditionsBody($condition)) ? "($group)" : '';
-
+            return ($group = $this->getConditionsBody($condition)) ? "({$group})" : '';
         return match (true) {
             $condition instanceof FieldComparaison => $this->getFieldComparaison($condition),
             $condition instanceof RawCondition => $condition->expression,
@@ -289,7 +283,7 @@ abstract class QueryBuilder
             case QueryBase::SELECT: return $this->buildSelect();
             case QueryBase::UPDATE: return $this->buildUpdate();
             case QueryBase::DELETE: return $this->buildDelete();
-            default: throw new Exception("Unsupported query mode $base");
+            default: throw new \Exception("Unsupported query mode {$base}");
         }
     }
 
@@ -369,7 +363,6 @@ abstract class QueryBuilder
 
         if (!$this->query->limit)
             return sprintf("DELETE FROM %s \n%s", $table, $this->getConditions($this->query->conditions));
-
         // Without DELETE ... LIMIT, the rows are picked through their physical identifier instead
         return sprintf(
             "DELETE FROM %s WHERE %s IN (SELECT %s FROM %s \n%s \n%s \n%s)",
@@ -386,17 +379,14 @@ abstract class QueryBuilder
     /**
      * @param \Closure(Database) $callback
      */
-    public function transaction(callable $callback, Database $database): ?Throwable
+    public function transaction(callable $callback, Database $database): ?\Throwable
     {
-        try
-        {
+        try {
             $database->exec('BEGIN');
             $callback($database);
             $database->exec('COMMIT');
             return null;
-        }
-        catch (Throwable $thrown)
-        {
+        } catch (\Throwable $thrown) {
             $database->exec('ROLLBACK');
             return $thrown;
         }
@@ -405,7 +395,7 @@ abstract class QueryBuilder
     public function hasTable(string $table, Database $database): bool
     {
         // The table is probed through a failing query, which only fails when executed : dry-run mode is lifted meanwhile
-        return $database->dryRun(function() use ($database, $table) {
+        return $database->dryRun(function () use ($database, $table) {
             try {
                 $database->query("SELECT 1 FROM {$this->quote($table)} LIMIT 1");
                 return true;
@@ -418,7 +408,7 @@ abstract class QueryBuilder
     public function hasField(string $table, string $field, Database $database): bool
     {
         // The field is probed through a failing query, which only fails when executed : dry-run mode is lifted meanwhile
-        return $database->dryRun(function() use ($database, $table, $field) {
+        return $database->dryRun(function () use ($database, $table, $field) {
             try {
                 $database->query("SELECT {$this->quote($field)} FROM {$this->quote($table)} LIMIT 1");
                 return true;

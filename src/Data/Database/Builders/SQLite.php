@@ -6,7 +6,7 @@ class SQLite extends QueryBuilder
 {
     public static function supports(string $pdoDriver): bool
     {
-        return $pdoDriver === 'sqlite';
+        return 'sqlite' === $pdoDriver;
     }
 
     public function getIdentifierDelimiters(): array

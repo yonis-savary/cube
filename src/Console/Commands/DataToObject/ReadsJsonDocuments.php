@@ -14,7 +14,7 @@ trait ReadsJsonDocuments
 
     /**
      * Reads a JSON document from a file, an http(s) URL fetched with the `--header` values, or, when
-     * `$acceptsInlineJson` is set, the JSON text itself. Null means the reason was already printed
+     * `$acceptsInlineJson` is set, the JSON text itself. Null means the reason was already printed.
      *
      * @return ?array<mixed>
      */

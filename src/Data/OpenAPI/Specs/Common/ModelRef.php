@@ -13,8 +13,8 @@ trait ModelRef
     public function getRefForClass(string $modelClass): string
     {
         OpenAPIGenerationContext::getInstance()->usedModelRefs[] = $modelClass;
-        $basename = preg_replace("~.+\\\\~", "", $modelClass);
-        return "#/components/schemas/$basename";
+        $basename = preg_replace('~.+\\\\~', '', $modelClass);
+        return "#/components/schemas/{$basename}";
     }
 
     /**
@@ -23,6 +23,6 @@ trait ModelRef
     public function getRefForSchema(string $name, array $schema): string
     {
         OpenAPIGenerationContext::getInstance()->sharedSchemas[$name] = $schema;
-        return "#/components/schemas/$name";
+        return "#/components/schemas/{$name}";
     }
 }

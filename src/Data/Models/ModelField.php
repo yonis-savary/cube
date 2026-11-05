@@ -6,7 +6,6 @@ use Cube\Core\Autoloader;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
-use Exception;
 
 class ModelField
 {
@@ -44,7 +43,7 @@ class ModelField
 
     public bool $isPrimaryKey = false;
 
-    public null|Model|string $referenceModel = null;
+    public Model|string|null $referenceModel = null;
     public ?string $referenceField = null;
     public ?string $onDeleteBehavior = null;
 
@@ -56,39 +55,48 @@ class ModelField
 
     public ?bool $isUnique = null;
 
-    public static function string(string $name, ?int $maximumLength=null) {
+    public static function string(string $name, ?int $maximumLength = null)
+    {
         return (new self($name))->type(self::STRING)->maximumLength($maximumLength);
     }
 
-    public static function id(string $name="id") {
+    public static function id(string $name = 'id')
+    {
         return static::integer($name)->autoIncrement()->primaryKey();
     }
 
-    public static function integer(string $name) {
+    public static function integer(string $name)
+    {
         return (new self($name))->type(self::INTEGER);
     }
 
-    public static function float(string $name) {
+    public static function float(string $name)
+    {
         return (new self($name))->type(self::FLOAT);
     }
 
-    public static function boolean(string $name) {
+    public static function boolean(string $name)
+    {
         return (new self($name))->type(self::BOOLEAN);
     }
 
-    public static function decimal(string $name, ?int $maxiumDigits=null, ?int $precisionToTheRight=null) {
+    public static function decimal(string $name, ?int $maxiumDigits = null, ?int $precisionToTheRight = null)
+    {
         return (new self($name))->type(self::DECIMAL)->precision($maxiumDigits, $precisionToTheRight);
     }
 
-    public static function date(string $name) {
+    public static function date(string $name)
+    {
         return (new self($name))->type(self::DATE);
     }
 
-    public static function datetime(string $name) {
+    public static function datetime(string $name)
+    {
         return (new self($name))->type(self::DATETIME);
     }
 
-    public static function timestamp(string $name) {
+    public static function timestamp(string $name)
+    {
         return (new self($name))->type(self::TIMESTAMP);
     }
 
@@ -124,13 +132,13 @@ class ModelField
      * @param ?int $m Maximum number of digit
      * @param ?int $d Digits to the right of the decimal point
      */
-    public function precision(?int $m=null, ?int $d=null): self
+    public function precision(?int $m = null, ?int $d = null): self
     {
         $m ??= 10;
         $d ??= 5;
 
         if ($d > $m)
-            throw new Exception("Decimal precision to the right (d) cannot exceed the maximum number of digit (m)");
+            throw new \Exception('Decimal precision to the right (d) cannot exceed the maximum number of digit (m)');
 
         $this->decimalMaximumDigits = $m;
         $this->decimalDigitsToTheRight = $d;
@@ -167,13 +175,13 @@ class ModelField
         return $this->nullable(false);
     }
 
-    public function maximumLength(?int $maximumLength=null): self
+    public function maximumLength(?int $maximumLength = null): self
     {
         $this->maximumLength = $maximumLength;
         return $this;
     }
 
-    public function default(mixed $defaultValue): self 
+    public function default(mixed $defaultValue): self
     {
         $this->default = $defaultValue;
         $this->hasDefault = true;
@@ -200,7 +208,6 @@ class ModelField
     {
         if (!$this->referenceModel)
             return null;
-
         return Autoloader::extends($this->referenceModel, Model::class)
             ? $this->referenceModel::table()
             : $this->referenceModel;
@@ -235,7 +242,7 @@ class ModelField
             ."->type('".$this->type."')"
             .($this->isPrimaryKey ? '->primaryKey()' : '')
             .($this->autoIncrement ? '->autoIncrement()' : '')
-            .(($this->nullable && !$this->autoIncrement) ? '->nullable()' : '->notNull()' )
+            .(($this->nullable && !$this->autoIncrement) ? '->nullable()' : '->notNull()')
             .($this->isUnique ? '->unique()' : '')
             .($this->hasDefault
                 ? '->default('.var_export($this->default, true).')'
@@ -243,12 +250,11 @@ class ModelField
             .($this->referenceModel ? '->references('.$this->referenceModel."::class,'".$this->referenceField."')" : '')
             .(self::ON_DELETE_CASCADE === $this->onDeleteBehavior ? '->onDeleteCascade()' : '')
             .(self::ON_DELETE_SET_NULL === $this->onDeleteBehavior ? '->onDeleteSetNull()' : '')
-            .($this->isGenerated() ? '->generated()': '')
-            .($this->maximumLength ? '->maximumLength('.$this->maximumLength.')': '')
+            .($this->isGenerated() ? '->generated()' : '')
+            .($this->maximumLength ? '->maximumLength('.$this->maximumLength.')' : '')
             .(null !== $this->decimalMaximumDigits
                 ? '->precision('.$this->decimalMaximumDigits.', '.$this->decimalDigitsToTheRight.')'
-                : '')
-        ;
+                : '');
     }
 
     public function parse(mixed $value): mixed
@@ -260,20 +266,15 @@ class ModelField
         switch ($this->type) {
             case self::INTEGER:
                 return (int) $value;
-
             case self::FLOAT:
                 return (float) $value;
-
             case self::BOOLEAN:
                 return in_array(strtolower((string) $value), ['1', 'true', 't', 'y', 'yes', 'on']);
-
             case self::DATE:
             case self::DATETIME:
                 return new \DateTime($value);
-
             case self::TIMESTAMP:
                 return $value;
-
             default:
                 return $value;
         }
@@ -283,7 +284,6 @@ class ModelField
     {
         if (self::BOOLEAN === $this->type)
             return $this->parse($value);
-
         if (!$value instanceof \DateTimeInterface) {
             return $value;
         }
@@ -291,7 +291,7 @@ class ModelField
         return $value->format(self::DATE === $this->type ? 'Y-m-d' : 'Y-m-d H:i:s');
     }
 
-    public function toRule(?bool $forceNullable=null): Rule
+    public function toRule(?bool $forceNullable = null): Rule
     {
         $nullable = is_null($forceNullable) ? $this->nullable : $forceNullable;
 

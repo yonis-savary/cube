@@ -10,12 +10,12 @@ return new class extends Migration {
     {
         $plan->create('user_type', [
             ModelField::id(),
-            ModelField::string('label', 50)->notNull()->unique()
+            ModelField::string('label', 50)->notNull()->unique(),
         ]);
 
         $database->exec("INSERT INTO user_type (label) VALUES ('admin'), ('user'), ('guest')");
 
-        $plan->create("user", [
+        $plan->create('user', [
             ModelField::id(),
             ModelField::string('login', 50)->notNull()->unique(),
             ModelField::string('password', 100)->notNull(),

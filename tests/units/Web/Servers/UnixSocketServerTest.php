@@ -18,8 +18,10 @@ use PHPUnit\Framework\TestCase;
 use React\Http\Io\BufferedBody;
 use React\Http\Io\UploadedFile;
 use React\Http\Message\ServerRequest;
-use RuntimeException;
 
+/**
+ * @internal
+ */
 class UnixSocketServerTest extends TestCase
 {
     protected function tearDown(): void
@@ -36,7 +38,7 @@ class UnixSocketServerTest extends TestCase
 
         $router = UnixSocketServer::createRouter();
         $events->asGlobalInstance(function () use (&$router) {
-            $socketServer = new UnixSocketServer("/somepath/server.sock", $router);
+            $socketServer = new UnixSocketServer('/somepath/server.sock', $router);
             $socketServer->setup();
         });
 
@@ -67,7 +69,7 @@ class UnixSocketServerTest extends TestCase
 
     public function testAThrowingRouteAnswersAnInternalServerError()
     {
-        $server = $this->newServer(Route::get('/broken', fn () => throw new RuntimeException('boom')));
+        $server = $this->newServer(Route::get('/broken', fn () => throw new \RuntimeException('boom')));
 
         $response = $server->handle(new ServerRequest('GET', 'http://localhost/broken'));
 
@@ -77,7 +79,7 @@ class UnixSocketServerTest extends TestCase
     public function testTheServerKeepsAnsweringAfterAFailedRequest()
     {
         $server = $this->newServer(
-            Route::get('/broken', fn () => throw new RuntimeException('boom')),
+            Route::get('/broken', fn () => throw new \RuntimeException('boom')),
             Route::get('/status', fn () => Response::ok('up')),
         );
 
@@ -132,10 +134,10 @@ class UnixSocketServerTest extends TestCase
     /** `Loop::addSignal()` threw without pcntl, so the server could not start and left its socket file behind. */
     public function testTheServerStartsAndCleansUpWithoutPcntl()
     {
-        $socketPath = sys_get_temp_dir() . '/' . uniqid('cube-') . '.sock';
+        $socketPath = sys_get_temp_dir().'/'.uniqid('cube-').'.sock';
 
         $output = Shell::executeInDirectory(
-            'php -d disable_functions=pcntl_signal,pcntl_signal_dispatch,pcntl_async_signals ' . escapeshellarg(__DIR__ . '/WithoutPcntl/serve.php') . ' ' . escapeshellarg($socketPath),
+            'php -d disable_functions=pcntl_signal,pcntl_signal_dispatch,pcntl_async_signals '.escapeshellarg(__DIR__.'/WithoutPcntl/serve.php').' '.escapeshellarg($socketPath),
             __DIR__
         );
 

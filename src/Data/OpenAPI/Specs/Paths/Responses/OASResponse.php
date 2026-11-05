@@ -8,8 +8,8 @@ use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelResource;
-use Cube\Data\Models\RelationTree;
 use Cube\Data\Models\Relations\HasMany;
+use Cube\Data\Models\RelationTree;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
 use Cube\Data\OpenAPI\Attributes\Nullable;
 use Cube\Data\OpenAPI\Attributes\ObjectResponse;
@@ -19,9 +19,6 @@ use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceSchema;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Utils\Utils;
-use InvalidArgumentException;
-use ReflectionClass;
-use stdClass;
 
 class OASResponse extends AutoDataToObject
 {
@@ -30,15 +27,14 @@ class OASResponse extends AutoDataToObject
     public string $description = '';
     public array $content = [];
 
-    const VALIDATION_ERRORS_SCHEMA = [
+    public const VALIDATION_ERRORS_SCHEMA = [
         'anyOf' => [
             ['type' => 'array', 'items' => ['type' => 'string']],
             ['type' => 'object', 'additionalProperties' => ['$ref' => '#/components/schemas/ValidationErrors']],
         ],
     ];
 
-    public function __construct()
-    {}
+    public function __construct() {}
 
     public function skipOnEmpty(): array
     {
@@ -71,7 +67,7 @@ class OASResponse extends AutoDataToObject
             $ref = ['allOf' => [$ref, $this->getLoadedRelationsSchema($modelResponse->modelClass, $relationTree)]];
         }
 
-        $this->content[$modelResponse->mimeType] =  $modelResponse->isArray
+        $this->content[$modelResponse->mimeType] = $modelResponse->isArray
             ? ['schema' => ['type' => 'array', 'items' => $ref]]
             : ['schema' => $ref];
     }
@@ -100,19 +96,14 @@ class OASResponse extends AutoDataToObject
     {
         if ($schema instanceof ResourceSchema)
             return $this->getResourceSchema($schema->resourceClass, $this->getResourceExample($schema->resourceClass, $schema->with));
-
         if (is_string($schema) && Autoloader::extends($schema, ModelResource::class))
             return $this->getResourceSchema($schema, $this->getResourceExample($schema));
-
         if (is_string($schema) && Autoloader::extends($schema, Model::class))
             return ['$ref' => $this->getRefForClass($schema)];
-
-        if (!is_array($schema) || $schema === [])
+        if (!is_array($schema) || [] === $schema)
             return $this->getRawDataSchema($schema);
-
         if (Utils::isList($schema))
             return ['type' => 'array', 'items' => $this->toEncodableSchema($this->getObjectSchema($schema[0]))];
-
         return [
             'type' => 'object',
             'properties' => array_map(fn ($value) => $this->toEncodableSchema($this->getObjectSchema($value)), $schema),
@@ -130,32 +121,34 @@ class OASResponse extends AutoDataToObject
     }
 
     /**
-     * The example gives the types, the resource's #[Nullable] and #[Optional] what it cannot show
+     * The example gives the types, the resource's #[Nullable] and #[Optional] what it cannot show.
      *
      * @param class-string<ModelResource<Model,array<string,mixed>>> $resourceClass
-     * @param array<mixed> $example
+     * @param array<mixed>                                           $example
+     *
      * @return array<string,mixed>
      */
     private function getResourceSchema(string $resourceClass, array $example): array
     {
-        $resource = new ReflectionClass($resourceClass);
+        $resource = new \ReflectionClass($resourceClass);
         $nullableKeys = ($resource->getAttributes(Nullable::class)[0] ?? null)?->newInstance()->keys ?? [];
         $optionalKeys = ($resource->getAttributes(Optional::class)[0] ?? null)?->newInstance()->keys ?? [];
 
         $schema = $this->getRawDataSchema($example);
 
         $unknownKey = Bunch::wrap([...$nullableKeys, ...$optionalKeys])->diff($this->getSchemaPaths($schema))->first();
-        if ($unknownKey !== null)
-            throw new InvalidArgumentException("{$resourceClass} declares the key [{$unknownKey}], which is not in what its toArray() answers");
+        if (null !== $unknownKey)
+            throw new \InvalidArgumentException("{$resourceClass} declares the key [{$unknownKey}], which is not in what its toArray() answers");
 
         return $this->withDeclaredKeys($schema, $nullableKeys, $optionalKeys);
     }
 
     /**
-     * @param array<string,mixed>|stdClass $schema
+     * @param array<string,mixed>|\stdClass $schema
+     *
      * @return string[]
      */
-    private function getSchemaPaths(array|stdClass $schema, string $path = ''): array
+    private function getSchemaPaths(array|\stdClass $schema, string $path = ''): array
     {
         $paths = [];
         foreach ($this->getChildSchemas($schema) as $key => $child) {
@@ -167,29 +160,30 @@ class OASResponse extends AutoDataToObject
     }
 
     /**
-     * @param array<string,mixed>|stdClass $schema
-     * @param string[] $nullableKeys
-     * @param string[] $optionalKeys
-     * @return array<string,mixed>|stdClass
+     * @param array<string,mixed>|\stdClass $schema
+     * @param string[]                      $nullableKeys
+     * @param string[]                      $optionalKeys
+     *
+     * @return array<string,mixed>|\stdClass
      */
-    private function withDeclaredKeys(array|stdClass $schema, array $nullableKeys, array $optionalKeys, string $path = ''): array|stdClass
+    private function withDeclaredKeys(array|\stdClass $schema, array $nullableKeys, array $optionalKeys, string $path = ''): array|\stdClass
     {
-        if ($schema instanceof stdClass)
+        if ($schema instanceof \stdClass)
             return $schema;
-
         $children = $this->getChildSchemas($schema);
         foreach ($children as $key => $child)
             $children[$key] = $this->withDeclaredKeys($child, $nullableKeys, $optionalKeys, $this->getChildPath($path, $key));
 
-        if ($schema['type'] === 'array' && $children)
+        if ('array' === $schema['type'] && $children)
             $schema['items'] = $children['*'];
 
-        if ($schema['type'] === 'object') {
+        if ('object' === $schema['type']) {
             $schema['properties'] = $children;
             $required = Bunch::wrap(array_keys($children))
                 ->filter(fn ($key) => !in_array($this->getChildPath($path, $key), $optionalKeys, true))
                 ->values()
-                ->toArray();
+                ->toArray()
+            ;
             if ($required)
                 $schema['required'] = $required;
         }
@@ -201,14 +195,14 @@ class OASResponse extends AutoDataToObject
     }
 
     /**
-     * @param array<string,mixed>|stdClass $schema
-     * @return array<string,array<string,mixed>|stdClass>
+     * @param array<string,mixed>|\stdClass $schema
+     *
+     * @return array<string,array<string,mixed>|\stdClass>
      */
-    private function getChildSchemas(array|stdClass $schema): array
+    private function getChildSchemas(array|\stdClass $schema): array
     {
-        if ($schema instanceof stdClass)
+        if ($schema instanceof \stdClass)
             return [];
-
         return match ($schema['type']) {
             'object' => $schema['properties'],
             'array' => isset($schema['items']) ? ['*' => $schema['items']] : [],
@@ -216,16 +210,17 @@ class OASResponse extends AutoDataToObject
         };
     }
 
-    private function getChildPath(string $path, string|int $key): string
+    private function getChildPath(string $path, int|string $key): string
     {
-        return $path === '' ? (string) $key : "{$path}.{$key}";
+        return '' === $path ? (string) $key : "{$path}.{$key}";
     }
 
     /**
-     * A resource only has toArray() : its shape is read from what it answers for a model its factory made
+     * A resource only has toArray() : its shape is read from what it answers for a model its factory made.
      *
      * @param class-string<ModelResource<Model,array<string,mixed>>> $resourceClass
-     * @param string[] $with
+     * @param string[]                                               $with
+     *
      * @return array<mixed>
      */
     private function getResourceExample(string $resourceClass, array $with = []): array
@@ -235,7 +230,8 @@ class OASResponse extends AutoDataToObject
         $model = $modelClass::factory()
             ->withSeed(crc32($modelClass))
             ->with(...$with)
-            ->make();
+            ->make()
+        ;
 
         // A resource may load relations : on an empty database in dry-run mode, the example never reads a real row
         $exampleDatabase = new Database();
@@ -243,8 +239,9 @@ class OASResponse extends AutoDataToObject
     }
 
     /**
-     * @param class-string<Model> $modelClass
+     * @param class-string<Model>        $modelClass
      * @param array<string,array<mixed>> $relationTree
+     *
      * @return array<string,mixed>
      */
     private function getLoadedRelationsSchema(string $modelClass, array $relationTree): array
@@ -255,7 +252,6 @@ class OASResponse extends AutoDataToObject
         foreach ($relationTree as $name => $subtree) {
             if (!$subtree)
                 continue;
-
             $relation = $instance->{$name}();
             $subschema = $this->getLoadedRelationsSchema($relation->toModel, $subtree);
             $schema['properties'][$name] = $relation instanceof HasMany
@@ -266,7 +262,8 @@ class OASResponse extends AutoDataToObject
         return $schema;
     }
 
-    public function rawResponse(RawResponse $rawResponse) {
+    public function rawResponse(RawResponse $rawResponse)
+    {
         $this->description = $rawResponse->description ?? '';
         if ($rawResponse->isBinary()) {
             $this->content[$rawResponse->mimeType] = ['schema' => ['type' => 'string', 'format' => 'binary']];

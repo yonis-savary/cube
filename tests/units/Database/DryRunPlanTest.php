@@ -25,9 +25,20 @@ class DryRunPlanTest extends TestCase
         $this->plan->create('invoice', [ModelField::id()]);
 
         $this->agencyModel = (new class extends Model {
-            public static function table(): string { return 'billing_agency'; }
-            public static function fields(): array { return ['id' => ModelField::id()]; }
-            public static function relations(): array { return []; }
+            public static function table(): string
+            {
+                return 'billing_agency';
+            }
+
+            public static function fields(): array
+            {
+                return ['id' => ModelField::id()];
+            }
+
+            public static function relations(): array
+            {
+                return [];
+            }
         })::class;
     }
 

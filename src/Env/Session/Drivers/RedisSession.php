@@ -2,8 +2,6 @@
 
 namespace Cube\Env\Session\Drivers;
 
-use InvalidArgumentException;
-
 use function Cube\env;
 
 /** Keeps the PHP session in Redis through phpredis' own session handler ! */
@@ -18,13 +16,14 @@ class RedisSession extends PHPGlobalSession
         int $port = 6379,
         string $sameSite = 'Lax',
         ?bool $secureCookie = null,
-        #[\SensitiveParameter] ?string $password = null
+        #[\SensitiveParameter]
+        ?string $password = null
     ) {
         parent::__construct($sameSite, $secureCookie);
 
         $host ??= env('SESSION_REDIS_HOST', 'redis');
         if (!$host)
-            throw new InvalidArgumentException('$host parameter is needed (can also be configured through env SESSION_REDIS_HOST)');
+            throw new \InvalidArgumentException('$host parameter is needed (can also be configured through env SESSION_REDIS_HOST)');
 
         $this->host = $host;
         $this->port = $port;

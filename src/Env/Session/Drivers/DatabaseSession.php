@@ -6,10 +6,8 @@ use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Query;
 use Cube\Data\Models\ModelField;
-use SessionHandlerInterface;
-use SessionUpdateTimestampHandlerInterface;
 
-class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
+class DatabaseSession extends PHPGlobalSession implements \SessionHandlerInterface, \SessionUpdateTimestampHandlerInterface
 {
     /** @var array<string,true> */
     protected array $readSessions = [];
@@ -40,7 +38,6 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
         $database = $this->getDatabase();
         if ($database->hasTable($this->table))
             return;
-
         Plan::forDatabase($database)->create($this->table, [
             ModelField::string('id', 128)->primaryKey(),
             ModelField::string('payload')->notNull(),
@@ -60,14 +57,13 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
         return true;
     }
 
-    public function read(string $id): string|false
+    public function read(string $id): false|string
     {
         $query = Query::select($this->table)->selectField('payload');
         $row = $this->whereAlive($query, $id)->first($this->getDatabase());
 
         if (!$row)
             return '';
-
         $this->readSessions[$id] = true;
 
         return base64_decode($row->payload);
@@ -78,7 +74,8 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
     {
         return $query
             ->where('id', $id)
-            ->where('updated_at', time() - (int) ini_get('session.gc_maxlifetime'), '>=');
+            ->where('updated_at', time() - (int) ini_get('session.gc_maxlifetime'), '>=')
+        ;
     }
 
     public function write(string $id, string $data): bool
@@ -90,7 +87,8 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
                 ->set('payload', $payload)
                 ->set('updated_at', time())
                 ->where('id', $id)
-                ->fetch($this->getDatabase());
+                ->fetch($this->getDatabase())
+            ;
 
             return true;
         }
@@ -98,13 +96,13 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
         // Destroyed while this request ran (a logout elsewhere) : writing it back would revive it
         if (isset($this->readSessions[$id]))
             return true;
-
         $this->destroy($id);
 
         Query::insert($this->table)
             ->insertField(['id', 'payload', 'updated_at'])
             ->values([$id, $payload, time()])
-            ->fetch($this->getDatabase());
+            ->fetch($this->getDatabase())
+        ;
 
         return true;
     }
@@ -113,14 +111,15 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
     {
         Query::delete($this->table)
             ->where('id', $id)
-            ->fetch($this->getDatabase());
+            ->fetch($this->getDatabase())
+        ;
 
         return true;
     }
 
-    public function gc(int $max_lifetime): int|false
+    public function gc(int $max_lifetime): false|int
     {
-        $expired = fn(Query $query) => $query->where('updated_at', time() - $max_lifetime, '<');
+        $expired = fn (Query $query) => $query->where('updated_at', time() - $max_lifetime, '<');
 
         $database = $this->getDatabase();
 
@@ -133,7 +132,8 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
     public function validateId(string $id): bool
     {
         return $this->whereAlive(Query::select($this->table)->selectField('id'), $id)
-            ->exists($this->getDatabase());
+            ->exists($this->getDatabase())
+        ;
     }
 
     public function updateTimestamp(string $id, string $data): bool
@@ -141,7 +141,8 @@ class DatabaseSession extends PHPGlobalSession implements SessionHandlerInterfac
         Query::update($this->table)
             ->set('updated_at', time())
             ->where('id', $id)
-            ->fetch($this->getDatabase());
+            ->fetch($this->getDatabase())
+        ;
 
         return true;
     }

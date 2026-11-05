@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Data\Models\ModelGenerator;
 

@@ -6,31 +6,35 @@ use Cube\Data\Database\Database;
 use Cube\Data\Database\Migration\Migration;
 use Cube\Data\Database\Migration\Plan;
 use Cube\Data\Database\Migration\Plans\Exceptions\DryRunPlanException;
-use Cube\Data\Models\ModelField;
 use Cube\Data\Models\Model;
+use Cube\Data\Models\ModelField;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class MigrationTest extends TestCase
 {
     use TestMultipleDrivers;
+
     protected function getDatabasePlan(Database $database): Plan
     {
         return Plan::forDatabase($database);
     }
 
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testBasicCreation(Database $database)
     {
         $migration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->create("my_users", [
+                $plan->create('my_users', [
                     ModelField::id(),
-                    ModelField::string("username", 50)->unique(),
-                    ModelField::string("password", 150),
-                    ModelField::string("bio"),
-                    ModelField::timestamp("last_login")
+                    ModelField::string('username', 50)->unique(),
+                    ModelField::string('password', 150),
+                    ModelField::string('bio'),
+                    ModelField::timestamp('last_login'),
                 ]);
                 $plan->create('user_log', [
                     ModelField::id(),
@@ -42,30 +46,41 @@ class MigrationTest extends TestCase
 
         $plan = $this->getDatabasePlan($database);
         $thrown = $migration->execute($plan, $database);
-        
+
         $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
 
-        $this->assertTrue($database->hasTable("my_users"));
-        $this->assertTrue($database->hasField("my_users", "id"));
-        $this->assertTrue($database->hasField("my_users", "username"));
-        $this->assertTrue($database->hasField("my_users", "password"));
-        $this->assertTrue($database->hasField("my_users", "bio"));
-        $this->assertTrue($database->hasField("my_users", "last_login"));
+        $this->assertTrue($database->hasTable('my_users'));
+        $this->assertTrue($database->hasField('my_users', 'id'));
+        $this->assertTrue($database->hasField('my_users', 'username'));
+        $this->assertTrue($database->hasField('my_users', 'password'));
+        $this->assertTrue($database->hasField('my_users', 'bio'));
+        $this->assertTrue($database->hasField('my_users', 'last_login'));
 
-        $this->assertTrue($database->hasTable("user_log"));
-        $this->assertTrue($database->hasField("user_log", "id"));
-        $this->assertTrue($database->hasField("user_log", "user_id"));
-        $this->assertTrue($database->hasField("user_log", "log_datetime"));
+        $this->assertTrue($database->hasTable('user_log'));
+        $this->assertTrue($database->hasField('user_log', 'id'));
+        $this->assertTrue($database->hasField('user_log', 'user_id'));
+        $this->assertTrue($database->hasField('user_log', 'log_datetime'));
     }
 
     /** A reference given as a Model class failed the dry run and was written as is in the REFERENCES clause. */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testAReferenceCanNameAModelClass(Database $database)
     {
         $reviewTarget = new class extends Model {
-            public static function table(): string { return 'review_target'; }
-            public static function fields(): array { return []; }
-            public static function relations(): array { return []; }
+            public static function table(): string
+            {
+                return 'review_target';
+            }
+
+            public static function fields(): array
+            {
+                return [];
+            }
+
+            public static function relations(): array
+            {
+                return [];
+            }
         };
 
         $migration = new class($reviewTarget::class) extends Migration {
@@ -88,7 +103,7 @@ class MigrationTest extends TestCase
     }
 
     /** create(), addColumn() and the rename methods wrote names between delimiters without doubling the delimiter itself. */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testNamesHoldingTheDelimiterAreEscaped(Database $database)
     {
         $delimiter = 'pgsql' === $database->getDriver() ? '"' : '`';
@@ -103,44 +118,44 @@ class MigrationTest extends TestCase
         $this->assertFalse($database->hasTable('odd'));
     }
 
-    #[ DataProvider('getDatabases') ]
-    public function testSimpleDrop(Database $database) 
+    #[DataProvider('getDatabases')]
+    public function testSimpleDrop(Database $database)
     {
         $migration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->create("my_users");
+                $plan->create('my_users');
             }
 
             public function down(Plan $plan, Database $database)
             {
-                $plan->dropTable("my_users");
+                $plan->dropTable('my_users');
             }
         };
 
         $plan = $this->getDatabasePlan($database);
 
         $migration->execute($plan, $database);
-        $this->assertTrue($database->hasTable("my_users"));
+        $this->assertTrue($database->hasTable('my_users'));
 
         $migration->down($plan, $database);
-        $this->assertFalse($database->hasTable("my_users"));
+        $this->assertFalse($database->hasTable('my_users'));
     }
 
-    #[ DataProvider('getDatabases') ]
-    public function testRenameTable(Database $database) 
+    #[DataProvider('getDatabases')]
+    public function testRenameTable(Database $database)
     {
         $firstMigration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->create("my_users");
+                $plan->create('my_users');
             }
         };
 
         $secondMigration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->renameTable("my_users", "users_backup");
+                $plan->renameTable('my_users', 'users_backup');
             }
         };
 
@@ -148,24 +163,24 @@ class MigrationTest extends TestCase
 
         $error = $firstMigration->execute($plan, $database);
         $this->assertNull($error);
-        $this->assertTrue($database->hasTable("my_users"));
-        $this->assertFalse($database->hasTable("users_backup"));
+        $this->assertTrue($database->hasTable('my_users'));
+        $this->assertFalse($database->hasTable('users_backup'));
 
         $error = $secondMigration->execute($plan, $database);
         $this->assertNull($error);
-        $this->assertFalse($database->hasTable("my_users"));
-        $this->assertTrue($database->hasTable("users_backup"));
+        $this->assertFalse($database->hasTable('my_users'));
+        $this->assertTrue($database->hasTable('users_backup'));
     }
 
-    #[ DataProvider('getDatabases') ]
-    public function testRenameField(Database $database) 
+    #[DataProvider('getDatabases')]
+    public function testRenameField(Database $database)
     {
         $firstMigration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->create("my_users", [
+                $plan->create('my_users', [
                     ModelField::id(),
-                    ModelField::string("username", 50)->unique(),
+                    ModelField::string('username', 50)->unique(),
                 ]);
             }
         };
@@ -173,25 +188,24 @@ class MigrationTest extends TestCase
         $secondMigration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->renameField("my_users", "username", "login");
+                $plan->renameField('my_users', 'username', 'login');
             }
         };
 
         $plan = $this->getDatabasePlan($database);
 
         $firstMigration->execute($plan, $database);
-        $this->assertTrue($database->hasField("my_users", "username"));
-        $this->assertFalse($database->hasField("my_users", "login"));
+        $this->assertTrue($database->hasField('my_users', 'username'));
+        $this->assertFalse($database->hasField('my_users', 'login'));
 
         $secondMigration->execute($plan, $database);
-        $this->assertFalse($database->hasField("my_users", "username"));
-        $this->assertTrue($database->hasField("my_users", "login"));
+        $this->assertFalse($database->hasField('my_users', 'username'));
+        $this->assertTrue($database->hasField('my_users', 'login'));
     }
-
 
     /**
      * With some DBMS such as MySQL, we cannot put CREATE TABLE
-     * statements in transaction and rollback them :(
+     * statements in transaction and rollback them :(.
      *
      * To improve safety, a DryRun migration plan was added to
      * perform some checks before actually running the migratin
@@ -199,17 +213,17 @@ class MigrationTest extends TestCase
      * In this test, we make a migration that create a table (with no error)
      * and then try to rename something that does not exists
      */
-    #[ DataProvider('getDatabases') ]
-    public function testTransactionWorksWithCreateTable(Database $database) 
+    #[DataProvider('getDatabases')]
+    public function testTransactionWorksWithCreateTable(Database $database)
     {
         $migration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->create("should_not_be_created", [
-                    ModelField::id()
+                $plan->create('should_not_be_created', [
+                    ModelField::id(),
                 ]);
 
-                $plan->renameTable("SomeThingThatDontExists", "SomeDummyName");
+                $plan->renameTable('SomeThingThatDontExists', 'SomeDummyName');
             }
         };
         $plan = $this->getDatabasePlan($database);
@@ -217,19 +231,19 @@ class MigrationTest extends TestCase
         $thrown = $migration->execute($plan, $database);
 
         $this->assertInstanceOf(DryRunPlanException::class, $thrown);
-        $this->assertFalse($database->hasTable("should_not_be_created"));
+        $this->assertFalse($database->hasTable('should_not_be_created'));
     }
 
-    #[ DataProvider('getDatabases') ]
-    public function testAlterTable(Database $database) 
+    #[DataProvider('getDatabases')]
+    public function testAlterTable(Database $database)
     {
         $firstMigration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
-                $plan->create("order_detail", [
+                $plan->create('order_detail', [
                     ModelField::id(),
                     ModelField::decimal('unit_price', 10, 5),
-                    ModelField::integer('quantity')
+                    ModelField::integer('quantity'),
                 ]);
             }
         };
@@ -254,11 +268,7 @@ class MigrationTest extends TestCase
         $this->assertNull($error);
     }
 
-
-
-
-
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testUniqueKeyConstraint(Database $database)
     {
         $migration = new class extends Migration {
@@ -290,22 +300,21 @@ class MigrationTest extends TestCase
 
         $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
 
-        $this->assertTrue($database->hasTable("agency"));
-        $this->assertTrue($database->hasField("agency", "id"));
-        $this->assertTrue($database->hasField("agency", "name"));
-        $this->assertTrue($database->hasField("agency", "active"));
+        $this->assertTrue($database->hasTable('agency'));
+        $this->assertTrue($database->hasField('agency', 'id'));
+        $this->assertTrue($database->hasField('agency', 'name'));
+        $this->assertTrue($database->hasField('agency', 'active'));
 
-        $this->assertTrue($database->hasTable("user_agency"));
-        $this->assertTrue($database->hasField("user_agency", "app_user"));
-        $this->assertTrue($database->hasField("user_agency", "agency"));
-
+        $this->assertTrue($database->hasTable('user_agency'));
+        $this->assertTrue($database->hasField('user_agency', 'app_user'));
+        $this->assertTrue($database->hasField('user_agency', 'agency'));
     }
 
     /**
      * MySQL concatenated the quoted default into a template holding placeholders : a `{}` inside
-     * the default was taken for one of them
+     * the default was taken for one of them.
      */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testAlterColumnKeepsADefaultHoldingBraces(Database $database)
     {
         if ('sqlite' === $database->getDriver())
@@ -330,9 +339,9 @@ class MigrationTest extends TestCase
     }
 
     /**
-     * PostgreSQL has no DATETIME type, create() maps it to TIMESTAMP but alterColumn() does not
+     * PostgreSQL has no DATETIME type, create() maps it to TIMESTAMP but alterColumn() does not.
      */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testAlterColumnToDatetime(Database $database)
     {
         $migration = new class extends Migration {
@@ -352,9 +361,9 @@ class MigrationTest extends TestCase
     }
 
     /**
-     * The PostgreSQL plan sends an `ALTER COLUMN` without any action for a unique field
+     * The PostgreSQL plan sends an `ALTER COLUMN` without any action for a unique field.
      */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testAlterColumnToUnique(Database $database)
     {
         $migration = new class extends Migration {
@@ -374,7 +383,7 @@ class MigrationTest extends TestCase
     }
 
     /** The SQLite plan only logged a warning, although SQLite creates an index on an existing table */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testAddUniqueIndexRefusesDuplicates(Database $database)
     {
         $plan = $this->getDatabasePlan($database);
@@ -391,7 +400,7 @@ class MigrationTest extends TestCase
     }
 
     /** The SQLite plan wrote its foreign keys without their ON DELETE clause */
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testForeignKeysApplyTheirDeleteBehavior(Database $database)
     {
         $plan = $this->getDatabasePlan($database);

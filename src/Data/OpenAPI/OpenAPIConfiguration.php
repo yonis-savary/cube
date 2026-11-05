@@ -14,15 +14,14 @@ class OpenAPIConfiguration extends ConfigurationElement
      */
     public function __construct(
         public ?string $outputFile = null,
-        public string $title = "Application",
-        public string $version = "0.0.1",
-        public ?OpenApiAuthScheme $authenticationScheme=null,
+        public string $title = 'Application',
+        public string $version = '0.0.1',
+        public ?OpenApiAuthScheme $authenticationScheme = null,
         public int $jsonFlags = JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR,
         public bool $displayLogs = true,
-    )
-    {
+    ) {
         $this->outputFile = $this->outputFile
             ? Path::relative($this->outputFile)
-            : Storage::getInstance()->path("openapi.json");
+            : Storage::getInstance()->path('openapi.json');
     }
 }

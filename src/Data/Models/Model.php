@@ -6,25 +6,24 @@ use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
-use Cube\Event\EventDispatcher;
-use Cube\Web\Http\Request;
-use Cube\Web\Http\Rules\Param;
 use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Exceptions\MissingModelPrimaryKeyException;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
 use Cube\Data\Models\Relations\Relation;
 use Cube\Env\Logger\Logger;
+use Cube\Event\EventDispatcher;
 use Cube\Utils\Utils;
+use Cube\Web\Http\Request;
 use Cube\Web\Http\Rules\ObjectParam;
-use InvalidArgumentException;
+use Cube\Web\Http\Rules\Param;
 
 abstract class Model extends EventDispatcher
 {
     public object $data;
     public object $original;
 
-    /** @var array<string,Model|Model[]|null> */
+    /** @var array<string,null|Model|Model[]> */
     public array $references = [];
 
     protected bool $persisted = false;
@@ -44,18 +43,20 @@ abstract class Model extends EventDispatcher
         $this->completeModelDataWithRelations(array_diff_key($data, $modelData), $relationAccumulator);
     }
 
-    protected function getAttributeDefaultValue(string $name): mixed {
-        throw new \RuntimeException("Either ".static::class." does not have a {$name} attribute, or a relation needs to be loaded");
+    protected function getAttributeDefaultValue(string $name): mixed
+    {
+        throw new \RuntimeException('Either '.static::class." does not have a {$name} attribute, or a relation needs to be loaded");
     }
 
-    protected function allowNonTableAttributeSet(): bool {
+    protected function allowNonTableAttributeSet(): bool
+    {
         return false;
     }
 
     public function __set(string $name, mixed $value)
     {
         if (!static::hasField($name) && !$this->allowNonTableAttributeSet()) {
-            throw new InvalidArgumentException(static::class." does not have a [{$name}] field, use merge() to ignore the keys a model does not hold");
+            throw new \InvalidArgumentException(static::class." does not have a [{$name}] field, use merge() to ignore the keys a model does not hold");
         }
 
         $this->data->{$name} = $value;
@@ -103,7 +104,7 @@ abstract class Model extends EventDispatcher
     /**
      * @return Query<static>
      */
-    public static function select(array $with=[]): Query
+    public static function select(array $with = []): Query
     {
         $table = static::table();
         $query = Query::select($table)->withBaseModel(static::class);
@@ -134,7 +135,8 @@ abstract class Model extends EventDispatcher
         static::update()
             ->where($primaryKey, $id)
             ->setAssoc($knownFields)
-            ->fetch();
+            ->fetch()
+        ;
 
         return static::find($id);
     }
@@ -142,7 +144,7 @@ abstract class Model extends EventDispatcher
     public function patch(array $data): void
     {
         foreach ($data as $key => $value) {
-            $this->$key = $value;
+            $this->{$key} = $value;
         }
         $this->save();
     }
@@ -176,7 +178,7 @@ abstract class Model extends EventDispatcher
     }
 
     /** @return Model[] */
-    protected static function modelsOf(Model|array|null $reference): array
+    protected static function modelsOf(array|Model|null $reference): array
     {
         $models = is_array($reference)
             ? array_values($reference)
@@ -190,7 +192,8 @@ abstract class Model extends EventDispatcher
     {
         return Bunch::fromValues($this->references)
             ->flatMap(fn ($reference) => self::modelsOf($reference))
-            ->get();
+            ->get()
+        ;
     }
 
     /**
@@ -201,7 +204,7 @@ abstract class Model extends EventDispatcher
         return Query::insert(static::table())->withBaseModel(static::class);
     }
 
-    public static function last(?string $key=null, ?Database $database = null): ?static
+    public static function last(?string $key = null, ?Database $database = null): ?static
     {
         $database ??= Database::getInstance();
         $key ??= static::assertPrimaryKey(__FUNCTION__);
@@ -241,7 +244,8 @@ abstract class Model extends EventDispatcher
         $database ??= Database::getInstance();
         $query = static::select($with)
             ->whereAssoc($conditions, static::table())
-            ->limit(1);
+            ->limit(1)
+        ;
 
         if ($model = $query->fetch($database)[0] ?? false) {
             $model->loadMissing(...$with);
@@ -251,7 +255,7 @@ abstract class Model extends EventDispatcher
         return null;
     }
 
-    public static function toObjectParam(bool $nullable=false, bool $withRelations=true): ObjectParam
+    public static function toObjectParam(bool $nullable = false, bool $withRelations = true): ObjectParam
     {
         $instance = new static();
 
@@ -268,7 +272,8 @@ abstract class Model extends EventDispatcher
                 : null;
 
             $rules[$field->name] = $field->toRule($forceNullable)
-                ->optional($field->nullable || $field->hasDefault || $forceNullable);
+                ->optional($field->nullable || $field->hasDefault || $forceNullable)
+            ;
         }
 
         if ($withRelations) {
@@ -293,11 +298,12 @@ abstract class Model extends EventDispatcher
         }
 
         return Param::object($rules, $nullable)
-            ->withTransformer(fn($data) => $data ? new static($data): null);
+            ->withTransformer(fn ($data) => $data ? new static($data) : null)
+        ;
     }
 
     /**
-     * Shape of the model once read : `select()` answers every field, so each one is required
+     * Shape of the model once read : `select()` answers every field, so each one is required.
      */
     public static function toResponseObjectParam(): ObjectParam
     {
@@ -319,10 +325,9 @@ abstract class Model extends EventDispatcher
         $database ??= Database::getInstance();
 
         if (!$model = self::findWhere($data, $with, $database))
-            return  self::insertArray(array_merge($data, $extrasProperties), $database);
-
+            return self::insertArray(array_merge($data, $extrasProperties), $database);
         foreach ($extrasProperties as $key => $value)
-            $model->$key = $value;
+            $model->{$key} = $value;
 
         return $model->save($database);
     }
@@ -364,7 +369,7 @@ abstract class Model extends EventDispatcher
         return new static($validated);
     }
 
-    public static function fromRequest(Request $request, array $forcedAttributes=[], bool $forbidsPrimaryKey=true, array $forbiddenAttributes=[]): static
+    public static function fromRequest(Request $request, array $forcedAttributes = [], bool $forbidsPrimaryKey = true, array $forbiddenAttributes = []): static
     {
         $pk = static::primaryKey();
         $rule = static::toObjectParam();
@@ -376,11 +381,11 @@ abstract class Model extends EventDispatcher
 
         $validation = $rule->validate($request);
         if (!$validation->isValid() || !$model = $validation->getResult()) {
-            throw new InvalidArgumentException('Could not build a '.static::class.' out of the given request, validate it before calling fromRequest()');
+            throw new \InvalidArgumentException('Could not build a '.static::class.' out of the given request, validate it before calling fromRequest()');
         }
 
         foreach ($forcedAttributes as $key => $value) {
-            $model->$key = $value;
+            $model->{$key} = $value;
         }
 
         return $model;
@@ -395,7 +400,7 @@ abstract class Model extends EventDispatcher
             $relationModel = $relation->toModel;
 
             if ($relation instanceof HasOne) {
-                $accumulatorKey = $relation->fromModel . ':' . $relationKey;
+                $accumulatorKey = $relation->fromModel.':'.$relationKey;
                 if (str_contains($relationAccumulator, $accumulatorKey)) {
                     continue;
                 }
@@ -405,7 +410,7 @@ abstract class Model extends EventDispatcher
                     $relation->bind($oneModel);
                 }
             } elseif ($relation instanceof HasMany) {
-                $accumulatorKey = $relation->fromModel . ':' . $relationKey;
+                $accumulatorKey = $relation->fromModel.':'.$relationKey;
                 if (str_contains($relationAccumulator, $accumulatorKey)) {
                     continue;
                 }
@@ -434,7 +439,7 @@ abstract class Model extends EventDispatcher
             throw new \InvalidArgumentException('$model must extends Model');
         }
 
-        # Two line syntax is needed, this function returns a reference
+        // Two line syntax is needed, this function returns a reference
         $this->references[$referenceName] ??= new $class();
 
         return $this->references[$referenceName];
@@ -459,10 +464,8 @@ abstract class Model extends EventDispatcher
     {
         if (array_key_exists($name, $this->references))
             return $this->references[$name];
-
         if (property_exists($this->data, $name))
             return $this->data->{$name};
-
         return $this->getAttributeDefaultValue($name);
     }
 
@@ -475,8 +478,7 @@ abstract class Model extends EventDispatcher
 
         $data = (array) $this->data;
         $array = [];
-        foreach ($data as $name => $value)
-        {
+        foreach ($data as $name => $value) {
             $field = $fields[$name] ?? new ModelField($name);
             $array[$name] = $field->format($value);
         }
@@ -488,14 +490,11 @@ abstract class Model extends EventDispatcher
     {
         $array = $this->dataToArray();
 
-        foreach ($this->references as $key => $modelOrCollection)
-        {
-            $array[$key] = match(true) {
-                is_array($modelOrCollection) =>
-                    Bunch::wrap($modelOrCollection)->map(fn(Model $model) => $model->toArray())->toArray(),
+        foreach ($this->references as $key => $modelOrCollection) {
+            $array[$key] = match (true) {
+                is_array($modelOrCollection) => Bunch::wrap($modelOrCollection)->map(fn (Model $model) => $model->toArray())->toArray(),
 
-                ($modelOrCollection instanceof Model) =>
-                    $modelOrCollection->toArray(),
+                ($modelOrCollection instanceof Model) => $modelOrCollection->toArray(),
 
                 default => null
             };
@@ -520,11 +519,10 @@ abstract class Model extends EventDispatcher
         return new HasMany($relationName, $this::class, $fromColumn, $toModel, $toColumn, $this);
     }
 
-    protected function loadTree(array $tree, bool $skipLoaded=false)
+    protected function loadTree(array $tree, bool $skipLoaded = false)
     {
         $modelRelations = static::relations();
-        foreach ($tree as $relation => $subtree)
-        {
+        foreach ($tree as $relation => $subtree) {
             if (!in_array($relation, $modelRelations, true)) {
                 Logger::getInstance()->error('Cannot load {relation} on model {model}', ['relation' => $relation, 'model' => static::class]);
                 continue;
@@ -536,7 +534,6 @@ abstract class Model extends EventDispatcher
 
             if (!count($subtree))
                 continue;
-
             $relationInstance = &$this->references[$relation];
 
             foreach (self::modelsOf($relationInstance) as $child)
@@ -566,7 +563,7 @@ abstract class Model extends EventDispatcher
      */
     public function isLoaded(string $relation): bool
     {
-        $relationTree= (new RelationTree($relation))->getTree();
+        $relationTree = (new RelationTree($relation))->getTree();
         return $this->isTreeLoaded($relationTree);
     }
 
@@ -575,13 +572,12 @@ abstract class Model extends EventDispatcher
      */
     protected function isTreeLoaded(array $tree): bool
     {
-        foreach ($tree as $relation => $subtree)
-        {
+        foreach ($tree as $relation => $subtree) {
             if (!array_key_exists($relation, $this->references))
                 return false;
-
             $areAllLoaded = Bunch::wrap(self::modelsOf($this->references[$relation]))
-                ->all(fn (Model $child) => $child->isTreeLoaded($subtree));
+                ->all(fn (Model $child) => $child->isTreeLoaded($subtree))
+            ;
 
             if (!$areAllLoaded)
                 return false;
@@ -617,7 +613,8 @@ abstract class Model extends EventDispatcher
 
         static::delete()
             ->whereAssoc($data)
-            ->first($database);
+            ->first($database)
+        ;
 
         $this->persisted = false;
     }
@@ -656,18 +653,14 @@ abstract class Model extends EventDispatcher
         $newInstance = new static();
         $newInstance->data = clone $this->data;
 
-        foreach ($this->references as $refName => $referenceObject)
-        {
+        foreach ($this->references as $refName => $referenceObject) {
             /** @var Relation $relation */
             $relation = $newInstance->{$refName}();
 
-            if ($relation instanceof HasMany)
-            {
+            if ($relation instanceof HasMany) {
                 foreach ($referenceObject as $model)
                     $relation->bind($model->replicate());
-            }
-            elseif ($relation instanceof HasOne && $referenceObject)
-            {
+            } elseif ($relation instanceof HasOne && $referenceObject) {
                 $relation->bind($referenceObject->replicate());
             }
         }
@@ -694,10 +687,8 @@ abstract class Model extends EventDispatcher
 
             if ($field?->isGenerated())
                 continue;
-
             if (property_exists($this->original, $key) && $this->original->{$key} === $value)
                 continue;
-
             $patch[$key] = $field?->format($value) ?? $value;
         }
 
@@ -707,7 +698,8 @@ abstract class Model extends EventDispatcher
             static::update()
                 ->where($primaryKey, $this->original->{$primaryKey})
                 ->setAssoc($patch)
-                ->fetch($database);
+                ->fetch($database)
+            ;
         }
 
         $this->markAsOriginal();
@@ -722,17 +714,16 @@ abstract class Model extends EventDispatcher
         foreach (static::fields() as $name => $field) {
             if (!$field->isInsertable() || $field->isGenerated() || !isset($this->data->{$name}))
                 continue;
-
             $data[$name] = $field->format($this->data->{$name});
         }
 
         if (!count($data))
             return;
-
         static::insert()
             ->insertField(array_keys($data))
             ->values(array_values($data))
-            ->fetch($database);
+            ->fetch($database)
+        ;
 
         $this->persisted = true;
 
@@ -747,19 +738,21 @@ abstract class Model extends EventDispatcher
     }
 
     /**
-     * Allow the modification of multiple keys at once through an assoc array
+     * Allow the modification of multiple keys at once through an assoc array.
+     *
      * @param array|Request $assocData Associative array to merge with, it a Request is given `validated()` is used
      */
-    public function merge(array|Request $assocData): self {
+    public function merge(array|Request $assocData): self
+    {
         if ($assocData instanceof Request)
             $assocData = $assocData->validated();
 
         if (!Utils::isAssoc($assocData))
-            throw new InvalidArgumentException('Given $assocData must be an associative array, got a list.');
+            throw new \InvalidArgumentException('Given $assocData must be an associative array, got a list.');
 
         foreach ($assocData as $key => $value) {
             if ($this->hasField($key))
-                $this->$key = $value;
+                $this->{$key} = $value;
         }
 
         return $this;

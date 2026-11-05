@@ -13,10 +13,15 @@ interface CacheDriverInterface
     public const MONTH = self::DAY * 31;
 
     public function initialize();
+
     public function get(string $key): mixed;
+
     public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null);
+
     public function has(string $key): bool;
+
     public function delete(string $key): void;
+
     /** @return string[] What was removed : files for a disk cache, keys otherwise */
     public function clear(string $keyPrefix = ''): array;
 

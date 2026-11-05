@@ -1,4 +1,4 @@
 <tr>
-    <td>id=<?= $row['id'] ?? 'no id' ?></td>
-    <td>label=<?= $row['label'] ?? 'no label' ?></td>
+    <td>id=<?php echo $row['id'] ?? 'no id'; ?></td>
+    <td>label=<?php echo $row['label'] ?? 'no label'; ?></td>
 </tr>

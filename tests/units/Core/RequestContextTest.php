@@ -7,8 +7,10 @@ use Cube\Core\RequestContext;
 use Cube\Tests\Units\Core\Classes\Counter;
 use Cube\Tests\Units\Core\Classes\SpecializedCounter;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
+/**
+ * @internal
+ */
 class RequestContextTest extends TestCase
 {
     protected function setUp(): void
@@ -23,14 +25,14 @@ class RequestContextTest extends TestCase
         SpecializedCounter::removeInstance();
     }
 
-    public function test_run_returns_the_callback_result()
+    public function testRunReturnsTheCallbackResult()
     {
         $context = new RequestContext();
 
         $this->assertEquals('result', $context->run(fn () => 'result'));
     }
 
-    public function test_instances_existing_before_run_are_hidden_from_the_callback()
+    public function testInstancesExistingBeforeRunAreHiddenFromTheCallback()
     {
         Counter::setInstance(new Counter('before'));
 
@@ -40,7 +42,7 @@ class RequestContextTest extends TestCase
         $this->assertFalse($hadInstance);
     }
 
-    public function test_instances_existing_before_run_are_restored_after()
+    public function testInstancesExistingBeforeRunAreRestoredAfter()
     {
         $before = new Counter('before');
         Counter::setInstance($before);
@@ -50,7 +52,7 @@ class RequestContextTest extends TestCase
         $this->assertSame($before, Counter::getInstance());
     }
 
-    public function test_instances_replaced_during_run_are_restored_after()
+    public function testInstancesReplacedDuringRunAreRestoredAfter()
     {
         $before = new Counter('before');
         Counter::setInstance($before);
@@ -60,7 +62,7 @@ class RequestContextTest extends TestCase
         $this->assertSame($before, Counter::getInstance());
     }
 
-    public function test_components_created_during_run_are_reset()
+    public function testComponentsCreatedDuringRunAreReset()
     {
         $context = new RequestContext();
 
@@ -69,7 +71,7 @@ class RequestContextTest extends TestCase
         $this->assertFalse(Counter::hasInstance());
     }
 
-    public function test_persistent_components_keep_their_instance()
+    public function testPersistentComponentsKeepTheirInstance()
     {
         $before = new Counter('before');
         Counter::setInstance($before);
@@ -81,7 +83,7 @@ class RequestContextTest extends TestCase
         $this->assertSame($before, Counter::getInstance());
     }
 
-    public function test_persistent_components_created_during_run_are_kept()
+    public function testPersistentComponentsCreatedDuringRunAreKept()
     {
         $context = new RequestContext([Counter::class]);
 
@@ -91,7 +93,7 @@ class RequestContextTest extends TestCase
     }
 
     /** The Injector was reset like any component, so a run lost every provide() binding, the framework's own included. */
-    public function test_the_injector_and_its_bindings_are_kept()
+    public function testTheInjectorAndItsBindingsAreKept()
     {
         $injector = Injector::getInstance();
 
@@ -100,7 +102,7 @@ class RequestContextTest extends TestCase
         $this->assertSame($injector, $seenInside);
     }
 
-    public function test_persistence_is_not_inherited_by_subclasses()
+    public function testPersistenceIsNotInheritedBySubclasses()
     {
         $context = new RequestContext([Counter::class]);
 
@@ -113,7 +115,7 @@ class RequestContextTest extends TestCase
         $this->assertFalse(SpecializedCounter::hasInstance());
     }
 
-    public function test_components_are_restored_even_when_the_callback_throws()
+    public function testComponentsAreRestoredEvenWhenTheCallbackThrows()
     {
         $before = new Counter('before');
         Counter::setInstance($before);
@@ -124,15 +126,15 @@ class RequestContextTest extends TestCase
             $context->run(function () {
                 Counter::setInstance(new Counter('during'));
 
-                throw new RuntimeException('boom');
+                throw new \RuntimeException('boom');
             });
-        } catch (RuntimeException $_) {
+        } catch (\RuntimeException $_) {
         }
 
         $this->assertSame($before, Counter::getInstance());
     }
 
-    public function test_nested_runs_restore_each_level()
+    public function testNestedRunsRestoreEachLevel()
     {
         $outer = new Counter('outer');
         $inner = new Counter('inner');
@@ -150,7 +152,7 @@ class RequestContextTest extends TestCase
         $this->assertSame($outer, Counter::getInstance());
     }
 
-    public function test_one_shot_runs_the_callback_with_a_fresh_context()
+    public function testOneShotRunsTheCallbackWithAFreshContext()
     {
         $received = null;
 
@@ -164,7 +166,7 @@ class RequestContextTest extends TestCase
         $this->assertInstanceOf(RequestContext::class, $received);
     }
 
-    public function test_one_shot_gives_components_back_their_previous_instance()
+    public function testOneShotGivesComponentsBackTheirPreviousInstance()
     {
         $before = new Counter('before');
         Counter::setInstance($before);
@@ -175,7 +177,7 @@ class RequestContextTest extends TestCase
         $this->assertSame($before, Counter::getInstance());
     }
 
-    public function test_one_shot_keeps_persistent_components()
+    public function testOneShotKeepsPersistentComponents()
     {
         $instance = RequestContext::oneShot(fn () => Counter::getInstance(), [Counter::class]);
 

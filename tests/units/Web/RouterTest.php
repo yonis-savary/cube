@@ -6,6 +6,7 @@ use Cube\Core\Exceptions\ResponseException;
 use Cube\Env\Cache;
 use Cube\Env\Cache\CacheConfiguration;
 use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
+use Cube\Env\Configuration;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Web\Classes\BlockingMiddleware;
@@ -13,7 +14,9 @@ use Cube\Tests\Units\Web\Classes\CountingApi;
 use Cube\Tests\Units\Web\Classes\ProductReader;
 use Cube\Tests\Units\Web\Classes\TracingMiddleware;
 use Cube\Tests\Units\Web\Examples\PriceRequest;
+use Cube\Utils\Path;
 use Cube\Web\Helpers\WebAPI;
+use Cube\Web\Http\Configuration\CORSConfiguration;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
@@ -21,10 +24,6 @@ use Cube\Web\Router\Route;
 use Cube\Web\Router\RouteGroup;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
-use Cube\Utils\Path;
-use InvalidArgumentException;
-use Cube\Env\Configuration;
-use Cube\Web\Http\Configuration\CORSConfiguration;
 use PHPUnit\Framework\TestCase;
 
 use function Cube\measureTimeOf;
@@ -83,7 +82,7 @@ class RouterTest extends TestCase
             $time = measureTimeOf(function () use (&$response, &$router, $request) {
                 $response = $router->route(new Request('GET', $request));
             });
-            /** @var \Cube\Web\Http\Response $response */
+            // @var \Cube\Web\Http\Response $response
 
             $this->assertLessThan($routingTimeMicro, $time);
 
@@ -97,21 +96,19 @@ class RouterTest extends TestCase
         $assertRoutingTakeLessThan('/zim', 2, '1');
     }
 
-
-    public function testMethodSupport() {
-
+    public function testMethodSupport()
+    {
         $router = $this->newRouter();
 
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $router->addRoutes(Route::get('/', ['InexistentClass', 'getCountResponseMethod']));
 
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $router->addRoutes(Route::get('/', [static::class, 'inexistent']));
 
         $router->addRoutes(Route::get('/', [self::class, 'getCountResponseMethod'], extras: ['count' => 1]));
         $response = $router->route(new Request('GET', '/'));
         $this->assertInstanceOf(Response::class, $response);
-
     }
 
     public function testAnUnknownPathAnswersNotFound()
@@ -526,7 +523,7 @@ class RouterTest extends TestCase
 
     public function testRequiringAMissingFileThrows()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
 
         $this->newRouter()->require('App/routes/missing.php');
     }

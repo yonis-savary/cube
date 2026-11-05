@@ -19,11 +19,11 @@ class Run extends Command
         return 'Run one scheduled task, skipped while its previous run holds the lock (routine:launch calls it)';
     }
 
-    public function getManual(): string|array
+    public function getManual(): array|string
     {
         return [
             'routine:run <class> [method] [--without-lock]',
-            '<class> [method] : App\\Reports sendWeekly, or App\\ArchiveInvoices alone for an invokable class',
+            '<class> [method] : App\Reports sendWeekly, or App\ArchiveInvoices alone for an invokable class',
             '--without-lock : run even while a previous run of the task is still running',
         ];
     }
@@ -32,8 +32,7 @@ class Run extends Command
     {
         [$class, $method] = $args->getValues() + [null, null];
         if (!$class)
-            return $this->abort('Give the task to run, for example : php do routine:run "App\\Reports" sendWeekly');
-
+            return $this->abort('Give the task to run, for example : php do routine:run "App\Reports" sendWeekly');
         $task = $method ? [$class, $method] : $class;
 
         $lock = !$args->has(long: 'without-lock');

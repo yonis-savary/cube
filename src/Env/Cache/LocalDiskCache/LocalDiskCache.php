@@ -3,7 +3,6 @@
 namespace Cube\Env\Cache\LocalDiskCache;
 
 use Cube\Env\Cache\CacheDriverInterface;
-use Cube\Env\Cache\LocalDiskCache\LocalDiskCacheElement;
 use Cube\Env\Storage;
 
 class LocalDiskCache implements CacheDriverInterface
@@ -18,7 +17,8 @@ class LocalDiskCache implements CacheDriverInterface
         $this->storage = $storage ?? Storage::getInstance()->child('Cache');
     }
 
-    public function initialize() {
+    public function initialize()
+    {
         $storage = $this->storage;
         foreach ($storage->files() as $file) {
             if (!$element = LocalDiskCacheElement::fromFile($file)) {
@@ -44,7 +44,6 @@ class LocalDiskCache implements CacheDriverInterface
         $this->storage = $data['storage'];
         $this->index = [];
     }
-
 
     public function get(string $key, mixed $default = null): mixed
     {
@@ -74,7 +73,6 @@ class LocalDiskCache implements CacheDriverInterface
     {
         if (!array_key_exists($key, $this->index))
             return false;
-
         $element = $this->index[$key];
         if ($element->isExpired()) {
             $this->delete($key);
@@ -83,7 +81,6 @@ class LocalDiskCache implements CacheDriverInterface
 
         if ($element->isLoaded() || $element->load())
             return true;
-
         unset($this->index[$key]);
         return false;
     }
@@ -92,7 +89,6 @@ class LocalDiskCache implements CacheDriverInterface
     {
         if (!array_key_exists($key, $this->index))
             return;
-
         $this->index[$key]->destroy();
         unset($this->index[$key]);
     }
@@ -114,7 +110,6 @@ class LocalDiskCache implements CacheDriverInterface
         foreach ($this->index as $key => $object) {
             if (!str_starts_with($key, $keyPrefix))
                 continue;
-
             $removed[] = $object->getFile() ?? $object->key;
             $object->destroy();
             unset($this->index[$key]);

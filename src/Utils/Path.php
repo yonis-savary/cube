@@ -68,7 +68,7 @@ class Path
     }
 
     /**
-     * Same as `Path::relative()`, but `.` and `..` are resolved inside `$reference`, which the result never leaves
+     * Same as `Path::relative()`, but `.` and `..` are resolved inside `$reference`, which the result never leaves.
      */
     public static function confined(string $path, string $reference): string
     {
@@ -135,7 +135,6 @@ class Path
 
                 if (!self::isInside($directory, $root) || strlen($root) <= strlen($matchingRoot))
                     continue;
-
                 $matchingNamespace = $namespace;
                 $matchingRoot = $root;
             }
@@ -150,11 +149,12 @@ class Path
         return Bunch::fromExplode('/', self::toRelative($directory))
             ->filter()
             ->map(fn (string $segment) => str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $segment))))
-            ->join('\\');
+            ->join('\\')
+        ;
     }
 
     /**
-     * Directory of `$namespace` under the longest matching composer PSR-4 prefix, `null` when no prefix matches
+     * Directory of `$namespace` under the longest matching composer PSR-4 prefix, `null` when no prefix matches.
      */
     public static function namespaceToPath(string $namespace): ?string
     {
@@ -165,14 +165,12 @@ class Path
         foreach (Autoloader::getClassLoader()->getPrefixesPsr4() as $prefix => $roots) {
             if (!str_starts_with($namespace, $prefix) || strlen($prefix) <= strlen($matchingPrefix))
                 continue;
-
             $matchingPrefix = $prefix;
             $matchingRoot = realpath($roots[0]) ?: $roots[0];
         }
 
         if (null === $matchingRoot)
             return null;
-
         return self::join($matchingRoot, str_replace('\\', '/', substr($namespace, strlen($matchingPrefix))));
     }
 

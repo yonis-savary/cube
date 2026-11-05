@@ -10,7 +10,7 @@ interface Relation
 
     public function isSource(string $model, string $column): bool;
 
-    public function load(): Model|array|null;
+    public function load(): array|Model|null;
 
     public function getName(): string;
 }

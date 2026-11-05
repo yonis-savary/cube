@@ -4,7 +4,6 @@ namespace Cube\Console\Commands\Routine;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Core\Autoloader;
 use Cube\Utils\Console;
 use Cube\Utils\Path;
 

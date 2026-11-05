@@ -17,18 +17,20 @@ use Cube\Tests\Units\Core\Classes\Zombie;
 use Cube\Tests\Units\Core\Contracts\CanFly;
 use Cube\Web\Controller;
 use Cube\Web\Helpers\WebAPI;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
+/**
+ * @internal
+ */
 class AutoloaderTest extends TestCase
 {
-    public function test_class_loader_is_the_composer_one()
+    public function testClassLoaderIsTheComposerOne()
     {
         $this->assertInstanceOf(ClassLoader::class, Autoloader::getClassLoader());
     }
 
-    public function test_classes_list_holds_framework_and_application_classes()
+    public function testClassesListHoldsFrameworkAndApplicationClasses()
     {
         $classes = Autoloader::classesList();
 
@@ -36,17 +38,17 @@ class AutoloaderTest extends TestCase
         $this->assertContains(Bird::class, $classes);
     }
 
-    public function test_classes_list_leaves_out_vendor_classes()
+    public function testClassesListLeavesOutVendorClasses()
     {
         $this->assertNotContains(TestCase::class, Autoloader::classesList());
     }
 
-    public function test_classes_list_holds_enums()
+    public function testClassesListHoldsEnums()
     {
         $this->assertContains(Habitat::class, Autoloader::classesList());
     }
 
-    public function test_classes_that_extends_finds_every_child()
+    public function testClassesThatExtendsFindsEveryChild()
     {
         $children = Autoloader::classesThatExtends(Common::class);
 
@@ -56,13 +58,13 @@ class AutoloaderTest extends TestCase
         $this->assertNotContains(Common::class, $children);
     }
 
-    public function test_classes_that_extends_rejects_abstracts_unless_asked()
+    public function testClassesThatExtendsRejectsAbstractsUnlessAsked()
     {
         $this->assertNotContains(Controller::class, Autoloader::classesThatExtends(WebAPI::class));
         $this->assertContains(Controller::class, Autoloader::classesThatExtends(WebAPI::class, false));
     }
 
-    public function test_classes_that_implements_finds_every_implementation()
+    public function testClassesThatImplementsFindsEveryImplementation()
     {
         $flying = Autoloader::classesThatImplements(CanFly::class);
 
@@ -71,12 +73,12 @@ class AutoloaderTest extends TestCase
         $this->assertNotContains(Zombie::class, $flying);
     }
 
-    public function test_classes_that_uses_finds_every_user_of_a_trait()
+    public function testClassesThatUsesFindsEveryUserOfATrait()
     {
         $this->assertContains(Counter::class, Autoloader::classesThatUses(Component::class));
     }
 
-    public function test_extends_predicate()
+    public function testExtendsPredicate()
     {
         $this->assertTrue(Autoloader::extends(Bird::class, Common::class));
         $this->assertFalse(Autoloader::extends(Bird::class, Dragon::class));
@@ -88,33 +90,33 @@ class AutoloaderTest extends TestCase
         $this->assertFalse(Autoloader::extends('Cube\Tests\NotAClass', Common::class));
     }
 
-    public function test_extends_predicate_accepts_an_instance()
+    public function testExtendsPredicateAcceptsAnInstance()
     {
         $this->assertTrue(Autoloader::extends(new Bird(), Common::class));
         $this->assertTrue(Autoloader::extends(new Bird(), Bird::class));
         $this->assertFalse(Autoloader::extends(new Bird(), Bird::class, false));
     }
 
-    public function test_implements_predicate()
+    public function testImplementsPredicate()
     {
         $this->assertTrue(Autoloader::implements(Bird::class, CanFly::class));
         $this->assertFalse(Autoloader::implements(Zombie::class, CanFly::class));
         $this->assertFalse(Autoloader::implements('Cube\Tests\NotAClass', CanFly::class));
     }
 
-    public function test_uses_predicate()
+    public function testUsesPredicate()
     {
         $this->assertTrue(Autoloader::uses(Counter::class, Component::class));
         $this->assertFalse(Autoloader::uses(Bird::class, Component::class));
     }
 
     /** class_uses() only reports the traits a class declares itself, not the ones of its parents. */
-    public function test_uses_predicate_sees_a_trait_inherited_from_a_parent()
+    public function testUsesPredicateSeesATraitInheritedFromAParent()
     {
         $this->assertTrue(Autoloader::uses(SpecializedCounter::class, Component::class));
     }
 
-    public function test_class_exists_answers_for_both_indexed_and_unknown_classes()
+    public function testClassExistsAnswersForBothIndexedAndUnknownClasses()
     {
         $this->assertTrue(Autoloader::classExists(Bird::class));
         $this->assertTrue(Autoloader::classExists(Autoloader::class));
@@ -126,7 +128,7 @@ class AutoloaderTest extends TestCase
      * remembers explored applications stopped working, and the lists would then grow
      * at every boot when the autoloader cache is on.
      */
-    public function test_discovered_file_lists_hold_no_duplicate()
+    public function testDiscoveredFileListsHoldNoDuplicate()
     {
         $lists = [
             'routes' => Autoloader::getRoutesFiles(),
@@ -144,7 +146,7 @@ class AutoloaderTest extends TestCase
         }
     }
 
-    public function test_classes_outside_the_explored_directories_are_left_out_until_added()
+    public function testClassesOutsideTheExploredDirectoriesAreLeftOutUntilAdded()
     {
         $this->assertNotContains(ApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
 
@@ -153,27 +155,27 @@ class AutoloaderTest extends TestCase
         $this->assertContains(ApplicationTest::class, Autoloader::classesThatExtends(TestCase::class));
     }
 
-    public function test_only_a_directory_can_be_explored()
+    public function testOnlyADirectoryCanBeExplored()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
 
         Autoloader::addToExploreMap('tests/bootstrap.php');
     }
 
-    public function test_classes_found_through_the_classmap_are_listed_by_name()
+    public function testClassesFoundThroughTheClassmapAreListedByName()
     {
         $directory = Storage::getInstance()->child(uniqid('autoloader-classmap-test-'));
         $directory->write('Invoice.php', "<?php\n\nnamespace Acme\\Billing;\n\nclass Invoice {}\n");
 
         try {
-            Autoloader::getClassLoader()->addClassMap(['Acme\\Billing\\Invoice' => $directory->path('Invoice.php')]);
+            Autoloader::getClassLoader()->addClassMap(['Acme\Billing\Invoice' => $directory->path('Invoice.php')]);
             Autoloader::addToExploreMap($directory->getRoot());
 
-            $this->assertContains('Acme\\Billing\\Invoice', Autoloader::classesList());
+            $this->assertContains('Acme\Billing\Invoice', Autoloader::classesList());
             $this->assertNotContains($directory->path('Invoice.php'), Autoloader::classesList());
 
             // The classmap entry outlives the file : loading the class now keeps later discoveries from including it
-            class_exists('Acme\\Billing\\Invoice');
+            class_exists('Acme\Billing\Invoice');
         } finally {
             unlink($directory->path('Invoice.php'));
             rmdir($directory->getRoot());
@@ -181,7 +183,7 @@ class AutoloaderTest extends TestCase
     }
 
     /** A CLI usually loads the apcu extension with apc.enable_cli=0, where every APCu call throws. */
-    public function test_a_disabled_apcu_extension_is_ignored()
+    public function testADisabledApcuExtensionIsIgnored()
     {
         if (!extension_loaded('apcu'))
             $this->markTestSkipped('Needs the apcu extension loaded');
@@ -196,7 +198,7 @@ class AutoloaderTest extends TestCase
     }
 
     /** PHP's own default is to print warnings, absolute paths included, into the response. */
-    public function test_php_errors_are_only_displayed_in_a_debug_environment()
+    public function testPhpErrorsAreOnlyDisplayedInADebugEnvironment()
     {
         $displayErrorsIn = function (string $environment): string {
             $process = new Process([
@@ -213,7 +215,7 @@ class AutoloaderTest extends TestCase
     }
 
     /** Every file of Requires/ or Routes/ was included : a README or an editor backup was printed into every response. */
-    public function test_only_php_files_are_included()
+    public function testOnlyPhpFilesAreIncluded()
     {
         $project = Storage::getInstance()->child(uniqid('autoloader-include-test-'));
         $requires = $project->child('App')->child('Requires');

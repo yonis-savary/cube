@@ -16,7 +16,7 @@ use Cube\Utils\Text;
 
 /**
  * Writes the classes described by a source, one file per class : an `Output` class is a `DataToObject`
- * built from received data, an `Input` class an `AutoDataToObject` you build and send
+ * built from received data, an `Input` class an `AutoDataToObject` you build and send.
  */
 class DtoWriter
 {
@@ -105,11 +105,13 @@ class DtoWriter
         $declarations = Bunch::wrap($optional)
             ->map(fn (DtoProperty $property) => ($types->needsDocType($property->type) ? '    /** @var '.$this->docTypeOf($class, $property, $types)." */\n" : '')
                 .'    public '.$this->nativeTypeOf($class, $property, $types).' $'.$names[$property->key].';')
-            ->toArray();
+            ->toArray()
+        ;
 
         $objectProperties = Bunch::wrap($class->properties)
             ->filter(fn (DtoProperty $property) => $property->type instanceof MapType)
-            ->map(fn (DtoProperty $property) => '            '.var_export($names[$property->key], true).',');
+            ->map(fn (DtoProperty $property) => '            '.var_export($names[$property->key], true).',')
+        ;
 
         $objectKeys = $objectProperties->count() ? Text::interpolate(Text::toFile('
                 protected function objectKeys(): array
@@ -140,11 +142,11 @@ class DtoWriter
     {
         $entries = Bunch::wrap($class->properties)
             ->filter(fn (DtoProperty $property) => $names[$property->key] !== $property->key)
-            ->map(fn (DtoProperty $property) => '            '.var_export($names[$property->key], true).' => '.var_export($property->key, true).',');
+            ->map(fn (DtoProperty $property) => '            '.var_export($names[$property->key], true).' => '.var_export($property->key, true).',')
+        ;
 
         if (!$entries->count())
             return '';
-
         return Text::interpolate(Text::toFile('
                 public static function keys(): array
                 {
@@ -163,10 +165,10 @@ class DtoWriter
     {
         if (!count($parameters))
             return '    public function __construct() {}';
-
         $tags = Bunch::wrap($parameters)
             ->filter(fn (DtoProperty $property) => $types->needsDocType($property->type))
-            ->map(fn (DtoProperty $property) => '     * @param '.$this->docTypeOf($class, $property, $types).' $'.$names[$property->key]);
+            ->map(fn (DtoProperty $property) => '     * @param '.$this->docTypeOf($class, $property, $types).' $'.$names[$property->key])
+        ;
 
         $doc = $tags->count() ? Text::interpolate(Text::toFile('
                 /**
@@ -211,7 +213,7 @@ class DtoWriter
     }
 
     /**
-     * Two keys can give the same PHP name (`first_name` and `firstName`) : the later ones get a number
+     * Two keys can give the same PHP name (`first_name` and `firstName`) : the later ones get a number.
      *
      * @return array<string,string> key => PHP name
      */
@@ -233,7 +235,7 @@ class DtoWriter
     }
 
     /**
-     * An optional `Output` property defaults to null, an optional `Input` property is left uninitialized instead
+     * An optional `Output` property defaults to null, an optional `Input` property is left uninitialized instead.
      */
     protected function isNullable(DtoClass $class, DtoProperty $property): bool
     {
@@ -249,7 +251,8 @@ class DtoWriter
         $classes = Bunch::wrap($class->properties)
             ->flatMap(fn (DtoProperty $property) => TypeRenderer::classesOf($property->type, deep: $isInput))
             ->map(fn (ClassType $type) => $this->target->fullNameOf($type))
-            ->toArray();
+            ->toArray()
+        ;
 
         $hasArrayOf = !$isInput && Bunch::wrap($class->properties)->any(fn (DtoProperty $property) => $property->type instanceof ListType && $property->type->item instanceof ClassType);
 

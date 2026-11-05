@@ -21,7 +21,8 @@ class Applications extends ConfigurationElement
         }
 
         $this->paths = Bunch::wrap($paths)
-            ->map(fn($path) => is_dir($path) ? $path: Path::relative($path))
-            ->get();
+            ->map(fn ($path) => is_dir($path) ? $path : Path::relative($path))
+            ->get()
+        ;
     }
 }

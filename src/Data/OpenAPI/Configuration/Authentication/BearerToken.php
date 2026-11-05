@@ -8,10 +8,9 @@ class BearerToken implements OpenApiAuthScheme
      * @param string $format Can be anything, is not limited by openapi official docs
      */
     public function __construct(
-        public string $format="JWT",
-        public string $componentNameInDoc="BearerAuth"
-    )
-    {}
+        public string $format = 'JWT',
+        public string $componentNameInDoc = 'BearerAuth'
+    ) {}
 
     public function getComponentName(): string
     {
@@ -23,7 +22,7 @@ class BearerToken implements OpenApiAuthScheme
         return [
             'type' => 'http',
             'scheme' => 'bearer',
-            'bearerFormat' => $this->format
+            'bearerFormat' => $this->format,
         ];
     }
 }

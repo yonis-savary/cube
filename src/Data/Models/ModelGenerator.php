@@ -3,12 +3,11 @@
 namespace Cube\Data\Models;
 
 use Cube\Core\Component;
-use Cube\Utils\Implementations;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
-use Cube\Env\Storage;
 use Cube\Data\Models\ModelGenerator\Adapters\DatabaseAdapter;
-use Cube\Data\Models\ModelGenerator\Table;
+use Cube\Env\Storage;
+use Cube\Utils\Implementations;
 use Cube\Utils\Path;
 
 class ModelGenerator
@@ -38,7 +37,8 @@ class ModelGenerator
         $relations = $adapter->getRelations();
 
         return Bunch::wrap($adapter->getTables())
-            ->map(fn($table) => $table->generateInto($destination, $namespace, $relations))
-            ->get();
+            ->map(fn ($table) => $table->generateInto($destination, $namespace, $relations))
+            ->get()
+        ;
     }
 }

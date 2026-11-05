@@ -4,7 +4,6 @@ namespace App\Commands;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Core\Autoloader;
 use Cube\Env\Storage;
 use Cube\Utils\Path;
 use Cube\Utils\Shell;

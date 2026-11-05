@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Console\Commands\Websocket;
 
@@ -18,16 +18,15 @@ class Serve extends Command
 
     public function getHelp(): string
     {
-        return "Start Websocket server connected to your application";
+        return 'Start Websocket server connected to your application';
     }
 
     public function execute(Args $args): int
     {
-        $logger = $args->has("-l", "--log")
+        $logger = $args->has('-l', '--log')
             ? new StdOutLogger()
-            : new NullLogger()
-        ;
-        Logger::withInstance($logger, fn() => Websocket::getInstance()->serve());
+            : new NullLogger();
+        Logger::withInstance($logger, fn () => Websocket::getInstance()->serve());
         return 0;
     }
 }

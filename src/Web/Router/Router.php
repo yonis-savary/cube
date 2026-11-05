@@ -4,19 +4,18 @@ namespace Cube\Web\Router;
 
 use Cube\Core\Autoloader;
 use Cube\Core\Component;
-use Cube\Data\Bunch;
-use Cube\Env\Cache;
 use Cube\Core\Exceptions\ResponseException;
 use Cube\Core\Injector;
+use Cube\Data\Bunch;
+use Cube\Env\Cache;
+use Cube\Utils\Path;
+use Cube\Web\Controller;
+use Cube\Web\Helpers\WebAPI;
 use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
-use Cube\Utils\Path;
-use Cube\Web\Controller;
-use Cube\Web\Helpers\WebAPI;
 use Cube\Web\Middleware;
-use InvalidArgumentException;
 
 class Router
 {
@@ -30,14 +29,14 @@ class Router
     protected ?Cache $cache = null;
     protected bool $routesAreLoaded = false;
 
-    /** @var WebAPI[] $apis */
+    /** @var WebAPI[] */
     protected array $apis = [];
 
     protected static function routesCache(?Cache $cache = null): Cache
     {
         $cache ??= Cache::getInstance();
 
-        return $cache->child("router");
+        return $cache->child('router');
     }
 
     public static function cleanCache(?Cache $cache = null): void
@@ -48,8 +47,7 @@ class Router
     public function __construct(
         RouterConfiguration $config,
         ?Injector $injector = null
-    )
-    {
+    ) {
         $this->injector = $injector ?? Injector::getInstance();
 
         if ($config->cached)
@@ -69,7 +67,6 @@ class Router
     {
         if ($this->routesAreLoaded)
             return;
-
         $this->routesAreLoaded = true;
         $config = $this->configuration;
 
@@ -79,27 +76,29 @@ class Router
         if ($config->loadRoutesFiles)
             $this->loadRoutesFiles();
 
-        foreach($this->apis as $api)
+        foreach ($this->apis as $api)
             $api->routes($this);
     }
 
     public function loadControllers(): void
     {
         Bunch::fromExtends(Controller::class)
-        ->forEach(fn(Controller $class) => $class->routes($this));
+            ->forEach(fn (Controller $class) => $class->routes($this))
+        ;
     }
 
     public function loadRoutesFiles(): void
     {
         Bunch::wrap(Autoloader::getRoutesFiles())
-        ->forEach(fn(string $file) => $this->require($file));
+            ->forEach(fn (string $file) => $this->require($file))
+        ;
     }
 
     public function require(string $file): void
     {
         $path = Path::relative($file);
         if (!is_file($path))
-            throw new InvalidArgumentException("Could not find routes file [{$path}]");
+            throw new \InvalidArgumentException("Could not find routes file [{$path}]");
 
         /** @var Router `$router` variable can be used in routes file */
         $router = $this;
@@ -113,44 +112,39 @@ class Router
     }
 
     /**
-     * @param Route|\Closure(Router)|null ...$routes
+     * @param null|\Closure(Router)|Route ...$routes
      */
-    public function addRoutes(Route|callable|null ...$routes): void
+    public function addRoutes(callable|Route|null ...$routes): void
     {
-        foreach ($routes as $route)
-        {
-            if ($route === null)
+        foreach ($routes as $route) {
+            if (null === $route)
                 continue;
-
             if ($route instanceof Route)
                 $this->currentGroup->addRoutes($route);
-            else
-                ($route)($this);
+            else ($route)($this);
         }
     }
 
     /**
      * @param array<class-string<Middleware>> $middlewares
-     * @param Route[]|null $routes
-     * @param \Closure(Router,RouteGroup) $function
-     * @param string[] $requires Routes files loaded into the group, see require()
+     * @param null|Route[]                    $routes
+     * @param \Closure(Router,RouteGroup)     $function
+     * @param string[]                        $requires    Routes files loaded into the group, see require()
      */
     public function group(
-        string $prefix="/",
-        array $middlewares=[],
-        array $extras=[],
-        ?array $routes=null,
-        ?callable $function=null,
-        array $requires=[]
-    ): void
-    {
-        $subGroup = new RouteGroup($prefix,$middlewares,$extras);
+        string $prefix = '/',
+        array $middlewares = [],
+        array $extras = [],
+        ?array $routes = null,
+        ?callable $function = null,
+        array $requires = []
+    ): void {
+        $subGroup = new RouteGroup($prefix, $middlewares, $extras);
 
         $parentGroup = $this->currentGroup;
         $this->currentGroup = $this->currentGroup->addSubGroup($subGroup);
 
-        if ($function)
-            ($function)($this, $this->currentGroup);
+        if ($function)($function)($this, $this->currentGroup);
 
         if ($routes)
             $this->addRoutes(...$routes);
@@ -161,11 +155,10 @@ class Router
         $this->currentGroup = $parentGroup;
     }
 
-    public function getCachedRouteForRequest(Request $request): Route|false
+    public function getCachedRouteForRequest(Request $request): false|Route
     {
         if (!$this->cache)
             return false;
-
         $route = $this->cache->get($this->getCacheKey($request), false);
 
         return $route instanceof Route && $route->match($request)
@@ -202,7 +195,7 @@ class Router
         return ($callStack)($request);
     }
 
-    public function findMatchingRoute(Request $request): Route|Response|false
+    public function findMatchingRoute(Request $request): false|Response|Route
     {
         /** @var InvalidRequestMethodException[] */
         $exceptions = [];
@@ -213,16 +206,15 @@ class Router
             return $firstRoute;
         }
 
-        $isOptionsRequest = $request->getMethod() === 'OPTIONS';
-        if (count($exceptions) || $isOptionsRequest)
-        {
+        $isOptionsRequest = 'OPTIONS' === $request->getMethod();
+        if (count($exceptions) || $isOptionsRequest) {
             $allowedMethods = Bunch::wrap($exceptions)->reduce(
-                fn($acc, $exception) => array_merge($acc, $exception->allowedMethods), []
+                fn ($acc, $exception) => array_merge($acc, $exception->allowedMethods),
+                []
             );
 
             if ($isOptionsRequest)
                 return Response::noContent()->withCORSHeaders($request, $allowedMethods);
-
             throw new InvalidRequestMethodException($request->getMethod(), $allowedMethods);
         }
 
@@ -235,8 +227,9 @@ class Router
             ->withDefaultCORSHeaders($request)
             ->withDefaultHeaders([
                 'X-Content-Type-Options' => 'nosniff',
-                ...$this->configuration->securityHeaders
-            ]);
+                ...$this->configuration->securityHeaders,
+            ])
+        ;
     }
 
     protected function resolveResponse(Request $request): Response
@@ -246,32 +239,24 @@ class Router
 
         if ($claimedResponse = $this->askApis($request))
             return $claimedResponse;
-
         if ($cachedRoute)
             return $this->callRoute($cachedRoute, $request);
-
-        try
-        {
+        try {
             $routeOrResponse = $this->findMatchingRoute($request);
-        }
-        catch(InvalidRequestMethodException $invalid)
-        {
+        } catch (InvalidRequestMethodException $invalid) {
             return Response::text($invalid->getMessage(), StatusCode::METHOD_NOT_ALLOWED);
         }
 
         if (!$routeOrResponse)
             return new Response(StatusCode::NOT_FOUND);
-
         if ($routeOrResponse instanceof Response)
             return $routeOrResponse;
-
         return $this->callRoute($routeOrResponse, $request);
     }
 
     protected function askApis(Request $request): ?Response
     {
-        foreach ($this->apis as $api)
-        {
+        foreach ($this->apis as $api) {
             if ($response = $this->askApi($api, $request))
                 return $response;
         }
@@ -281,32 +266,25 @@ class Router
 
     protected function askApi(WebAPI $api, Request $request): ?Response
     {
-        try
-        {
+        try {
             if (!$claim = $api->handle($request))
                 return null;
-
             return $this->globalizeResponse(
                 $claim instanceof Route
                     ? fn (Request $request) => $this->callRoute($claim, $request)
                     : fn () => $claim,
                 $request
             );
-        }
-        catch(ResponseException $responseException)
-        {
+        } catch (ResponseException $responseException) {
             return $responseException->response;
         }
     }
 
     protected function callRoute(Route $route, Request $request): Response
     {
-        try
-        {
+        try {
             return $route($request, $this->injector);
-        }
-        catch(ResponseException $responseException)
-        {
+        } catch (ResponseException $responseException) {
             return $responseException->response;
         }
     }

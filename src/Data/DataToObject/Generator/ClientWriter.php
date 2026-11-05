@@ -23,7 +23,7 @@ use Cube\Web\Http\Response;
 /**
  * Writes an `HttpClient` with one method per operation, and the configuration element it reads its URL
  * and credentials from. Both are named after `$name`, by default the last segment of the namespace
- * (`SpotifyClient`, `SpotifyConfiguration`)
+ * (`SpotifyClient`, `SpotifyConfiguration`).
  */
 class ClientWriter
 {
@@ -49,7 +49,6 @@ class ClientWriter
         foreach ($client->serverVariables as $variable) {
             if (!isset($enums[$variable->name]))
                 continue;
-
             $files[] = $this->target->write('', $enums[$variable->name], $this->renderEnum($enums[$variable->name], $variable));
         }
 
@@ -72,7 +71,7 @@ class ClientWriter
 
     /**
      * The configuration property holding the credential of each security scheme, after `url` : two schemes
-     * giving the same name (`api_key` and `apiKey`) get a number
+     * giving the same name (`api_key` and `apiKey`) get a number.
      *
      * @return array<string,string> scheme => property
      */
@@ -89,7 +88,7 @@ class ClientWriter
     }
 
     /**
-     * The configuration property of each server variable, after `url`
+     * The configuration property of each server variable, after `url`.
      *
      * @return array<string,string> variable => property
      */
@@ -103,7 +102,7 @@ class ClientWriter
     }
 
     /**
-     * The enum of each server variable that declares its values, `HelpdeskTenant` for `{tenant}`
+     * The enum of each server variable that declares its values, `HelpdeskTenant` for `{tenant}`.
      *
      * @return array<string,string> variable => enum name
      */
@@ -113,7 +112,6 @@ class ClientWriter
         foreach ($client->serverVariables as $variable) {
             if (!count($variable->enum))
                 continue;
-
             $enums[$variable->name] = DtoNames::unique($this->baseName().DtoNames::className($variable->name), [$this->clientName(), $this->configurationName(), ...$enums]);
         }
 
@@ -151,7 +149,8 @@ class ClientWriter
     {
         $cases = Bunch::unzip($this->enumCasesOf($variable))
             ->map(fn (array $pair) => "    case {$pair[1]} = ".var_export((string) $pair[0], true).';')
-            ->join("\n");
+            ->join("\n")
+        ;
 
         return Text::interpolate(Text::toFile('
             <?php
@@ -247,11 +246,13 @@ class ClientWriter
 
         $values = Bunch::wrap($client->serverVariables)
             ->map(fn (ServerVariable $variable) => var_export($properties[$variable->name], true).' => $configuration->'.$properties[$variable->name].(isset($enums[$variable->name]) ? '?->value' : ''))
-            ->join(', ');
+            ->join(', ')
+        ;
 
         $replacements = Bunch::wrap($client->serverVariables)
             ->map(fn (ServerVariable $variable) => var_export('{'.$variable->name.'}', true).' => $variables['.var_export($properties[$variable->name], true).']')
-            ->join(', ');
+            ->join(', ')
+        ;
 
         return Text::interpolate(Text::toFile('
                 /**
@@ -328,8 +329,7 @@ class ClientWriter
 
             if ($operation->requestRequired)
                 $required[] = $types->nativeTypeOf($request).' $'.$argument;
-            else
-                $optional[] = $this->optionalArgumentOf($types->nativeTypeOf($request), $argument);
+            else $optional[] = $this->optionalArgumentOf($types->nativeTypeOf($request), $argument);
 
             if ($types->needsDocType($request))
                 $docs[] = '@param '.$types->docTypeOf($request).($operation->requestRequired ? '' : '|null').' $'.$argument;
@@ -340,8 +340,7 @@ class ClientWriter
 
             if ($parameter->required)
                 $required[] = $nativeType.' $'.$names['query'][$parameter->key];
-            else
-                $optional[] = $this->optionalArgumentOf($nativeType, $names['query'][$parameter->key]);
+            else $optional[] = $this->optionalArgumentOf($nativeType, $names['query'][$parameter->key]);
         }
 
         $arguments = [...$required, ...$optional];
@@ -367,11 +366,8 @@ class ClientWriter
     }
 
     /**
-     * @param array{path:array<string,string>,request:?string,query:array<string,string>} $names
-     */
-    /**
      * A list or a map of classes is converted item by item, and a map is a JSON object even when empty, where
-     * json_encode([]) writes a list. An optional body left to null sends no body
+     * json_encode([]) writes a list. An optional body left to null sends no body.
      */
     protected function encodedBodyOf(ClientOperation $operation, string $argument): string
     {
@@ -387,7 +383,7 @@ class ClientWriter
         return $operation->requestRequired || $encoded === $argument ? $encoded : "null === {$argument} ? null : {$encoded}";
     }
 
-        protected function optionalArgumentOf(string $nativeType, string $name): string
+    protected function optionalArgumentOf(string $nativeType, string $name): string
     {
         return ('mixed' === $nativeType ? 'mixed' : "?{$nativeType}")." \${$name} = null";
     }
@@ -428,10 +424,10 @@ class ClientWriter
 
         if (!count($operation->queryDelimiters))
             return $send;
-
         $delimiters = Bunch::fromValues(array_keys($operation->queryDelimiters))
             ->map(fn (string $key) => var_export($key, true).' => '.var_export($operation->queryDelimiters[$key], true))
-            ->join(', ');
+            ->join(', ')
+        ;
 
         return "\$this->withDelimiters([{$delimiters}], fn () => {$send})";
     }
@@ -445,10 +441,8 @@ class ClientWriter
 
         if ($response instanceof ClassType)
             return [$types->nameOf($response), "return {$call}->toObject({$types->nameOf($response)}::class);"];
-
         if ($response instanceof ListType && $response->item instanceof ClassType)
             return ['array', "return {$types->nameOf($response->item)}::array(\$this->successful({$call})->getJSON());"];
-
         return [$types->referenceOf(Response::class), "return {$call};"];
     }
 
@@ -503,7 +497,8 @@ class ClientWriter
 
                 return '        if (in_array('.var_export($scheme, true).", \$schemes, true) && null !== {$value})\n            {$assignment}";
             })
-            ->join("\n\n");
+            ->join("\n\n")
+        ;
 
         // A request carries one Cookie header : each cookie scheme adds its cookie to it
         $sendsCookies = Bunch::fromValues($client->authentications)->any(fn (ClientAuthentication $authentication) => 'cookie' === $authentication->location);
@@ -636,7 +631,7 @@ class ClientWriter
     }
 
     /**
-     * `/invoices/{id}/lines` becomes `'/invoices/'.rawurlencode((string) $id).'/lines'`
+     * `/invoices/{id}/lines` becomes `'/invoices/'.rawurlencode((string) $id).'/lines'`.
      *
      * @param array<string,string> $pathNames placeholder => PHP name
      */
@@ -656,7 +651,7 @@ class ClientWriter
     }
 
     /**
-     * Every method of `HttpClient` is taken, whatever its visibility : the generated client extends it
+     * Every method of `HttpClient` is taken, whatever its visibility : the generated client extends it.
      */
     protected function methodName(ClientOperation $operation): string
     {

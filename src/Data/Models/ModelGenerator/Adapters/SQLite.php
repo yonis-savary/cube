@@ -11,7 +11,7 @@ class SQLite extends DatabaseAdapter
 
     public static function supports(string $driver): bool
     {
-        return $driver === 'sqlite';
+        return 'sqlite' === $driver;
     }
 
     public function process(): void
@@ -47,7 +47,7 @@ class SQLite extends DatabaseAdapter
     protected function listColumns(string $table): array
     {
         return Bunch::fromQuery('PRAGMA table_xinfo({})', [$table], $this->database)
-            ->filter(fn($column) => in_array($column['hidden'], ['0', '2'])) // 0 => visible column, 2 => generated column
+            ->filter(fn ($column) => in_array($column['hidden'], ['0', '2'])) // 0 => visible column, 2 => generated column
             ->get()
         ;
     }
@@ -73,7 +73,7 @@ class SQLite extends DatabaseAdapter
         if ($column['pk'] && in_array($table, $this->tablesWithSequence)) {
             $field->autoIncrement();
         }
-        if ($column['hidden'] == '2') {
+        if ('2' == $column['hidden']) {
             $field->generated();
         }
 

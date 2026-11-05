@@ -8,11 +8,11 @@ use Cube\Data\Models\Relations\HasOne;
 use Cube\Tests\Units\Models\Product;
 
 /**
- * A HasOne without foreign key constraint, so a row can point to a product that does not exist
+ * A HasOne without foreign key constraint, so a row can point to a product that does not exist.
  *
- * @property int $id
- * @property string $reference
- * @property ?int $product
+ * @property int      $id
+ * @property string   $reference
+ * @property ?int     $product
  * @property ?Product $_product
  */
 class Shipment extends Model

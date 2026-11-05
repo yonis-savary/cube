@@ -2,8 +2,8 @@
 
 namespace Cube\Security\RememberMe;
 
-use Cube\Event\Event;
 use Cube\Data\Models\Model;
+use Cube\Event\Event;
 
 class RememberedUser extends Event
 {

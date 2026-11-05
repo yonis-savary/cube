@@ -21,7 +21,7 @@ class QueryBase
     public readonly string $table;
     public readonly string $type;
 
-    /** @var class-string<Model> $model */
+    /** @var class-string<Model> */
     public string $model;
 
     public function __construct(string $type, string $table, string $model)

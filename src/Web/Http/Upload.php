@@ -2,8 +2,8 @@
 
 namespace Cube\Web\Http;
 
-use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
+use Cube\Env\Storage;
 use Cube\Utils\Path;
 use Psr\Http\Message\UploadedFileInterface;
 
@@ -99,7 +99,7 @@ class Upload
      *
      * @return false|string The new file path on success, `false` on fail, see `getFailReason()` to get the reason behind a failure
      */
-    public function move(null|Storage|string $destination = null, ?string $newName = null): false|string
+    public function move(Storage|string|null $destination = null, ?string $newName = null): false|string
     {
         if ($movedFile = $this->newPath) {
             return $movedFile;

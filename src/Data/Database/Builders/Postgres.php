@@ -6,7 +6,7 @@ class Postgres extends QueryBuilder
 {
     public static function supports(string $pdoDriver): bool
     {
-        return $pdoDriver === 'pgsql';
+        return 'pgsql' === $pdoDriver;
     }
 
     public function getIdentifierDelimiters(): array

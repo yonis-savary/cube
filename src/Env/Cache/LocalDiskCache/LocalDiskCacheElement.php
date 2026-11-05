@@ -3,8 +3,8 @@
 namespace Cube\Env\Cache\LocalDiskCache;
 
 use Cube\Env\Cache\CacheDriverInterface;
-use Cube\Env\Storage;
 use Cube\Env\Logger\Logger;
+use Cube\Env\Storage;
 
 class LocalDiskCacheElement
 {
@@ -17,8 +17,7 @@ class LocalDiskCacheElement
         protected ?int $creationDate = null,
         protected ?string $file = null,
         protected bool $loaded = true
-    ) {
-    }
+    ) {}
 
     public static function fromFile(string $file): ?self
     {

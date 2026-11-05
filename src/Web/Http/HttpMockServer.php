@@ -10,7 +10,8 @@ class HttpMockServer
 {
     protected Router $router;
 
-    public static function fromRoutes(Route ...$routes): static {
+    public static function fromRoutes(Route ...$routes): static
+    {
         $server = new static();
         $server->addRoutes(...$routes);
 
@@ -20,12 +21,13 @@ class HttpMockServer
     /**
      * @param array<string,\Closure|Response> $routes
      */
-    public static function fromArray(array $routes): static {
+    public static function fromArray(array $routes): static
+    {
         $server = new static();
 
         foreach ($routes as $path => $handler) {
             if ($handler instanceof Response)
-                $handler = fn() => $handler;
+                $handler = fn () => $handler;
 
             $server->addRoutes(new Route($path, $handler));
         }
@@ -43,22 +45,21 @@ class HttpMockServer
         $this->routes($this->router);
     }
 
-    public function routes(Router $router): void
-    {
-    }
+    public function routes(Router $router): void {}
 
-    public function addRoutes(Route ...$routes): void {
+    public function addRoutes(Route ...$routes): void
+    {
         $this->router->addRoutes(...$routes);
     }
 
-    protected function removeHostFromUrl(string $url): string 
+    protected function removeHostFromUrl(string $url): string
     {
         $url = preg_replace('~^https?://~', '', $url);
-        $url = preg_replace('~^[^/]+~', '', $url);
-        return $url;
+        return preg_replace('~^[^/]+~', '', $url);
     }
 
-    public function handle(Request $request): Response {
+    public function handle(Request $request): Response
+    {
         $url = $request->getPath();
         if (str_starts_with($url, 'http'))
             $url = $this->removeHostFromUrl($url);

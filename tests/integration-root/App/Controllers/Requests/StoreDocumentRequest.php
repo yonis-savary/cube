@@ -2,9 +2,9 @@
 
 namespace App\Controllers\Requests;
 
+use Cube\Utils\File;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Rules\UploadRule;
-use Cube\Utils\File;
 
 class StoreDocumentRequest extends Request
 {

@@ -6,7 +6,7 @@ readonly class ClientAuthentication
 {
     /**
      * @param 'cookie'|'header'|'query' $location
-     * @param string                     $prefix   written before the token, `Bearer ` for a bearer token
+     * @param string                    $prefix   written before the token, `Bearer ` for a bearer token
      */
     public function __construct(
         public string $location,

@@ -3,15 +3,14 @@
 namespace Cube\Security;
 
 use Cube\Core\Component;
-use Cube\Env\Session\HasScopedSession;
 use Cube\Data\Models\Model;
+use Cube\Env\Session\HasScopedSession;
 use Cube\Security\Authentication\AuthenticationConfiguration;
 use Cube\Security\Authentication\AuthenticationProvider;
 use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Security\Authentication\Events\LoggedInUser;
 use Cube\Security\Authentication\Events\LoggedOutUser;
-use RuntimeException;
 
 class Authentication
 {
@@ -24,16 +23,17 @@ class Authentication
 
     private AuthenticationProvider $provider;
 
-    public function __construct(AuthenticationConfiguration $configuration) {
+    public function __construct(AuthenticationConfiguration $configuration)
+    {
         $this->provider = $configuration->provider;
         $this->session();
     }
 
-    public function attempt(string $login, #[\SensitiveParameter] ?string $userPassword=null): bool
+    public function attempt(string $login, #[\SensitiveParameter] ?string $userPassword = null): bool
     {
         $this->resetSession();
 
-        if (!$user = $this->provider->attempt($login, $userPassword)){
+        if (!$user = $this->provider->attempt($login, $userPassword)) {
             (new FailedAuthentication($login))->dispatch();
             return false;
         }
@@ -45,7 +45,7 @@ class Authentication
     public function login(Model $user): void
     {
         if ('cli' !== PHP_SAPI && headers_sent($file, $line))
-            throw new RuntimeException("Cannot log a user in once output started at {$file}:{$line} : the session id could not be regenerated");
+            throw new \RuntimeException("Cannot log a user in once output started at {$file}:{$line} : the session id could not be regenerated");
 
         $this->session->regenerateId();
         $this->session->set(self::SESSION_USER_CLASS, $user::class);
@@ -63,14 +63,14 @@ class Authentication
 
     public function loginById(mixed $id): bool
     {
-        if (! $user = $this->provider->userById($id))
+        if (!$user = $this->provider->userById($id))
             return false;
-
         $this->login($user);
         return true;
     }
 
-    protected function resetSession() {
+    protected function resetSession()
+    {
         $this->session->unset(self::SESSION_USER_CLASS);
         $this->session->unset(self::SESSION_USER_DATA);
         $this->session->unset(self::SESSION_USER_ID);
@@ -80,7 +80,6 @@ class Authentication
     {
         if (!$this->isLogged())
             return;
-
         $user = $this->user();
         $userId = $this->userId();
 
@@ -97,7 +96,7 @@ class Authentication
 
     public function user(): Model
     {
-        if (! $userArrayData = $this->session->get(self::SESSION_USER_DATA, false)) {
+        if (!$userArrayData = $this->session->get(self::SESSION_USER_DATA, false)) {
             throw new \RuntimeException('Cannot retrieve data of unauthenticated user');
         }
 

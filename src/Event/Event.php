@@ -25,12 +25,14 @@ abstract class Event
         return $dispatcher->dispatch($this);
     }
 
-    public function prevent(): static {
+    public function prevent(): static
+    {
         $this->prevented = true;
         return $this;
     }
 
-    public function isPrevented(): bool {
+    public function isPrevented(): bool
+    {
         return $this->prevented;
     }
 }

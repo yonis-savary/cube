@@ -6,6 +6,9 @@ use Cube\Data\Models\DummyModel;
 use Cube\Tests\Units\Models\Product;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class DummyModelTest extends TestCase
 {
     public function testReadingAnUnknownAttributeGivesNull()

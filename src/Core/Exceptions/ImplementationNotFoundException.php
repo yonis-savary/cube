@@ -7,7 +7,7 @@ use Cube\Data\Bunch;
 class ImplementationNotFoundException extends \RuntimeException
 {
     /**
-     * @param class-string $base
+     * @param class-string            $base
      * @param Bunch<int,class-string> $candidates
      */
     public function __construct(
@@ -15,7 +15,7 @@ class ImplementationNotFoundException extends \RuntimeException
         public readonly Bunch $candidates,
         public readonly ?string $subject = null
     ) {
-        $subjectPart = $subject === null
+        $subjectPart = null === $subject
             ? 'the given case'
             : "[{$subject}]";
 

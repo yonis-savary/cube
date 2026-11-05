@@ -2,16 +2,11 @@
 
 namespace Cube\Data;
 
-use ArrayIterator;
-use Closure;
-use Countable;
 use Cube\Core\Autoloader;
 use Cube\Core\Injector;
 use Cube\Data\Classes\NoValue;
 use Cube\Data\Database\Database;
 use Cube\Utils\Utils;
-use IteratorAggregate;
-use Traversable;
 
 /**
  * @template TKey
@@ -21,9 +16,9 @@ use Traversable;
  * @template TCallbacks of TCallback|TCallback[]
  * @template TNullableCallbacks of TNullableCallback|TNullableCallback[]
  *
- * @implements IteratorAggregate<TKey,TValue>
+ * @implements \IteratorAggregate<TKey,TValue>
  */
-class Bunch implements Countable, IteratorAggregate
+class Bunch implements \Countable, \IteratorAggregate
 {
     /** @var array<TKey,TValue> */
     protected array $data;
@@ -40,7 +35,6 @@ class Bunch implements Countable, IteratorAggregate
     {
         $this->data = $initialData;
     }
-
 
     /**
      * @template TElement
@@ -62,36 +56,41 @@ class Bunch implements Countable, IteratorAggregate
         return new static($element);
     }
 
-
     /**
      * Loads a Bunch of non-abstract classes that extends a given parent Class (Instanciates classes).
-     * To perform this action without instanciating, call `Bunch::wrap(Autoloader::classesThatExtends($class))`
+     * To perform this action without instanciating, call `Bunch::wrap(Autoloader::classesThatExtends($class))`.
      *
      * @template TClassname
+     *
      * @param class-string<TClassname> $class
+     *
      * @return self<int,TClassname>
      */
-    public static function fromExtends(string $class, array $constructorArgs=[]): self
+    public static function fromExtends(string $class, array $constructorArgs = []): self
     {
         return Bunch::wrap(Autoloader::classesThatExtends($class))->instanciates($constructorArgs);
     }
 
     /**
      * @template TClassname
+     *
      * @param class-string<TClassname> $implements
+     *
      * @return self<int,TClassname>
      */
-    public static function fromImplements(string $implements, array $constructorArgs=[]): self
+    public static function fromImplements(string $implements, array $constructorArgs = []): self
     {
         return Bunch::wrap(Autoloader::classesThatImplements($implements))->instanciates($constructorArgs);
     }
 
     /**
      * @template TClassname
+     *
      * @param class-string<TClassname> $uses
+     *
      * @return self<int,TClassname>
      */
-    public static function fromUses(string $uses, array $constructorArgs=[]): self
+    public static function fromUses(string $uses, array $constructorArgs = []): self
     {
         return Bunch::wrap(Autoloader::classesThatUses($uses))->instanciates($constructorArgs);
     }
@@ -126,7 +125,6 @@ class Bunch implements Countable, IteratorAggregate
     {
         if ($length <= 0)
             return new static();
-
         return self::rangeFrom(0, $length - 1);
     }
 
@@ -199,13 +197,12 @@ class Bunch implements Countable, IteratorAggregate
     }
 
     /** @param TNullableCallback $callback */
-    protected function normalizeSingleCallback(callable|string|null $callback) {
-        if ($callback === null)
+    protected function normalizeSingleCallback(callable|string|null $callback)
+    {
+        if (null === $callback)
             return null;
-
         if (is_string($callback))
-            return fn($el) => is_object($el) ? $el->$callback : $el[$callback];
-
+            return fn ($el) => is_object($el) ? $el->{$callback} : $el[$callback];
         return $callback;
     }
 
@@ -247,7 +244,7 @@ class Bunch implements Countable, IteratorAggregate
     /**
      * @return TValue
      */
-    public function at(mixed $keyOrIndex): mixed 
+    public function at(mixed $keyOrIndex): mixed
     {
         return $this->data[$keyOrIndex];
     }
@@ -266,16 +263,18 @@ class Bunch implements Countable, IteratorAggregate
     public function asIntegers(bool $filterNumerics = true): self
     {
         return $this
-            ->when($filterNumerics, fn($b) => $b->filter(is_numeric(...)))
-            ->map(fn ($x) => (int) $x);
+            ->when($filterNumerics, fn ($b) => $b->filter(is_numeric(...)))
+            ->map(fn ($x) => (int) $x)
+        ;
     }
 
     /** @return self<float> */
     public function asFloats(bool $filterNumerics = true): self
     {
         return $this
-            ->when($filterNumerics, fn($b) => $b->filter(is_numeric(...)))
-            ->map(fn ($x) => (float) $x);
+            ->when($filterNumerics, fn ($b) => $b->filter(is_numeric(...)))
+            ->map(fn ($x) => (float) $x)
+        ;
     }
 
     /**
@@ -310,11 +309,11 @@ class Bunch implements Countable, IteratorAggregate
      * @template TDefault
      *
      * @param TNullableCallback $callback
-     * @param TDefault $default Default value used when no value is present
+     * @param TDefault          $default  Default value used when no value is present
      *
      * @return TDefault|TValue
      */
-    public function average(callable|string|null $callback=null, mixed $default = null): mixed
+    public function average(callable|string|null $callback = null, mixed $default = null): mixed
     {
         $count = $this->count();
 
@@ -330,7 +329,8 @@ class Bunch implements Countable, IteratorAggregate
             $this->data,
             $this->normalizeSingleCallback($callback)
         ))
-        ->when($keepValues, fn($bunch) => $bunch->values());
+            ->when($keepValues, fn ($bunch) => $bunch->values())
+        ;
     }
 
     /**
@@ -361,6 +361,7 @@ class Bunch implements Countable, IteratorAggregate
      * @template TReturnValue
      *
      * @param TCallback $callback
+     *
      * @return Bunch<TKey,TReturnValue>
      */
     public function map(callable|string $callback): self
@@ -374,9 +375,9 @@ class Bunch implements Countable, IteratorAggregate
         return $this->map($callback)->flat();
     }
 
-    public function instanciates(array $args=[])
+    public function instanciates(array $args = [])
     {
-        return $this->map(fn($class) => Injector::getInstance()->instanciate($class, $args));
+        return $this->map(fn ($class) => Injector::getInstance()->instanciate($class, $args));
     }
 
     public function diff(array|Bunch $values): self
@@ -391,8 +392,9 @@ class Bunch implements Countable, IteratorAggregate
     /**
      * @param \Closure(Bunch<TKey,TValue>):Bunch<TKey,TValue> $callback
      */
-    public function when(bool $condition, callable $callback) {
-        return $condition ? $callback($this): $this;
+    public function when(bool $condition, callable $callback)
+    {
+        return $condition ? $callback($this) : $this;
     }
 
     /**
@@ -425,9 +427,10 @@ class Bunch implements Countable, IteratorAggregate
 
     /**
      * @param TCallbacks $callbacks
+     *
      * @return array<mixed>
      */
-    public function groupBy(callable|array|string $callbacks): array
+    public function groupBy(array|callable|string $callbacks): array
     {
         $callbacks = $this->normalizeCallbacks($callbacks);
 
@@ -479,9 +482,9 @@ class Bunch implements Countable, IteratorAggregate
     }
 
     /**
-     * @param TCallback|TCallback[]|int $callbackOrSortMode
+     * @param int|TCallback|TCallback[] $callbackOrSortMode
      */
-    public function sort(callable|int|array $callbackOrSortMode = SORT_REGULAR): self
+    public function sort(array|callable|int $callbackOrSortMode = SORT_REGULAR): self
     {
         $sorted = $this->data;
 
@@ -496,7 +499,6 @@ class Bunch implements Countable, IteratorAggregate
             foreach ($callbacks as $callback)
                 if ($order = $callback($a) <=> $callback($b))
                     return $order;
-
             return 0;
         });
 
@@ -585,11 +587,12 @@ class Bunch implements Countable, IteratorAggregate
 
     /**
      * @param \Closure(TValue) $callback
+     *
      * @return ?TValue
      */
-    public function first(?callable $callback=null): mixed
+    public function first(?callable $callback = null): mixed
     {
-        if ($callback === null) {
+        if (null === $callback) {
             return count($this->data)
                 ? $this->data[array_key_first($this->data)]
                 : null;
@@ -621,14 +624,14 @@ class Bunch implements Countable, IteratorAggregate
         return -1;
     }
 
-
     /**
      * @param \Closure(TValue) $callback
+     *
      * @return ?TValue
      */
-    public function last(?callable $callback=null): mixed
+    public function last(?callable $callback = null): mixed
     {
-        if ($callback === null) {
+        if (null === $callback) {
             return count($this->data)
                 ? $this->data[array_key_last($this->data)]
                 : null;
@@ -651,7 +654,7 @@ class Bunch implements Countable, IteratorAggregate
     {
         $data = array_values($this->data);
         $dataCount = count($data);
-        for ($i = $dataCount-1; $i >= 0; --$i) {
+        for ($i = $dataCount - 1; $i >= 0; --$i) {
             $element = $data[$i];
             if ($callback($element)) {
                 return $i;
@@ -663,15 +666,15 @@ class Bunch implements Countable, IteratorAggregate
 
     public function has(mixed $value): bool
     {
-        return $this->any(fn($el) => $el === $value);
+        return $this->any(fn ($el) => $el === $value);
     }
 
     /**
-     * @return Traversable<TKey,TValue>
+     * @return \Traversable<TKey,TValue>
      */
-    public function getIterator(): Traversable
+    public function getIterator(): \Traversable
     {
-        return new ArrayIterator($this->data);
+        return new \ArrayIterator($this->data);
     }
 
     public function count(): int
@@ -705,16 +708,17 @@ class Bunch implements Countable, IteratorAggregate
     /**
      * @template TReturn
      *
-     * @param \Closure(TValue):TReturn|string|null $callback
+     * @param null|\Closure(TValue):TReturn|string $callback
+     *
      * @return TReturn|TValue
      */
-    public function sum(string|callable|null $callback=null): mixed
+    public function sum(callable|string|null $callback = null): mixed
     {
-        $callback =
-            $this->normalizeSingleCallback($callback) ??
-            fn($el) => $el;
+        $callback
+            = $this->normalizeSingleCallback($callback)
+            ?? fn ($el) => $el;
 
-        return $this->reduce(fn($acc, $cur) => $acc + $callback($cur), 0);
+        return $this->reduce(fn ($acc, $cur) => $acc + $callback($cur), 0);
     }
 
     /**
@@ -726,7 +730,7 @@ class Bunch implements Countable, IteratorAggregate
         $size = count($data);
         $chunkCount = ceil($size / $chunkSize);
 
-        for ($i=0; $i<$chunkCount; $i++) {
+        for ($i = 0; $i < $chunkCount; ++$i) {
             $chunkData = array_slice($data, $i * $chunkSize, $chunkSize);
             $callback($chunkData, Bunch::wrap($chunkData));
         }
@@ -748,6 +752,7 @@ class Bunch implements Countable, IteratorAggregate
      * @template TNValues
      *
      * @param array<TNKey,TNValues> $data
+     *
      * @return self<TNKey,TNValues>
      */
     protected function withNewData(array $data): self
@@ -774,7 +779,7 @@ class Bunch implements Countable, IteratorAggregate
     /**
      * @return self<int,mixed>
      */
-    public static function fromQuery(string $query, array $context=[], ?Database $database=null, ?string $key=null): self
+    public static function fromQuery(string $query, array $context = [], ?Database $database = null, ?string $key = null): self
     {
         $database ??= Database::getInstance();
 
@@ -782,10 +787,8 @@ class Bunch implements Countable, IteratorAggregate
 
         if (!count($data))
             return $data;
-
         if ($key)
             return $data->key($key);
-
         return $data;
     }
 }

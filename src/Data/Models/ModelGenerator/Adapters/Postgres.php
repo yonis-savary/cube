@@ -9,7 +9,7 @@ class Postgres extends DatabaseAdapter
 {
     public static function supports(string $driver): bool
     {
-        return $driver === 'pgsql';
+        return 'pgsql' === $driver;
     }
 
     protected function listTables(): array
@@ -46,7 +46,9 @@ class Postgres extends DatabaseAdapter
             WHERE table_constraints.constraint_type = \'FOREIGN KEY\'
             AND table_constraints.table_schema = \'public\'
             AND table_constraints.table_name = {};
-        ', [$table]);
+        ',
+            [$table]
+        );
     }
 
     protected function listColumns(string $table): array
@@ -63,7 +65,9 @@ class Postgres extends DatabaseAdapter
             WHERE table_schema = 'public'
             AND table_name = {}
             ORDER BY ordinal_position;
-        ", [$table]);
+        ",
+            [$table]
+        );
     }
 
     protected function getModelField(string $table, array $column, ?string &$primary): ModelField
@@ -82,7 +86,7 @@ class Postgres extends DatabaseAdapter
             $field->maximumLength($column['character_maximum_length']);
         }
 
-        if (strtolower($column['is_generated']) !== 'never') {
+        if ('never' !== strtolower($column['is_generated'])) {
             $field->generated();
         }
 

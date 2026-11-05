@@ -17,7 +17,7 @@ abstract class Plan
 
     public function __construct(
         protected Database $database
-    ){}
+    ) {}
 
     abstract public static function supports(string $driver): bool;
 
@@ -34,13 +34,14 @@ abstract class Plan
     }
 
     /**
-     * Create a new table
+     * Create a new table.
+     *
      * @param ModelField[] $fields
      */
-    abstract public function create(string $table, array $fields=[], ?string $additionnalSQL=null);
+    abstract public function create(string $table, array $fields = [], ?string $additionnalSQL = null);
 
     /**
-     * Edit existing table
+     * Edit existing table.
      */
     abstract public function dropTable(string $table);
 
@@ -52,32 +53,35 @@ abstract class Plan
 
     abstract public function addColumn(string $table, ModelField $modelField);
 
-    abstract public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null);
+    abstract public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior = null);
 
     /**
-     * @param string[]|string $fields
+     * @param string|string[] $fields
      */
-    abstract public function addUniqueIndex(string $table, string|array $fields);
+    abstract public function addUniqueIndex(string $table, array|string $fields);
 
     abstract public function renameField(string $table, string $oldFieldName, string $newFieldName);
 
     abstract public function renameTable(string $oldTableName, string $newTableName);
 
-    public function tableDiffAddTable(string $table) {
+    public function tableDiffAddTable(string $table)
+    {
         $this->tableDiff[$table] = [];
     }
 
-    public function tableDiffDropTable(string $table) {
+    public function tableDiffDropTable(string $table)
+    {
         if (isset($this->tableDiff[$table]))
             unset($this->tableDiff[$table]);
     }
 
-    public function editTableField(string $table, string $field, ModelField $attributes) {
+    public function editTableField(string $table, string $field, ModelField $attributes)
+    {
         $this->tableDiff[$table] ??= [];
 
         $table = &$this->tableDiff[$table];
 
-        for ($i=0; $i<count($table); $i++) {
+        for ($i = 0; $i < count($table); ++$i) {
             $tableField = $table[$i];
             if ($tableField->name === $field) {
                 $table[$i] = $attributes;
@@ -97,7 +101,6 @@ abstract class Plan
     {
         if (!$this->tableDiffHasTable($table))
             return false;
-
         foreach ($this->tableDiff[$table] as $field) {
             if ($field->name === $targetField)
                 return true;
@@ -105,7 +108,8 @@ abstract class Plan
         return false;
     }
 
-    public function addTableDiffField(string $table, ModelField $attributes) {
+    public function addTableDiffField(string $table, ModelField $attributes)
+    {
         $this->tableDiff[$table] ??= [];
         $this->tableDiff[$table][] = $attributes;
     }
@@ -130,12 +134,14 @@ abstract class Plan
         }
     }
 
-    public function getTableFields(string $table) {
-        $model = Bunch::fromExtends(Model::class)->first(fn($model) => $model->table() === $table);
+    public function getTableFields(string $table)
+    {
+        $model = Bunch::fromExtends(Model::class)->first(fn ($model) => $model->table() === $table);
 
         $modelFields = $model ? $model->fields() : [];
         $diffFields = Bunch::wrap($this->tableDiff[$table] ?? [])
-            ->zip(fn($field) => [$field->name, $field]);
+            ->zip(fn ($field) => [$field->name, $field])
+        ;
 
         return array_values(array_merge($modelFields, $diffFields));
     }

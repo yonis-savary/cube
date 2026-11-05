@@ -75,7 +75,8 @@ abstract class DatabaseAdapter
     {
         $this->tables = Bunch::wrap($this->listTables())
             ->map(fn (string $table) => $this->buildTable($table))
-            ->get();
+            ->get()
+        ;
     }
 
     protected function buildTable(string $table): Table
@@ -110,7 +111,7 @@ abstract class DatabaseAdapter
             $relationName = strtolower($foreignKey['column']);
 
             while ($columns->has($relationName) || in_array($relationName, $addedRelationNames))
-                $relationName = "_$relationName";
+                $relationName = "_{$relationName}";
 
             $addedRelationNames[] = $relationName;
 

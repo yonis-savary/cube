@@ -7,16 +7,20 @@ use Cube\Utils\Shell;
 use Cube\Web\Http\HttpClient;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class UnixSocketTest extends TestCase
 {
-    public function testTheApplicationAnswersOnAUnixSocket() {
+    public function testTheApplicationAnswersOnAUnixSocket()
+    {
         $storage = Utils::getDummyApplicationStorage();
         $socketPath = sys_get_temp_dir().'/'.uniqid('cube-').'.sock';
 
         $proc = Shell::launchInDirectory("exec php do unix:serve {$socketPath}", $storage->getRoot());
 
         try {
-            for ($i = 0; $i < 50 && !file_exists($socketPath); $i++)
+            for ($i = 0; $i < 50 && !file_exists($socketPath); ++$i)
                 usleep(100_000);
 
             $this->assertFileExists($socketPath, $proc->getOutput().$proc->getErrorOutput());
@@ -35,7 +39,8 @@ class UnixSocketTest extends TestCase
     }
 
     /** @return array{int,string} */
-    protected function fetchThroughSocket(string $socketPath, string $path): array {
+    protected function fetchThroughSocket(string $socketPath, string $path): array
+    {
         $client = new class($socketPath) extends HttpClient {
             public function __construct(protected string $socketPath) {}
 

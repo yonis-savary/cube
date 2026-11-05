@@ -19,7 +19,7 @@ class Rollback extends Command
 
     public function getHelp(): string
     {
-        return "Revert the last applied migrations, one by default (eg: php do migrate:rollback --steps=3)";
+        return 'Revert the last applied migrations, one by default (eg: php do migrate:rollback --steps=3)';
     }
 
     public function execute(Args $args): int
@@ -28,13 +28,12 @@ class Rollback extends Command
 
         if (!ctype_digit($steps) || !(int) $steps)
             return $this->abort("--steps expects a positive integer, got [{$steps}]");
-
         $manager = MigrationManager::getInstance();
-        $manager->setLoggingFunction(fn($m) => print($m . "\n"));
+        $manager->setLoggingFunction(fn ($m) => print ($m."\n"));
         $manager->rollback((int) $steps);
 
         if (!isProduction() && !$args->has('-s', '--skip-generation')) {
-            Console::print("");
+            Console::print('');
             return Generate::call();
         }
 

@@ -23,7 +23,7 @@ class Implementations
     /**
      * @template T of object
      *
-     * @param class-string<T> $base
+     * @param class-string<T>                $base
      * @param callable(class-string<T>):bool $supports
      *
      * @return ?T
@@ -40,7 +40,7 @@ class Implementations
     /**
      * @template T of object
      *
-     * @param class-string<T> $base
+     * @param class-string<T>                $base
      * @param callable(class-string<T>):bool $supports
      *
      * @return T
@@ -56,7 +56,7 @@ class Implementations
     /**
      * @template T of object
      *
-     * @param class-string<T> $base
+     * @param class-string<T>                $base
      * @param callable(class-string<T>):bool $supports
      *
      * @return Bunch<int,T>
@@ -66,11 +66,13 @@ class Implementations
         $injector = Injector::getInstance();
         return self::candidatesOf($base)
             ->filter($supports, true)
-            ->map(fn($candidate) => $injector->instanciate($candidate, $constructorArgs));
+            ->map(fn ($candidate) => $injector->instanciate($candidate, $constructorArgs))
+        ;
     }
 
     /**
      * @template TClassOrInterface
+     *
      * @param class-string<TClassOrInterface> $base
      *
      * @return Bunch<int,class-string<TClassOrInterface>>

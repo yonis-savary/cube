@@ -9,7 +9,7 @@ class MySQL extends QueryBuilder
 {
     public static function supports(string $pdoDriver): bool
     {
-        return $pdoDriver === 'mysql';
+        return 'mysql' === $pdoDriver;
     }
 
     public function getIdentifierDelimiters(): array

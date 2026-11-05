@@ -4,11 +4,11 @@ namespace Cube\Test;
 
 use Cube\Core\Autoloader;
 use Cube\Data\Database\Database;
+use Cube\Data\Models\Model;
+use Cube\Web\Helpers\CubeServer;
 use Cube\Web\Http\MockServers;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Upload;
-use Cube\Data\Models\Model;
-use Cube\Web\Helpers\CubeServer;
 use PHPUnit\Framework\TestCase;
 
 /**

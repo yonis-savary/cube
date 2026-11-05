@@ -7,9 +7,10 @@ use Cube\Data\Models\Model;
 
 /**
  * @template TModel extends Model
- * @property Model|string $model
- * @property Model|string $fromModel
- * @property Model|string|class-string<TModel> $toModel
+ *
+ * @property Model|string                      $model
+ * @property Model|string                      $fromModel
+ * @property class-string<TModel>|Model|string $toModel
  */
 class HasMany implements Relation
 {
@@ -67,7 +68,7 @@ class HasMany implements Relation
         $toModel = $this->toModel;
         $toColumn = $this->toColumn;
 
-        $data = $toModel::select()->where($toColumn, $thisModel->$fromColumn)->fetch();
+        $data = $toModel::select()->where($toColumn, $thisModel->{$fromColumn})->fetch();
         $thisModel->setReference($this->getName(), $data);
 
         return $data;

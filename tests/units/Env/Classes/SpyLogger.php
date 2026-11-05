@@ -9,7 +9,7 @@ class SpyLogger extends NullLogger
     /** @var array<int,array{string,string}> */
     public array $records = [];
 
-    public function log($level, null|string|\Stringable $message, array $context = []): void
+    public function log($level, string|\Stringable|null $message, array $context = []): void
     {
         $this->records[] = [$level, (string) $message];
     }

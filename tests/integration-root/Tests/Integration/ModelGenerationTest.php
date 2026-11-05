@@ -13,32 +13,40 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Assert that as we execute models:generate on our integration app
- * Custom model properties such as trait and methods are kept
+ * Custom model properties such as trait and methods are kept.
+ *
+ * @internal
  */
 class ModelGenerationTest extends TestCase
 {
-    public function testCustomMethodsAreKept() {
+    public function testCustomMethodsAreKept()
+    {
         $this->assertTrue(method_exists(Product::class, 'getPriceWithTax'));
     }
 
-    public function testTraitUseAreKept() {
+    public function testTraitUseAreKept()
+    {
         $this->assertContains(ModelTrait::class, class_uses(Product::class));
     }
 
-    public function testRelationPluralForm() {
+    public function testRelationPluralForm()
+    {
         $this->assertContains('agencies', User::relations());
     }
 
-    public function testAnApiIsGeneratedPerModel() {
+    public function testAnApiIsGeneratedPerModel()
+    {
         $this->assertEquals(Product::class, (new ProductAPI())->getModelClass());
         $this->assertEquals(Agency::class, (new AgencyAPI())->getModelClass());
     }
 
-    public function testAnExistingApiIsKept() {
+    public function testAnExistingApiIsKept()
+    {
         $this->assertTrue((new UserAPI())->isWrittenByHand());
     }
 
-    public function testFrameworkTablesHaveNoApi() {
-        $this->assertFalse(class_exists('App\\Http\\Apis\\__cubeMigrationAPI'));
+    public function testFrameworkTablesHaveNoApi()
+    {
+        $this->assertFalse(class_exists('App\Http\Apis\__cubeMigrationAPI'));
     }
 }

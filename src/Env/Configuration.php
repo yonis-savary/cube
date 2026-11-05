@@ -3,13 +3,11 @@
 namespace Cube\Env;
 
 use Cube\Core\Component;
-use Cube\Env\Cache;
 use Cube\Env\Cache\CacheConfiguration;
 use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
 use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Env\Configuration\GenericElement;
 use Cube\Env\Configuration\Import;
-use Cube\Env\Storage;
 use Cube\Utils\Path;
 
 class Configuration
@@ -51,7 +49,7 @@ class Configuration
     {
         return new Cache(
             new CacheConfiguration(
-                new LocalDiskCache(Storage::getInstance()->child("cube/configuration"))
+                new LocalDiskCache(Storage::getInstance()->child('cube/configuration'))
             )
         );
     }

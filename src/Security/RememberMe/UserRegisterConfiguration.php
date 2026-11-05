@@ -2,8 +2,8 @@
 
 namespace Cube\Security\RememberMe;
 
-use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Env\Cache;
+use Cube\Env\Configuration\ConfigurationElement;
 
 class UserRegisterConfiguration extends ConfigurationElement
 {

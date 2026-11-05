@@ -4,9 +4,9 @@ namespace Cube\Env\Logger;
 
 use Cube\Core\Component;
 use Cube\Data\Bunch;
+use Cube\Env\Logger\Events\LoggedMessage;
 use Cube\Env\Storage;
 use Cube\Event\EventDispatcher;
-use Cube\Env\Logger\Events\LoggedMessage;
 use Cube\Utils\Text;
 use Psr\Log\LoggerInterface;
 
@@ -69,7 +69,7 @@ class Logger extends EventDispatcher implements LoggerInterface
         return static::forFile('cube.csv');
     }
 
-    public function log($level, null|string|\Stringable $message, array $context = []): void
+    public function log($level, string|\Stringable|null $message, array $context = []): void
     {
         if (!is_resource($this->stream)) {
             return;
@@ -79,8 +79,8 @@ class Logger extends EventDispatcher implements LoggerInterface
         $datetime = (new \DateTime())->format('Y-m-d H:i:s.v');
 
         Bunch::fromExplode("\n", $message)
-            ->forEach(fn ($line) =>
-                fputcsv(
+            ->forEach(
+                fn ($line) => fputcsv(
                     $this->stream,
                     [$datetime, strtoupper($level), $line],
                     separator: "\t",
@@ -93,18 +93,15 @@ class Logger extends EventDispatcher implements LoggerInterface
         $this->dispatch(new LoggedMessage($level, $message, $context));
     }
 
-    public function attach(LoggerInterface $logger, ?array $levels=null): self
+    public function attach(LoggerInterface $logger, ?array $levels = null): self
     {
-        if ($levels)
-        {
+        if ($levels) {
             $this->on(LoggedMessage::class, function (LoggedMessage $event) use ($logger, $levels) {
                 if (!in_array($event->level, $levels))
                     return;
                 $logger->log($event->level, $event->message, $event->context);
             });
-        }
-        else
-        {
+        } else {
             $this->on(LoggedMessage::class, function (LoggedMessage $event) use ($logger) {
                 $logger->log($event->level, $event->message, $event->context);
             });

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Web\Websocket\Broadcast;
 
@@ -10,7 +10,7 @@ class BroadcastConfiguration extends ConfigurationElement
     protected const WILDCARD_HOSTS = ['0.0.0.0', '::', '[::]'];
 
     /**
-     * By default http part of WebsocketConfiguration shall be used
+     * By default http part of WebsocketConfiguration shall be used.
      */
     public function __construct(
         protected ?string $socketHost = null,
@@ -18,7 +18,7 @@ class BroadcastConfiguration extends ConfigurationElement
         protected ?string $httpHost = null,
         protected ?int $httpPort = null,
         protected ?string $broadcastSecret = null,
-    ){}
+    ) {}
 
     public function getBroadcastSecret(): ?string
     {
@@ -30,10 +30,10 @@ class BroadcastConfiguration extends ConfigurationElement
         $websocketConfig = WebsocketConfiguration::resolve();
         $host = $this->httpHost ?? $websocketConfig->httpHost;
         $port = $this->httpPort ?? $websocketConfig->httpPort;
-        if (!str_contains($host, "://"))
-            $host = "http://$host";
+        if (!str_contains($host, '://'))
+            $host = "http://{$host}";
 
-        return "$host:$port";
+        return "{$host}:{$port}";
     }
 
     public function getWebsocketOrigin(): string
@@ -41,10 +41,10 @@ class BroadcastConfiguration extends ConfigurationElement
         $websocketConfig = WebsocketConfiguration::resolve();
         $host = $this->socketHost ?? $this->toReachableHost($websocketConfig->websocketHost);
         $port = $this->socketPort ?? $websocketConfig->websocketPort;
-        if (!str_contains($host, "://"))
-            $host = "ws://$host";
+        if (!str_contains($host, '://'))
+            $host = "ws://{$host}";
 
-        return "$host:$port";
+        return "{$host}:{$port}";
     }
 
     protected function toReachableHost(string $boundHost): string

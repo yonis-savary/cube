@@ -7,8 +7,8 @@ use Cube\Event\Event;
 class LoggedMessage extends Event
 {
     public function __construct(
-        readonly public string $level,
-        readonly public string|\Stringable $message,
-        readonly public array $context = []
+        public readonly string $level,
+        public readonly string|\Stringable $message,
+        public readonly array $context = []
     ) {}
 }

@@ -17,7 +17,7 @@ class Migration extends Command
 
     public function getHelp(): string
     {
-        return "Given a classname, create a database migration file (eg: php do make:migration AddUserTable)";
+        return 'Given a classname, create a database migration file (eg: php do make:migration AddUserTable)';
     }
 
     public function execute(Args $args): int

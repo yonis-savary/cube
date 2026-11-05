@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Security\Authentication;
 
@@ -25,7 +25,7 @@ class PasswordAuthentication implements AuthenticationProvider
         }
     }
 
-    public function attempt(string $identifier, #[\SensitiveParameter] ?string $password = null): Model|false
+    public function attempt(string $identifier, #[\SensitiveParameter] ?string $password = null): false|Model
     {
         $model = $this->model;
         $password ??= '';
@@ -60,13 +60,12 @@ class PasswordAuthentication implements AuthenticationProvider
         return $this->withoutCredentials($user);
     }
 
-    public function userById(mixed $id): Model|false 
+    public function userById(mixed $id): false|Model
     {
         $model = $this->model;
 
         if (!$user = $model::find($id))
             return false;
-
         return $this->withoutCredentials($user);
     }
 

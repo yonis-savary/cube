@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Web\Html;
 
@@ -7,7 +7,6 @@ use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Utils\Path;
 use Cube\Web\Html\AssetsInserter\UnsupportedAssetTypeException;
-use InvalidArgumentException;
 
 class AssetsInserter
 {
@@ -25,27 +24,28 @@ class AssetsInserter
         $this->assetsFiles = Bunch::wrap($assetsFiles);
     }
 
-    protected function findAsset(string $assetName): ?string {
+    protected function findAsset(string $assetName): ?string
+    {
         $assetName = '/'.ltrim($assetName, '/');
 
-        return $this->assetsFiles->first(fn($file) => str_ends_with('/'.ltrim($file, '/'), $assetName));
+        return $this->assetsFiles->first(fn ($file) => str_ends_with('/'.ltrim($file, '/'), $assetName));
     }
 
-    public function insert(string $assetName): string {
+    public function insert(string $assetName): string
+    {
         $path = $this->findAsset($assetName);
         if (!$path)
-            throw new InvalidArgumentException("Asset not found [$assetName]");
+            throw new \InvalidArgumentException("Asset not found [{$assetName}]");
 
         $path = Path::relative($path);
         $extension = pathinfo($path, PATHINFO_EXTENSION);
 
         $fileContent = file_get_contents($path);
 
-        return match($extension) {
-            'css' => "<style>$fileContent</style>",
-            'js' => "<script>$fileContent</script>",
+        return match ($extension) {
+            'css' => "<style>{$fileContent}</style>",
+            'js' => "<script>{$fileContent}</script>",
             default => throw new UnsupportedAssetTypeException($path)
         };
     }
-
 }

@@ -34,6 +34,19 @@ class ModelFieldTest extends TestCase
         ModelField::decimal('price', 2, 8);
     }
 
+    #[DataProvider('getBooleanValues')]
+    public function testBooleanParsing(mixed $stored, bool $expected)
+    {
+        $this->assertSame($expected, ModelField::boolean('active')->parse($stored));
+    }
+
+    /** A boolean column came back from MySQL and SQLite as 0/1 and was answered as is, while the API documentation announces a boolean. */
+    #[DataProvider('getBooleanValues')]
+    public function testABooleanIsFormattedAsABoolean(mixed $stored, bool $expected)
+    {
+        $this->assertSame($expected, ModelField::boolean('active')->format($stored));
+    }
+
     /**
      * Drivers do not agree on how a boolean comes back : Postgres answers 't'/'f' where
      * MySQL and SQLite answer 1/0.
@@ -54,19 +67,6 @@ class ModelFieldTest extends TestCase
             'spelled out' => ['true', true],
             'spelled out false' => ['false', false],
         ];
-    }
-
-    #[DataProvider('getBooleanValues')]
-    public function testBooleanParsing(mixed $stored, bool $expected)
-    {
-        $this->assertSame($expected, ModelField::boolean('active')->parse($stored));
-    }
-
-    /** A boolean column came back from MySQL and SQLite as 0/1 and was answered as is, while the API documentation announces a boolean. */
-    #[DataProvider('getBooleanValues')]
-    public function testABooleanIsFormattedAsABoolean(mixed $stored, bool $expected)
-    {
-        $this->assertSame($expected, ModelField::boolean('active')->format($stored));
     }
 
     public function testANullBooleanIsFormattedAsNull()

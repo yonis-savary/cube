@@ -9,8 +9,6 @@ use Cube\Data\Models\Relations\HasOne;
 use Cube\Utils\Implementations;
 use Faker\Factory;
 use Faker\Generator;
-use InvalidArgumentException;
-use RuntimeException;
 
 /**
  * @template TModel of Model
@@ -34,10 +32,12 @@ abstract class ModelFactory
     abstract public static function getModelClass(): string;
 
     /**
-     * Prefer `Model::factory()`
+     * Prefer `Model::factory()`.
      *
      * @template TFor of Model
+     *
      * @param class-string<TFor> $modelClass
+     *
      * @return ModelFactory<TFor>
      */
     final public static function for(string $modelClass): ModelFactory
@@ -100,7 +100,7 @@ abstract class ModelFactory
     }
 
     /**
-     * The same seed gives the same values : what a document or a fixture needs to stay stable
+     * The same seed gives the same values : what a document or a fixture needs to stay stable.
      */
     public function withSeed(int $seed): static
     {
@@ -112,7 +112,7 @@ abstract class ModelFactory
     }
 
     /**
-     * Unlike `withSeed()`, gives a copy : the factory shared by `Model::factory()` keeps making bare models
+     * Unlike `withSeed()`, gives a copy : the factory shared by `Model::factory()` keeps making bare models.
      *
      * @param string ...$relations Relation names, dot-separated for nested ones (`'lines.product'`)
      */
@@ -125,12 +125,11 @@ abstract class ModelFactory
     {
         if ($this->faker)
             return $this->faker;
-
         if (!class_exists(Factory::class))
-            throw new RuntimeException(static::class.' needs fakerphp/faker to make up values : composer require --dev fakerphp/faker');
+            throw new \RuntimeException(static::class.' needs fakerphp/faker to make up values : composer require --dev fakerphp/faker');
 
         $this->faker = Factory::create();
-        if ($this->seed !== null)
+        if (null !== $this->seed)
             $this->faker->seed($this->seed);
 
         return $this->faker;
@@ -156,7 +155,6 @@ abstract class ModelFactory
         foreach ($this->getRelations() as $name => $relation) {
             if (!$this->isReferencedByTheModel($relation))
                 continue;
-
             $referencedModels[$name] = $this->buildRelated($name, $relation, [], $database);
             $values[$relation->fromColumn] = $referencedModels[$name]->{$relation->toColumn};
         }
@@ -165,7 +163,6 @@ abstract class ModelFactory
             // A saved model leaves its key to the database, an example still needs one
             if (array_key_exists($name, $values) || ($database && $this->isLeftToTheDatabase($modelClass, $field)))
                 continue;
-
             $values[$name] = $this->fakeValue($field, $database);
         }
 
@@ -178,6 +175,7 @@ abstract class ModelFactory
 
     /**
      * @param TModel $model
+     *
      * @return TModel
      */
     private function fakeDependentRelations(Model $model, ?Database $database): Model
@@ -185,7 +183,6 @@ abstract class ModelFactory
         foreach ($this->getRelations() as $name => $relation) {
             if ($this->isReferencedByTheModel($relation))
                 continue;
-
             $related = $this->buildRelated($name, $relation, [$relation->toColumn => $model->{$relation->fromColumn}], $database);
             $model->setReference($name, $relation instanceof HasMany ? [$related] : $related);
         }
@@ -193,7 +190,7 @@ abstract class ModelFactory
         return $model;
     }
 
-    /** @return array<string,HasOne<Model>|HasMany<Model>> */
+    /** @return array<string,HasMany<Model>|HasOne<Model>> */
     private function getRelations(): array
     {
         $modelClass = $this->getFactoredClass();
@@ -202,7 +199,7 @@ abstract class ModelFactory
         $relations = [];
         foreach (array_keys($this->relationTree) as $name) {
             if (!in_array($name, $modelClass::relations(), true))
-                throw new InvalidArgumentException("Cannot fake relation [{$name}], it is not one of {$modelClass}::relations()");
+                throw new \InvalidArgumentException("Cannot fake relation [{$name}], it is not one of {$modelClass}::relations()");
 
             $relations[$name] = $instance->{$name}();
         }
@@ -210,18 +207,18 @@ abstract class ModelFactory
         return $relations;
     }
 
-    /** @param HasOne<Model>|HasMany<Model> $relation */
-    private function isReferencedByTheModel(HasOne|HasMany $relation): bool
+    /** @param HasMany<Model>|HasOne<Model> $relation */
+    private function isReferencedByTheModel(HasMany|HasOne $relation): bool
     {
         // A HasOne pointing to the key of its target is a foreign key held by the model : the target must exist first
         return $relation instanceof HasOne && $relation->toColumn === $relation->toModel::primaryKey();
     }
 
     /**
-     * @param HasOne<Model>|HasMany<Model> $relation
-     * @param array<string,mixed> $overrides
+     * @param HasMany<Model>|HasOne<Model> $relation
+     * @param array<string,mixed>          $overrides
      */
-    private function buildRelated(string $name, HasOne|HasMany $relation, array $overrides, ?Database $database): Model
+    private function buildRelated(string $name, HasMany|HasOne $relation, array $overrides, ?Database $database): Model
     {
         // Kept per relation, so its values keep coming from one sequence across makeMany()/createMany()
         $factory = $this->relationFactories[$name] ??= $this->getRelatedFactory($name, $relation);
@@ -232,14 +229,15 @@ abstract class ModelFactory
     }
 
     /**
-     * @param HasOne<Model>|HasMany<Model> $relation
+     * @param HasMany<Model>|HasOne<Model> $relation
+     *
      * @return ModelFactory<Model>
      */
-    private function getRelatedFactory(string $name, HasOne|HasMany $relation): ModelFactory
+    private function getRelatedFactory(string $name, HasMany|HasOne $relation): ModelFactory
     {
         $factory = $relation->toModel::factory()->withRelationTree($this->relationTree[$name]);
 
-        return $this->seed === null
+        return null === $this->seed
             ? $factory
             : $factory->withSeed(crc32($this->seed.$relation->toModel));
     }
@@ -256,8 +254,7 @@ abstract class ModelFactory
     {
         if ($field->hasReference())
             return $this->fakeReference($field, $database);
-
-        $faker = $field->isUnique 
+        $faker = $field->isUnique
             ? $this->faker()->unique()
             : $this->faker();
 
@@ -279,7 +276,6 @@ abstract class ModelFactory
 
         if (!$database || !is_string($referenced) || !Autoloader::extends($referenced, Model::class))
             return $this->faker()->numberBetween(1, 1000);
-
         return $referenced::factory()->create([], $database)->{$field->referenceField};
     }
 

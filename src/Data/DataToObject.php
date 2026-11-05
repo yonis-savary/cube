@@ -79,7 +79,7 @@ abstract class DataToObject
         } catch (\Throwable $err) {
             $logger = Logger::getInstance();
             // Only the shape is logged : the values are user input, passwords and tokens included
-            $logger->error("Could not create item of type {class} from fields {fields}", [
+            $logger->error('Could not create item of type {class} from fields {fields}', [
                 'class' => static::class,
                 'fields' => array_map(get_debug_type(...), $rawData),
             ]);

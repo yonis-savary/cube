@@ -3,14 +3,17 @@
 namespace Cube\Tests\Units\Core;
 
 use Cube\Core\Exceptions\ImplementationNotFoundException;
-use Cube\Utils\Implementations;
 use Cube\Data\Database\Builders\MySQL;
 use Cube\Data\Database\Builders\QueryBuilder;
 use Cube\Tests\Units\Core\Classes\Exporters\CsvExporter;
 use Cube\Tests\Units\Core\Classes\Exporters\InvoiceExporter;
 use Cube\Tests\Units\Core\Classes\Exporters\XlsxExporter;
+use Cube\Utils\Implementations;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class ImplementationsTest extends TestCase
 {
     protected function setUp(): void

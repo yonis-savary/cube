@@ -6,7 +6,6 @@ use Cube\Console\Commands\Key\Generate;
 use Cube\Env\Environment;
 use Cube\Utils\SignedPayload;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 /**
  * @internal
@@ -38,7 +37,7 @@ class SignedPayloadTest extends TestCase
 
     public function testSigningNeedsAKey()
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
 
         Environment::withInstance(new Environment(null), fn () => SignedPayload::sign('payload'));
     }
@@ -46,7 +45,7 @@ class SignedPayloadTest extends TestCase
     /** Any non-empty key was accepted : a derivation does not make `secret` any harder to guess. */
     public function testAShortKeyIsRefused()
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('at least 32 are expected');
 
         SignedPayload::sign('payload', 'c2VjcmV0==');

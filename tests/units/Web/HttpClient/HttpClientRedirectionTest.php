@@ -9,6 +9,9 @@ use Cube\Web\Http\HttpClient;
 use Cube\Web\Http\Request;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class HttpClientRedirectionTest extends TestCase
 {
     protected static ?CubeServer $server = null;
@@ -96,7 +99,7 @@ class HttpClientRedirectionTest extends TestCase
         $logger = new class extends NullLogger {
             public string $written = '';
 
-            public function log($level, null|string|\Stringable $message, array $context = []): void
+            public function log($level, string|\Stringable|null $message, array $context = []): void
             {
                 $this->written .= Text::interpolate($message, $context)."\n";
             }

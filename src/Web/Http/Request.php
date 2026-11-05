@@ -11,7 +11,6 @@ use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\ValidationReturn;
 use Cube\Web\Router\Route;
-use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Log\LoggerInterface;
@@ -256,7 +255,7 @@ class Request extends HttpMessage
         $this->slugObjects = $values;
     }
 
-    public function getSlugObject(string $name, mixed $default=null): mixed
+    public function getSlugObject(string $name, mixed $default = null): mixed
     {
         return $this->slugObjects[$name] ?? $default;
     }
@@ -279,7 +278,6 @@ class Request extends HttpMessage
         $rules = $this->getRules();
         if ($rules instanceof Rule)
             return $rules;
-
         return count($rules)
             ? new ObjectParam($rules, false)
             : new AnyParam();
@@ -304,11 +302,10 @@ class Request extends HttpMessage
      *
      * @return Upload|Upload[]
      */
-    protected static function shapeUploadsFor(array $uploads, Rule|array|null $rule): Upload|array
+    protected static function shapeUploadsFor(array $uploads, array|Rule|null $rule): array|Upload
     {
         if ($rule instanceof ArrayParam || count($uploads) > 1)
             return $uploads;
-
         return $uploads[0];
     }
 
@@ -324,28 +321,27 @@ class Request extends HttpMessage
         return $this->validate()->isValid();
     }
 
-    public function validated(?string $key=null, ?Rule $validator = null): mixed
+    public function validated(?string $key = null, ?Rule $validator = null): mixed
     {
         $validator ??= $this->getObjectParam();
         $result = $validator->validate($this->getBodyMergedWithUpload($validator), 'request')->getResult();
 
         if (!$key)
             return $result;
-
         if (array_key_exists($key, $result))
             return $result[$key];
-
         if ($validator instanceof ObjectParam && array_key_exists($key, $validator->getRules()))
             return null;
-
-        throw new InvalidArgumentException("$key key does not exists in validated values");
+        throw new \InvalidArgumentException("{$key} key does not exists in validated values");
     }
 
     /**
      * @param bool $validated If `true`, only data from validated() is returned, otherwise, data from all()
+     *
      * @return array Request data filtered by keys
      */
-    public function only(array $keys, bool $validated = true): array {
+    public function only(array $keys, bool $validated = true): array
+    {
         return array_intersect_key(
             $validated
                 ? $this->validated()
@@ -440,7 +436,8 @@ class Request extends HttpMessage
         // A form sends its empty file inputs too, each reporting UPLOAD_ERR_NO_FILE : none of them is an upload
         return (new Bunch($uploads))
             ->filter(fn (Upload $upload) => UPLOAD_ERR_NO_FILE !== $upload->error, true)
-            ->get();
+            ->get()
+        ;
     }
 
     /**
@@ -450,7 +447,6 @@ class Request extends HttpMessage
     {
         if (!is_array($fileData['name']))
             return [$fileData];
-
         $uploads = [];
         foreach (array_keys($fileData['name']) as $index) {
             $upload = array_map(fn ($values) => $values[$index], $fileData);
@@ -458,7 +454,6 @@ class Request extends HttpMessage
             // Deeper levels (files[a][b]) are not supported : left out rather than read as a broken upload
             if (is_array($upload['name']))
                 continue;
-
             $uploads[] = $upload;
         }
 

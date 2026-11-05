@@ -30,7 +30,7 @@ class RouterCallStack
     /**
      * @return class-string<Middleware>|false
      */
-    public function getNextMiddleware(): string|false
+    public function getNextMiddleware(): false|string
     {
         return $this->middlewares[$this->index++] ?? false;
     }
@@ -39,10 +39,8 @@ class RouterCallStack
     {
         if ($response instanceof Response)
             return $response;
-
-        if ($response === null)
+        if (null === $response)
             return new Response();
-
         return Response::json($response);
     }
 
@@ -51,7 +49,7 @@ class RouterCallStack
         $middleware = $this->getNextMiddleware();
 
         $response = $middleware
-            ? $middleware::handle($request, fn(Request $request) => ($this)($request))
+            ? $middleware::handle($request, fn (Request $request) => ($this)($request))
             : ($this->handler)($request);
 
         return $this->adaptValueToResponse($response);

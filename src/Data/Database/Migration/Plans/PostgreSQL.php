@@ -9,25 +9,25 @@ class PostgreSQL extends SQLPlan
 {
     public static function supports(string $driver): bool
     {
-        return strtolower($driver) === 'pgsql';
+        return 'pgsql' === strtolower($driver);
     }
 
     protected function getAutoIncrementClause(): string
     {
-        return "";
+        return '';
     }
 
     protected function getColumnType(ModelField $field): string
     {
         if ($field->isPrimaryKey && $field->autoIncrement)
-            return "SERIAL";
-
+            return 'SERIAL';
         return ModelField::DATETIME === $field->type
-            ? "TIMESTAMP"
+            ? 'TIMESTAMP'
             : parent::getColumnType($field);
     }
 
-    public function alterColumn(string $table, string $field, ModelField $newProperties) {
+    public function alterColumn(string $table, string $field, ModelField $newProperties)
+    {
         $this->assertFieldExists($table, $field);
 
         if ($field !== $newProperties->name) {
@@ -36,21 +36,21 @@ class PostgreSQL extends SQLPlan
 
         $column = "ALTER TABLE {$this->quote($table)} ALTER COLUMN {$this->quote($newProperties->name)}";
         $typeQuery = ($newProperties->isPrimaryKey && $newProperties->autoIncrement)
-            ? "SERIAL"
-            : "TYPE " . $this->getColumnType($newProperties);
+            ? 'SERIAL'
+            : 'TYPE '.$this->getColumnType($newProperties);
 
-        $this->database->exec("$column $typeQuery");
+        $this->database->exec("{$column} {$typeQuery}");
 
         $this->database->exec(
             (!$newProperties->nullable && (!$newProperties->isPrimaryKey))
-                ? "$column SET NOT NULL"
-                : "$column DROP NOT NULL"
+                ? "{$column} SET NOT NULL"
+                : "{$column} DROP NOT NULL"
         );
 
         if ($newProperties->isUnique && (!$newProperties->isPrimaryKey))
             $this->database->exec("ALTER TABLE {$this->quote($table)} ADD UNIQUE ({$this->quote($newProperties->name)})");
 
         if ($newProperties->hasDefault)
-            $this->database->exec("$column SET DEFAULT " . $this->database->build("{}", [$newProperties->default]));
+            $this->database->exec("{$column} SET DEFAULT ".$this->database->build('{}', [$newProperties->default]));
     }
 }

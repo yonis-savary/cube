@@ -179,7 +179,7 @@ class AuthenticationTest extends TestCase
         // The salt column here is 'login', so what gets verified is password + login
         User::insertArray([
             'login' => 'salted',
-            'password' => password_hash('secret'.'salted', PASSWORD_DEFAULT),
+            'password' => password_hash('secretsalted', PASSWORD_DEFAULT),
             'type' => 1,
         ]);
 

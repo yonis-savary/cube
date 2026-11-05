@@ -25,8 +25,6 @@ use Cube\Data\Models\Relations\RelationResolver;
 use Cube\Data\Models\RelationTree;
 use Cube\Env\Logger\Logger;
 use Cube\Utils\Utils;
-use InvalidArgumentException;
-use stdClass;
 
 /**
  * @template TModel
@@ -52,7 +50,7 @@ class Query
     /** @var Join[] */
     public array $joins = [];
 
-    /** @var array<FieldComparaison|FieldCondition|RawCondition|'OR'|array> */
+    /** @var array<'OR'|array|FieldComparaison|FieldCondition|RawCondition> */
     public array $conditions = [];
 
     /** @var Order[] */
@@ -60,7 +58,7 @@ class Query
 
     public ?Limit $limit = null;
 
-    /** @var RelationResolver[] $resolvers */
+    /** @var RelationResolver[] */
     public array $resolvers = [];
 
     public function __construct(string $type, string $table, string $model = DummyModel::class)
@@ -101,12 +99,12 @@ class Query
 
     /**
      * Build a grouped condition parenthesis
-     * The query is given to the callback (nested whereGroup is supported)
+     * The query is given to the callback (nested whereGroup is supported).
      *
      * @param \Closure(self):void $groupBuilder
      */
-    public function whereGroup(callable $groupBuilder): self {
-
+    public function whereGroup(callable $groupBuilder): self
+    {
         $parentConditions = $this->conditions;
         $this->conditions = [];
 
@@ -136,8 +134,7 @@ class Query
                 $operator = 'NOT IN';
             }
 
-            if (!count($value))
-            {
+            if (!count($value)) {
                 $condition = 'NOT IN' === $operator
                     ? '1=1'
                     : '1=0';
@@ -162,6 +159,7 @@ class Query
 
     /**
      * @param array<string,mixed> $conditions
+     *
      * @return self<TModel>
      */
     public function whereAssoc(array $conditions, ?string $table = null): self
@@ -184,31 +182,30 @@ class Query
         return $this->where($field, $value, 'NOT IN', $table);
     }
 
-
     public static function escapeLike(string $value): string
     {
-        return addcslashes($value, '\\%_');
+        return addcslashes($value, '\%_');
     }
 
     /**
      * @return self<TModel>
      */
-    public function or(): self {
-        $this->conditions[] = "OR";
+    public function or(): self
+    {
+        $this->conditions[] = 'OR';
         return $this;
     }
 
     /**
-     * @param \Closure(self<TModel>) $callback
+     * @param \Closure(self<TModel>)  $callback
      * @param ?\Closure(self<TModel>) $elseCallback
+     *
      * @return self<TModel>
      */
     public function when(mixed $condition, callable|\Closure $callback, callable|\Closure|null $elseCallback = null): self
     {
-        if ($condition)
-            ($callback)($this);
-        elseif ($elseCallback)
-            ($elseCallback)($this);
+        if ($condition)($callback)($this);
+        elseif ($elseCallback)($elseCallback)($this);
 
         return $this;
     }
@@ -253,7 +250,7 @@ class Query
     /**
      * @return self<TModel>
      */
-    public function selectField(string $field, ?string $table = null, ?string $alias = null, string $model = stdClass::class, ?ModelField $modelField = null): self
+    public function selectField(string $field, ?string $table = null, ?string $alias = null, string $model = \stdClass::class, ?ModelField $modelField = null): self
     {
         $table ??= $this->getFieldTable($field);
 
@@ -326,6 +323,7 @@ class Query
 
     /**
      * @param array<string,mixed> $newValues
+     *
      * @return self<TModel>
      */
     public function setAssoc(array $newValues, ?string $table = null): self
@@ -341,7 +339,7 @@ class Query
     protected function assertAssoc(array $array, string $method): void
     {
         if (!Utils::isAssoc($array))
-            throw new InvalidArgumentException("{$method}() needs an associative array of field => value, got a list");
+            throw new \InvalidArgumentException("{$method}() needs an associative array of field => value, got a list");
     }
 
     public function build(?Database $database = null): string
@@ -428,7 +426,6 @@ class Query
         foreach ($model->references as $relationName => $reference) {
             if (!$reference instanceof Model)
                 continue;
-
             if (Bunch::fromValues((array) $reference->data)->all(fn ($value) => null === $value)) {
                 $model->setReference($relationName, null);
                 continue;
@@ -446,23 +443,22 @@ class Query
         $count = $this->limitless()->count($database);
         $chunkCount = ceil($count / $chunkSize);
 
-        for ($i=0; $i<$chunkCount; $i++)
-        {
+        for ($i = 0; $i < $chunkCount; ++$i) {
             $chunkData = $this->limit($chunkSize, $i * $chunkSize)->fetch($database);
             $callback($chunkData, Bunch::wrap($chunkData));
         }
     }
 
-
     /**
      * @return Bunch<TModel>
      */
-    public function fetchBunch(?Database $database = null) {
+    public function fetchBunch(?Database $database = null)
+    {
         return Bunch::wrap($this->fetch($database));
     }
 
     /**
-     * @return TModel|null
+     * @return null|TModel
      */
     public function first(?Database $database = null): ?Model
     {
@@ -479,8 +475,8 @@ class Query
         return Bunch::wrap($this->fetch($database));
     }
 
-    public function with(string ...$relations): Query {
-
+    public function with(string ...$relations): Query
+    {
         $tree = new RelationTree(...$relations);
         $treeArray = $tree->getTree();
 
@@ -496,11 +492,12 @@ class Query
     /**
      * @param class-string<Model> $referenceClass
      */
-    public function exploreTree(string $referenceClass, array $tree, ?string $joinAcc=null): self {
+    public function exploreTree(string $referenceClass, array $tree, ?string $joinAcc = null): self
+    {
         $modelRelations = $referenceClass::relations();
         foreach ($tree as $relationName => $subtree) {
             if (!in_array($relationName, $modelRelations)) {
-                Logger::getInstance()->error("Cannot load $relationName on model $referenceClass");
+                Logger::getInstance()->error("Cannot load {$relationName} on model {$referenceClass}");
                 continue;
             }
 
@@ -520,8 +517,8 @@ class Query
                 $this->resolvers[] = new RelationResolver($relation, $newRelationAcc, $subtree);
                 continue;
             }
-            else if (!$relation instanceof HasOne) {
-                Logger::getInstance()->error("Can only load HasOne relations on queries model ($referenceClass.$relationName)");
+            if (!$relation instanceof HasOne) {
+                Logger::getInstance()->error("Can only load HasOne relations on queries model ({$referenceClass}.{$relationName})");
                 continue;
             }
 

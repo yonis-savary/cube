@@ -5,6 +5,9 @@ namespace Cube\Tests\Units\Utils;
 use Cube\Utils\Console;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class ConsoleTest extends TestCase
 {
     /** table() never read the keys of associative rows, and dropped the last row instead of the header one. */

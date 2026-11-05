@@ -10,7 +10,7 @@ use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 
 /**
  * Writes generated classes into a temporary directory, under a namespace of their own so that two tests
- * of the same process never declare the same class
+ * of the same process never declare the same class.
  */
 trait GeneratesClasses
 {
@@ -23,7 +23,7 @@ trait GeneratesClasses
     protected function setUp(): void
     {
         $this->setUpTemporaryStorage('dto-generator-');
-        $this->generatedNamespace = 'Generated'.bin2hex(random_bytes(6)).'\\Api';
+        $this->generatedNamespace = 'Generated'.bin2hex(random_bytes(6)).'\Api';
     }
 
     protected function tearDown(): void
@@ -76,12 +76,10 @@ trait GeneratesClasses
     {
         if ($this->generatedClassesLoader)
             return;
-
         $prefix = $this->generatedNamespace.'\\';
         $this->generatedClassesLoader = function (string $class) use ($prefix) {
             if (!str_starts_with($class, $prefix))
                 return;
-
             $file = $this->storage->path(str_replace('\\', '/', substr($class, strlen($prefix))).'.php');
             if (is_file($file))
                 require $file;

@@ -7,9 +7,13 @@ use Cube\Tests\Integration\Utils;
 use Cube\Utils\Shell;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class ApplicationTest extends TestCase
 {
-    public function testApplicationTestsSuccessfully() {
+    public function testApplicationTestsSuccessfully()
+    {
         Utils::getIntegrationAppStorage();
 
         $storage = Utils::getDummyApplicationStorage();
@@ -22,11 +26,11 @@ class ApplicationTest extends TestCase
         $this->assertFileExists($storage->path('App/Models/ModuleUser.php'));
 
         $proc = Shell::executeInDirectory('php do test', $storage->getRoot());
-        $output = $proc->getOutput() . $proc->getErrorOutput();
+        $output = $proc->getOutput().$proc->getErrorOutput();
 
         $this->assertEquals(0, $proc->getExitCode(), $output);
 
         $lastLine = Bunch::fromExplode("\n", $output)->filter()->last();
-        $this->assertMatchesRegularExpression("~^OK~", $lastLine, $output);
+        $this->assertMatchesRegularExpression('~^OK~', $lastLine, $output);
     }
 }

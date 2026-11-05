@@ -46,7 +46,7 @@ class Environment
         }
 
         $fileContent = file_get_contents($file);
-        $safeFileContent = preg_replace("~^#.+~m", "", $fileContent); # Support for comments
+        $safeFileContent = preg_replace('~^#.+~m', '', $fileContent); // Support for comments
 
         $content = parse_ini_string($safeFileContent, false, INI_SCANNER_RAW);
 
@@ -68,7 +68,8 @@ class Environment
         return $this->content[$key] ?? $default;
     }
 
-    public function set(string $key, string $value): void {
+    public function set(string $key, string $value): void
+    {
         $this->content[$key] = $value;
     }
 }

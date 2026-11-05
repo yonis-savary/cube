@@ -4,7 +4,7 @@ namespace Cube\Web\Http;
 
 class FileMIMETypes
 {
-    const MIME_TYPES = [
+    public const MIME_TYPES = [
         'aac' => 'audio/aac',
         'abw' => 'application/x-abiword',
         'apng' => 'image/apng',

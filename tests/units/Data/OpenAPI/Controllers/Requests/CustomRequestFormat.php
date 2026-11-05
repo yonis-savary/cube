@@ -16,12 +16,12 @@ class CustomRequestFormat extends Request
                     'id' => Param::integer(),
                     'name' => Param::string(),
                     'age' => Param::integer()->isBetween(0, 120),
-                    'last_login' => Param::datetime()
+                    'last_login' => Param::datetime(),
                 ])
             ),
             'some-boolean' => Param::boolean(),
             'some-float' => Param::float(),
-            'some-date' => Param::date()->isBetween('2000-01-01', '2099-12-31')
+            'some-date' => Param::date()->isBetween('2000-01-01', '2099-12-31'),
         ];
     }
 }

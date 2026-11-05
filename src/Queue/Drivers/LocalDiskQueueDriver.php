@@ -51,7 +51,8 @@ class LocalDiskQueueDriver extends BasicQueueDriver
     public function flush(): void
     {
         Bunch::wrap($this->getStorage()->files())
-        ->forEach(fn ($file) => unlink($file));
+            ->forEach(fn ($file) => unlink($file))
+        ;
     }
 
     public function push(array $args): void

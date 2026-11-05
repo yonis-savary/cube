@@ -3,7 +3,6 @@
 namespace Cube\Core;
 
 use Cube\Data\Bunch;
-use RuntimeException;
 
 class RequestContext
 {
@@ -22,17 +21,20 @@ class RequestContext
     {
         $this->componentsToReset = Bunch::wrap(Autoloader::classesThatUses(Component::class))
             ->diff([...$persistentComponents, Injector::class])
-            ->get();
+            ->get()
+        ;
     }
-
 
     /**
      * @template TReturn
-     * @param \Closure(self):TReturn $callback
+     *
+     * @param \Closure(self):TReturn    $callback
      * @param class-string<Component>[] $persistentComponents
+     *
      * @return TReturn
      */
-    public static function oneShot(callable $callback, array $persistentComponents = []): mixed {
+    public static function oneShot(callable $callback, array $persistentComponents = []): mixed
+    {
         $instance = new static($persistentComponents);
         return $instance->run($callback);
     }
@@ -73,7 +75,9 @@ class RequestContext
 
     /**
      * @template TReturn
+     *
      * @param callable():TReturn $callback
+     *
      * @return TReturn
      */
     public function run(callable $callback): mixed

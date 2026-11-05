@@ -9,6 +9,7 @@ use Cube\Web\Http\HttpMockServer;
 use Cube\Web\Http\MockServers;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
+use Cube\Web\Router\Route;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
@@ -108,7 +109,7 @@ class HttpClientTest extends TestCase
     {
         $calls = 0;
         MockServers::getInstance()->set(ExposedHttpClient::class, HttpMockServer::fromRoutes(
-            new \Cube\Web\Router\Route('/events', function () use (&$calls) {
+            new Route('/events', function () use (&$calls) {
                 ++$calls;
 
                 return Response::ok();
@@ -177,7 +178,7 @@ class HttpClientTest extends TestCase
     {
         $client = new ExposedHttpClient('http://some-api/');
         $client->setMockServer(HttpMockServer::fromRoutes(
-            new \Cube\Web\Router\Route('/products', fn (Request $request) => Response::ok($request->getMethod()))
+            new Route('/products', fn (Request $request) => Response::ok($request->getMethod()))
         ));
 
         foreach (['get', 'post', 'put', 'patch', 'delete'] as $verb) {
@@ -319,7 +320,7 @@ class HttpClientTest extends TestCase
         $logger = new class extends NullLogger {
             public string $written = '';
 
-            public function log($level, null|string|\Stringable $message, array $context = []): void
+            public function log($level, string|\Stringable|null $message, array $context = []): void
             {
                 $this->written .= Text::interpolate($message, $context)."\n";
             }

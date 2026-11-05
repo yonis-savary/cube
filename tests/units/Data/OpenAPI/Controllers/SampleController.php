@@ -11,11 +11,6 @@ use Cube\Data\OpenAPI\Attributes\RawBody;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceSchema;
-use Cube\Tests\Units\Web\Classes\UserProfileResource;
-use Cube\Tests\Units\Web\Classes\UserResource;
-use Cube\Tests\Units\Web\Classes\UserWithAMistypedKeyResource;
-use Cube\Tests\Units\Web\Classes\UserWithLoadedTypeResource;
-use Cube\Tests\Units\Web\Classes\UserWithTypeResource;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\AnyValueRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\CustomRequestFormat;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\Requests\EnumRequestFormat;
@@ -25,205 +20,140 @@ use Cube\Tests\Units\Data\OpenAPI\Models\Album;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Models\UserType;
+use Cube\Tests\Units\Web\Classes\UserProfileResource;
+use Cube\Tests\Units\Web\Classes\UserResource;
+use Cube\Tests\Units\Web\Classes\UserWithAMistypedKeyResource;
+use Cube\Tests\Units\Web\Classes\UserWithLoadedTypeResource;
+use Cube\Tests\Units\Web\Classes\UserWithTypeResource;
 use Cube\Web\Controller;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
 
 class SampleController extends Controller
 {
-    public function simpleRoute() {
+    public function simpleRoute() {}
 
-    }
-
-    #[Endpoint("Call simple endpoint", "Some Simple Description !")]
-    public function simpleEndpoint() {
-
-    }
+    #[Endpoint('Call simple endpoint', 'Some Simple Description !')]
+    public function simpleEndpoint() {}
 
     #[Hidden]
-    public function internalEndpoint() {
-
-    }
+    public function internalEndpoint() {}
 
     #[ResourceResponse(UserResource::class, isArray: true)]
-    public function usersAsResource() {
-
-    }
+    public function usersAsResource() {}
 
     #[ResourceResponse(UserWithTypeResource::class)]
-    public function userWithItsType() {
-
-    }
+    public function userWithItsType() {}
 
     #[ResourceResponse(UserWithLoadedTypeResource::class, with: ['_type'])]
-    public function userWithItsLoadedType() {
-
-    }
+    public function userWithItsLoadedType() {}
 
     #[ResourceResponse(UserWithLoadedTypeResource::class)]
-    public function userWithoutItsType() {
-
-    }
+    public function userWithoutItsType() {}
 
     #[ResourceResponse(UserProfileResource::class)]
-    public function userProfile() {
-
-    }
+    public function userProfile() {}
 
     #[ObjectResponse(['profiles' => [UserProfileResource::class]])]
-    public function userProfiles() {
-
-    }
+    public function userProfiles() {}
 
     #[ResourceResponse(UserWithAMistypedKeyResource::class)]
-    public function userWithAMistypedKey() {
-
-    }
+    public function userWithAMistypedKey() {}
 
     #[ModelResponse(User::class, with: ['_type', 'modules._module'])]
-    public function userWithItsRelations() {
+    public function userWithItsRelations() {}
 
-    }
-
-    public function simpleSlugEndpoint(Request $request, float $firstSlug) {
-
-    }
+    public function simpleSlugEndpoint(Request $request, float $firstSlug) {}
 
     /** Test type union, should uses 'User' */
-    public function modelSlugEndpoint(Request $request, User|string $user) {
+    public function modelSlugEndpoint(Request $request, string|User $user) {}
 
-    }
+    public function postEndpointWithCustomRequest(CustomRequestFormat $request) {}
 
-    public function postEndpointWithCustomRequest(CustomRequestFormat $request) {
+    public function patchEndpointWithCustomRequest(CustomRequestFormat $request) {}
 
-    }
+    public function putEndpointWithCustomRequest(CustomRequestFormat $request) {}
 
-    public function patchEndpointWithCustomRequest(CustomRequestFormat $request) {
+    public function typedSlugsEndpoint() {}
 
-    }
+    public function slugNamedDifferentlyEndpoint(Request $request, int $identifier) {}
 
-    public function putEndpointWithCustomRequest(CustomRequestFormat $request) {
-
-    }
-
-    public function typedSlugsEndpoint() {
-
-    }
-
-    public function slugNamedDifferentlyEndpoint(Request $request, int $identifier) {
-
-    }
-
-    public function getEndpointWithQueryRequest(QueryRequestFormat $request) {
-
-    }
+    public function getEndpointWithQueryRequest(QueryRequestFormat $request) {}
 
     #[ModelResponse(Product::class)]
-    public function endpointReturningAProduct(Request $request, int $product) {
-
-    }
+    public function endpointReturningAProduct(Request $request, int $product) {}
 
     #[ModelResponse(Product::class)]
-    public function endpointReadingAProductSlug(Request $request, Product $product) {
+    public function endpointReadingAProductSlug(Request $request, Product $product) {}
 
-    }
-
-    public function endpointTypedAsAProduct(): Product {
+    public function endpointTypedAsAProduct(): Product
+    {
         return new Product();
     }
 
-    public function endpointTypedAsAnOptionalProduct(): ?Product {
+    public function endpointTypedAsAnOptionalProduct(): ?Product
+    {
         return null;
     }
 
-    public function endpointTypedAsVoid(): void {
+    public function endpointTypedAsVoid(): void {}
 
-    }
-
-    public function endpointTypedAsAResponse(): Response {
+    public function endpointTypedAsAResponse(): Response
+    {
         return Response::ok();
     }
 
     #[ModelResponse(Product::class, description: 'A product from its attribute')]
-    public function endpointTypedAndDescribedAsAProduct(): Product {
+    public function endpointTypedAndDescribedAsAProduct(): Product
+    {
         return new Product();
     }
 
     #[ModelResponse(Product::class, true)]
-    public function endpointReturningAListOfProducts() {
-
-    }
-
+    public function endpointReturningAListOfProducts() {}
 
     #[RawResponse([
-        'first-key' => [1,2,3],
+        'first-key' => [1, 2, 3],
         'second-key' => ['some' => ['object', '/', 'array']],
-        'third-key' => ['a-flag' => true]
+        'third-key' => ['a-flag' => true],
     ])]
-    public function endpointReturningARawDataType() {
+    public function endpointReturningARawDataType() {}
 
-    }
-
-
-    #[RawResponse(file: __DIR__ . '/../Fixtures/RawResponseSource.json')]
-    public function endpointReturningAFileDataType() {
-
-    }
+    #[RawResponse(file: __DIR__.'/../Fixtures/RawResponseSource.json')]
+    public function endpointReturningAFileDataType() {}
 
     #[RawResponse(['items' => []])]
-    public function endpointReturningAnEmptyList() {
+    public function endpointReturningAnEmptyList() {}
 
-    }
+    public function postEndpointWithListRequest(ListRequestFormat $request) {}
 
-    public function postEndpointWithListRequest(ListRequestFormat $request) {
-
-    }
-
-    public function getEndpointWithEnumRequest(EnumRequestFormat $request) {
-
-    }
+    public function getEndpointWithEnumRequest(EnumRequestFormat $request) {}
 
     #[ModelResponse(Album::class)]
-    public function endpointReturningAnAlbum() {
+    public function endpointReturningAnAlbum() {}
 
-    }
-
-    public function postEndpointWithAnyValueRequest(AnyValueRequestFormat $request) {
-
-    }
+    public function postEndpointWithAnyValueRequest(AnyValueRequestFormat $request) {}
 
     #[RawResponse(['nested' => ['value' => null], 'list' => [null]])]
-    public function endpointReturningUntypedRawData() {
-
-    }
+    public function endpointReturningUntypedRawData() {}
 
     #[ObjectResponse(['items' => [Album::class], 'total' => 0])]
-    public function endpointReturningAPageOfAlbums() {
-
-    }
+    public function endpointReturningAPageOfAlbums() {}
 
     #[RawResponse(['model' => Album::class])]
-    public function endpointReturningAModelClassName() {
-
-    }
+    public function endpointReturningAModelClassName() {}
 
     #[RawBody(description: 'A chunk of the uploaded file')]
-    public function endpointReceivingAChunk(Request $request) {
-
-    }
+    public function endpointReceivingAChunk(Request $request) {}
 
     #[RawResponse(mimeType: 'audio/mpeg')]
-    public function endpointStreamingATrack() {
-
-    }
+    public function endpointStreamingATrack() {}
 
     #[ModelResponse(Album::class)]
     #[NoContentResponse('The album has no cover')]
     #[RawResponse(['error' => 'Album is locked'], responseCode: 409)]
     #[RawResponse(['error' => 'Album is archived'], responseCode: 410)]
-    public function endpointWithSeveralResponses() {
-
-    }
+    public function endpointWithSeveralResponses() {}
 
     #[ObjectResponse([
         'owner' => UserResource::class,
@@ -232,7 +162,5 @@ class SampleController extends Controller
         'type' => UserType::class,
         'total' => 0,
     ])]
-    public function endpointReturningAUserDirectory() {
-
-    }
+    public function endpointReturningAUserDirectory() {}
 }

@@ -2,9 +2,9 @@
 
 namespace Cube\Test;
 
+use Cube\Env\Logger\Logger;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
-use Cube\Env\Logger\Logger;
 use PHPUnit\Framework\Assert;
 
 class ResponseAssert extends Assert

@@ -2,8 +2,8 @@
 
 namespace Cube\Security\Authentication\Events;
 
-use Cube\Event\Event;
 use Cube\Data\Models\Model;
+use Cube\Event\Event;
 
 class LoggedOutUser extends Event
 {

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Web\Websocket\Servers;
 
@@ -13,13 +13,13 @@ class WebsocketConfiguration extends ConfigurationElement
      * @param ?string[] $allowedOrigins Full origins a browser may connect from (`https://app.example.org`), `['*']` for any, the `CORSConfiguration` ones by default
      */
     public function __construct(
-        public readonly string $websocketHost = "0.0.0.0",
+        public readonly string $websocketHost = '0.0.0.0',
         public readonly int $websocketPort = 8088,
-        public readonly string $httpHost = "127.0.0.1",
+        public readonly string $httpHost = '127.0.0.1',
         public readonly int $httpPort = 8089,
         public readonly ?string $broadcastSecret = null,
         public readonly ?array $allowedOrigins = null,
-    ){}
+    ) {}
 
     /**
      * @return string[]
@@ -49,13 +49,14 @@ class WebsocketConfiguration extends ConfigurationElement
         $host = $this->websocketHost;
         $port = $this->websocketPort;
 
-        return "$host:$port";
+        return "{$host}:{$port}";
     }
+
     public function getHttpOrigin(): string
     {
         $host = $this->httpHost;
         $port = $this->httpPort;
 
-        return "$host:$port";
+        return "{$host}:{$port}";
     }
 }

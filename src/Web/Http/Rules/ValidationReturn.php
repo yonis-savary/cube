@@ -7,7 +7,7 @@ class ValidationReturn
     protected array $errors = [];
     protected mixed $result;
 
-    public function __construct(mixed $result=null)
+    public function __construct(mixed $result = null)
     {
         $this->result = $result;
     }
@@ -18,19 +18,19 @@ class ValidationReturn
         return $this;
     }
 
-    public function setResultKey(string $key, mixed $value): static 
+    public function setResultKey(string $key, mixed $value): static
     {
         $this->result[$key] = $value;
         return $this;
     }
 
-    public function pushResult(mixed $value): static 
+    public function pushResult(mixed $value): static
     {
         $this->result[] = $value;
         return $this;
     }
 
-    public function getResult(): mixed 
+    public function getResult(): mixed
     {
         return $this->result;
     }
@@ -45,7 +45,7 @@ class ValidationReturn
     {
         $this->errors[$key] = [
             ...$this->errors[$key] ?? [],
-            ...$errors
+            ...$errors,
         ];
         return $this;
     }
@@ -57,10 +57,11 @@ class ValidationReturn
 
     public function isValid(): bool
     {
-        return count($this->errors) === 0;
+        return 0 === count($this->errors);
     }
 
-    public function mergeWith(ValidationReturn $merge): static {
+    public function mergeWith(ValidationReturn $merge): static
+    {
         foreach ($merge->getErrors() as $key => $errors) {
             if (is_string($errors)) {
                 $this->addError($errors);

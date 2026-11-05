@@ -26,7 +26,7 @@ class SpyRememberMe extends RememberMe
 
     protected function rememberedUserOf(string $token): mixed
     {
-        $this->tokenLookups++;
+        ++$this->tokenLookups;
 
         return parent::rememberedUserOf($token);
     }

@@ -11,15 +11,16 @@ class SQLite extends SQLPlan
 {
     public static function supports(string $driver): bool
     {
-        return strtolower($driver) === 'sqlite';
+        return 'sqlite' === strtolower($driver);
     }
 
     protected function getAutoIncrementClause(): string
     {
-        return " AUTOINCREMENT";
+        return ' AUTOINCREMENT';
     }
 
-    public function create(string $table, array $fields=[], ?string $additionnalSQL=null) {
+    public function create(string $table, array $fields = [], ?string $additionnalSQL = null)
+    {
         if (!count($fields))
             $fields = [ModelField::id()];
 
@@ -33,19 +34,21 @@ class SQLite extends SQLPlan
                 $relationsAndIndex->push("FOREIGN KEY ({$this->quote($field->name)}) REFERENCES {$this->quote($field->getReferenceTable())}({$this->quote($field->referenceField)}) {$this->getOnDeleteClause($field->onDeleteBehavior)}");
         }
 
-        $additionnalSQL = $additionnalSQL ? ", $additionnalSQL": "";
-        $this->database->exec("CREATE TABLE {$this->quote($table)} ( ".$fieldsExpressions->merge($relationsAndIndex)->join(",")." $additionnalSQL )");
+        $additionnalSQL = $additionnalSQL ? ", {$additionnalSQL}" : '';
+        $this->database->exec("CREATE TABLE {$this->quote($table)} ( ".$fieldsExpressions->merge($relationsAndIndex)->join(',')." {$additionnalSQL} )");
     }
 
-    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior=null) {
+    public function addForeignKey(string $table, string $field, string $foreignTable, string $foreignKey, ?string $deleteBehavior = null)
+    {
         Logger::getInstance()->warning(
-            "SQLite does not support constraints on already existing fields, trying to constraint $table.$field to $foreignTable.$foreignKey"
+            "SQLite does not support constraints on already existing fields, trying to constraint {$table}.{$field} to {$foreignTable}.{$foreignKey}"
         );
     }
 
-    public function alterColumn(string $table, string $field, ModelField $newProperties) {
+    public function alterColumn(string $table, string $field, ModelField $newProperties)
+    {
         Logger::getInstance()->warning(
-            "Column edition is not supported by SQLite, please rebuild your $table table"
+            "Column edition is not supported by SQLite, please rebuild your {$table} table"
         );
     }
 }

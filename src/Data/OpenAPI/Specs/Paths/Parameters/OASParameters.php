@@ -19,8 +19,9 @@ class OASParameters extends AutoDataToObject
     public function toArray(): array
     {
         return Bunch::wrap($this->parameters)
-            ->map(fn(OASParameter $parameter) => $parameter->toArray())
-            ->toArray();
+            ->map(fn (OASParameter $parameter) => $parameter->toArray())
+            ->toArray()
+        ;
     }
 
     public function __construct(Route $route)
@@ -37,7 +38,8 @@ class OASParameters extends AutoDataToObject
     {
         $slugs = Bunch::fromExplode('/', $route->getPath())
             ->filter(fn ($part) => preg_match('/^\{.+\}$/', $part), true)
-            ->toArray();
+            ->toArray()
+        ;
 
         $methodParameters = $route->getReflectionMethod()->getParameters();
 
@@ -48,9 +50,7 @@ class OASParameters extends AutoDataToObject
                 list($type, $name) = explode(':', $slug, 2);
                 $parameter = new OASParameter($name, OASParameter::IN_PATH, true, []);
                 $this->mutateParameterWithSlugType($type, $parameter->schema);
-            }
-            else
-            {
+            } else {
                 // Mirrors the Injector: slug values fill the parameters after the request, by position
                 $slugParameter = $methodParameters[$index + 1] ?? null;
                 $parameter = new OASParameter($slug, OASParameter::IN_PATH, true, []);
@@ -61,27 +61,25 @@ class OASParameters extends AutoDataToObject
                     );
             }
 
-            $this->context->log(" - Adding [" . $parameter->name . "] slug");
+            $this->context->log(' - Adding ['.$parameter->name.'] slug');
             $this->parameters[] = $parameter;
         }
     }
-    public function processQueryParameters(Route $route) 
+
+    public function processQueryParameters(Route $route)
     {
         if (!$rules = $this->getRequestRules($route))
             return;
-
         if (!$rules instanceof ObjectParam) {
-            $this->context->log(" - Warning: the request rules of {$route->getPath()} are a single " . $rules::class . ", only an object gives query parameters");
+            $this->context->log(" - Warning: the request rules of {$route->getPath()} are a single ".$rules::class.', only an object gives query parameters');
             return;
         }
 
-        foreach ($rules->getRules() as $key => $rule)
-        {
-            $this->context->log(" - Adding query [$key] param");
+        foreach ($rules->getRules() as $key => $rule) {
+            $this->context->log(" - Adding query [{$key}] param");
             $parameter = new OASParameter($key, 'query', !$rule->isOptional());
             $this->mutateParameterWithRule($rule, $parameter->schema);
             $this->parameters[] = $parameter;
         }
     }
-
 }

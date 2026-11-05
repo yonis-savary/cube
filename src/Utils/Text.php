@@ -22,7 +22,6 @@ class Text
     {
         if ('' === $suffix)
             return $string;
-
         $suffixLength = strlen($suffix);
         while (str_ends_with($string, $suffix)) {
             $string = substr($string, 0, strlen($string) - $suffixLength);
@@ -44,7 +43,6 @@ class Text
     {
         if ('' === $prefix)
             return $string;
-
         $prefixLength = strlen($prefix);
         while (str_starts_with($string, $prefix)) {
             $string = substr($string, $prefixLength);
@@ -71,7 +69,7 @@ class Text
         };
     }
 
-    public static function interpolate(null|string|\Stringable $message, array $context = []): string
+    public static function interpolate(string|\Stringable|null $message, array $context = []): string
     {
         $message ??= '';
         $message = (string) $message;
@@ -85,9 +83,10 @@ class Text
         return strtr($message, $replacements);
     }
 
-    public static function camelCaseString(string $string) {
+    public static function camelCaseString(string $string)
+    {
         return $string
-            |> (fn ($s) => preg_replace_callback("/[ _-](.)/", fn($match) => strtoupper($match[1]), $s))
+            |> (fn ($s) => preg_replace_callback('/[ _-](.)/', fn ($match) => strtoupper($match[1]), $s))
             |> lcfirst(...);
     }
 }

@@ -23,16 +23,16 @@ use Cube\Data\DataToObject\Generator\DtoNames;
  * Reads an OpenAPI 3.0 or 3.1 document. Every object schema becomes a class of `Refs\Output` to read
  * responses, and of `Refs\Input` to build request bodies when an operation sends it. Each operation gets
  * a `Http\Requests\<Operation>Request` (its body, or its query string) and a
- * `Http\Responses\<Operation>Response` class, and is described for the client that calls it
+ * `Http\Responses\<Operation>Response` class, and is described for the client that calls it.
  *
  * @phpstan-type OpenApiObject array<string,mixed>
  */
 class OpenApiSource implements DtoSource
 {
-    public const OUTPUT_NAMESPACE = 'Refs\\Output';
-    public const INPUT_NAMESPACE = 'Refs\\Input';
-    public const REQUESTS_NAMESPACE = 'Http\\Requests';
-    public const RESPONSES_NAMESPACE = 'Http\\Responses';
+    public const OUTPUT_NAMESPACE = 'Refs\Output';
+    public const INPUT_NAMESPACE = 'Refs\Input';
+    public const REQUESTS_NAMESPACE = 'Http\Requests';
+    public const RESPONSES_NAMESPACE = 'Http\Responses';
 
     protected const SCHEMAS_POINTER = '#/components/schemas/';
     protected const METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
@@ -89,14 +89,14 @@ class OpenApiSource implements DtoSource
         return Bunch::wrap($this->endpoints)
             ->filter(fn (string $endpoint) => !Bunch::unzip($operations)->any(fn ($pair) => $this->matches($pair[0], $pair[1], $endpoint)))
             ->values()
-            ->toArray();
+            ->toArray()
+        ;
     }
 
     protected function read(): void
     {
         if ($this->isRead)
             return;
-
         $this->isRead = true;
 
         if (!count($this->endpoints)) {
@@ -107,7 +107,6 @@ class OpenApiSource implements DtoSource
         foreach ($this->operations() as $route => $operation) {
             if (count($this->endpoints) && !$this->isSelected($route, $operation))
                 continue;
-
             $this->addOperation($route, $operation);
         }
     }
@@ -231,7 +230,7 @@ class OpenApiSource implements DtoSource
     /**
      * What joins the items of a list sent as one query parameter, `null` when each item is a parameter of its
      * own : `explode` is `true` by default for the `form` style only. `deepObject` describes maps, which
-     * `http_build_query()` already writes that way (`filter[status]=sold`)
+     * `http_build_query()` already writes that way (`filter[status]=sold`).
      *
      * @param OpenApiObject $parameter
      */
@@ -240,7 +239,6 @@ class OpenApiSource implements DtoSource
         $style = $parameter['style'] ?? 'form';
         if ($parameter['explode'] ?? ('form' === $style))
             return null;
-
         return match ($style) {
             'form' => ',',
             'spaceDelimited' => '%20',
@@ -251,6 +249,7 @@ class OpenApiSource implements DtoSource
 
     /**
      * @param OpenApiObject $operation
+     *
      * @return ?OpenApiObject
      */
     protected function requestSchemaOf(array $operation): ?array
@@ -260,6 +259,7 @@ class OpenApiSource implements DtoSource
 
     /**
      * @param OpenApiObject $operation
+     *
      * @return ?OpenApiObject
      */
     protected function responseSchemaOf(array $operation): ?array
@@ -267,7 +267,6 @@ class OpenApiSource implements DtoSource
         foreach ($operation['responses'] ?? [] as $status => $response) {
             if (!preg_match('/^2(\d\d|XX)$/', (string) $status))
                 continue;
-
             if ($schema = $this->jsonSchemaOf($this->resolve($response)))
                 return $schema;
         }
@@ -277,6 +276,7 @@ class OpenApiSource implements DtoSource
 
     /**
      * @param OpenApiObject $bodyOrResponse
+     *
      * @return ?OpenApiObject
      */
     protected function jsonSchemaOf(array $bodyOrResponse): ?array
@@ -292,7 +292,7 @@ class OpenApiSource implements DtoSource
     /**
      * An object body gets a class named after the endpoint, extending the schema class it refers to, or
      * holding the properties described inline, its own inline objects going to a sub-namespace of its name.
-     * A list or a scalar body has no class of its own : its type is given as is
+     * A list or a scalar body has no class of its own : its type is given as is.
      *
      * @param OpenApiObject $schema
      */
@@ -304,7 +304,6 @@ class OpenApiSource implements DtoSource
 
         if (!$type instanceof ClassType || $namespace === $type->namespace)
             return $type;
-
         $this->addClass(new DtoClass($namespace, $name, parent: $type, direction: $direction));
 
         return new ClassType($namespace, $name);
@@ -315,7 +314,6 @@ class OpenApiSource implements DtoSource
         $key = $direction->name.$pointer;
         if ($type = $this->referenceTypes[$key] ?? null)
             return $type;
-
         $schema = $this->resolvePointer($pointer);
         $name = DtoNames::className(strtr(rawurldecode(preg_replace('~.+/~', '', $pointer)), ['~1' => '/', '~0' => '~']));
         $namespace = DtoDirection::Input === $direction ? self::INPUT_NAMESPACE : self::OUTPUT_NAMESPACE;
@@ -337,24 +335,18 @@ class OpenApiSource implements DtoSource
     {
         if (!is_array($schema))
             return new MixedType();
-
         if (isset($schema['$ref']))
             return $this->typeOfReference($schema['$ref'], $direction);
-
         $variants = $this->nonNullVariantsOf($schema);
         if (count($variants))
             return 1 === count($variants) ? $this->typeOf($variants[0], $namespace, $name, $direction) : new MixedType();
-
         if (1 === count($schema['allOf'] ?? []) && !isset($schema['properties']))
             return $this->typeOf($schema['allOf'][0], $namespace, $name, $direction);
-
         if ($this->isObject($schema))
             return $this->objectTypeOf($schema, $namespace, $name, $direction);
-
         $types = array_values(array_diff((array) ($schema['type'] ?? []), ['null']));
         if (1 !== count($types))
             return new MixedType();
-
         $enum = array_values(array_filter($schema['enum'] ?? [], fn ($value) => null !== $value));
 
         return match ($types[0]) {
@@ -386,7 +378,7 @@ class OpenApiSource implements DtoSource
     }
 
     /**
-     * A `readOnly` property is never sent, a `writeOnly` one never received
+     * A `readOnly` property is never sent, a `writeOnly` one never received.
      *
      * @param OpenApiObject $schema
      */
@@ -403,7 +395,6 @@ class OpenApiSource implements DtoSource
         foreach ($this->propertiesOf($schema) as $key => $propertySchema) {
             if (is_array($propertySchema) && true === ($this->resolve($propertySchema)[$excluded] ?? false))
                 continue;
-
             $properties[] = new DtoProperty(
                 (string) $key,
                 $this->typeOf($propertySchema, $childNamespace, $childPrefix.DtoNames::className((string) $key), $direction),
@@ -427,22 +418,19 @@ class OpenApiSource implements DtoSource
 
     /**
      * A relative server URL is relative to where the document was fetched from : left unknown for a file.
-     * Its `{variables}` are left in place, the client fills them from its configuration
+     * Its `{variables}` are left in place, the client fills them from its configuration.
      */
     protected function serverUrl(): ?string
     {
         $server = $this->document['servers'][0] ?? null;
         if (!is_array($server) || !isset($server['url']))
             return null;
-
         $url = $server['url'];
 
         if (preg_match('~^https?://~i', $url))
             return rtrim($url, '/');
-
         if (!$this->documentUrl || !preg_match('~^(https?:)//([^/?#]+)([^?#]*)~i', $this->documentUrl, $location))
             return null;
-
         [, $scheme, $host, $documentPath] = $location;
 
         $path = match (true) {
@@ -453,7 +441,6 @@ class OpenApiSource implements DtoSource
 
         if (null === $path)
             return rtrim($scheme.$url, '/');
-
         $segments = [];
         foreach (explode('/', $path) as $segment) {
             if ('..' === $segment) {
@@ -469,7 +456,7 @@ class OpenApiSource implements DtoSource
     }
 
     /**
-     * Every placeholder of the server URL, declared or not. A default missing from the `enum` is one of its values
+     * Every placeholder of the server URL, declared or not. A default missing from the `enum` is one of its values.
      *
      * @return ServerVariable[]
      */
@@ -477,7 +464,6 @@ class OpenApiSource implements DtoSource
     {
         if (null === $url)
             return [];
-
         preg_match_all('/\{([^}]+)\}/', $url, $placeholders);
         $declared = $this->document['servers'][0]['variables'] ?? [];
 
@@ -497,7 +483,7 @@ class OpenApiSource implements DtoSource
 
     /**
      * Every security scheme the client can send. `oauth2` and `openIdConnect` flows are not run : the
-     * configured credential is sent as a bearer token
+     * configured credential is sent as a bearer token.
      *
      * @return array<string,ClientAuthentication>
      */
@@ -527,9 +513,10 @@ class OpenApiSource implements DtoSource
 
     /**
      * The schemes of every alternative the operation accepts, its own `security` overriding the document's
-     * (`security: []` requires none)
+     * (`security: []` requires none).
      *
      * @param OpenApiObject $operation
+     *
      * @return string[]
      */
     protected function securityOf(array $operation): array
@@ -542,7 +529,8 @@ class OpenApiSource implements DtoSource
             ->filter(fn (string $scheme) => isset($supported[$scheme]))
             ->uniques()
             ->values()
-            ->toArray();
+            ->toArray()
+        ;
     }
 
     /**
@@ -567,6 +555,7 @@ class OpenApiSource implements DtoSource
 
     /**
      * @param OpenApiObject $schema
+     *
      * @return array<string,mixed>
      */
     protected function propertiesOf(array $schema): array
@@ -582,6 +571,7 @@ class OpenApiSource implements DtoSource
 
     /**
      * @param OpenApiObject $schema
+     *
      * @return string[]
      */
     protected function requiredOf(array $schema): array
@@ -599,21 +589,19 @@ class OpenApiSource implements DtoSource
     {
         if (!is_array($schema))
             return true;
-
         if (true === ($schema['nullable'] ?? false)
             || in_array('null', (array) ($schema['type'] ?? []), true)
             || in_array(null, $schema['enum'] ?? [], true)
             || count($this->variantsOf($schema)) > count($this->nonNullVariantsOf($schema)))
-            return true;
-
+                return true;
         if (isset($schema['$ref']))
             return $this->isNullable($this->resolve($schema));
-
         return 1 === count($schema['allOf'] ?? []) && $this->isNullable($schema['allOf'][0]);
     }
 
     /**
      * @param OpenApiObject $schema
+     *
      * @return list<mixed>
      */
     protected function variantsOf(array $schema): array
@@ -623,6 +611,7 @@ class OpenApiSource implements DtoSource
 
     /**
      * @param OpenApiObject $schema
+     *
      * @return list<mixed>
      */
     protected function nonNullVariantsOf(array $schema): array
@@ -630,11 +619,13 @@ class OpenApiSource implements DtoSource
         return Bunch::wrap($this->variantsOf($schema))
             ->filter(fn ($variant) => !is_array($variant) || ['null'] !== (array) ($variant['type'] ?? []))
             ->values()
-            ->toArray();
+            ->toArray()
+        ;
     }
 
     /**
      * @param OpenApiObject $schema
+     *
      * @return OpenApiObject
      */
     protected function resolve(array $schema): array

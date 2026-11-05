@@ -5,10 +5,13 @@ use Cube\Core\Injector;
 if (!function_exists('inject')) {
     /**
      * @template T
+     *
      * @param class-string<T> $class
+     *
      * @return T
      */
-    function inject(string $class, mixed $contructorArgs=[]): mixed {
+    function inject(string $class, mixed $contructorArgs = []): mixed
+    {
         return Injector::getInstance()->instanciate($class, $contructorArgs);
     }
 }

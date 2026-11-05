@@ -6,9 +6,9 @@ use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 
 /**
- * @property int $id
- * @property string $name
- * @property string $last_update
+ * @property int     $id
+ * @property string  $name
+ * @property string  $last_update
  * @property ?string $released_at
  */
 class Album extends Model

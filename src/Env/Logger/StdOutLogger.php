@@ -3,22 +3,21 @@
 namespace Cube\Env\Logger;
 
 use Cube\Data\Bunch;
-use Cube\Utils\Text;
 use Cube\Env\Logger\Events\LoggedMessage;
-use Exception;
+use Cube\Utils\Text;
 
 class StdOutLogger extends Logger
 {
-    /** @var ?resource $stdOutStream */
-    protected static $stdOutStream = null;
+    /** @var ?resource */
+    protected static $stdOutStream;
 
     public function __construct()
     {
         if (self::$stdOutStream) {
             $this->stream = self::$stdOutStream;
         } else {
-            if (! $this->stream = fopen('php://stdout', 'w'))
-                throw new Exception("Could not open stdout");
+            if (!$this->stream = fopen('php://stdout', 'w'))
+                throw new \Exception('Could not open stdout');
 
             self::$stdOutStream = $this->stream;
         }
@@ -31,7 +30,7 @@ class StdOutLogger extends Logger
 
     public function __destruct() {}
 
-    public function log($level, null|string|\Stringable $message, array $context = []): void
+    public function log($level, string|\Stringable|null $message, array $context = []): void
     {
         $message ??= 'null';
 
@@ -42,8 +41,8 @@ class StdOutLogger extends Logger
         $message = Text::interpolate($message, $context);
 
         Bunch::fromExplode("\n", $message)
-            ->forEach(fn ($line) =>
-                fwrite($this->stream, join(' ', [
+            ->forEach(
+                fn ($line) => fwrite($this->stream, join(' ', [
                     date('[D M j G:i:s Y]'),
                     strtoupper($level),
                     $line,

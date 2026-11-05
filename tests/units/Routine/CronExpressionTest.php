@@ -74,6 +74,14 @@ class CronExpressionTest extends TestCase
         $this->assertFalse($expression->matches('2026-08-14 08:31:00'));
     }
 
+    #[DataProvider('getInvalidExpressions')]
+    public function testAnInvalidExpressionIsRefused(string $expression)
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new CronExpression($expression);
+    }
+
     /**
      * @return array<string,array{string}>
      */
@@ -94,14 +102,6 @@ class CronExpressionTest extends TestCase
             'day of the week out of bounds' => ['0 0 * * 8'],
             'reversed range' => ['10-5 * * * *'],
         ];
-    }
-
-    #[DataProvider('getInvalidExpressions')]
-    public function testAnInvalidExpressionIsRefused(string $expression)
-    {
-        $this->expectException(\InvalidArgumentException::class);
-
-        new CronExpression($expression);
     }
 
     public function testARangeCanHoldASingleValue()

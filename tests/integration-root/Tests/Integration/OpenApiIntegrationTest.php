@@ -11,13 +11,13 @@ use Symfony\Component\Process\Process;
 
 /**
  * The application describes itself with `make:openapi`, `make:integration` turns that document into classes,
- * and the real answers of the application must hydrate them : the three have to agree
+ * and the real answers of the application must hydrate them : the three have to agree.
  *
  * @internal
  */
 class OpenApiIntegrationTest extends CubeTestCase
 {
-    protected const NAMESPACE = 'Tests\\Generated\\IntegrationApi';
+    protected const NAMESPACE = 'Tests\Generated\IntegrationApi';
     protected const DIRECTORY = 'Tests/Generated';
 
     public static function setUpBeforeClass(): void
@@ -67,16 +67,17 @@ class OpenApiIntegrationTest extends CubeTestCase
     {
         $stored = $this->postJson('/product', ['name' => 'Painting', 'price_dollar' => 120.5, 'managers' => []])
             ->assertOk()
-            ->json();
+            ->json()
+        ;
 
-        $created = $this->generatedClass('Http\\Responses\\StoreProductResponse')::fromData($stored);
+        $created = $this->generatedClass('Http\Responses\StoreProductResponse')::fromData($stored);
         $this->assertEquals('Painting', $created->name);
 
         // `with: ['managers']` documents the relation as required on this endpoint only
-        $managers = new \ReflectionParameter([$this->generatedClass('Http\\Responses\\StoreProductResponse'), '__construct'], 'managers');
+        $managers = new \ReflectionParameter([$this->generatedClass('Http\Responses\StoreProductResponse'), '__construct'], 'managers');
         $this->assertFalse($managers->isOptional());
 
-        $read = $this->generatedClass('Http\\Responses\\GetProductResponse')::fromData($this->get("/product/{$created->id}")->assertOk()->json());
+        $read = $this->generatedClass('Http\Responses\GetProductResponse')::fromData($this->get("/product/{$created->id}")->assertOk()->json());
         $this->assertEquals($created->id, $read->id);
         $this->assertEquals(120.5, $read->priceDollar);
         $this->assertSame([], $read->managers);
@@ -84,7 +85,7 @@ class OpenApiIntegrationTest extends CubeTestCase
 
     public function testTheApplicationAcceptsWhatARequestClassSends()
     {
-        $request = new ($this->generatedClass('Http\\Requests\\StoreProductRequest'))('Painting', null, []);
+        $request = new ($this->generatedClass('Http\Requests\StoreProductRequest'))('Painting', null, []);
 
         $this->assertEquals(['name' => 'Painting', 'price_dollar' => null, 'managers' => []], $request->toArray());
         $this->postJson('/product', $request->toArray())->assertOk();
@@ -104,7 +105,7 @@ class OpenApiIntegrationTest extends CubeTestCase
             [$created, $read] = (new Configuration($configuration))->asGlobalInstance(function () {
                 $client = new ($this->generatedClass('IntegrationApiClient'))();
 
-                $created = $client->storeProduct(new ($this->generatedClass('Http\\Requests\\StoreProductRequest'))('Painting', 120.5, []));
+                $created = $client->storeProduct(new ($this->generatedClass('Http\Requests\StoreProductRequest'))('Painting', 120.5, []));
 
                 return [$created, $client->getProduct($created->id)];
             });
@@ -112,8 +113,8 @@ class OpenApiIntegrationTest extends CubeTestCase
             $server->stop();
         }
 
-        $this->assertInstanceOf($this->generatedClass('Http\\Responses\\StoreProductResponse'), $created);
-        $this->assertInstanceOf($this->generatedClass('Http\\Responses\\GetProductResponse'), $read);
+        $this->assertInstanceOf($this->generatedClass('Http\Responses\StoreProductResponse'), $created);
+        $this->assertInstanceOf($this->generatedClass('Http\Responses\GetProductResponse'), $read);
         $this->assertEquals($created->id, $read->id);
         $this->assertEquals('Painting', $read->name);
         $this->assertEquals(120.5, $read->priceDollar);
@@ -130,7 +131,7 @@ class OpenApiIntegrationTest extends CubeTestCase
 
     protected function waitForPort(int $port, Process $server): void
     {
-        for ($i = 0; $i < 50; $i++) {
+        for ($i = 0; $i < 50; ++$i) {
             // A refused connection is the expected outcome until the server has bound its port
             if ($connection = @fsockopen('127.0.0.1', $port)) {
                 fclose($connection);

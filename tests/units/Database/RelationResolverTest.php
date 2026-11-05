@@ -196,7 +196,8 @@ class RelationResolverTest extends TestCase
                 ->order('id', 'ASC')
                 ->chunk(1, function (array $users) use (&$modules) {
                     $modules += $this->modulesByLogin($users);
-                });
+                })
+            ;
 
             $this->assertEquals(['root' => [4], 'john' => [1, 2], 'jane' => []], $modules);
         });

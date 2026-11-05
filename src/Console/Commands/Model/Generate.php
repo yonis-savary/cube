@@ -5,9 +5,9 @@ namespace Cube\Console\Commands\Model;
 use Cube\Console\Args;
 use Cube\Console\Command;
 use Cube\Data\Database\Database;
-use Cube\Env\Storage;
 use Cube\Data\Models\ModelGenerator;
 use Cube\Data\Models\ModelGenerator\GeneratedModels;
+use Cube\Env\Storage;
 use Cube\Utils\Console;
 use Cube\Utils\Path;
 use Cube\Web\ModelAPI\ModelAPIGenerator;
@@ -52,7 +52,7 @@ class Generate extends Command
             Console::log('Generated '.$file);
         }
 
-        (new GeneratedModels)->dispatch();
+        (new GeneratedModels())->dispatch();
 
         if ($args->has('-a', '--apis'))
             $this->generateApis($files, $modelsStorage, (new Storage($app))->child('Http/Apis'));

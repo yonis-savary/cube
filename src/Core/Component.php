@@ -11,7 +11,7 @@ trait Component
 
     public static function getDefaultInstance(): static
     {
-        return static::class === Injector::class
+        return Injector::class === static::class
             ? new static()
             : Injector::getInstance()->instanciate(static::class);
     }
@@ -46,7 +46,8 @@ trait Component
 
     /**
      * @param \Closure(static,static) $callback
-     * @param mixed $scopedInstance
+     * @param mixed                   $scopedInstance
+     *
      * @return mixed Return value of callback
      */
     public static function withInstance($scopedInstance, callable $callback): mixed
@@ -65,8 +66,9 @@ trait Component
 
     /**
      * @param \Closure(static,static) $callback
+     *
      * @return mixed Return value of callback
-    */
+     */
     public function asGlobalInstance(callable $callback): mixed
     {
         return static::withInstance($this, $callback);

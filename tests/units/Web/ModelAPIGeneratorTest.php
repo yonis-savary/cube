@@ -9,9 +9,12 @@ use Cube\Web\ModelAPI\ModelAPI;
 use Cube\Web\ModelAPI\ModelAPIGenerator;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class ModelAPIGeneratorTest extends TestCase
 {
-    const NAMESPACE = 'Cube\\Tests\\Units\\Web\\GeneratedApis';
+    public const NAMESPACE = 'Cube\Tests\Units\Web\GeneratedApis';
 
     protected Storage $storage;
 
@@ -35,7 +38,7 @@ class ModelAPIGeneratorTest extends TestCase
         $this->assertEquals($this->storage->path('ProductAPI.php'), $file);
 
         require $file;
-        $apiClass = self::NAMESPACE.'\\ProductAPI';
+        $apiClass = self::NAMESPACE.'\ProductAPI';
         $api = new $apiClass();
 
         $this->assertInstanceOf(ModelAPI::class, $api);

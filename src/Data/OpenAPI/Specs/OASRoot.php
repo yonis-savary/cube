@@ -21,7 +21,7 @@ class OASRoot extends DataAutoDataToObject
         public array $paths = [],
         public array $components = [],
         public array $security = []
-    ){}
+    ) {}
 
     public function objectKeys(): array
     {
@@ -57,7 +57,7 @@ class OASRoot extends DataAutoDataToObject
      */
     private function generateModelSchema(string $model): void
     {
-        $basename = preg_replace("~.+\\\\~", "", $model);
+        $basename = preg_replace('~.+\\\\~', '', $model);
         $this->components['schemas'][$basename] = [];
         $schema = &$this->components['schemas'][$basename];
         $this->mutateParameterWithRule($model::toResponseObjectParam(), $schema);
@@ -75,10 +75,10 @@ class OASRoot extends DataAutoDataToObject
         $schema['example'] = $model::factory()->withSeed(crc32($model))->make()->toArray();
     }
 
-    public function generateSecurityScheme(OpenAPIConfiguration $configuration) {
+    public function generateSecurityScheme(OpenAPIConfiguration $configuration)
+    {
         if (!$scheme = $configuration->authenticationScheme)
             return;
-
         $name = $scheme->getComponentName();
         $arrayScheme = $scheme->toArray();
 

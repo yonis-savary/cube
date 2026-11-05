@@ -31,7 +31,6 @@ class RecordedTasks
         self::$calls[] = 'runsItselfAgain';
         if (count(self::$calls) > 1)
             return;
-
         self::$nestedRunResult = Scheduler::getInstance()->run([self::class, 'runsItselfAgain']);
     }
 
@@ -40,7 +39,6 @@ class RecordedTasks
         self::$calls[] = 'runsItselfAgainWithoutLock';
         if (count(self::$calls) > 1)
             return;
-
         self::$nestedRunResult = Scheduler::getInstance()->run([self::class, 'runsItselfAgainWithoutLock'], false);
     }
 

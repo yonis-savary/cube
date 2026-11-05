@@ -12,14 +12,12 @@ use Cube\Data\Models\ModelField;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
 use Cube\Utils\Text;
-use InvalidArgumentException;
 
 class ToTypes extends Command
 {
     public function __construct(
         protected ToTypesConfiguration $config
-    )
-    {}
+    ) {}
 
     public function getHelp(): string
     {
@@ -59,12 +57,11 @@ class ToTypes extends Command
                 $nullableStr = $model::fields()[$relation->fromColumn]->nullable ? '?' : '';
 
                 return [$relationName, $relationName."{$nullableStr}: ".$this->toPascalCase($relation->toModel::table())];
-
             case HasMany::class:
                 return [$relationName, $relationName.'?: Array<'.$this->toPascalCase($relation->toModel::table()).'>'];
         }
 
-        throw new InvalidArgumentException("Unsupported relation type " . $relation::class);
+        throw new \InvalidArgumentException('Unsupported relation type '.$relation::class);
     }
 
     public function toPascalCase(string $string): string
@@ -83,7 +80,7 @@ class ToTypes extends Command
     {
         $typeName = $this->toPascalCase($model::table());
 
-        echo "Type $typeName\n";
+        echo "Type {$typeName}\n";
 
         $instance = new $model();
 
@@ -98,14 +95,14 @@ class ToTypes extends Command
             ->join("\n\t")
         ;
 
-        $pluralName = $typeName . "s";
-        if (str_ends_with($pluralName, "ys"))
-            $pluralName = preg_replace("/ys$/", "ies", $pluralName);
+        $pluralName = $typeName.'s';
+        if (str_ends_with($pluralName, 'ys'))
+            $pluralName = preg_replace('/ys$/', 'ies', $pluralName);
 
         return Text::toFile("export type {$typeName} = {
             {$fields}
         }
-        export type $pluralName = Array<{$typeName}>
+        export type {$pluralName} = Array<{$typeName}>
         ");
     }
 

@@ -46,14 +46,11 @@ class Dto extends Command
 
         if (null === $sample = $this->readJsonDocument($location, $args, acceptsInlineJson: true))
             return 1;
-
         if (array_is_list($sample))
             return $this->abort('The sample is a JSON list : give one of its objects');
-
         $rootName = $args->getValue(long: 'name');
         if ($rootName && !preg_match(DtoNames::CLASS_NAME_FORMAT, $rootName))
             return $this->abort("--name [{$rootName}] is not a class name starting with an uppercase letter");
-
         while (!$rootName || !preg_match(DtoNames::CLASS_NAME_FORMAT, $rootName))
             $rootName = readline('Root class name ? ');
 
@@ -64,7 +61,6 @@ class Dto extends Command
 
         if (!$target)
             return $this->abort("Namespace [{$namespace}] is outside every PSR-4 prefix of composer.json, its classes could not be autoloaded");
-
         foreach ((new DtoWriter($target, $this->getFullIdentifier()))->write((new SampleSource($rootName, $sample))->toClasses()) as $file)
             Console::print(Path::toRelative($file));
 

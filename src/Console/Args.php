@@ -16,7 +16,7 @@ class Args
         $locked = false;
 
         foreach ($argv as $arg) {
-            if ($arg === '--') {
+            if ('--' === $arg) {
                 $locked = true;
                 $currentArg = null;
                 continue;
@@ -27,7 +27,7 @@ class Args
                 continue;
             }
 
-            if (str_starts_with($arg, '-') && $arg !== '-' ) {
+            if (str_starts_with($arg, '-') && '-' !== $arg) {
                 if (str_contains($arg, '=')) {
                     list($param, $value) = explode('=', $arg, 2);
 
@@ -53,8 +53,9 @@ class Args
     public function toString(): string
     {
         return Bunch::unzip($this->values)
-        ->map(fn($pair) =>  ($pair[0] ? ($pair[0] . " ") : '') . join(' ', $pair[1]) )
-        ->join(' ');
+            ->map(fn ($pair) => ($pair[0] ? ($pair[0].' ') : '').join(' ', $pair[1]))
+            ->join(' ')
+        ;
     }
 
     public function addParameter(?string $parameter): void

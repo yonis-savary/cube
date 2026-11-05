@@ -2,8 +2,8 @@
 
 namespace Cube\Web\Router;
 
-use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Core\Autoloader;
+use Cube\Env\Configuration\ConfigurationElement;
 use Cube\Web\Helpers\WebAPI;
 
 class RouterConfiguration extends ConfigurationElement

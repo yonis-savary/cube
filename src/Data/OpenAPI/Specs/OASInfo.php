@@ -9,5 +9,5 @@ class OASInfo extends AutoDataToObject
     public function __construct(
         public string $title,
         public string $version
-    ){}
+    ) {}
 }

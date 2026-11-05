@@ -4,10 +4,10 @@ namespace App\Controllers;
 
 use App\Controllers\Requests\StoreDocumentRequest;
 use Cube\Env\Storage;
+use Cube\Web\Controller;
 use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Http\Upload;
-use Cube\Web\Controller;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
 

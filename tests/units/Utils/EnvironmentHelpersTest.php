@@ -9,8 +9,28 @@ use PHPUnit\Framework\TestCase;
 use function Cube\isDebug;
 use function Cube\isProduction;
 
+/**
+ * @internal
+ */
 class EnvironmentHelpersTest extends TestCase
 {
+    /**
+     * The exception handler read `environment` while isProduction() read `env`, and showed traces when neither was set.
+     */
+    #[DataProvider('getEnvironments')]
+    public function testProductionAndDebugModes(array $values, bool $production, bool $debug)
+    {
+        $environment = new Environment(null);
+        foreach ($values as $key => $value) {
+            $environment->set($key, $value);
+        }
+
+        Environment::withInstance($environment, function () use ($production, $debug) {
+            $this->assertSame($production, isProduction());
+            $this->assertSame($debug, isDebug());
+        });
+    }
+
     /** @return array<string,array{array<string,string>,bool,bool}> */
     public static function getEnvironments(): array
     {
@@ -26,22 +46,5 @@ class EnvironmentHelpersTest extends TestCase
             'env preprod' => [['env' => 'preprod'], false, false],
             'env staging' => [['env' => 'staging'], false, false],
         ];
-    }
-
-    /**
-     * The exception handler read `environment` while isProduction() read `env`, and showed traces when neither was set
-     */
-    #[DataProvider('getEnvironments')]
-    public function testProductionAndDebugModes(array $values, bool $production, bool $debug)
-    {
-        $environment = new Environment(null);
-        foreach ($values as $key => $value) {
-            $environment->set($key, $value);
-        }
-
-        Environment::withInstance($environment, function () use ($production, $debug) {
-            $this->assertSame($production, isProduction());
-            $this->assertSame($debug, isDebug());
-        });
     }
 }

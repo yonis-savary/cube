@@ -12,18 +12,19 @@ class RelationTree
             $this->addRelation($relation);
     }
 
-    public function addRelation(string $relation) {
-        $path = explode(".", $relation);
+    public function addRelation(string $relation)
+    {
+        $path = explode('.', $relation);
 
         $ref = &$this->tree;
-        foreach ($path as $step)
-        {
+        foreach ($path as $step) {
             $ref[$step] ??= [];
             $ref = &$ref[$step];
         }
     }
 
-    public function getTree() {
+    public function getTree()
+    {
         return $this->tree;
     }
 }

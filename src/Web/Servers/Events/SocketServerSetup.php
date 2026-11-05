@@ -7,7 +7,7 @@ use Cube\Web\Router\Router;
 
 /**
  * Event used to configure the Socker Server Routes
- * (Reading Apps routes directly would be dangerous)
+ * (Reading Apps routes directly would be dangerous).
  */
 class SocketServerSetup extends Event
 {

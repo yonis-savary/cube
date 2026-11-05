@@ -3,7 +3,7 @@
 use Cube\Web\Servers\UnixSocketServer;
 use React\EventLoop\Loop;
 
-include __DIR__ . '/../../../../bootstrap.php';
+include __DIR__.'/../../../../bootstrap.php';
 
 $socketPath = $argv[1];
 

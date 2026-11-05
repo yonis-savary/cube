@@ -9,6 +9,9 @@ use PHPUnit\Framework\TestCase;
 use function Cube\decrypt;
 use function Cube\encrypt;
 
+/**
+ * @internal
+ */
 class EncryptionTest extends TestCase
 {
     public function testEncryptThenDecrypt()

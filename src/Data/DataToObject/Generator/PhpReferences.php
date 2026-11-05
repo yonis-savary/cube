@@ -6,7 +6,7 @@ use Cube\Data\Bunch;
 
 /**
  * How a generated class refers to the classes it needs : its short name, imported when it lives in
- * another namespace, or its fully qualified name when that short name is already taken
+ * another namespace, or its fully qualified name when that short name is already taken.
  */
 class PhpReferences
 {
@@ -46,7 +46,8 @@ class PhpReferences
             ->filter(fn ($pair) => !str_starts_with($pair[1], '\\') && self::namespaceOf($pair[0]) !== $this->namespace)
             ->map(fn ($pair) => "use {$pair[0]};")
             ->sort()
-            ->join("\n");
+            ->join("\n")
+        ;
 
         return $uses ? "{$uses}\n\n" : '';
     }

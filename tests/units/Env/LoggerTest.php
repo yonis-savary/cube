@@ -9,6 +9,9 @@ use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Tests\Units\Env\Classes\SpyLogger;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class LoggerTest extends TestCase
 {
     use HasTemporaryStorage;
@@ -23,7 +26,7 @@ class LoggerTest extends TestCase
         $this->tearDownTemporaryStorage();
     }
 
-    public function test_a_new_file_starts_with_a_header_row()
+    public function testANewFileStartsWithAHeaderRow()
     {
         $file = $this->newLogFile();
         new Logger($file, $this->storage);
@@ -31,7 +34,7 @@ class LoggerTest extends TestCase
         $this->assertEquals([['Datetime', 'Level', 'Message']], $this->rowsOf($file));
     }
 
-    public function test_a_message_is_interpolated_with_its_context()
+    public function testAMessageIsInterpolatedWithItsContext()
     {
         $file = $this->newLogFile();
         $logger = new Logger($file, $this->storage);
@@ -41,7 +44,7 @@ class LoggerTest extends TestCase
         $this->assertEquals('Order 1024 was shipped', $this->lastRowOf($file)[2]);
     }
 
-    public function test_the_level_is_written_in_upper_case()
+    public function testTheLevelIsWrittenInUpperCase()
     {
         $file = $this->newLogFile();
         $logger = new Logger($file, $this->storage);
@@ -51,7 +54,7 @@ class LoggerTest extends TestCase
         $this->assertEquals('WARNING', $this->lastRowOf($file)[1]);
     }
 
-    public function test_the_datetime_holds_milliseconds()
+    public function testTheDatetimeHoldsMilliseconds()
     {
         $file = $this->newLogFile();
         $logger = new Logger($file, $this->storage);
@@ -64,7 +67,7 @@ class LoggerTest extends TestCase
         );
     }
 
-    public function test_a_message_holding_a_separator_stays_in_one_column()
+    public function testAMessageHoldingASeparatorStaysInOneColumn()
     {
         $file = $this->newLogFile();
         $logger = new Logger($file, $this->storage);
@@ -77,7 +80,7 @@ class LoggerTest extends TestCase
         $this->assertEquals("Order\t1024\tshipped", $row[2]);
     }
 
-    public function test_a_multiline_message_becomes_one_row_per_line()
+    public function testAMultilineMessageBecomesOneRowPerLine()
     {
         $file = $this->newLogFile();
         $logger = new Logger($file, $this->storage);
@@ -91,7 +94,7 @@ class LoggerTest extends TestCase
         $this->assertEquals('Second line', $rows[2][2]);
     }
 
-    public function test_for_file_hands_back_the_same_logger()
+    public function testForFileHandsBackTheSameLogger()
     {
         $file = $this->newLogFile();
 
@@ -101,7 +104,7 @@ class LoggerTest extends TestCase
         );
     }
 
-    public function test_a_second_logger_on_the_same_file_is_refused()
+    public function testASecondLoggerOnTheSameFileIsRefused()
     {
         $file = $this->newLogFile();
         Logger::forFile($file, $this->storage);
@@ -112,7 +115,7 @@ class LoggerTest extends TestCase
         new Logger($file, $this->storage);
     }
 
-    public function test_attached_loggers_receive_every_message()
+    public function testAttachedLoggersReceiveEveryMessage()
     {
         $spy = new SpyLogger();
         $logger = new Logger($this->newLogFile(), $this->storage);
@@ -123,7 +126,7 @@ class LoggerTest extends TestCase
         $this->assertEquals([['info', 'Order 1024 was shipped']], $spy->records);
     }
 
-    public function test_an_attached_logger_can_be_restricted_to_some_levels()
+    public function testAnAttachedLoggerCanBeRestrictedToSomeLevels()
     {
         $spy = new SpyLogger();
         $logger = new Logger($this->newLogFile(), $this->storage);
@@ -136,7 +139,7 @@ class LoggerTest extends TestCase
         $this->assertEquals(['error', 'critical'], $spy->levels());
     }
 
-    public function test_log_throwable_writes_the_type_the_message_and_the_trace()
+    public function testLogThrowableWritesTheTypeTheMessageAndTheTrace()
     {
         $spy = new SpyLogger();
         $logger = new Logger($this->newLogFile(), $this->storage);
@@ -152,7 +155,7 @@ class LoggerTest extends TestCase
         $this->assertEquals(['error'], array_unique($spy->levels()));
     }
 
-    public function test_the_null_logger_writes_nowhere()
+    public function testTheNullLoggerWritesNowhere()
     {
         $logger = new NullLogger();
         $logger->error('Order lost');
@@ -161,7 +164,7 @@ class LoggerTest extends TestCase
     }
 
     /** forFile() hands back the base logger already registered for cube.csv instead of a subclass instance. */
-    public function test_a_logger_subclass_gets_an_instance_of_its_own_type()
+    public function testALoggerSubclassGetsAnInstanceOfItsOwnType()
     {
         Logger::getInstance();
 
@@ -173,7 +176,7 @@ class LoggerTest extends TestCase
     }
 
     /** Every StdOutLogger shares one stdout stream, and the first one destroyed closes it for all. */
-    public function test_destroying_a_stdout_logger_keeps_the_shared_stream_open()
+    public function testDestroyingAStdoutLoggerKeepsTheSharedStreamOpen()
     {
         (fn () => new StdOutLogger())();
 
@@ -205,7 +208,7 @@ class LoggerTest extends TestCase
     }
 
     /** At shutdown, PHP may close the stream before destroying a logger kept in Logger::$loggers : fclose() threw on it */
-    public function test_a_logger_whose_stream_is_already_closed_is_destroyed_quietly()
+    public function testALoggerWhoseStreamIsAlreadyClosedIsDestroyedQuietly()
     {
         $logger = new Logger('closed.csv', $this->storage);
         fclose((fn () => $this->stream)->call($logger));

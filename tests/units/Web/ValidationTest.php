@@ -13,11 +13,15 @@ use Cube\Web\Http\Rules\ValidationReturn;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class ValidationTest extends TestCase
 {
     use TestMultipleDrivers;
 
-    protected function testRule(Rule $rule, mixed $value, bool $shouldPass=true, mixed $expectedFinalValue=null) {
+    protected function testRule(Rule $rule, mixed $value, bool $shouldPass = true, mixed $expectedFinalValue = null)
+    {
         $results = $rule->validate($value);
         $expectedFinalValue ??= $value;
         if ($shouldPass) {
@@ -28,8 +32,8 @@ class ValidationTest extends TestCase
         }
     }
 
-    public function testAnyParamValidation() {
-
+    public function testAnyParamValidation()
+    {
         $rule = new AnyParam(true);
 
         $this->testRule($rule, null, true);
@@ -39,7 +43,8 @@ class ValidationTest extends TestCase
         $this->testRule($rule, $rule, true);
     }
 
-    public function testIntegerValidation() {
+    public function testIntegerValidation()
+    {
         $rule = Param::integer(true);
 
         $this->testRule($rule, null);
@@ -50,13 +55,11 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 'some test', false);
         $this->testRule($rule, $this, false);
 
-
         $rule = Param::integer(false); // Non-nullable
 
         $this->testRule($rule, 5);
         $this->testRule($rule, '5', true, 5);
         $this->testRule($rule, null, false);
-
 
         $rule = Param::integer()->isBetween(0, 10);
         $this->testRule($rule, -5, false);
@@ -65,7 +68,7 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 10);
         $this->testRule($rule, 11, false);
 
-        $rule = Param::integer()->inArray([0,2,4,6,8]);
+        $rule = Param::integer()->inArray([0, 2, 4, 6, 8]);
         $this->testRule($rule, 11, false);
         $this->testRule($rule, 0);
         $this->testRule($rule, 6);
@@ -73,8 +76,8 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 9, false);
     }
 
-
-    public function testFloatValidation() {
+    public function testFloatValidation()
+    {
         $rule = Param::float(true);
 
         $this->testRule($rule, null);
@@ -85,12 +88,10 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 'some test', false);
         $this->testRule($rule, $this, false);
 
-
         $rule = Param::float(false); // Non-nullable
 
         $this->testRule($rule, '3.14', true, 3.14);
         $this->testRule($rule, null, false);
-
 
         $rule = Param::float()->isBetween(-3.14, 3.14);
         $this->testRule($rule, -3.15, false);
@@ -100,9 +101,8 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 3.15, false);
     }
 
-
-    public function testStringValidation() {
-
+    public function testStringValidation()
+    {
         $rule = Param::string(false, true); // No modification / Nullable
 
         $this->testRule($rule, null);
@@ -118,69 +118,67 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 'hello ', true, 'hello');
     }
 
-    public function testArrayValidation() {
+    public function testArrayValidation()
+    {
         $rule = Param::array(Param::integer(true)->isBetween(0, 5), true); // 0-5 / nullable
         $this->testRule($rule, null);
-        $this->testRule($rule, [0,1,2,4,5,null]);
-        $this->testRule($rule, [0,1,2,4,-5], false);
+        $this->testRule($rule, [0, 1, 2, 4, 5, null]);
+        $this->testRule($rule, [0, 1, 2, 4, -5], false);
 
         $rule = Param::array(Param::integer(true)->isBetween(0, 5), false);
         $this->testRule($rule, null, false);
-        $this->testRule($rule, [0,1,2,4,5,null]);
-        $this->testRule($rule, [0,1,2,4,5]);
+        $this->testRule($rule, [0, 1, 2, 4, 5, null]);
+        $this->testRule($rule, [0, 1, 2, 4, 5]);
 
         $rule = Param::array(Param::integer(false)->isBetween(0, 5), false);
-        $this->testRule($rule, [0,1,2,4,5]);
-        $this->testRule($rule, [0,1,2,4,5,null], false);
+        $this->testRule($rule, [0, 1, 2, 4, 5]);
+        $this->testRule($rule, [0, 1, 2, 4, 5, null], false);
 
         $rule = Param::array(Param::integer(false))->size(3);
         $this->testRule($rule, [], false);
         $this->testRule($rule, [0], false);
-        $this->testRule($rule, [0,1], false);
-        $this->testRule($rule, [0,1,2], true);
-        $this->testRule($rule, [0,1,2,3], false);
-
+        $this->testRule($rule, [0, 1], false);
+        $this->testRule($rule, [0, 1, 2], true);
+        $this->testRule($rule, [0, 1, 2, 3], false);
 
         $rule = Param::array(Param::integer(false))->minSize(2);
         $this->testRule($rule, [], false);
         $this->testRule($rule, [0], false);
-        $this->testRule($rule, [0,1], true);
-        $this->testRule($rule, [0,1,2], true);
-        $this->testRule($rule, [0,1,2,3], true);
+        $this->testRule($rule, [0, 1], true);
+        $this->testRule($rule, [0, 1, 2], true);
+        $this->testRule($rule, [0, 1, 2, 3], true);
 
         $rule = Param::array(Param::integer(false))->maxSize(2);
         $this->testRule($rule, [], true);
         $this->testRule($rule, [0], true);
-        $this->testRule($rule, [0,1], true);
-        $this->testRule($rule, [0,1,2], false);
-        $this->testRule($rule, [0,1,2,3], false);
-
+        $this->testRule($rule, [0, 1], true);
+        $this->testRule($rule, [0, 1, 2], false);
+        $this->testRule($rule, [0, 1, 2, 3], false);
 
         $rule = Param::array(
             Param::array(
                 Param::integer(false)->isBetween(0, 5)
-            ), false
+            ),
+            false
         );
         $this->testRule($rule, [
-            [0,1,2,5],
-            [3,5,3,5],
-            [0,1,4,2],
+            [0, 1, 2, 5],
+            [3, 5, 3, 5],
+            [0, 1, 4, 2],
         ]);
 
         $this->testRule($rule, [
-            [0,1,2,5],
-            [3,-6,3,5],
-            [0,1,4,2],
+            [0, 1, 2, 5],
+            [3, -6, 3, 5],
+            [0, 1, 4, 2],
         ], false);
-
     }
 
-
-    public function testObjectValidation() {
-
+    public function testObjectValidation()
+    {
         $rule = Param::object([
-            "age" => Param::integer(false)->isBetween(0, 120),
-            "option" => Param::boolean(true)
+            'age' => Param::integer(false)->isBetween(0, 120),
+            'option' => Param::boolean(true),
         ]);
 
         $this->testRule($rule, ['age' => 5, 'option' => true]);
@@ -189,31 +187,29 @@ class ValidationTest extends TestCase
         $this->testRule($rule, ['age' => 'invalid'], false);
         $this->testRule($rule, ['age' => 'invalid', 'option' => 'invalid'], false);
 
-
         $rule = Param::object([
-            "age" => Param::integer(false)->isBetween(0, 120),
-            "option" => Param::boolean()->default(true)
+            'age' => Param::integer(false)->isBetween(0, 120),
+            'option' => Param::boolean()->default(true),
         ]);
         $this->testRule($rule, ['age' => 5], true, ['age' => 5, 'option' => true]);
 
         $rule = Param::object([
-            "age" => Param::integer(false)->isBetween(0, 120)->default(21),
-            "option" => Param::boolean()->default(true)
+            'age' => Param::integer(false)->isBetween(0, 120)->default(21),
+            'option' => Param::boolean()->default(true),
         ]);
         $this->testRule($rule, [], true, ['age' => 21, 'option' => true]);
         $this->testRule($rule, null, true, ['age' => 21, 'option' => true]);
 
         $rule = Param::object([
-            "age" => Param::integer(false)->isBetween(0, 120),
-            "option" => Param::boolean()->default(true)
+            'age' => Param::integer(false)->isBetween(0, 120),
+            'option' => Param::boolean()->default(true),
         ]);
         $this->testRule($rule, [], false);
         $this->testRule($rule, null, false);
-
     }
 
-    public function testAnyKeyObjectValidation() {
-
+    public function testAnyKeyObjectValidation()
+    {
         $rule = Param::anyKeyObject(
             Param::integer(true)->isBetween(0, 100)
         );
@@ -223,14 +219,14 @@ class ValidationTest extends TestCase
         $this->testRule($rule, ['max' => 'invalid'], false);
         $this->testRule($rule, ['max' => 'invalid', 'mary' => 12], false);
 
-
         $rule = Param::anyKeyObject(
             Param::integer(false)->isBetween(0, 100)
         );
         $this->testRule($rule, ['max' => null], false);
     }
 
-    public function testEmailValidation() {
+    public function testEmailValidation()
+    {
         $rule = Param::email();
 
         $this->testRule($rule, 'hello', false);
@@ -242,7 +238,8 @@ class ValidationTest extends TestCase
         $this->testRule($rule, '@goobye.org', false);
     }
 
-    public function testBooleanValidation() {
+    public function testBooleanValidation()
+    {
         $rule = Param::boolean();
 
         $this->testRule($rule, 'true', true, true);
@@ -264,7 +261,8 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 'NO', true, false);
     }
 
-    public function testUrlValidation() {
+    public function testUrlValidation()
+    {
         $rule = Param::url();
 
         $this->testRule($rule, 'hello.com');
@@ -274,7 +272,8 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 'hello.com$$$', false);
     }
 
-    public function testDateValidation() {
+    public function testDateValidation()
+    {
         $rule = Param::date();
 
         $this->testRule($rule, '2025-01-01');
@@ -292,7 +291,8 @@ class ValidationTest extends TestCase
         $this->testRule($rule, '2001-01-01', false);
     }
 
-    public function testDatetimeValidation() {
+    public function testDatetimeValidation()
+    {
         $rule = Param::datetime();
 
         $this->testRule($rule, '2025-01-01 00:00:00');
@@ -310,10 +310,10 @@ class ValidationTest extends TestCase
         $rule = Param::datetime(false, true); // Add time if missing
         $this->testRule($rule, '2025-01-01 00:00:00');
         $this->testRule($rule, '2025-01-01', true, '2025-01-01 00:00:00');
-
     }
 
-    public function testUuidValidation() {
+    public function testUuidValidation()
+    {
         $rule = Param::uuid();
 
         $this->testRule($rule, 'hello', false);
@@ -322,26 +322,27 @@ class ValidationTest extends TestCase
         $this->testRule($rule, 'c91a4830-23ef-498a-a559-trytocheat00', false);
     }
 
-    #[ DataProvider('getDatabases') ]
-    public function testModelKeyValidation(Database $database) {
-        $database->asGlobalInstance(function(){
+    #[DataProvider('getDatabases')]
+    public function testModelKeyValidation(Database $database)
+    {
+        $database->asGlobalInstance(function () {
             $newData = [
                 ['name' => 'Desk'],
                 ['name' => 'Mouse'],
                 ['name' => 'Keyboard'],
             ];
-            foreach($newData as $row) {
+            foreach ($newData as $row) {
                 Product::insertArray($row);
             }
-    
+
             $rule = Param::model(Product::class, 'name');
-    
+
             $results = $rule->validate('Desk');
             $this->assertTrue($results->isValid());
             $product = $results->getResult();
             $this->assertInstanceOf(Product::class, $product);
             $this->assertEquals('Desk', $product->name);
-    
+
             $results = $rule->validate('Inexistant Object');
             $this->assertFalse($results->isValid());
 
@@ -485,7 +486,7 @@ class ValidationTest extends TestCase
         $results = $rule->validate(null);
         $this->assertFalse($results->isValid());
 
-        $results = $rule->validate([1,2,3]);
+        $results = $rule->validate([1, 2, 3]);
         $this->assertTrue($results->isValid());
     }
 
@@ -511,7 +512,8 @@ class ValidationTest extends TestCase
         $this->assertTrue($results->isValid());
 
         $rule = Product::toObjectParam(false, true)
-            ->withRequiredKeys('managers');
+            ->withRequiredKeys('managers')
+        ;
 
         $result = $rule->validate(['name' => 'Painting']);
         $this->assertFalse($result->isValid()); // Manager is now mandatory
@@ -524,14 +526,14 @@ class ValidationTest extends TestCase
 
         $this->assertInstanceOf(Product::class, $model);
         $this->assertEquals('Painting', $model->name);
-
     }
 
     /** ObjectParam::validate() never ran its own checker steps, so a condition on the whole object was ignored. */
     public function testAConditionOnAnObjectIsChecked()
     {
         $rule = Param::object(['password' => Param::string(), 'confirmation' => Param::string()])
-            ->withCondition(fn ($value) => $value['password'] === $value['confirmation'], 'passwords do not match');
+            ->withCondition(fn ($value) => $value['password'] === $value['confirmation'], 'passwords do not match')
+        ;
 
         $this->assertFalse($rule->validate(['password' => 'secret', 'confirmation' => 'other'])->isValid());
     }
@@ -540,7 +542,8 @@ class ValidationTest extends TestCase
     public function testAConditionOnAnArrayIsChecked()
     {
         $rule = Param::array(Param::integer())
-            ->withCondition(fn ($value) => array_sum($value) <= 10, 'total cannot exceed 10');
+            ->withCondition(fn ($value) => array_sum($value) <= 10, 'total cannot exceed 10')
+        ;
 
         $this->assertFalse($rule->validate([8, 9])->isValid());
     }
@@ -552,6 +555,13 @@ class ValidationTest extends TestCase
 
         $this->assertEquals([], $result->getErrors());
         $this->assertNull($result->getResult());
+    }
+
+    /** A value of the wrong type reached a typed closure and threw a TypeError instead of being refused. */
+    #[DataProvider('getMalformedValues')]
+    public function testAMalformedValueIsRefusedWithoutThrowing(Rule $rule, mixed $value)
+    {
+        $this->assertFalse($rule->validate($value)->isValid());
     }
 
     public static function getMalformedValues(): array
@@ -570,18 +580,12 @@ class ValidationTest extends TestCase
         ];
     }
 
-    /** A value of the wrong type reached a typed closure and threw a TypeError instead of being refused. */
-    #[ DataProvider('getMalformedValues') ]
-    public function testAMalformedValueIsRefusedWithoutThrowing(Rule $rule, mixed $value)
-    {
-        $this->assertFalse($rule->validate($value)->isValid());
-    }
-
     public function testAFailedCheckStopsTheFollowingSteps()
     {
         $result = Param::integer()
             ->withCondition(fn ($value) => is_int($value), 'must have been converted')
-            ->validate('abc', 'quantity');
+            ->validate('abc', 'quantity')
+        ;
 
         $this->assertCount(1, $result->getErrors());
     }
@@ -589,7 +593,8 @@ class ValidationTest extends TestCase
     public function testATransformerOnAnObjectReceivesTheValidatedChildren()
     {
         $rule = Param::object(['first' => Param::string(), 'last' => Param::string()])
-            ->withTransformer(fn (array $value) => "{$value['first']} {$value['last']}");
+            ->withTransformer(fn (array $value) => "{$value['first']} {$value['last']}")
+        ;
 
         $this->assertEquals('Ada Lovelace', $rule->validate(['first' => ' Ada ', 'last' => 'Lovelace'])->getResult());
     }
@@ -597,7 +602,8 @@ class ValidationTest extends TestCase
     public function testAConditionOnAnObjectWaitsForValidChildren()
     {
         $rule = Param::object(['password' => Param::string()])
-            ->withCondition(fn (array $value) => strlen($value['password']) > 8, 'password too short');
+            ->withCondition(fn (array $value) => strlen($value['password']) > 8, 'password too short')
+        ;
 
         $this->assertEquals(['password' => ['password is required']], $rule->validate([])->getErrors());
     }
@@ -632,12 +638,14 @@ class ValidationTest extends TestCase
     {
         $return = (new ValidationReturn())
             ->addError('body is invalid')
-            ->addErrorKey('name', ['name is required']);
+            ->addErrorKey('name', ['name is required'])
+        ;
 
         $merged = (new ValidationReturn())
             ->addError('payload is too large')
             ->addErrorKey('name', ['name is too short'])
-            ->addErrorKey('price', ['price must be an integer']);
+            ->addErrorKey('price', ['price must be an integer'])
+        ;
 
         $return->mergeWith($merged);
 
@@ -653,7 +661,8 @@ class ValidationTest extends TestCase
     {
         $return = (new ValidationReturn())
             ->addErrorKey('name', ['name is required'])
-            ->addErrorKey('name', ['name is too short']);
+            ->addErrorKey('name', ['name is too short'])
+        ;
 
         $this->assertSame(['name' => ['name is required', 'name is too short']], $return->getErrors());
     }

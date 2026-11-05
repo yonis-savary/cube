@@ -9,6 +9,5 @@ class ChannelSubscriber
     public function __construct(
         public string $path,
         public ConnectionInterface $connection
-    )
-    {}
+    ) {}
 }

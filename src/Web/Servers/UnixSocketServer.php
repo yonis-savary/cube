@@ -18,11 +18,10 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Loop;
 use React\Http\HttpServer;
 use React\Socket\SocketServer;
-use RuntimeException;
 
 /**
  * Serves the application over a unix socket!
- * **Routes are registered by the listeners of `SocketServerSetup` event**
+ * **Routes are registered by the listeners of `SocketServerSetup` event**.
  */
 class UnixSocketServer
 {
@@ -40,7 +39,7 @@ class UnixSocketServer
     ) {
         $persistentComponents = [Router::class, ...$persistentComponents];
         $this->context = new RequestContext($persistentComponents);
-        $this->errorLogger = Logger::forFile("socket-fatal.csv");
+        $this->errorLogger = Logger::forFile('socket-fatal.csv');
 
         $this->router = $router ?? self::createRouter();
     }
@@ -60,7 +59,7 @@ class UnixSocketServer
         $this->removeStaleSocketFile();
 
         Router::setInstance($this->router);
-        Logger::setInstance(Logger::forFile("socket.csv"));
+        Logger::setInstance(Logger::forFile('socket.csv'));
 
         $this->setup();
 
@@ -84,7 +83,6 @@ class UnixSocketServer
     {
         if (!function_exists('pcntl_signal'))
             return;
-
         $stop = function () use ($socket) {
             $socket->close();
             Loop::stop();
@@ -120,11 +118,10 @@ class UnixSocketServer
     {
         if (!file_exists($this->socketPath))
             return;
-
         // A refused connection is the expected outcome for a file left behind by a killed server
         if ($connection = @stream_socket_client("unix://{$this->socketPath}")) {
             fclose($connection);
-            throw new RuntimeException("Another server already listens on [{$this->socketPath}]");
+            throw new \RuntimeException("Another server already listens on [{$this->socketPath}]");
         }
 
         unlink($this->socketPath);

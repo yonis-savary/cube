@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Web\Html;
 
@@ -6,15 +6,12 @@ use Cube\Core\Autoloader;
 use Cube\Core\Component;
 use Cube\Data\Bunch;
 use Cube\Utils\Path;
-use Exception;
-use InvalidArgumentException;
-use Throwable;
 
-class Renderer 
+class Renderer
 {
     use Component;
 
-    /** @var Bunch<string> $viewFiles */
+    /** @var Bunch<string> */
     protected Bunch $viewFiles;
 
     public static function getDefaultInstance(): static
@@ -22,42 +19,41 @@ class Renderer
         return new static(Autoloader::getViewFiles());
     }
 
-    public function __construct(array $viewFiles=[])
+    public function __construct(array $viewFiles = [])
     {
         $this->viewFiles = Bunch::wrap($viewFiles);
     }
 
-    public function findView(string $viewName): ?string {
+    public function findView(string $viewName): ?string
+    {
         $viewName = '/'.ltrim($viewName, '/');
 
-        return $this->viewFiles->first(fn($file) => str_ends_with('/'.ltrim(preg_replace("~\.[^/]+$~", "", $file), '/'), $viewName));
+        return $this->viewFiles->first(fn ($file) => str_ends_with('/'.ltrim(preg_replace('~\\.[^/]+$~', '', $file), '/'), $viewName));
     }
 
-    public function render(string $viewName, array $context=[]): string {
-        $renderedHtml = "";
+    public function render(string $viewName, array $context = []): string
+    {
+        $renderedHtml = '';
 
         foreach ($context as $key => $_) {
-            if (!preg_match("~^[a-z_][a-z0-9_]*$~i", $key)) {
+            if (!preg_match('~^[a-z_][a-z0-9_]*$~i', $key)) {
                 unset($context[$key]);
             }
         }
 
-        Renderer::withInstance($this, function() use ($viewName, $context, &$renderedHtml) {
+        Renderer::withInstance($this, function () use ($viewName, $context, &$renderedHtml) {
             $path = $this->findView($viewName);
             if (!$path)
-                throw new InvalidArgumentException("View [$viewName] not found");
+                throw new \InvalidArgumentException("View [{$viewName}] not found");
 
             $path = Path::relative($path);
 
             if (!ob_start())
-                throw new Exception('Could not start a new output buffering');
+                throw new \Exception('Could not start a new output buffering');
 
-            try
-            {
+            try {
                 self::requireView($path, $context);
-            }
-            catch (Throwable $err)
-            {
+            } catch (\Throwable $err) {
                 ob_end_clean();
                 throw $err;
             }

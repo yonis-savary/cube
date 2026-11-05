@@ -4,15 +4,15 @@ namespace Cube\Web\Http\Rules;
 
 abstract class Rule
 {
-    const META_TYPE = 'type';
-    const META_MIN = 'min-value';
-    const META_MAX = 'max-value';
-    const META_MODEL = 'model';
-    const META_ENUM = 'enum-value';
+    public const META_TYPE = 'type';
+    public const META_MIN = 'min-value';
+    public const META_MAX = 'max-value';
+    public const META_MODEL = 'model';
+    public const META_ENUM = 'enum-value';
 
     /**
      * As Param can be quite generic, this metadata map can hold
-     * some additional informations on the parameter such as its type
+     * some additional informations on the parameter such as its type.
      */
     protected array $metadata = [];
 
@@ -59,7 +59,6 @@ abstract class Rule
         return $this->withCondition($wrappedCallback, $errorMessage);
     }
 
-
     protected function withValueTransformer(callable $callback): static
     {
         $wrappedCallback = function ($value) use ($callback) {
@@ -74,7 +73,7 @@ abstract class Rule
     }
 
     /**
-     * Given value to replace an incoming `null` value, or a missing key inside an object
+     * Given value to replace an incoming `null` value, or a missing key inside an object.
      */
     public function default(mixed $defaultValue): static
     {
@@ -92,13 +91,13 @@ abstract class Rule
         return $this->hasDefault;
     }
 
-    public function validate(mixed $currentValue, ?string $key=null): ValidationReturn
+    public function validate(mixed $currentValue, ?string $key = null): ValidationReturn
     {
         return $this->runSteps($currentValue, new ValidationReturn(), $key);
     }
 
     /**
-     * The steps stop at the first failed check, so a later step can trust what an earlier one checked
+     * The steps stop at the first failed check, so a later step can trust what an earlier one checked.
      */
     protected function runSteps(mixed $value, ValidationReturn $return, ?string $key): ValidationReturn
     {
@@ -145,9 +144,8 @@ abstract class Rule
         return $this;
     }
 
-    public function getMetadata(): array 
+    public function getMetadata(): array
     {
         return $this->metadata;
     }
-
 }

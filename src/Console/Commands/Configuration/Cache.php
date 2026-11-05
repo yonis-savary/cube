@@ -2,11 +2,10 @@
 
 namespace Cube\Console\Commands\Configuration;
 
-use Cube\Env\Configuration;
 use Cube\Console\Args;
 use Cube\Console\Command;
+use Cube\Env\Configuration;
 use Cube\Utils\Console;
-use Cube\Utils\Path;
 
 class Cache extends Command
 {
@@ -26,7 +25,7 @@ class Cache extends Command
             $config = Configuration::getInstance();
             $config->putToCache();
 
-            Console::log(Console::withGreenColor("Cache file written to storage directory"));
+            Console::log(Console::withGreenColor('Cache file written to storage directory'));
 
             return 0;
         } catch (\Throwable $e) {

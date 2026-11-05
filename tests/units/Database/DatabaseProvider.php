@@ -132,7 +132,6 @@ abstract class DatabaseProvider
     {
         if ($template = self::$templates[static::class] ?? null)
             return $template;
-
         $template = $this->getRandomDatabaseName();
         $this->fillFromDump($this->createDatabase($template));
         $this->rememberCreatedDatabase($template);

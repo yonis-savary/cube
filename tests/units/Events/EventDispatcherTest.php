@@ -36,7 +36,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(12, $myValue);
     }
 
-    public function test_a_string_is_dispatched_as_a_custom_event()
+    public function testAStringIsDispatchedAsACustomEvent()
     {
         $dispatcher = new Events();
         $received = null;
@@ -49,7 +49,7 @@ class EventDispatcherTest extends TestCase
         $this->assertNull($received->data);
     }
 
-    public function test_an_event_object_reaches_the_listeners_of_its_class()
+    public function testAnEventObjectReachesTheListenersOfItsClass()
     {
         $dispatcher = new Events();
         $received = null;
@@ -64,7 +64,7 @@ class EventDispatcherTest extends TestCase
         $this->assertSame($event, $received);
     }
 
-    public function test_every_listener_runs_in_registration_order()
+    public function testEveryListenerRunsInRegistrationOrder()
     {
         $dispatcher = new Events();
         $calls = [];
@@ -76,7 +76,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(['first', 'second'], $calls);
     }
 
-    public function test_the_same_callback_can_be_registered_twice()
+    public function testTheSameCallbackCanBeRegisteredTwice()
     {
         $dispatcher = new Events();
         $calls = 0;
@@ -89,7 +89,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(2, $calls);
     }
 
-    public function test_a_listener_only_hears_the_event_it_subscribed_to()
+    public function testAListenerOnlyHearsTheEventItSubscribedTo()
     {
         $dispatcher = new Events();
         $calls = 0;
@@ -100,7 +100,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(0, $calls);
     }
 
-    public function test_an_event_without_any_listener_goes_through()
+    public function testAnEventWithoutAnyListenerGoesThrough()
     {
         $dispatcher = new Events();
 
@@ -113,7 +113,7 @@ class EventDispatcherTest extends TestCase
      * Subscriptions are keyed by the exact name an event answers, so a child event does not
      * reach the listeners of its parent : subscribe to each class you want to hear about.
      */
-    public function test_a_child_event_does_not_reach_the_listeners_of_its_parent()
+    public function testAChildEventDoesNotReachTheListenersOfItsParent()
     {
         $dispatcher = new Events();
         $calls = 0;
@@ -124,14 +124,14 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(0, $calls);
     }
 
-    public function test_subscribing_gives_the_dispatcher_back()
+    public function testSubscribingGivesTheDispatcherBack()
     {
         $dispatcher = new Events();
 
         $this->assertSame($dispatcher, $dispatcher->on('product-was-shipped', fn () => null));
     }
 
-    public function test_two_dispatchers_hold_their_own_subscriptions()
+    public function testTwoDispatchersHoldTheirOwnSubscriptions()
     {
         $first = new Events();
         $second = new Events();
@@ -143,7 +143,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(0, $calls);
     }
 
-    public function test_preventing_an_event_skips_the_remaining_listeners()
+    public function testPreventingAnEventSkipsTheRemainingListeners()
     {
         $dispatcher = new Events();
         $calls = [];
@@ -159,8 +159,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(['first', 'second'], $calls);
     }
 
-
-    public function test_a_prevented_event_dispatches_a_prevented_event_wrapping_it()
+    public function testAPreventedEventDispatchesAPreventedEventWrappingIt()
     {
         $dispatcher = new Events();
         $received = null;
@@ -177,7 +176,7 @@ class EventDispatcherTest extends TestCase
         $this->assertSame($shipped, $received->event);
     }
 
-    public function test_a_prevented_custom_event_is_wrapped_too()
+    public function testAPreventedCustomEventIsWrappedToo()
     {
         $dispatcher = new Events();
         $received = null;
@@ -191,7 +190,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals('product-was-shipped', $received);
     }
 
-    public function test_an_event_going_through_every_listener_dispatches_nothing_more()
+    public function testAnEventGoingThroughEveryListenerDispatchesNothingMore()
     {
         $dispatcher = new Events();
         $calls = 0;
@@ -203,7 +202,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(0, $calls);
     }
 
-    public function test_the_prevented_event_stays_on_the_dispatcher_that_prevented_it()
+    public function testThePreventedEventStaysOnTheDispatcherThatPreventedIt()
     {
         $global = new Events();
         $local = new Events();
@@ -220,7 +219,7 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(1, $localCalls);
     }
 
-    public function test_preventing_a_prevented_event_does_not_loop()
+    public function testPreventingAPreventedEventDoesNotLoop()
     {
         $dispatcher = new Events();
         $calls = 0;
@@ -235,12 +234,12 @@ class EventDispatcherTest extends TestCase
         $this->assertEquals(1, $calls);
     }
 
-    public function test_dispatch_succeeds_when_nobody_listens()
+    public function testDispatchSucceedsWhenNobodyListens()
     {
         $this->assertTrue((new Events())->dispatch('nobody-listens-to-me'));
     }
 
-    public function test_dispatch_succeeds_when_every_listener_ran()
+    public function testDispatchSucceedsWhenEveryListenerRan()
     {
         $dispatcher = new Events();
         $dispatcher->on('product-was-shipped', fn () => null);
@@ -248,7 +247,7 @@ class EventDispatcherTest extends TestCase
         $this->assertTrue($dispatcher->dispatch('product-was-shipped'));
     }
 
-    public function test_dispatch_fails_when_a_listener_prevents_the_event()
+    public function testDispatchFailsWhenAListenerPreventsTheEvent()
     {
         $dispatcher = new Events();
         $dispatcher->on('product-was-shipped', fn (CustomEvent $event) => $event->prevent());
@@ -256,7 +255,7 @@ class EventDispatcherTest extends TestCase
         $this->assertFalse($dispatcher->dispatch('product-was-shipped'));
     }
 
-    public function test_a_prevented_event_fails_even_if_its_prevented_event_is_prevented_too()
+    public function testAPreventedEventFailsEvenIfItsPreventedEventIsPreventedToo()
     {
         $dispatcher = new Events();
         $dispatcher->on('product-was-shipped', fn (CustomEvent $event) => $event->prevent());

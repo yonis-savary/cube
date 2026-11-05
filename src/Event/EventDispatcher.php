@@ -12,8 +12,8 @@ abstract class EventDispatcher
     /**
      * @template TEvent
      *
-     * @param class-string<TEvent>|string  $eventName
-     * @param \Closure(TEvent):void $callback
+     * @param class-string<TEvent>|string $eventName
+     * @param \Closure(TEvent):void       $callback
      */
     public function on(string $eventName, callable $callback): self
     {
@@ -41,8 +41,7 @@ abstract class EventDispatcher
             $callback($event);
 
             if ($event->isPrevented()) {
-                if ($event::class !== PreventedEvent::class)
-                    (new PreventedEvent($event))->dispatch($this);
+                if (PreventedEvent::class !== $event::class)(new PreventedEvent($event))->dispatch($this);
                 return false;
             }
         }

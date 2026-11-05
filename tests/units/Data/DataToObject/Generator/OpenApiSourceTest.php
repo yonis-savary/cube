@@ -30,24 +30,24 @@ class OpenApiSourceTest extends TestCase
         $sources = $this->render((new OpenApiSource($this->billingDocument()))->toClasses());
 
         $this->assertEqualsCanonicalizing([
-            'Refs\\Output\\Category', 'Refs\\Output\\Product', 'Refs\\Output\\Timestamped', 'Refs\\Output\\Invoice', 'Refs\\Output\\InvoiceLinesItem',
-            'Refs\\Input\\Category',
-            'Http\\Requests\\ListProductsRequest', 'Http\\Requests\\CreateProductRequest', 'Http\\Responses\\CreateProductResponse', 'Http\\Responses\\GetInvoicesIdResponse',
+            'Refs\Output\Category', 'Refs\Output\Product', 'Refs\Output\Timestamped', 'Refs\Output\Invoice', 'Refs\Output\InvoiceLinesItem',
+            'Refs\Input\Category',
+            'Http\Requests\ListProductsRequest', 'Http\Requests\CreateProductRequest', 'Http\Responses\CreateProductResponse', 'Http\Responses\GetInvoicesIdResponse',
         ], array_keys($sources));
 
-        $this->assertStringContainsString('class Category extends DataToObject', $sources['Refs\\Output\\Category']);
-        $this->assertStringContainsString('class Category extends AutoDataToObject', $sources['Refs\\Input\\Category']);
+        $this->assertStringContainsString('class Category extends DataToObject', $sources['Refs\Output\Category']);
+        $this->assertStringContainsString('class Category extends AutoDataToObject', $sources['Refs\Input\Category']);
     }
 
     public function testRequiredAndNullableDecideTheParameterType()
     {
         $sources = $this->render((new OpenApiSource($this->billingDocument()))->toClasses());
 
-        $this->assertStringContainsString('public int $id,', $sources['Refs\\Output\\Product']);
-        $this->assertStringContainsString('public Category $category,', $sources['Refs\\Output\\Product']);
-        $this->assertStringContainsString('public ?array $tags = null,', $sources['Refs\\Output\\Product']);
-        $this->assertStringContainsString('public ?Category $parent = null,', $sources['Refs\\Output\\Category']);
-        $this->assertStringContainsString('public ?string $paidAt = null,', $sources['Refs\\Output\\Invoice']);
+        $this->assertStringContainsString('public int $id,', $sources['Refs\Output\Product']);
+        $this->assertStringContainsString('public Category $category,', $sources['Refs\Output\Product']);
+        $this->assertStringContainsString('public ?array $tags = null,', $sources['Refs\Output\Product']);
+        $this->assertStringContainsString('public ?Category $parent = null,', $sources['Refs\Output\Category']);
+        $this->assertStringContainsString('public ?string $paidAt = null,', $sources['Refs\Output\Invoice']);
 
         $contact = $this->render((new OpenApiSource($this->documentWithSchema([
             'type' => 'object',
@@ -56,7 +56,7 @@ class OpenApiSourceTest extends TestCase
                 'email' => ['type' => ['string', 'null']],
                 'phone' => ['anyOf' => [['type' => 'string'], ['type' => 'null']]],
             ],
-        ])))->toClasses())['Refs\\Output\\Contact'];
+        ])))->toClasses())['Refs\Output\Contact'];
 
         $this->assertStringContainsString('public ?string $email,', $contact);
         $this->assertStringContainsString('public ?string $phone,', $contact);
@@ -64,7 +64,7 @@ class OpenApiSourceTest extends TestCase
 
     public function testOptionalParametersComeAfterTheRequiredOnes()
     {
-        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Refs\\Output\\Invoice'];
+        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Refs\Output\Invoice'];
 
         $this->assertLessThan(strpos($source, '$paidAt'), strpos($source, '$lines'));
     }
@@ -73,24 +73,24 @@ class OpenApiSourceTest extends TestCase
     {
         $sources = $this->render((new OpenApiSource($this->billingDocument()))->toClasses(), lenient: true);
 
-        $this->assertStringContainsString('public ?int $id = null,', $sources['Refs\\Output\\Product']);
-        $this->assertStringContainsString('public ?Category $category = null,', $sources['Refs\\Output\\Product']);
+        $this->assertStringContainsString('public ?int $id = null,', $sources['Refs\Output\Product']);
+        $this->assertStringContainsString('public ?Category $category = null,', $sources['Refs\Output\Product']);
     }
 
     public function testSchemasThatAreNotObjectsAreInlined()
     {
         $sources = $this->render((new OpenApiSource($this->billingDocument()))->toClasses());
 
-        $this->assertArrayNotHasKey('Refs\\Output\\Status', $sources);
-        $this->assertStringContainsString('public string $status,', $sources['Refs\\Output\\Invoice']);
-        $this->assertStringContainsString("@param 'draft'|'paid' \$status", $sources['Refs\\Output\\Invoice']);
-        $this->assertStringContainsString('@param array<string,string>|null $attributes', $sources['Refs\\Output\\Product']);
-        $this->assertStringContainsString('public mixed $payer = null,', $sources['Refs\\Output\\Invoice']);
+        $this->assertArrayNotHasKey('Refs\Output\Status', $sources);
+        $this->assertStringContainsString('public string $status,', $sources['Refs\Output\Invoice']);
+        $this->assertStringContainsString("@param 'draft'|'paid' \$status", $sources['Refs\Output\Invoice']);
+        $this->assertStringContainsString('@param array<string,string>|null $attributes', $sources['Refs\Output\Product']);
+        $this->assertStringContainsString('public mixed $payer = null,', $sources['Refs\Output\Invoice']);
     }
 
     public function testAllOfMergesThePropertiesOfEachPart()
     {
-        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Refs\\Output\\Invoice'];
+        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Refs\Output\Invoice'];
 
         $this->assertStringContainsString('public string $createdAt,', $source);
         $this->assertStringContainsString('public string $number,', $source);
@@ -100,13 +100,13 @@ class OpenApiSourceTest extends TestCase
     {
         $sources = $this->render((new OpenApiSource($this->billingDocument()))->toClasses());
 
-        $this->assertStringNotContainsString('internalNote', $sources['Refs\\Output\\Product']);
-        $this->assertStringNotContainsString('reference', $sources['Http\\Requests\\CreateProductRequest']);
+        $this->assertStringNotContainsString('internalNote', $sources['Refs\Output\Product']);
+        $this->assertStringNotContainsString('reference', $sources['Http\Requests\CreateProductRequest']);
     }
 
     public function testARequestClassOnlyRequiresItsRequiredProperties()
     {
-        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Http\\Requests\\CreateProductRequest'];
+        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Http\Requests\CreateProductRequest'];
 
         $this->assertStringContainsString('class CreateProductRequest extends AutoDataToObject', $source);
         $this->assertStringContainsString("public function __construct(\n        public string \$label,\n    ) {}", $source);
@@ -116,7 +116,7 @@ class OpenApiSourceTest extends TestCase
 
     public function testQueryParametersOfAnOperationWithoutBodyMakeItsRequestClass()
     {
-        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Http\\Requests\\ListProductsRequest'];
+        $source = $this->render((new OpenApiSource($this->billingDocument()))->toClasses())['Http\Requests\ListProductsRequest'];
 
         $this->assertStringContainsString('    public int $page;', $source);
         $this->assertStringContainsString("'labelContains' => 'label-contains',", $source);
@@ -126,9 +126,9 @@ class OpenApiSourceTest extends TestCase
     {
         $sources = $this->render((new OpenApiSource($this->billingDocument()))->toClasses());
 
-        $this->assertStringContainsString('class CreateProductResponse extends Product', $sources['Http\\Responses\\CreateProductResponse']);
-        $this->assertStringContainsString('use '.$this->generatedClass('Refs\\Output\\Product').';', $sources['Http\\Responses\\CreateProductResponse']);
-        $this->assertArrayNotHasKey('Http\\Responses\\ListProductsResponse', $sources, 'A list response has no class of its own');
+        $this->assertStringContainsString('class CreateProductResponse extends Product', $sources['Http\Responses\CreateProductResponse']);
+        $this->assertStringContainsString('use '.$this->generatedClass('Refs\Output\Product').';', $sources['Http\Responses\CreateProductResponse']);
+        $this->assertArrayNotHasKey('Http\Responses\ListProductsResponse', $sources, 'A list response has no class of its own');
     }
 
     public function testSelectedEndpointsOnlyGenerateTheSchemasTheyUse()
@@ -136,7 +136,7 @@ class OpenApiSourceTest extends TestCase
         $classes = (new OpenApiSource($this->billingDocument(), ['createProduct']))->toClasses();
 
         $this->assertEqualsCanonicalizing(
-            ['Refs\\Output\\Category', 'Refs\\Output\\Product', 'Refs\\Input\\Category', 'Http\\Requests\\CreateProductRequest', 'Http\\Responses\\CreateProductResponse'],
+            ['Refs\Output\Category', 'Refs\Output\Product', 'Refs\Input\Category', 'Http\Requests\CreateProductRequest', 'Http\Responses\CreateProductResponse'],
             array_keys($this->render($classes)),
         );
     }
@@ -154,9 +154,9 @@ class OpenApiSourceTest extends TestCase
         $document['components']['schemas']['CreateProductRequest'] = $document['paths']['/products']['post']['requestBody']['content']['application/json']['schema'];
         $document['paths']['/products']['post']['requestBody']['content']['application/json']['schema'] = ['$ref' => '#/components/schemas/CreateProductRequest'];
 
-        $source = $this->render((new OpenApiSource($document))->toClasses())['Http\\Requests\\CreateProductRequest'];
+        $source = $this->render((new OpenApiSource($document))->toClasses())['Http\Requests\CreateProductRequest'];
 
-        $this->assertStringContainsString('class CreateProductRequest extends \\'.$this->generatedClass('Refs\\Input\\CreateProductRequest'), $source);
+        $this->assertStringContainsString('class CreateProductRequest extends \\'.$this->generatedClass('Refs\Input\CreateProductRequest'), $source);
     }
 
     public function testKeysGivingTheSamePropertyNameAreNumbered()
@@ -164,7 +164,7 @@ class OpenApiSourceTest extends TestCase
         $contact = $this->render((new OpenApiSource($this->documentWithSchema([
             'type' => 'object',
             'properties' => ['first_name' => ['type' => 'string'], 'firstName' => ['type' => 'string'], '_first_name' => ['type' => 'string']],
-        ])))->toClasses())['Refs\\Output\\Contact'];
+        ])))->toClasses())['Refs\Output\Contact'];
 
         $this->assertStringContainsString('$firstName = null,', $contact);
         $this->assertStringContainsString('$firstName1 = null,', $contact);
@@ -175,14 +175,14 @@ class OpenApiSourceTest extends TestCase
     {
         $this->writeAndAutoload((new OpenApiSource($this->billingDocument()))->toClasses());
 
-        $invoice = $this->generatedClass('Http\\Responses\\GetInvoicesIdResponse')::fromData([
+        $invoice = $this->generatedClass('Http\Responses\GetInvoicesIdResponse')::fromData([
             'created_at' => '2026-01-01T00:00:00Z',
             'number' => 'F-2026-001',
             'status' => 'paid',
             'lines' => [['product' => ['id' => 1, 'label' => 'Pen', 'category' => ['id' => 2, 'parent' => ['id' => 3]]], 'quantity' => 4]],
         ]);
 
-        $this->assertInstanceOf($this->generatedClass('Refs\\Output\\Invoice'), $invoice);
+        $this->assertInstanceOf($this->generatedClass('Refs\Output\Invoice'), $invoice);
         $this->assertEquals('2026-01-01T00:00:00Z', $invoice->createdAt);
         $this->assertEquals(3, $invoice->lines[0]->product->category->parent->id);
         $this->assertNull($invoice->paidAt);
@@ -192,7 +192,7 @@ class OpenApiSourceTest extends TestCase
     {
         $this->writeAndAutoload((new OpenApiSource($this->billingDocument()))->toClasses());
 
-        $category = $this->generatedClass('Refs\\Output\\Category')::fromData(['id' => 2, 'parent' => null]);
+        $category = $this->generatedClass('Refs\Output\Category')::fromData(['id' => 2, 'parent' => null]);
 
         $this->assertNull($category->parent);
     }
@@ -201,11 +201,19 @@ class OpenApiSourceTest extends TestCase
     {
         $this->writeAndAutoload((new OpenApiSource($this->billingDocument()))->toClasses());
 
-        $request = new ($this->generatedClass('Http\\Requests\\CreateProductRequest'))('Pen');
+        $request = new ($this->generatedClass('Http\Requests\CreateProductRequest'))('Pen');
         $request->unitPrice = 1.5;
-        $request->category = new ($this->generatedClass('Refs\\Input\\Category'))(2);
+        $request->category = new ($this->generatedClass('Refs\Input\Category'))(2);
 
         $this->assertEquals(['label' => 'Pen', 'unit-price' => 1.5, 'category' => ['id' => 2]], $request->toArray());
+    }
+
+    #[DataProvider('cubeDocuments')]
+    public function testDocumentsGeneratedByCubeGiveValidClasses(string $file)
+    {
+        $source = new OpenApiSource(json_decode(file_get_contents($file), true));
+
+        $this->assertGeneratedFilesAreValid([...$this->writer()->write($source->toClasses()), ...$this->clientWriter()->write($source->toClient())]);
     }
 
     public static function cubeDocuments(): array
@@ -215,14 +223,6 @@ class OpenApiSourceTest extends TestCase
             $documents[basename($file)] = [$file];
 
         return $documents;
-    }
-
-    #[DataProvider('cubeDocuments')]
-    public function testDocumentsGeneratedByCubeGiveValidClasses(string $file)
-    {
-        $source = new OpenApiSource(json_decode(file_get_contents($file), true));
-
-        $this->assertGeneratedFilesAreValid([...$this->writer()->write($source->toClasses()), ...$this->clientWriter()->write($source->toClient())]);
     }
 
     public function testOperationsGivingTheSameNameAreNumbered()
@@ -240,7 +240,7 @@ class OpenApiSourceTest extends TestCase
         $source = new OpenApiSource($document);
 
         $this->assertEquals(['GetOrderLines', 'GetOrderLines1', 'GetOrderLines2'], array_map(fn ($operation) => $operation->name, $source->toClient()->operations));
-        $this->assertEqualsCanonicalizing(['Http\\Requests\\GetOrderLinesRequest', 'Http\\Requests\\GetOrderLines1Request'], array_keys($this->render($source->toClasses())));
+        $this->assertEqualsCanonicalizing(['Http\Requests\GetOrderLinesRequest', 'Http\Requests\GetOrderLines1Request'], array_keys($this->render($source->toClasses())));
         $this->assertGeneratedFilesAreValid([...$this->writer()->write($source->toClasses()), ...$this->clientWriter()->write($source->toClient())]);
     }
 
@@ -323,12 +323,12 @@ class OpenApiSourceTest extends TestCase
         $sources = $this->render((new OpenApiSource($document))->toClasses());
 
         $this->assertEqualsCanonicalizing([
-            'Http\\Responses\\GetDirectoryResponse',
-            'Http\\Responses\\GetDirectoryResponse\\Owner',
-            'Http\\Responses\\GetDirectoryResponse\\OwnerAddress',
-            'Http\\Responses\\GetDirectoryResponse\\MembersItem',
+            'Http\Responses\GetDirectoryResponse',
+            'Http\Responses\GetDirectoryResponse\Owner',
+            'Http\Responses\GetDirectoryResponse\OwnerAddress',
+            'Http\Responses\GetDirectoryResponse\MembersItem',
         ], array_keys($sources));
-        $this->assertStringContainsString('public ?Owner $owner = null,', $sources['Http\\Responses\\GetDirectoryResponse']);
+        $this->assertStringContainsString('public ?Owner $owner = null,', $sources['Http\Responses\GetDirectoryResponse']);
     }
 
     public function testAListNotExplodedInTheQueryIsJoinedByTheDelimiterOfItsStyle()

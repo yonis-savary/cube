@@ -10,6 +10,9 @@ use Cube\Data\Models\ModelGenerator\Table;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class ModelGenerationTest extends TestCase
 {
     use TestMultipleDrivers;
@@ -17,17 +20,19 @@ class ModelGenerationTest extends TestCase
     /**
      * @param Table[] $tables
      */
-    public function assertTableGotParsed(array $tables, string $tableName) {
-        $matching = Bunch::wrap($tables)->first(fn($table) => $table->table === $tableName);
+    public function assertTableGotParsed(array $tables, string $tableName)
+    {
+        $matching = Bunch::wrap($tables)->first(fn ($table) => $table->table === $tableName);
         $this->assertInstanceOf(Table::class, $matching);
     }
 
     /**
-     * @param Table[] $tables
+     * @param Table[]         $tables
      * @param \Closure(Table) $callback
      */
-    public function assertForTable(array $tables, string $tableName, callable $callback) {
-        $matching = Bunch::wrap($tables)->first(fn($table) => $table->table === $tableName);
+    public function assertForTable(array $tables, string $tableName, callable $callback)
+    {
+        $matching = Bunch::wrap($tables)->first(fn ($table) => $table->table === $tableName);
         $this->assertInstanceOf(Table::class, $matching);
         if ($matching)
             $callback($matching);
@@ -36,25 +41,28 @@ class ModelGenerationTest extends TestCase
     /**
      * @param \Closure(ModelField) $callback
      */
-    public function assertForField(Table $table, string $fieldName, callable $callback) {
-        $matching = Bunch::wrap($table->fields)->first(fn($field) => $field->name === $fieldName);
+    public function assertForField(Table $table, string $fieldName, callable $callback)
+    {
+        $matching = Bunch::wrap($table->fields)->first(fn ($field) => $field->name === $fieldName);
         $this->assertInstanceOf(ModelField::class, $matching);
         if ($matching)
             $callback($matching);
     }
 
     /**
-     * @param Table[] $tables
+     * @param Table[]              $tables
      * @param \Closure(ModelField) $callback
      */
-    public function assertForTableField(array $tables, string $tableName, string $fieldName, callable $callback) {
-        $this->assertForTable($tables, $tableName, function($table) use ($fieldName, $callback) {
+    public function assertForTableField(array $tables, string $tableName, string $fieldName, callable $callback)
+    {
+        $this->assertForTable($tables, $tableName, function ($table) use ($fieldName, $callback) {
             $this->assertForField($table, $fieldName, $callback);
         });
     }
 
-    #[ DataProvider('getDatabases') ]
-    public function testCorrectTableParsing(Database $database) {
+    #[DataProvider('getDatabases')]
+    public function testCorrectTableParsing(Database $database)
+    {
         $modelGenerator = ModelGenerator::getInstance()->getAdapter($database);
         $modelGenerator->process();
 
@@ -64,23 +72,23 @@ class ModelGenerationTest extends TestCase
         $this->assertTableGotParsed($tables, 'product_manager');
         $this->assertTableGotParsed($tables, 'addition');
 
-        $this->assertForTableField($tables, 'user', 'id', function($idColumn) {
+        $this->assertForTableField($tables, 'user', 'id', function ($idColumn) {
             $this->assertEquals(ModelField::INTEGER, $idColumn->type);
             $this->assertTrue($idColumn->autoIncrement);
         });
 
-        $this->assertForTableField($tables, 'user', 'type', function($typeColumn) {
+        $this->assertForTableField($tables, 'user', 'type', function ($typeColumn) {
             $this->assertEquals(ModelField::INTEGER, $typeColumn->type);
             $this->assertEquals('UserType', $typeColumn->referenceModel);
             $this->assertEquals('id', $typeColumn->referenceField);
         });
 
-        $this->assertForTableField($tables, 'product_manager', 'manager', function($managerColumn) {
+        $this->assertForTableField($tables, 'product_manager', 'manager', function ($managerColumn) {
             $this->assertEquals(ModelField::STRING, $managerColumn->type);
             $this->assertFalse($managerColumn->nullable);
         });
 
-        $this->assertForTableField($tables, 'addition', 'result', function($resultColumn) {
+        $this->assertForTableField($tables, 'addition', 'result', function ($resultColumn) {
             $this->assertEquals(ModelField::FLOAT, $resultColumn->type);
             $this->assertTrue($resultColumn->isGenerated());
         });

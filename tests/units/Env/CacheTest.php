@@ -10,6 +10,9 @@ use Cube\Env\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class CacheTest extends TestCase
 {
     /** @var Cache[] */
@@ -19,20 +22,11 @@ class CacheTest extends TestCase
     protected static array $temporaryStorages = [];
 
     /**
-     * @return Cache[]
-     */
-    public static function getCaches(): array {
-        return [
-            'local disk cache' => [self::newLocalDiskCache()],
-            'redis cache' => [self::remember(new Cache(new CacheConfiguration(new RedisCache(uniqid('cube-test-'), '127.0.0.1', 6379))))]
-        ];
-    }
-
-    /**
      * A cache outlives the test that used it (the data provider builds them all upfront),
      * so emptying them here is what keeps a disk cache from feeding the next run.
      */
-    public static function tearDownAfterClass(): void {
+    public static function tearDownAfterClass(): void
+    {
         foreach (self::$temporaryCaches as $cache)
             $cache->clear();
 
@@ -44,12 +38,13 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
-    public function testSetAndGet(Cache $cache) {
+    public function testSetAndGet(Cache $cache)
+    {
         $this->assertNull($cache->get('some-key'));
         $this->assertEquals('some-default', $cache->get('some-key', 'some-default'));
 
         $myObject = (object) [
-            'some-object-key' => 'uninspired description'
+            'some-object-key' => 'uninspired description',
         ];
 
         $cache->set('some-key', $myObject);
@@ -58,30 +53,31 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
-    public function testGetOrSet(Cache $cache) {
-
+    public function testGetOrSet(Cache $cache)
+    {
         $executionCount = 0;
 
         $this->assertFalse($cache->has('some-key'));
-        $result = $cache->getOrSet("some-key", function() use (&$executionCount) {
-            $executionCount++;
-            return 1+2;
+        $result = $cache->getOrSet('some-key', function () use (&$executionCount) {
+            ++$executionCount;
+            return 1 + 2;
         });
 
         $this->assertEquals(3, $result);
         $this->assertEquals(1, $executionCount);
         $this->assertEquals(3, $cache->get('some-key'));
 
-        $result = $cache->getOrSet("some-key", function() use (&$executionCount) {
-            $executionCount++;
-            return 10+20;
+        $result = $cache->getOrSet('some-key', function () use (&$executionCount) {
+            ++$executionCount;
+            return 10 + 20;
         });
 
         $this->assertEquals(3, $result); // should not set it again
     }
 
     #[DataProvider('getCaches')]
-    public function testDelete(Cache $cache) {
+    public function testDelete(Cache $cache)
+    {
         $cache->set('some-key', 'hello!');
         $this->assertEquals('hello!', $cache->get('some-key'));
 
@@ -90,7 +86,8 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
-    public function testClear(Cache $cache) {
+    public function testClear(Cache $cache)
+    {
         $cache->set('first-key', 'first-value');
         $cache->set('second-key', 'second-value');
 
@@ -103,9 +100,9 @@ class CacheTest extends TestCase
         $this->assertFalse($cache->has('second-key'));
     }
 
-
     #[DataProvider('getCaches')]
-    public function testClearingAChildOnlyRemovesItsOwnKeys(Cache $cache) {
+    public function testClearingAChildOnlyRemovesItsOwnKeys(Cache $cache)
+    {
         $cache->set('application-key', 'kept');
         $cache->child('autoloader')->set('classes', ['kept-out']);
 
@@ -116,13 +113,15 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
-    public function testCallbackSet(Cache $cache) {
-        $cache->set('some-key', fn() => 1+2);
+    public function testCallbackSet(Cache $cache)
+    {
+        $cache->set('some-key', fn () => 1 + 2);
         $this->assertEquals(3, $cache->get('some-key'));
     }
 
     #[DataProvider('getCaches')]
-    public function testTry(Cache $cache) {
+    public function testTry(Cache $cache)
+    {
         $this->assertFalse($cache->try('some-key'));
 
         $cache->set('some-key', 'hello!');
@@ -130,7 +129,8 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
-    public function testChildPrefixesItsKeys(Cache $cache) {
+    public function testChildPrefixesItsKeys(Cache $cache)
+    {
         $child = $cache->child('sub');
         $child->set('some-key', 'hello!');
 
@@ -140,7 +140,8 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
-    public function testChildPrefixesEveryKeyOnlyOnce(Cache $cache) {
+    public function testChildPrefixesEveryKeyOnlyOnce(Cache $cache)
+    {
         $child = $cache->child('sub');
 
         $child->getOrSet('from-get-or-set', 'hello!');
@@ -154,13 +155,26 @@ class CacheTest extends TestCase
     }
 
     #[DataProvider('getCaches')]
-    public function testChildrenCanBeNested(Cache $cache) {
+    public function testChildrenCanBeNested(Cache $cache)
+    {
         $cache->child('sub')->child('subsub')->set('some-key', 'hello!');
 
         $this->assertEquals('hello!', $cache->get('sub-subsub-some-key'));
     }
 
-    public function testGetReferenceHandsAMutableSlot() {
+    /**
+     * @return Cache[]
+     */
+    public static function getCaches(): array
+    {
+        return [
+            'local disk cache' => [self::newLocalDiskCache()],
+            'redis cache' => [self::remember(new Cache(new CacheConfiguration(new RedisCache(uniqid('cube-test-'), '127.0.0.1', 6379))))],
+        ];
+    }
+
+    public function testGetReferenceHandsAMutableSlot()
+    {
         // Only the local disk driver keeps a live reference : RedisCache::getReference()
         // warns and gives back a detached copy
         $cache = self::newLocalDiskCache();
@@ -171,7 +185,8 @@ class CacheTest extends TestCase
         $this->assertEquals(['first'], $cache->get('some-list'));
     }
 
-    public function testGetReferenceOnAChildStaysOnTheSameKey() {
+    public function testGetReferenceOnAChildStaysOnTheSameKey()
+    {
         $cache = self::newLocalDiskCache();
         $child = $cache->child('sub');
 
@@ -182,14 +197,16 @@ class CacheTest extends TestCase
         $this->assertFalse($cache->has('sub-sub-some-list'));
     }
 
-    protected static function newLocalDiskCache(): Cache {
+    protected static function newLocalDiskCache(): Cache
+    {
         $storage = Storage::getInstance()->child(uniqid('cache-test-'));
         self::$temporaryStorages[] = $storage;
 
         return self::remember(new Cache(new CacheConfiguration(new LocalDiskCache($storage))));
     }
 
-    protected static function remember(Cache $cache): Cache {
+    protected static function remember(Cache $cache): Cache
+    {
         self::$temporaryCaches[] = $cache;
 
         return $cache;

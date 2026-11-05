@@ -2,7 +2,6 @@
 
 namespace Cube\Tests\Units\Database;
 
-use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 

@@ -9,7 +9,6 @@ use Cube\Tests\Units\Env\Classes\SpyLogger;
 use Cube\Tests\Units\Routine\Classes\InvokableTask;
 use Cube\Tests\Units\Routine\Classes\RecordedTasks;
 use Cube\Tests\Units\Routine\Classes\StartRecordingScheduler;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -31,30 +30,30 @@ class SchedulerTest extends TestCase
         $this->assertSame($scheduler, $scheduler->add(CronExpression::everyMinute(), InvokableTask::class));
     }
 
-    public static function getInvalidTasks(): array
-    {
-        return [
-            'unknown class' => ['App\\Nowhere'],
-            'not invokable' => [RecordedTasks::class],
-            'unknown method' => [[RecordedTasks::class, 'unknown']],
-            'private method' => [[RecordedTasks::class, 'hiddenTask']],
-            'not a pair' => [[RecordedTasks::class]],
-        ];
-    }
-
     /** A typo in a schedule file only showed when the task was due, inside a background process. */
     #[DataProvider('getInvalidTasks')]
     public function testAnInvalidTaskIsRefusedWhenScheduled(array|string $task)
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         (new Scheduler())->add(CronExpression::everyMinute(), $task);
     }
 
     #[DataProvider('getInvalidTasks')]
     public function testRunRefusesAnInvalidTask(array|string $task)
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         (new Scheduler())->run($task);
+    }
+
+    public static function getInvalidTasks(): array
+    {
+        return [
+            'unknown class' => ['App\Nowhere'],
+            'not invokable' => [RecordedTasks::class],
+            'unknown method' => [[RecordedTasks::class, 'unknown']],
+            'private method' => [[RecordedTasks::class, 'hiddenTask']],
+            'not a pair' => [[RecordedTasks::class]],
+        ];
     }
 
     public function testOnlyTheMatchingTasksAreStarted()

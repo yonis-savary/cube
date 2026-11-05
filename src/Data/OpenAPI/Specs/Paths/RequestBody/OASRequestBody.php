@@ -27,10 +27,9 @@ class OASRequestBody extends AutoDataToObject
         $this->context = OpenAPIGenerationContext::getInstance();
         if (!count($nonPostMethods))
             $this->processBodyParameters($route);
-
     }
 
-    public function processBodyParameters(Route $route) 
+    public function processBodyParameters(Route $route)
     {
         if ($rawBody = $route->getReflectionMethod()->getAttributes(RawBody::class)[0] ?? null) {
             $this->processRawBody($rawBody->newInstance());
@@ -39,14 +38,13 @@ class OASRequestBody extends AutoDataToObject
 
         if (!$rules = $this->getRequestRules($route))
             return;
-
         $this->requestBody = [];
         $this->requestBody['required'] = true;
         $this->requestBody['content'] = ['application/json' => ['schema' => []]];
 
         $keys = $rules instanceof ObjectParam ? array_keys($rules->getRules()) : [];
         foreach ($keys as $key)
-            $this->context->log(" - Adding body request [$key] parameter");
+            $this->context->log(" - Adding body request [{$key}] parameter");
 
         $this->mutateParameterWithRule(
             $rules,

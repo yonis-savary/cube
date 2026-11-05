@@ -1,2 +1,2 @@
-<span>path=<?= $path ?></span>
-<span>context=<?= $context ?></span>
+<span>path=<?php echo $path; ?></span>
+<span>context=<?php echo $context; ?></span>

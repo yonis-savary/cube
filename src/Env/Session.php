@@ -46,7 +46,8 @@ class Session
     public function unset(string ...$keys): void
     {
         Bunch::wrap($keys)
-            ->forEach(fn($key) => $this->driver->delete($key));
+            ->forEach(fn ($key) => $this->driver->delete($key))
+        ;
     }
 
     public function clear(): void

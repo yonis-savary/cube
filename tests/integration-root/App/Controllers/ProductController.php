@@ -5,9 +5,9 @@ namespace App\Controllers;
 use App\Controllers\Requests\StoreProductRequest;
 use App\Models\Product;
 use Cube\Data\OpenAPI\Attributes\ModelResponse;
+use Cube\Web\Controller;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
-use Cube\Web\Controller;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
 

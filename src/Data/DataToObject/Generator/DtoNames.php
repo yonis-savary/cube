@@ -26,7 +26,6 @@ class DtoNames
 
         if (in_array(strtolower($className), self::RESERVED_CLASS_NAMES, true))
             return $className.'Dto';
-
         return self::withValidFirstCharacter($className);
     }
 
@@ -34,20 +33,19 @@ class DtoNames
     {
         $words = self::words($key);
         $leadingUnderscores = preg_replace('/^(_*).*$/s', '$1', $key);
-        $propertyName =
-            $leadingUnderscores .
-            $words[0] .
-            Bunch::wrap(array_slice($words, 1))->map(ucfirst(...))->join('');
+        $propertyName
+            = $leadingUnderscores
+            .$words[0]
+            .Bunch::wrap(array_slice($words, 1))->map(ucfirst(...))->join('');
 
         if ('this' === $propertyName)
             return 'thisValue';
-
         return self::withValidFirstCharacter($propertyName);
     }
 
     /**
      * `$name`, or `$name` followed by the first number that frees it (`url`, `url1`, `url2`...), compared
-     * case-insensitively as PHP compares method and class names
+     * case-insensitively as PHP compares method and class names.
      *
      * @param string[] $taken
      */

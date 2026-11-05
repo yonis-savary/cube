@@ -6,7 +6,6 @@ use Cube\Env\Storage;
 use Cube\Tests\Units\Env\Classes\InvoiceStorage;
 use Cube\Tests\Units\Env\Classes\RecordingDiskDriver;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 /**
  * @internal
@@ -27,7 +26,7 @@ class UserStorageTest extends TestCase
     /** Every anonymous visitor hashed to the same key, so they all read and wrote one shared directory. */
     public function testNobodyLoggedInGetsNoDirectory()
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
 
         InvoiceStorage::getUserInstance(false, md5(serialize(false)));
     }

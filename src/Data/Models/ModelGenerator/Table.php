@@ -4,19 +4,18 @@ namespace Cube\Data\Models\ModelGenerator;
 
 use Cube\Data\Bunch;
 use Cube\Data\Database\Query\Identifier;
-use Cube\Env\Storage;
-use Cube\Env\Logger\Logger;
 use Cube\Data\Models\DummyModel;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Data\Models\Relations\HasMany;
 use Cube\Data\Models\Relations\HasOne;
 use Cube\Data\Models\Relations\Relation;
+use Cube\Env\Logger\Logger;
+use Cube\Env\Storage;
 use Cube\Utils\Attributes\Generated;
 use Cube\Utils\Console;
 use Cube\Utils\Path;
 use Cube\Utils\Text;
-use InvalidArgumentException;
 
 class Table
 {
@@ -41,7 +40,7 @@ class Table
     public static function assertTableName(string $table): void
     {
         if (!Identifier::isColumn($table))
-            throw new InvalidArgumentException("Cannot generate a model for table [{$table}], expected letters, digits and underscores");
+            throw new \InvalidArgumentException("Cannot generate a model for table [{$table}], expected letters, digits and underscores");
     }
 
     public static function getClassname(string $tableName): string
@@ -106,9 +105,7 @@ class Table
     {
         if (!$uses = class_uses($className))
             return [];
-
         foreach ($uses as $use) {
-
             Console::print(
                 Console::withBlueColor(
                     '- Recovering trait usage ['.$use.'] for class '.$className
@@ -142,50 +139,53 @@ class Table
         }
 
         $relationProps = Bunch::wrap($relations)
-            ->map(fn($relation) => $relation->getName())
-            ->get();
+            ->map(fn ($relation) => $relation->getName())
+            ->get()
+        ;
 
         $fieldsNames = Bunch::wrap($this->fields)->key('name');
 
         $hasOneRelations = Bunch::wrap($relations)
             ->onlyInstancesOf(HasOne::class)
             ->filter(fn (HasOne $relation) => $relation->concern($className))
-            ->filter(fn (HasOne $relation) => $relation->fromModel === $className);
+            ->filter(fn (HasOne $relation) => $relation->fromModel === $className)
+        ;
 
         $addedRelationNames = [];
 
         $hasManyRelations = Bunch::wrap($relations)
-        ->onlyInstancesOf(HasOne::class)
-        ->filter(fn (HasOne $relation) => $relation->concern($className))
-        ->filter(fn (HasOne $relation) => $relation->fromModel !== $className)
-        ->map(function (HasOne $relation) use (&$relationsNames, $fieldsNames, &$addedRelationNames) {
-            $toModel    = $relation->fromModel;
-            $toColumn   = $relation->fromColumn;
-            $fromModel  = $relation->toModel;
-            $fromColumn = $relation->toColumn;
+            ->onlyInstancesOf(HasOne::class)
+            ->filter(fn (HasOne $relation) => $relation->concern($className))
+            ->filter(fn (HasOne $relation) => $relation->fromModel !== $className)
+            ->map(function (HasOne $relation) use (&$relationsNames, $fieldsNames, &$addedRelationNames) {
+                $toModel = $relation->fromModel;
+                $toColumn = $relation->fromColumn;
+                $fromModel = $relation->toModel;
+                $fromColumn = $relation->toColumn;
 
-            $relationName = lcfirst(Text::endsWith(str_replace(
-                basename(str_replace('\\', '/', $fromModel)),
-                '',
-                basename(str_replace('\\', '/', $toModel))
-            ), 's'));
+                $relationName = lcfirst(Text::endsWith(str_replace(
+                    basename(str_replace('\\', '/', $fromModel)),
+                    '',
+                    basename(str_replace('\\', '/', $toModel))
+                ), 's'));
 
-            if (str_ends_with($relationName, 'ys'))
-                $relationName = preg_replace('/ys$/', 'ies', $relationName);
+                if (str_ends_with($relationName, 'ys'))
+                    $relationName = preg_replace('/ys$/', 'ies', $relationName);
 
-            while ($fieldsNames->has($relationName) || in_array($relationName, $addedRelationNames))
-                $relationName = "_$relationName";
+                while ($fieldsNames->has($relationName) || in_array($relationName, $addedRelationNames))
+                    $relationName = "_{$relationName}";
 
-            $addedRelationNames[] = $relationName;
+                $addedRelationNames[] = $relationName;
 
-            $dummyModel = new DummyModel();
-            $relation = new HasMany($relationName, $fromModel, $fromColumn, $toModel, $toColumn, $dummyModel);
-            $relationName = $relation->getName();
+                $dummyModel = new DummyModel();
+                $relation = new HasMany($relationName, $fromModel, $fromColumn, $toModel, $toColumn, $dummyModel);
+                $relationName = $relation->getName();
 
-            $relationsNames[] = $relationName;
+                $relationsNames[] = $relationName;
 
-            return $relation;
-        });
+                return $relation;
+            })
+        ;
 
         $mergedRelations = Bunch::wrap($hasOneRelations)->merge($hasManyRelations);
 
@@ -200,26 +200,27 @@ class Table
         $fileName = "{$className}.php";
         if ($destination->exists($fileName)) {
             $existingContent = $destination->read($fileName);
-            preg_match_all("~^use (.+);~m", $existingContent, $fileUses);
+            preg_match_all('~^use (.+);~m', $existingContent, $fileUses);
             $uses = array_merge($uses, $fileUses[1]);
             $uses = array_values(array_unique($uses));
         }
 
         $usesString = Bunch::wrap($uses)
-        ->map(fn($class) => "use $class;")
-        ->join("\n");
+            ->map(fn ($class) => "use {$class};")
+            ->join("\n")
+        ;
 
         $fileContent = Text::toFile("
         <?php
 
         namespace {$namespace};
 
-        $usesString
+        {$usesString}
 
         /**
          * Generated by `".self::class."`\n"
             .Bunch::wrap($this->fields)
-                ->filter(fn(ModelField $field) => !in_array($field->name, $relationProps))
+                ->filter(fn (ModelField $field) => !in_array($field->name, $relationProps))
                 ->map(fn (ModelField $field) => $this->getFieldPHPDoc($field))
                 ->join("\n")."\n"
 
@@ -228,10 +229,10 @@ class Table
          */
         class {$className} extends Model
         {
-            ".
-            Bunch::fromValues($classUses)
-            ->map(fn($x) => "use \\$x;")
-            ->join("\n")
+            "
+            .Bunch::fromValues($classUses)
+                ->map(fn ($x) => "use \\{$x};")
+                ->join("\n")
             ."
 
             #[Generated]
@@ -266,35 +267,35 @@ class Table
 
 
             \n".Bunch::wrap($hasOneRelations)
-            ->map(function (HasOne $relation) use (&$relationsNames) {
-                $fromColumn = $relation->fromColumn;
-                $toModel = $relation->toModel;
-                $relationName = $relation->getName();
-                $toColumn = $relation->toColumn;
+                    ->map(function (HasOne $relation) use (&$relationsNames) {
+                        $fromColumn = $relation->fromColumn;
+                        $toModel = $relation->toModel;
+                        $relationName = $relation->getName();
+                        $toColumn = $relation->toColumn;
 
-                $relationsNames[] = $relationName;
+                        $relationsNames[] = $relationName;
 
-                return Text::toFile("
+                        return Text::toFile("
                 #[Generated]
                 public function {$relationName}(): HasOne
                 {
-                    return \$this->hasOne('$relationName', '{$fromColumn}', {$toModel}::class, '{$toColumn}');
+                    return \$this->hasOne('{$relationName}', '{$fromColumn}', {$toModel}::class, '{$toColumn}');
                 }
                 ", 1);
                     })->join("\n\n")."
 
             \n".Bunch::wrap($hasManyRelations)
-            ->map(function (HasMany $relation) {
-                $toModel    = $relation->toModel;
-                $toColumn   = $relation->toColumn;
-                $fromColumn = $relation->fromColumn;
-                $relationName = $relation->getName();
+                    ->map(function (HasMany $relation) {
+                        $toModel = $relation->toModel;
+                        $toColumn = $relation->toColumn;
+                        $fromColumn = $relation->fromColumn;
+                        $relationName = $relation->getName();
 
-                return Text::toFile("
+                        return Text::toFile("
                 #[Generated]
                 public function {$relationName}(): HasMany
                 {
-                    return \$this->hasMany('$relationName', {$toModel}::class, '{$toColumn}', '{$fromColumn}');
+                    return \$this->hasMany('{$relationName}', {$toModel}::class, '{$toColumn}', '{$fromColumn}');
                 }
                 ", 1);
                     })->join("\n\n").'

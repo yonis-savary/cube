@@ -9,7 +9,7 @@ use Cube\Data\Models\Model;
 /**
  * Subquery resolver to fix the N+1 problem
  * Idea is: table B.fk points to table A.pk
- * We fetch every B where fk in (A.pk), and map array of A relations with B mapped by A.pk
+ * We fetch every B where fk in (A.pk), and map array of A relations with B mapped by A.pk.
  */
 class RelationResolver
 {
@@ -31,22 +31,24 @@ class RelationResolver
 
         $owners = Bunch::wrap($data);
         foreach ($this->accArray as $hasOneName)
-            $owners = $owners->map(fn (Model $owner) => $owner->$hasOneName)->filter();
+            $owners = $owners->map(fn (Model $owner) => $owner->{$hasOneName})->filter();
 
         $keys = $owners
             ->key($fromKey)
             ->filter()
             ->uniques()
-            ->values();
+            ->values()
+        ;
 
         $targetData = $toModel::select()
             ->exploreTree($toModel, $this->treeToExplore, $toModel::table())
             ->where($toKey, $keys)
             ->toBunch($database)
-            ->groupBy(fn (Model $el) => $el->$toKey);
+            ->groupBy(fn (Model $el) => $el->{$toKey})
+        ;
 
         foreach ($owners->get() as $owner) {
-            $owner->setReference($this->relation->relationName, $targetData[$owner->$fromKey] ?? []);
+            $owner->setReference($this->relation->relationName, $targetData[$owner->{$fromKey}] ?? []);
         }
     }
 }

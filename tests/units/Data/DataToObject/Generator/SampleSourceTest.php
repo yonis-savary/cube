@@ -17,9 +17,9 @@ class SampleSourceTest extends TestCase
     {
         $sources = $this->render((new SampleSource('Invoice', ['created_at' => '2025-02-03T08:47:06.000Z']))->toClasses());
 
-        $this->assertStringContainsString('public ?string $createdAt,', $sources['Invoice\\Invoice']);
-        $this->assertStringContainsString("'createdAt' => 'created_at',", $sources['Invoice\\Invoice']);
-        $this->assertStringNotContainsStringIgnoringCase('datetime', $sources['Invoice\\Invoice']);
+        $this->assertStringContainsString('public ?string $createdAt,', $sources['Invoice\Invoice']);
+        $this->assertStringContainsString("'createdAt' => 'created_at',", $sources['Invoice\Invoice']);
+        $this->assertStringNotContainsStringIgnoringCase('datetime', $sources['Invoice\Invoice']);
     }
 
     public function testNestedObjectsGetTheirOwnSubNamespace()
@@ -34,11 +34,11 @@ class SampleSourceTest extends TestCase
 
         $sources = $this->render($classes);
 
-        $this->assertEqualsCanonicalizing(['Album\\Album', 'Album\\Artist\\Artist', 'Album\\Tracks\\Tracks'], array_keys($sources));
-        $this->assertStringContainsString('public ?Artist $artist,', $sources['Album\\Album']);
-        $this->assertStringContainsString("#[ArrayOf(Tracks::class)]\n        public ?array \$tracks,", $sources['Album\\Album']);
-        $this->assertStringContainsString('@param list<string>|null $tags', $sources['Album\\Album']);
-        $this->assertStringContainsString('public mixed $released,', $sources['Album\\Album']);
+        $this->assertEqualsCanonicalizing(['Album\Album', 'Album\Artist\Artist', 'Album\Tracks\Tracks'], array_keys($sources));
+        $this->assertStringContainsString('public ?Artist $artist,', $sources['Album\Album']);
+        $this->assertStringContainsString("#[ArrayOf(Tracks::class)]\n        public ?array \$tracks,", $sources['Album\Album']);
+        $this->assertStringContainsString('@param list<string>|null $tags', $sources['Album\Album']);
+        $this->assertStringContainsString('public mixed $released,', $sources['Album\Album']);
     }
 
     public function testGeneratedClassesHydrateTheSample()
@@ -46,7 +46,7 @@ class SampleSourceTest extends TestCase
         $sample = ['name' => "People's Champion", 'artist' => ['name' => 'Käärijä'], 'tracks' => [['title' => 'Cha Cha Cha']]];
         $this->writeAndAutoload((new SampleSource('Album', $sample))->toClasses());
 
-        $album = $this->generatedClass('Album\\Album')::fromData($sample);
+        $album = $this->generatedClass('Album\Album')::fromData($sample);
 
         $this->assertEquals('Käärijä', $album->artist->name);
         $this->assertEquals('Cha Cha Cha', $album->tracks[0]->title);

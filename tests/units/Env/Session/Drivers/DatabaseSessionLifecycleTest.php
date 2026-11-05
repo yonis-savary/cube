@@ -8,6 +8,9 @@ use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 #[RunTestsInSeparateProcesses]
 class DatabaseSessionLifecycleTest extends TestCase
 {
@@ -17,7 +20,7 @@ class DatabaseSessionLifecycleTest extends TestCase
         Database::setInstance((new SQLiteProvider())->getEmptyDatabase());
     }
 
-    public function test_the_session_is_stored_in_the_database()
+    public function testTheSessionIsStoredInTheDatabase()
     {
         $driver = $this->newDriver('shop');
         $driver->set('cart', ['a-product']);
@@ -29,7 +32,7 @@ class DatabaseSessionLifecycleTest extends TestCase
         $this->assertEquals(['a-product'], $_SESSION['cube']['shop']['cart']);
     }
 
-    public function test_a_regenerated_id_keeps_the_values()
+    public function testARegeneratedIdKeepsTheValues()
     {
         $driver = $this->newDriver('shop');
         $driver->set('cart', ['a-product']);

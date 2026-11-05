@@ -26,8 +26,9 @@ class StaticServerTest extends CubeTestCase
         $tmpFile = tempnam(sys_get_temp_dir(), 'fakefile');
         $this->assertFileExists($tmpFile);
         $this->get($tmpFile)
-            ->assertNotFound();
-        
+            ->assertNotFound()
+        ;
+
         $file = $this->get('/etc/passwd')
             ->assertOk()
             ->body()

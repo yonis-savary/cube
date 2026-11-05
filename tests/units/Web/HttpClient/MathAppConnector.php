@@ -8,11 +8,12 @@ class MathAppConnector extends HttpClient
 {
     public function baseURL(): ?string
     {
-        return "http://some-math-api/";
+        return 'http://some-math-api/';
     }
 
-    public function double(int $number) : int {
-        $response = $this->get("/double/$number");
+    public function double(int $number): int
+    {
+        $response = $this->get("/double/{$number}");
         return (int) $response->getJSON()['result'];
     }
 }

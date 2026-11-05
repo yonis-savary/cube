@@ -31,9 +31,9 @@ class Integration extends Command
         return [
             'make:integration <openapi.json|url> [--namespace=<namespace>] [--client-name=<name>] [--endpoint=<endpoint>...] [--lenient] [--header=<header>...]',
             '',
-            'Generate a DataToObject class per object schema in <Namespace>\\Refs\\Output to read responses, an',
-            'AutoDataToObject class in <Namespace>\\Refs\\Input for each schema a request sends, an <Operation>Request',
-            'in <Namespace>\\Http\\Requests and an <Operation>Response in <Namespace>\\Http\\Responses per operation,',
+            'Generate a DataToObject class per object schema in <Namespace>\Refs\Output to read responses, an',
+            'AutoDataToObject class in <Namespace>\Refs\Input for each schema a request sends, an <Operation>Request',
+            'in <Namespace>\Http\Requests and an <Operation>Response in <Namespace>\Http\Responses per operation,',
             'and <Name>Client, an HttpClient with one method per operation,',
             'reading its URL and credentials from <Name>Configuration',
             '',
@@ -53,21 +53,16 @@ class Integration extends Command
         $location = $args->getValues()[0] ?? null;
         if (!$location)
             return $this->abort('Usage : '.$this->getManual()[0]);
-
         if (null === $document = $this->readJsonDocument($location, $args))
             return 1;
-
         if (!str_starts_with((string) ($document['openapi'] ?? ''), '3.'))
             return $this->abort("{$location} is not an OpenAPI 3 document : expected an \"openapi\" field starting with 3.");
-
         $source = new OpenApiSource($document, $args->getValues(long: 'endpoint'), $this->isUrl($location) ? $location : null);
         if ($unmatched = $source->unmatchedEndpoints())
             return $this->abort('No operation matches ['.implode('], [', $unmatched).'] : give an operationId or "METHOD /path"');
-
         $clientName = $args->getValue(long: 'client-name');
         if (null !== $clientName && !preg_match(DtoNames::CLASS_NAME_FORMAT, $clientName))
             return $this->abort("--client-name [{$clientName}] is not a class name starting with an uppercase letter");
-
         $namespace = $args->getValue(long: 'namespace');
         $target = $namespace
             ? GenerationTarget::fromNamespace($namespace)
@@ -75,7 +70,6 @@ class Integration extends Command
 
         if (!$target)
             return $this->abort("Namespace [{$namespace}] is outside every PSR-4 prefix of composer.json, its classes could not be autoloaded");
-
         $written = [
             ...(new DtoWriter($target, $this->getFullIdentifier(), $args->has(long: 'lenient')))->write($source->toClasses()),
             ...(new ClientWriter($target, $this->getFullIdentifier(), $clientName))->write($source->toClient()),

@@ -9,30 +9,28 @@ class OpenAPIGenerationContext
     use Component;
 
     /**
-     * @var class-string<Model>[] $usedModelRefs List of used model class names
+     * @var class-string<Model>[] List of used model class names
      */
     public array $usedModelRefs = [];
 
     /**
-     * @var array<string,array> $sharedSchemas Schemas that are not models, by component name
+     * @var array<string,array> Schemas that are not models, by component name
      */
     public array $sharedSchemas = [];
 
     public function __construct(
         public readonly OpenAPIConfiguration $configuration
-    )
-    {
-    }
+    ) {}
 
-    public function log(string ...$elements) {
+    public function log(string ...$elements)
+    {
         if (!$this->configuration->displayLogs)
             return;
-
         foreach ($elements as $element) {
             if (!str_ends_with($element, "\n"))
                 $element .= "\n";
 
-            print($element);
+            echo $element;
         }
     }
 }

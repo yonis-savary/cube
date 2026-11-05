@@ -2,16 +2,12 @@
 
 namespace Cube\Data\OpenAPI\Configuration\Authentication;
 
-use Cube\Data\OpenAPI\Configuration\OpenApiConfigElement;
-use Override;
-
 class ApiToken implements OpenApiAuthScheme
 {
     public function __construct(
-        public string $headerName="X-API-Token",
-        public string $componentNameInDoc="ApiTokenAuth"
-    )
-    {}
+        public string $headerName = 'X-API-Token',
+        public string $componentNameInDoc = 'ApiTokenAuth'
+    ) {}
 
     public function getComponentName(): string
     {
@@ -23,7 +19,7 @@ class ApiToken implements OpenApiAuthScheme
         return [
             'type' => 'apiKey',
             'in' => 'header',
-            'name' => $this->headerName
+            'name' => $this->headerName,
         ];
     }
 }

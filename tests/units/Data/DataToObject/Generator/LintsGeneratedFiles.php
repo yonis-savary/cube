@@ -7,7 +7,7 @@ use Symfony\Component\Process\Process;
 trait LintsGeneratedFiles
 {
     /**
-     * Lints every file before anything requires it : an invalid one fails the test instead of the process
+     * Lints every file before anything requires it : an invalid one fails the test instead of the process.
      *
      * @param string[] $files
      */

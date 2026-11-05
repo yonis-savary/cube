@@ -2,8 +2,8 @@
 
 namespace Cube\Web\Http\Rules;
 
-use Cube\Web\Http\Upload;
 use Cube\Utils\File;
+use Cube\Web\Http\Upload;
 
 class UploadRule extends Rule
 {
@@ -13,8 +13,7 @@ class UploadRule extends Rule
 
         if ($nullable)
             $this->default(null);
-        else
-            $this->withCondition(fn (mixed $value) => null !== $value, '{key} upload is needed');
+        else $this->withCondition(fn (mixed $value) => null !== $value, '{key} upload is needed');
 
         $this->withValueCondition(fn (mixed $value) => $value instanceof Upload, '{key} must be an uploaded file');
 

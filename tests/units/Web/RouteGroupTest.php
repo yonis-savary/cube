@@ -6,7 +6,6 @@ use Cube\Tests\Units\Web\Classes\TracingMiddleware;
 use Cube\Web\Http\Request;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\RouteGroup;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -38,7 +37,8 @@ class RouteGroupTest extends TestCase
     public function testMergingTwoGroupsJoinsWhatTheyDeclare()
     {
         $merged = (new RouteGroup('/api', ['First'], ['a' => 1]))
-            ->mergeWith(new RouteGroup('/v2', ['Second'], ['b' => 2]));
+            ->mergeWith(new RouteGroup('/v2', ['Second'], ['b' => 2]))
+        ;
 
         $this->assertEquals('/api/v2', $merged->prefix);
         $this->assertEquals(['First', 'Second'], $merged->middlewares);
@@ -90,8 +90,8 @@ class RouteGroupTest extends TestCase
 
     public function testARouteWithAnUnreachableCallbackIsRefused()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
 
-        (new RouteGroup('/'))->addRoutes(Route::get('/products', ['App\\NoSuchController', 'index']));
+        (new RouteGroup('/'))->addRoutes(Route::get('/products', ['App\NoSuchController', 'index']));
     }
 }

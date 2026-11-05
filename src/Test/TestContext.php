@@ -25,12 +25,11 @@ class TestContext
     protected ?MigrationManager $migrationManager = null;
 
     public function __construct(
-        ?Storage $storage=null,
-        ?Router $router=null,
-        ?Database $database=null,
-        ?Configuration $configuration=null
-    )
-    {
+        ?Storage $storage = null,
+        ?Router $router = null,
+        ?Database $database = null,
+        ?Configuration $configuration = null
+    ) {
         $this->storage = $storage ?? Storage::getInstance();
         $this->router = $router ?? Router::getInstance();
         $this->database = $database;
@@ -68,7 +67,6 @@ class TestContext
     {
         if (!is_dir($path))
             return;
-
         foreach (array_diff(scandir($path), ['.', '..']) as $entry) {
             $child = Path::join($path, $entry);
 
@@ -87,10 +85,10 @@ class TestContext
     {
         $database = new Database('sqlite', uniqid('app-db-'));
 
-        $database->asGlobalInstance(function() use ($database) {
+        $database->asGlobalInstance(function () use ($database) {
             $config = MigrationManagerConfiguration::resolve(Configuration::getInstance());
             $migrationManager = new MigrationManager($database, $config);
-            $migrationManager->setLoggingFunction(fn($buffer) => debug($buffer));
+            $migrationManager->setLoggingFunction(fn ($buffer) => debug($buffer));
             $migrationManager->executeAllMigrations();
         });
 
@@ -99,7 +97,8 @@ class TestContext
         return $database;
     }
 
-    public function useNewEmptyApplicationDatabase() {
+    public function useNewEmptyApplicationDatabase()
+    {
         $path = $this->emptyApplicationDatabase->getDatabase();
         $newDatabasePath = Storage::getInstance()->path(uniqid('testdb', true));
         copy($path, $newDatabasePath);
@@ -109,25 +108,28 @@ class TestContext
         Database::setInstance($this->database);
     }
 
-    public function getStorage(): Storage {
+    public function getStorage(): Storage
+    {
         return $this->storage;
     }
 
-    public function getRouter(): Router {
+    public function getRouter(): Router
+    {
         return $this->router;
     }
 
-    public function getDatabase(): Database {
+    public function getDatabase(): Database
+    {
         return $this->database ??= Database::getInstance();
     }
 
-    public function getConfiguration(): Configuration {
+    public function getConfiguration(): Configuration
+    {
         return $this->configuration;
     }
 
-    public function getMigrationManager(): MigrationManager {
+    public function getMigrationManager(): MigrationManager
+    {
         return $this->migrationManager ??= MigrationManager::getInstance();
     }
-
-
 }

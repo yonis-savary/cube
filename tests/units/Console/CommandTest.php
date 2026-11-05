@@ -21,46 +21,46 @@ class CommandTest extends TestCase
         SayHello::$lastArgs = null;
     }
 
-    public function test_the_name_is_the_kebab_cased_class_name()
+    public function testTheNameIsTheKebabCasedClassName()
     {
         $this->assertEquals('say-hello', (new SayHello())->getName());
     }
 
-    public function test_the_scope_defaults_to_the_root_namespace()
+    public function testTheScopeDefaultsToTheRootNamespace()
     {
         $this->assertEquals('cube', (new SayHello())->getScope());
     }
 
-    public function test_the_full_identifier_joins_the_scope_and_the_name()
+    public function testTheFullIdentifierJoinsTheScopeAndTheName()
     {
         $this->assertEquals('cube:say-hello', (new SayHello())->getFullIdentifier());
     }
 
-    public function test_a_command_can_declare_its_own_scope()
+    public function testACommandCanDeclareItsOwnScope()
     {
         $this->assertEquals('greeting:scoped-say-hello', (new ScopedSayHello())->getFullIdentifier());
     }
 
-    public function test_call_executes_the_command_and_gives_its_status_back()
+    public function testCallExecutesTheCommandAndGivesItsStatusBack()
     {
         $this->assertEquals(0, SayHello::call());
         $this->assertEquals(1, SayHello::call(Args::fromArgv(['--fail'])));
         $this->assertEquals(2, SayHello::$executions);
     }
 
-    public function test_call_hands_an_empty_args_when_given_none()
+    public function testCallHandsAnEmptyArgsWhenGivenNone()
     {
         SayHello::call();
 
         $this->assertEquals([], SayHello::$lastArgs->dump());
     }
 
-    public function test_the_default_help_asks_for_one()
+    public function testTheDefaultHelpAsksForOne()
     {
         $this->assertEquals('Please write a help section for this command', (new SayHello())->getHelp());
     }
 
-    public function test_the_default_manual_names_the_command()
+    public function testTheDefaultManualNamesTheCommand()
     {
         $this->assertStringContainsString('cube:say-hello', (new SayHello())->getManual());
     }
@@ -69,10 +69,10 @@ class CommandTest extends TestCase
      * Identifiers are what users type : renaming a command class or moving it to another
      * namespace has to be a deliberate change, not a side effect.
      */
-    public function test_every_framework_command_keeps_its_identifier()
+    public function testEveryFrameworkCommandKeepsItsIdentifier()
     {
         $identifiers = Bunch::wrap(Autoloader::classesThatExtends(Command::class))
-            ->filter(fn (string $class) => str_starts_with($class, 'Cube\\Console\\Commands\\'))
+            ->filter(fn (string $class) => str_starts_with($class, 'Cube\Console\Commands\\'))
             ->instanciates()
             ->map(fn (Command $command) => $command->getFullIdentifier())
             ->get()
@@ -107,10 +107,10 @@ class CommandTest extends TestCase
     }
 
     /** `cube:dispatch`, `make:openapi` and `cube:test` showed the default help in `cube:help`. */
-    public function test_every_framework_command_has_a_help()
+    public function testEveryFrameworkCommandHasAHelp()
     {
         $withoutHelp = (new Bunch(Autoloader::classesThatExtends(Command::class)))
-            ->filter(fn (string $class) => str_starts_with($class, 'Cube\\Console\\Commands\\'))
+            ->filter(fn (string $class) => str_starts_with($class, 'Cube\Console\Commands\\'))
             ->instanciates()
             ->filter(fn (Command $command) => $command->getHelp() === (new SayHello())->getHelp())
             ->map(fn (Command $command) => $command->getFullIdentifier())

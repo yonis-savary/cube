@@ -120,7 +120,7 @@ class BunchTest extends TestCase
     /** A side that received no value was missing, so destructuring both sides hit an undefined key. */
     public function testPartitionFilterAlwaysGivesBothSides()
     {
-        [$rejected, $kept] = Bunch::wrap([2, 4, 6])->partitionFilter(fn (int $x) => $x % 2 === 0);
+        [$rejected, $kept] = Bunch::wrap([2, 4, 6])->partitionFilter(fn (int $x) => 0 === $x % 2);
 
         $this->assertEquals([], $rejected);
         $this->assertEquals([2, 4, 6], $kept);
@@ -293,9 +293,9 @@ class BunchTest extends TestCase
 
     public function testSum()
     {
-        $this->assertEquals(1+2+3+4+5, Bunch::wrap([1,2,3,4,5])->sum());
-        $this->assertEquals(2+4+6+8+10, Bunch::wrap([1,2,3,4,5])->sum(fn($x) => $x*2));
-        $this->assertEquals(1+2+3+4+5, Bunch::wrap([1,2,3,4,5])->map(fn($x) => ['myKey' => $x])->sum('myKey'));
+        $this->assertEquals(1 + 2 + 3 + 4 + 5, Bunch::wrap([1, 2, 3, 4, 5])->sum());
+        $this->assertEquals(2 + 4 + 6 + 8 + 10, Bunch::wrap([1, 2, 3, 4, 5])->sum(fn ($x) => $x * 2));
+        $this->assertEquals(1 + 2 + 3 + 4 + 5, Bunch::wrap([1, 2, 3, 4, 5])->map(fn ($x) => ['myKey' => $x])->sum('myKey'));
     }
 
     public function testKey()
@@ -367,30 +367,29 @@ class BunchTest extends TestCase
         $this->assertEquals(12, Bunch::wrap([])->average(default: 12));
         $this->assertEquals(12, Bunch::wrap([])->average() ?? 12);
 
-        $this->assertEquals(100, Bunch::wrap([0, 100])->average(fn($x) => $x * 2));
-        $this->assertEquals(3, Bunch::wrap([1, 5])->map(fn($x) => ['myKey' => $x])->average('myKey'));
-        $this->assertEquals(12, Bunch::wrap([])->average(fn($x) => $x * 2, 12));
+        $this->assertEquals(100, Bunch::wrap([0, 100])->average(fn ($x) => $x * 2));
+        $this->assertEquals(3, Bunch::wrap([1, 5])->map(fn ($x) => ['myKey' => $x])->average('myKey'));
+        $this->assertEquals(12, Bunch::wrap([])->average(fn ($x) => $x * 2, 12));
     }
 
-
-    #[ DataProvider('getDatabases') ]
+    #[DataProvider('getDatabases')]
     public function testFromQuery(Database $database)
     {
-        $fullData = Bunch::fromQuery("SELECT id, label FROM user_type", database: $database);
+        $fullData = Bunch::fromQuery('SELECT id, label FROM user_type', database: $database);
 
         $this->assertCount(3, $fullData->get());
         $this->assertCount(2, $fullData->at(0));
 
-        $onlyIds = Bunch::fromQuery("SELECT id FROM user_type", database: $database, key: 'id');
+        $onlyIds = Bunch::fromQuery('SELECT id FROM user_type', database: $database, key: 'id');
 
         $this->assertEquals(
-            [1,2,3],
+            [1, 2, 3],
             $onlyIds->sort()->get()
         );
     }
 
-
-    public function testGroupBy() {
+    public function testGroupBy()
+    {
         $sampleData = Bunch::wrap([
             ['type' => 'it', 'label' => 'Keyboard'],
             ['type' => 'it', 'label' => 'Mouse'],
@@ -403,14 +402,14 @@ class BunchTest extends TestCase
             ['type' => 'car', 'label' => 'Transmission'],
         ]);
 
-        $typedGroups = $sampleData->groupBy(fn($row) => $row['type']);
+        $typedGroups = $sampleData->groupBy(fn ($row) => $row['type']);
         $this->assertCount(2, $typedGroups);
         $this->assertCount(5, $typedGroups['it']);
         $this->assertCount(4, $typedGroups['car']);
 
         $alphaTypedGroups = $sampleData->groupBy([
-            fn($row) => $row['type'],
-            fn($row) => substr($row['label'], 0, 1)
+            fn ($row) => $row['type'],
+            fn ($row) => substr($row['label'], 0, 1),
         ]);
 
         $this->assertCount(2, $alphaTypedGroups);
@@ -506,7 +505,7 @@ class BunchTest extends TestCase
     {
         $calls = 0;
         Bunch::wrap([])->chunk(3, function () use (&$calls) {
-            $calls++;
+            ++$calls;
         });
 
         $this->assertEquals(0, $calls);
@@ -565,7 +564,7 @@ class BunchTest extends TestCase
             ['a' => 0, 'b' => 1, 'c' => 0],
         ];
 
-        $sorted = Bunch::wrap($rows)->sort(['a','b','c'])->get();
+        $sorted = Bunch::wrap($rows)->sort(['a', 'b', 'c'])->get();
 
         $this->assertEquals([
             ['a' => 0, 'b' => 1, 'c' => 0],
@@ -803,7 +802,8 @@ class BunchTest extends TestCase
     public function testKeyAfterAFilter()
     {
         $rows = Bunch::wrap([['label' => 'Keyboard', 'inStock' => false], ['label' => 'Screen', 'inStock' => true]])
-            ->filter('inStock');
+            ->filter('inStock')
+        ;
 
         $this->assertSame(['Screen'], $rows->key('label')->values()->get());
     }

@@ -4,14 +4,11 @@ namespace Cube\Web\Router;
 
 use Cube\Core\Injector;
 use Cube\Data\Models\Model;
+use Cube\Utils\Path;
 use Cube\Web\Http\Exceptions\InvalidRequestMethodException;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
-use Cube\Utils\Path;
 use Cube\Web\Middleware;
-use InvalidArgumentException;
-use ReflectionClass;
-use ReflectionMethod;
 
 use function Cube\error;
 
@@ -39,7 +36,7 @@ class Route
 
     public function __construct(
         string $path,
-        callable|array $callback,
+        array|callable $callback,
         array $methods = [],
         array $middlewares = [],
         array $extras = []
@@ -61,7 +58,7 @@ class Route
         $request->setRoute($this);
 
         $callStack = new RouterCallStack(
-            fn (Request $request) => $this->callWithDependencies($request, $injector), 
+            fn (Request $request) => $this->callWithDependencies($request, $injector),
             $this->middlewares
         );
 
@@ -79,50 +76,49 @@ class Route
         $slugObjects = $request->getSlugValues();
         $parametersReflections = $injector->resolveClosureParameters($callback);
 
-        for ($i = 0; $i < min(count($parametersReflections), count($parameters)); $i++)
+        for ($i = 0; $i < min(count($parametersReflections), count($parameters)); ++$i)
             $slugObjects[$parametersReflections[$i]->getName()] = $parameters[$i];
 
         $request->setSlugObjects($slugObjects);
 
         if (is_callable($callback))
             return $callback(...$parameters);
-
         [$controllerClass, $method] = $callback;
 
-        return $injector->instanciate($controllerClass)->$method(...$parameters);
+        return $injector->instanciate($controllerClass)->{$method}(...$parameters);
     }
 
-    public static function any(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function any(string $path, array|callable $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, [], $middlewares, $extras);
     }
 
-    public static function get(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function get(string $path, array|callable $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['GET'], $middlewares, $extras);
     }
 
-    public static function post(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function post(string $path, array|callable $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['POST'], $middlewares, $extras);
     }
 
-    public static function put(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function put(string $path, array|callable $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['PUT'], $middlewares, $extras);
     }
 
-    public static function patch(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function patch(string $path, array|callable $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['PATCH'], $middlewares, $extras);
     }
 
-    public static function delete(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function delete(string $path, array|callable $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['DELETE'], $middlewares, $extras);
     }
 
-    public static function options(string $path, callable|array $callback, array $middlewares = [], array $extras = [])
+    public static function options(string $path, array|callable $callback, array $middlewares = [], array $extras = [])
     {
         return new self($path, $callback, ['OPTIONS'], $middlewares, $extras);
     }
@@ -139,23 +135,20 @@ class Route
         if (!is_file($file))
             $file = Path::relative($file);
 
-
-        if (!is_file($file))
-        {
-            error("Could not find file to serve $file returning 404 response");
+        if (!is_file($file)) {
+            error("Could not find file to serve {$file} returning 404 response");
             return Response::notFound();
         }
 
         return Response::file($file);
     }
 
-
     public function isCachable(): bool
     {
         return is_array($this->callback) && !str_contains($this->path, '{');
     }
 
-    public function getCallback(): callable|array
+    public function getCallback(): array|callable
     {
         return $this->callback;
     }
@@ -236,7 +229,6 @@ class Route
         foreach ($parts as &$part) {
             if (!$part)
                 continue;
-
             if (!preg_match('/^\{.+\}$/', $part)) {
                 $part = preg_quote($part, '/');
                 continue;
@@ -261,8 +253,8 @@ class Route
         $regex = '/^'.join('\/', $parts).'$/';
 
         if (
-            (!preg_match($regex, $request->getPath(), $slugs)) &&
-            (!preg_match($regex, $request->getPath() . "/", $slugs))
+            (!preg_match($regex, $request->getPath(), $slugs))
+            && (!preg_match($regex, $request->getPath().'/', $slugs))
         ) {
             return false;
         }
@@ -275,7 +267,6 @@ class Route
 
             if (in_array($name, $untypedSlugs) && str_contains($value, '/'))
                 return false;
-
             $namedSlugs[$name] = $value;
         }
 
@@ -284,10 +275,11 @@ class Route
         return true;
     }
 
-    public function buildPath(array $routeParams=[]): string {
+    public function buildPath(array $routeParams = []): string
+    {
         $originalPath = $this->getPath();
 
-        return preg_replace_callback("~\{[^\\/]+?\}~", function() use (&$routeParams) {
+        return preg_replace_callback('~\\{[^\\/]+?\\}~', function () use (&$routeParams) {
             $value = array_shift($routeParams) ?? '';
             if ($value instanceof Model)
                 $value = $value->id();
@@ -296,14 +288,14 @@ class Route
         }, $originalPath);
     }
 
-    public function getReflectionMethod(): ReflectionMethod
+    public function getReflectionMethod(): \ReflectionMethod
     {
         $callback = $this->getCallback();
         if (!is_array($callback))
-            throw new InvalidArgumentException("Given route must be a array-typed callback route");
+            throw new \InvalidArgumentException('Given route must be a array-typed callback route');
 
         [$controllerName, $methodName] = $this->getCallback();
-        $controller = new ReflectionClass($controllerName);
+        $controller = new \ReflectionClass($controllerName);
         return $controller->getMethod($methodName);
     }
 }

@@ -12,7 +12,6 @@ use Cube\Tests\Units\Models\ModuleUser;
 use Cube\Tests\Units\Models\Product;
 use Cube\Tests\Units\Models\User;
 use Cube\Tests\Units\Models\UserType;
-use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -118,7 +117,7 @@ class ModelFactoryTest extends TestCase
 
     public function testAnUnknownRelationThrows()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         User::factory()->with('unknown')->make();
     }
 

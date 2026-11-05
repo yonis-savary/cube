@@ -11,14 +11,12 @@ use Cube\Utils\Console;
 use Cube\Utils\Text;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
-use ReflectionClass;
-use RuntimeException;
 
 class OASPaths extends AutoDataToObject
 {
     public array $groups = [];
 
-    /** @var array<string,string> $operationIds Location of each operation, by operationId */
+    /** @var array<string,string> Location of each operation, by operationId */
     protected array $operationIds = [];
 
     public function toArray(): array
@@ -26,21 +24,22 @@ class OASPaths extends AutoDataToObject
         return $this->groups;
     }
 
-    protected function getRouteLogString(string $method, Route $route) {
+    protected function getRouteLogString(string $method, Route $route)
+    {
         $method = strtoupper($method);
         $method = str_pad($method, strlen('OPTIONS'), ' ', STR_PAD_RIGHT);
 
         $method = match (trim($method)) {
-            "GET"     => Console::withGreenColor($method),
-            "OPTIONS" => Console::withGreenColor($method),
-            "PUT"     => Console::withMagentaColor($method),
-            "PATCH"   => Console::withMagentaColor($method),
-            "POST"    => Console::withBlueColor($method),
-            "DELETE"  => Console::withRedColor($method),
-            default   => Console::withGreenColor($method),
+            'GET' => Console::withGreenColor($method),
+            'OPTIONS' => Console::withGreenColor($method),
+            'PUT' => Console::withMagentaColor($method),
+            'PATCH' => Console::withMagentaColor($method),
+            'POST' => Console::withBlueColor($method),
+            'DELETE' => Console::withRedColor($method),
+            default => Console::withGreenColor($method),
         };
 
-        return $method . $route->getPath();
+        return $method.$route->getPath();
     }
 
     public function __construct(Router $router)
@@ -49,28 +48,29 @@ class OASPaths extends AutoDataToObject
         $router->loadRoutes();
 
         $groupedRoutes = Bunch::wrap($router->getRoutes())
-            ->groupBy(fn(Route $route) => $this->getTemplatedPath($route));
+            ->groupBy(fn (Route $route) => $this->getTemplatedPath($route))
+        ;
 
         $context = OpenAPIGenerationContext::getInstance();
         $context->log(
-            Text::interpolate("Generating OpenAPI json for {count} routes", ['count' => count($router->getRoutes())])
+            Text::interpolate('Generating OpenAPI json for {count} routes', ['count' => count($router->getRoutes())])
         );
 
         /** @var Route[] $routes */
         foreach ($groupedRoutes as $path => $routes) {
             foreach ($routes as $route) {
                 if (!is_array($route->getCallback())) {
-                    $context->log("Ignored closure route : $path");
+                    $context->log("Ignored closure route : {$path}");
                     continue;
                 }
 
                 if ($this->isHidden($route)) {
-                    $context->log("Ignored hidden route : $path");
+                    $context->log("Ignored hidden route : {$path}");
                     continue;
                 }
 
                 if (!count($route->getMethods())) {
-                    $context->log("Warning: ignored route accepting any method, OpenAPI documents one operation per method : $path");
+                    $context->log("Warning: ignored route accepting any method, OpenAPI documents one operation per method : {$path}");
                     continue;
                 }
 
@@ -92,7 +92,7 @@ class OASPaths extends AutoDataToObject
         $method = $route->getReflectionMethod();
 
         return count($method->getAttributes(Hidden::class))
-            || count(new ReflectionClass($route->getCallback()[0])->getAttributes(Hidden::class));
+            || count(new \ReflectionClass($route->getCallback()[0])->getAttributes(Hidden::class));
     }
 
     protected function addOperation(string $path, string $method, Route $route): void
@@ -102,7 +102,7 @@ class OASPaths extends AutoDataToObject
         $location = strtoupper($method).' '.$path;
 
         if ($existingLocation = $this->operationIds[$operationId] ?? null)
-            throw new RuntimeException("Duplicate operationId [{$operationId}] for {$existingLocation} and {$location}, give each its own callback method or #[Endpoint(operationId: ...)]");
+            throw new \RuntimeException("Duplicate operationId [{$operationId}] for {$existingLocation} and {$location}, give each its own callback method or #[Endpoint(operationId: ...)]");
 
         $this->operationIds[$operationId] = $location;
         $this->groups[$path][$method] = $operation;
@@ -111,7 +111,8 @@ class OASPaths extends AutoDataToObject
     protected function getTemplatedPath(Route $route): string
     {
         return Bunch::fromExplode('/', $route->getPath())
-            ->map(fn(string $part) => preg_match('/^\{.+:(.+)\}$/U', $part, $match) ? '{' . $match[1] . '}' : $part)
-            ->join('/');
+            ->map(fn (string $part) => preg_match('/^\{.+:(.+)\}$/U', $part, $match) ? '{'.$match[1].'}' : $part)
+            ->join('/')
+        ;
     }
 }

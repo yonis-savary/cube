@@ -14,20 +14,19 @@ class ModelAPIGenerator
 
     /**
      * @param class-string<Model> $modelClass
+     *
      * @return ?string Path of the written file, `null` when nothing was written
      */
     public function generateInto(Storage $destination, string $namespace, string $modelClass): ?string
     {
         if (str_starts_with($modelClass::table(), '__'))
             return null;
-
-        $modelName = preg_replace('~.+\\\\~', '', $modelClass);
+        $modelName = preg_replace('~.+\\\~', '', $modelClass);
         $className = "{$modelName}API";
         $fileName = "{$className}.php";
 
         if ($destination->exists($fileName))
             return null;
-
         $destination->write($fileName, Text::toFile("
         <?php
 

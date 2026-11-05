@@ -1,8 +1,7 @@
-<?php 
+<?php
 
 namespace Cube\Tests\Units\Web;
 
-use Cube\Env\Logger\Logger;
 use Cube\Env\Storage;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Web\Helpers\LargeUpload\LargeUpload;
@@ -10,35 +9,36 @@ use Cube\Web\Helpers\LargeUpload\LargeUploadManager;
 use Cube\Web\Helpers\LargeUpload\LargeUploadManagerConfiguration;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class LargeUploadTest extends TestCase
 {
     use HasTemporaryStorage;
 
-    public function testLargeUploadChunksAndWrap() {
+    public function testLargeUploadChunksAndWrap()
+    {
         $textFilePath = Storage::getInstance()->path(uniqid('randomTextFile-'));
 
-        $randomTextFileWrite = fopen($textFilePath, "w");
+        $randomTextFileWrite = fopen($textFilePath, 'w');
         // Generate a 20 Mb file !
-        for ($i=0; $i<20; $i++) {
+        for ($i = 0; $i < 20; ++$i) {
             fwrite($randomTextFileWrite, bin2hex(random_bytes(512 * 1024)));
         }
         fclose($randomTextFileWrite);
 
-
         $largeUpload = new LargeUpload(
-            uniqid("randomLargeUpload-"),
+            uniqid('randomLargeUpload-'),
             Storage::getInstance()->child(uniqid('largeUploads-'))
         );
 
-
-        $randomTextFileRead = fopen($textFilePath, "r");
+        $randomTextFileRead = fopen($textFilePath, 'r');
         $i = 0;
         while ($data = fgets($randomTextFileRead, 1024 * 1024)) {
             $largeUpload->addChunk($i, $data);
-            $i++;
+            ++$i;
         }
         fclose($randomTextFileRead);
-
 
         $largeUploadResult = $largeUpload->wrap(Storage::getInstance(), false);
 
@@ -51,7 +51,6 @@ class LargeUploadTest extends TestCase
             md5_file($textFilePath),
             md5_file($largeUploadResult)
         );
-
     }
 
     /** maxSize was never read : any client allowed to upload could fill the disk. */

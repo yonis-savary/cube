@@ -54,7 +54,7 @@ class HttpClient
         return new NullLogger();
     }
 
-    public function setMockServer(HttpMockServer $mockServer): void 
+    public function setMockServer(HttpMockServer $mockServer): void
     {
         $this->httpMockServer = $mockServer;
     }
@@ -204,8 +204,6 @@ class HttpClient
         return (new Request('DELETE', $path, [], [], $headers, body: json_encode($body)))->fetchAsync(httpClient: $this);
     }
 
-    
-
     protected function followRedirection(
         string $currentURL,
         string $nextURL,
@@ -240,39 +238,34 @@ class HttpClient
     {
         if (preg_match('/^([a-z][a-z0-9+.-]*):/i', $location, $scheme))
             return in_array(strtolower($scheme[1]), ['http', 'https']) ? $location : null;
-
         $current = parse_url($currentURL);
         $origin = $current['scheme'].'://'.$current['host'].(isset($current['port']) ? ':'.$current['port'] : '');
 
         if (str_starts_with($location, '//'))
             return $current['scheme'].':'.$location;
-
         if (str_starts_with($location, '/'))
             return $origin.$location;
-
         return $origin.Path::join(dirname($current['path'] ?? '/'), $location);
     }
 
-    protected function path(Request $request): string {
+    protected function path(Request $request): string
+    {
         $path = $request->getPath();
         if (str_contains($path, '://'))
             return $path;
-
         // curl needs a host in the URL even when the unix socket decides where the request goes
         if (!$base = $this->baseURL() ?? ($this->baseUnixSocket() ? 'http://localhost' : null))
             return $path;
-
-        if (!str_starts_with($base, "http"))
+        if (!str_starts_with($base, 'http'))
             return Path::join($base, $path);
-
-        [$protocol, $rest] = explode("://", $base);
-        return "$protocol://" . Path::join($rest, $path);
+        [$protocol, $rest] = explode('://', $base);
+        return "{$protocol}://".Path::join($rest, $path);
     }
 
     // Base values often carry credentials : an absolute URL to another origin than baseURL() never receives them
     /**
      * Writes the URL parameters of a request, as PHP reads them by default : a list `tags` becomes
-     * `tags[0]=a&tags[1]=b`. Override it for an API that expects another convention
+     * `tags[0]=a&tags[1]=b`. Override it for an API that expects another convention.
      *
      * @param array<string,mixed> $parameters
      */
@@ -285,7 +278,6 @@ class HttpClient
     {
         if (!$this->isBaseOrigin($url))
             return $values;
-
         return array_merge($baseValues, $values);
     }
 
@@ -293,7 +285,6 @@ class HttpClient
     {
         if (!str_contains($url, '://') || !$base = $this->baseURL())
             return true;
-
         return self::originOf($url) === self::originOf($base);
     }
 
@@ -357,23 +348,19 @@ class HttpClient
                 /* GET by default */ ;
                 $logger->info('GET Params string = {params}', ['params' => $urlParams]);
                 break;
-
             case 'POST':
                 $logger->info('Using CURLOPT_POST');
                 $options[CURLOPT_POST] = true;
                 break;
-
             case 'HEAD':
                 $logger->info('Using CURLOPT_NOBODY');
                 $options[CURLOPT_NOBODY] = true;
                 break;
-
             case 'PUT':
             case 'PATCH':
                 $logger->info('Setting CURLOPT_CUSTOMREQUEST to {method}', ['method' => $method]);
                 $options[CURLOPT_CUSTOMREQUEST] = strtoupper($method);
                 break;
-
             default:
                 $logger->info('Setting CURLOPT_CUSTOMREQUEST to {method}', ['method' => $method]);
                 $options[CURLOPT_CUSTOMREQUEST] = $method;
@@ -390,13 +377,11 @@ class HttpClient
         if ($request->isJSON() && ($body || count($postParams))) {
             $logger->info('Setting JSON CURLOPT_POSTFIELDS to {fields}', ['fields' => $body]);
             $options[CURLOPT_POSTFIELDS] = $body ? $body : json_encode($postParams, JSON_THROW_ON_ERROR);
-        }
-        elseif (count($postParams) || count($uploads)) {
+        } elseif (count($postParams) || count($uploads)) {
             $arrayDetails = [];
             foreach ($postParams as $key => &$values) {
                 if (!is_array($values))
                     continue;
-
                 for ($i = 0; $i < count($values); ++$i)
                     $arrayDetails[$key."[{$i}]"] = $values[$i];
 
@@ -417,8 +402,7 @@ class HttpClient
 
             $options[CURLOPT_POSTFIELDS] = $request->isFormEncoded()
                 ? Bunch::unzip($postParams)->map(fn ($pair) => $pair[0].'='.urlencode($pair[1]))->join('&')
-                : $postParams
-            ;
+                : $postParams;
         }
 
         if ($timeout) {
@@ -435,8 +419,9 @@ class HttpClient
         }
 
         $headersStrings = Bunch::unzip($headers)
-            ->map(fn($pair) => sprintf("%s: %s", ...$pair) )
-            ->toArray();
+            ->map(fn ($pair) => sprintf('%s: %s', ...$pair))
+            ->toArray()
+        ;
 
         $logger->info('Setting CURLOPT_HTTPHEADER to');
         $logger->info('{headers}', ['headers' => $this->redactHeaders($headers)]);
@@ -472,7 +457,6 @@ class HttpClient
     ): Response {
         if ($mockServer = $this->getMockServer())
             return $mockServer->handle($request);
-
         $userAgent ??= $this->baseUserAgent();
         $logger ??= $this->baseLogger();
 
@@ -521,7 +505,6 @@ class HttpClient
 
             if ($nextURL = $this->resolveLocation($currentURL, $location))
                 return $this->followRedirection($currentURL, $nextURL, $logger, $timeout, $userAgent, $logFlags, $curlMutator, $followedRedirections);
-
             $logger->warning('Not following the redirection to [{url}], only http and https are followed', ['url' => $location]);
         }
 
@@ -538,8 +521,8 @@ class HttpClient
     /**
      * Send a Request target with Curl and don't wait for a response !
      *
-     * @param Logger $logger             Optional Logger that can be used to log info about the request/response
-     * @param string $userAgent          User-agent to use with curl
+     * @param Logger $logger    Optional Logger that can be used to log info about the request/response
+     * @param string $userAgent User-agent to use with curl
      *
      * @throws \JsonException Possibly when parsing the response body if fetched JSON is incorrect
      */
@@ -569,7 +552,7 @@ class HttpClient
 
         $uploads = $request->getUploads();
         if (count($uploads))
-            $logger->warning("HttpClient.fetchAsync does not supports uploads");
+            $logger->warning('HttpClient.fetchAsync does not supports uploads');
 
         $body = $request->getBody();
         $body = $body ? $body : json_encode($postParams, JSON_THROW_ON_ERROR);
@@ -578,7 +561,6 @@ class HttpClient
         if ($userAgent)
             $headers['User-Agent'] = $userAgent;
 
-
         $parsed = parse_url($url);
 
         $host = $parsed['host'];
@@ -586,35 +568,35 @@ class HttpClient
         $port = $parsed['port'] ?? ($secure ? 443 : 80);
         $path = ($parsed['path'] ?? '/').(isset($parsed['query']) ? '?'.$parsed['query'] : '');
 
-        $headers["Connection"] = "close";
-        $headers["Host"] = "$host:$port";
-        $headers["Content-Length"] = strlen($body);
+        $headers['Connection'] = 'close';
+        $headers['Host'] = "{$host}:{$port}";
+        $headers['Content-Length'] = strlen($body);
 
-        $oneLine = fn(string $string) => str_replace(["\r", "\n"], '', $string);
+        $oneLine = fn (string $string) => str_replace(["\r", "\n"], '', $string);
 
         // Written on a raw socket : a line break inside a value would start a header of its own
         $headersString = Bunch::unzip($headers)
-            ->map(fn($pair) => $oneLine(join(": ", $pair)))
-            ->unshift($oneLine(strtoupper($request->getMethod())) . " " . $oneLine($path) . " HTTP/1.1")
-            ->toArray();
+            ->map(fn ($pair) => $oneLine(join(': ', $pair)))
+            ->unshift($oneLine(strtoupper($request->getMethod())).' '.$oneLine($path).' HTTP/1.1')
+            ->toArray()
+        ;
 
         $socket = $this->baseUnixSocket();
         $fp = match (true) {
-            (bool) $socket => fsockopen("unix://$socket", -1, $errno, $errstr, 1),
-            $secure => fsockopen("ssl://$host", $port, $errno, $errstr, 1),
+            (bool) $socket => fsockopen("unix://{$socket}", -1, $errno, $errstr, 1),
+            $secure => fsockopen("ssl://{$host}", $port, $errno, $errstr, 1),
             default => fsockopen($host, $port, $errno, $errstr, 1),
         };
 
         if ($fp) {
-            fwrite($fp, implode("\r\n", $headersString) . "\r\n\r\n");
+            fwrite($fp, implode("\r\n", $headersString)."\r\n\r\n");
             fwrite($fp, $body);
             fflush($fp);
             fclose($fp);
             return true;
-        } else {
-            $logger->error("Could not open socket for $url");
-            return false;
         }
+        $logger->error("Could not open socket for {$url}");
+        return false;
     }
 
     /**
@@ -627,6 +609,7 @@ class HttpClient
 
     /**
      * @param array<string,string> $headers
+     *
      * @return array<string,string>
      */
     protected function redactHeaders(array $headers): array
@@ -643,12 +626,12 @@ class HttpClient
      * Parse raw HTTP Headers (string)
      * to an associative array of data as `HeaderName => HeaderValue`.
      */
-    protected function parseHeaders(string $headers, bool $lowercaseNames=false): array
+    protected function parseHeaders(string $headers, bool $lowercaseNames = false): array
     {
         $result = Bunch::fromExplode("\n", $headers)
             ->filter(fn ($line) => str_contains($line, ':'))
-            ->map(fn($line) => explode(':', trim($line), 2))
-            ->map(fn($pair) => [trim($pair[0]), trim($pair[1])])
+            ->map(fn ($line) => explode(':', trim($line), 2))
+            ->map(fn ($pair) => [trim($pair[0]), trim($pair[1])])
             ->zip()
         ;
 

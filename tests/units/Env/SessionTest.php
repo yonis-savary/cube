@@ -8,16 +8,19 @@ use Cube\Env\Session\SessionConfiguration;
 use Cube\Tests\Units\Env\Classes\UserPreferences;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class SessionTest extends TestCase
 {
-    public function test_an_empty_namespace_is_refused()
+    public function testAnEmptyNamespaceIsRefused()
     {
         $this->expectException(\InvalidArgumentException::class);
 
         $this->newSession('');
     }
 
-    public function test_zero_is_a_legitimate_namespace()
+    public function testZeroIsALegitimateNamespace()
     {
         $session = $this->newSession('0');
         $session->set('cart', 'content');
@@ -25,7 +28,7 @@ class SessionTest extends TestCase
         $this->assertEquals('content', $_SESSION['cube']['0']['cart']);
     }
 
-    public function test_values_are_stored_under_the_namespace()
+    public function testValuesAreStoredUnderTheNamespace()
     {
         $session = $this->newSession('shop');
         $session->set('cart', ['a-product']);
@@ -33,7 +36,7 @@ class SessionTest extends TestCase
         $this->assertEquals(['a-product'], $_SESSION['cube']['shop']['cart']);
     }
 
-    public function test_the_namespace_defaults_to_the_configured_one()
+    public function testTheNamespaceDefaultsToTheConfiguredOne()
     {
         $session = new Session(new SessionConfiguration('configured'));
         $session->set('cart', 'content');
@@ -41,7 +44,7 @@ class SessionTest extends TestCase
         $this->assertEquals('content', $_SESSION['cube']['configured']['cart']);
     }
 
-    public function test_two_namespaces_hold_their_own_values()
+    public function testTwoNamespacesHoldTheirOwnValues()
     {
         $shop = $this->newSession();
         $backOffice = $this->newSession();
@@ -53,7 +56,7 @@ class SessionTest extends TestCase
         $this->assertEquals('back office content', $backOffice->get('cart'));
     }
 
-    public function test_sessions_sharing_a_configuration_keep_their_own_namespace()
+    public function testSessionsSharingAConfigurationKeepTheirOwnNamespace()
     {
         $configuration = new SessionConfiguration(driver: new PHPGlobalSession());
         $shop = new Session($configuration, uniqid('shop-'));
@@ -64,7 +67,7 @@ class SessionTest extends TestCase
         $this->assertFalse($backOffice->has('cart'));
     }
 
-    public function test_clear_only_empties_its_own_namespace()
+    public function testClearOnlyEmptiesItsOwnNamespace()
     {
         $shop = $this->newSession();
         $backOffice = $this->newSession();
@@ -79,7 +82,7 @@ class SessionTest extends TestCase
         $this->assertEquals('back office content', $backOffice->get('cart'));
     }
 
-    public function test_get_falls_back_on_the_given_default()
+    public function testGetFallsBackOnTheGivenDefault()
     {
         $session = $this->newSession();
 
@@ -87,7 +90,7 @@ class SessionTest extends TestCase
         $this->assertEquals('empty', $session->get('cart', 'empty'));
     }
 
-    public function test_has_and_unset()
+    public function testHasAndUnset()
     {
         $session = $this->newSession();
 
@@ -100,7 +103,7 @@ class SessionTest extends TestCase
         $this->assertFalse($session->has('cart'));
     }
 
-    public function test_unset_removes_every_given_key()
+    public function testUnsetRemovesEveryGivenKey()
     {
         $session = $this->newSession();
         $session->set('cart', ['a-product']);
@@ -114,7 +117,7 @@ class SessionTest extends TestCase
         $this->assertTrue($session->has('theme'));
     }
 
-    public function test_a_straw_stores_its_value_under_its_own_key()
+    public function testAStrawStoresItsValueUnderItsOwnKey()
     {
         $session = $this->newSession();
 
@@ -124,7 +127,7 @@ class SessionTest extends TestCase
         $this->assertEquals(['theme' => 'dark'], $session->get(UserPreferences::getKey()));
     }
 
-    public function test_a_straw_can_be_unset()
+    public function testAStrawCanBeUnset()
     {
         $session = $this->newSession();
 
@@ -135,7 +138,7 @@ class SessionTest extends TestCase
         $this->assertFalse($session->has(UserPreferences::getKey()));
     }
 
-    public function test_the_default_instance_reads_its_namespace_from_the_configuration()
+    public function testTheDefaultInstanceReadsItsNamespaceFromTheConfiguration()
     {
         $session = Session::getInstance();
         $session->set('cart', 'content');

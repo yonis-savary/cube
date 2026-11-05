@@ -8,7 +8,7 @@ use Cube\Utils\Path;
 
 /**
  * Gives a generation command a namespace of its own under `Cube\Tests\Units\Console`, which composer
- * autoloads, and removes what it wrote once the test is done
+ * autoloads, and removes what it wrote once the test is done.
  */
 trait GeneratesIntoATestNamespace
 {
@@ -18,7 +18,7 @@ trait GeneratesIntoATestNamespace
     protected ?string $generatedDirectory = null;
 
     /**
-     * Its directory is not created : the command does it
+     * Its directory is not created : the command does it.
      */
     protected function generatedNamespace(): string
     {

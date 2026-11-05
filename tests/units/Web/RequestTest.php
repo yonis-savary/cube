@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Cube\Tests\Units\Web;
 
@@ -8,10 +8,10 @@ use Cube\Tests\Units\Env\Classes\SpyLogger;
 use Cube\Tests\Units\Models\Module;
 use Cube\Tests\Units\Web\Examples\PriceRequest;
 use Cube\Web\Http\Request;
+use Cube\Web\Http\Response;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\UploadRule;
-use Cube\Web\Http\Response;
 use Cube\Web\Http\Upload;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
@@ -22,13 +22,17 @@ use React\Http\Io\BufferedBody;
 use React\Http\Io\UploadedFile;
 use React\Http\Message\ServerRequest;
 
+/**
+ * @internal
+ */
 class RequestTest extends TestCase
 {
     use TestMultipleDrivers;
 
-    public static function fakeCallback(Request $request, Module $module) {
+    public static function fakeCallback(Request $request, Module $module)
+    {
         /** @var Module $module */
-        $module = $request->getSlugObject("module");
+        $module = $request->getSlugObject('module');
 
         return Response::json($module->label);
     }
@@ -71,8 +75,8 @@ class RequestTest extends TestCase
         $unvalidatedOnly = $request->only(['price'], false);
         $validatedOnly = $request->only(['price'], true);
 
-        $this->assertTrue($unvalidatedOnly['price'] === '50');
-        $this->assertTrue($validatedOnly['price'] === 50);
+        $this->assertTrue('50' === $unvalidatedOnly['price']);
+        $this->assertTrue(50 === $validatedOnly['price']);
     }
 
     public function testParamReadsGetThenPost()
@@ -222,7 +226,8 @@ class RequestTest extends TestCase
     {
         $psrRequest = (new ServerRequest('POST', 'http://localhost/products?page=2', ['X-Token' => 'abc'], 'body', '1.1', ['REMOTE_ADDR' => '127.0.0.1']))
             ->withParsedBody(['name' => 'screen'])
-            ->withCookieParams(['session' => 'xyz']);
+            ->withCookieParams(['session' => 'xyz'])
+        ;
 
         $request = Request::fromPsrRequest($psrRequest);
 
@@ -346,19 +351,20 @@ class RequestTest extends TestCase
         $this->assertArrayHasKey('price', $request->validate()->getErrors());
     }
 
-    #[ DataProvider('getDatabases') ]
-    public function test_parameters_binding(Database $database) {
-        Database::withInstance($database, function(){
+    #[DataProvider('getDatabases')]
+    public function testParametersBinding(Database $database)
+    {
+        Database::withInstance($database, function () {
             $router = new Router(new RouterConfiguration());
             $router->addRoutes(
-                Route::get("/{module}", [self::class, "fakeCallback"])
+                Route::get('/{module}', [self::class, 'fakeCallback'])
             );
 
             $response = $router->route(
-                new Request("GET", "/1")
+                new Request('GET', '/1')
             );
 
-            $this->assertEquals("product", $response->getJSON());
+            $this->assertEquals('product', $response->getJSON());
         });
     }
 
@@ -439,7 +445,7 @@ class RequestTest extends TestCase
 
     /**
      * @param array<string,Rule> $rules
-     * @param Upload[] $uploads
+     * @param Upload[]           $uploads
      */
     protected static function requestWithRules(array $rules, array $uploads = []): Request
     {

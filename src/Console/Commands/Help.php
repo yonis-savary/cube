@@ -4,7 +4,6 @@ namespace Cube\Console\Commands;
 
 use Cube\Console\Args;
 use Cube\Console\Command;
-use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Utils\Console;
 use Cube\Utils\Shell;
@@ -44,11 +43,11 @@ class Help extends Command
         }
 
         if ($identifier)
-            Console::print("Command [$identifier] not found");
+            Console::print("Command [{$identifier}] not found");
 
         Console::print('Here is the list of the command you can launch', '');
         Console::table(
-                Bunch::fromExtends(Command::class)
+            Bunch::fromExtends(Command::class)
                 ->map(fn ($command) => [Console::withBlueColor($command->getFullIdentifier(), true), $command->getHelp()])
                 ->sort(fn ($x) => $x[0])
                 ->get(),

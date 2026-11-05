@@ -5,6 +5,9 @@ namespace Cube\Tests\Units\Database;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class DatabaseProviderTest extends TestCase
 {
     public function testProvidedDatabasesAreRecognizedAsRandom()

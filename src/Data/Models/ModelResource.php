@@ -18,23 +18,25 @@ abstract class ModelResource
 
     /**
      * @param TModel $model
+     *
      * @return TModelArray A model left in it is answered whole : shape it with another resource's `of()`
      */
     abstract public function toArray(Model $model): array;
 
     /**
-     * @param TModel|iterable<TModel> $models
+     * @param iterable<TModel>|TModel $models
+     *
      * @return TModelArray|TModelArray[]
      */
-    final public static function of(Model|array|Bunch $models): array
+    final public static function of(array|Bunch|Model $models): array
     {
         $resource = Injector::getInstance()->instanciate(static::class);
 
         if ($models instanceof Model)
             return $resource->toArray($models);
-
         return Bunch::wrap($models)
             ->map(fn (Model $model) => $resource->toArray($model))
-            ->toArray();
+            ->toArray()
+        ;
     }
 }

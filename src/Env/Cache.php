@@ -30,14 +30,15 @@ class Cache
         $this->prefixKey = $prefixKey;
     }
 
-    public function key(string $key): string {
+    public function key(string $key): string
+    {
         if (!$this->prefixKey)
             return $key;
-
-        return $this->prefixKey . '-' . $key;
+        return $this->prefixKey.'-'.$key;
     }
 
-    public function get(string $key, mixed $default=null): mixed {
+    public function get(string $key, mixed $default = null): mixed
+    {
         $key = $this->key($key);
 
         return $this->driver->has($key)
@@ -45,7 +46,8 @@ class Cache
             : $default;
     }
 
-    public function &getReference(string $key, mixed $default): mixed {
+    public function &getReference(string $key, mixed $default): mixed
+    {
         $key = $this->key($key);
         if (!$this->driver->has($key))
             $this->driver->set($key, $default);
@@ -53,26 +55,30 @@ class Cache
         return $this->driver->getReference($key);
     }
 
-    public function try(string $key): mixed {
+    public function try(string $key): mixed
+    {
         return $this->get($key, false);
     }
 
     /**
      * @param mixed $value Can be any value (shall be serialized), can be a Closure (then its return value is registered)
+     *
      * @return mixed set value
      */
-    public function getOrSet(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
+    public function getOrSet(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed
+    {
         if ($this->has($key))
             return $this->get($key);
-
         return $this->set($key, $value, $timeToLive, $creationDate);
     }
 
     /**
      * @param mixed $value Can be any value (shall be serialized), can be a Closure (then its return value is registered)
+     *
      * @return mixed set value
      */
-    public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed {
+    public function set(string $key, mixed $value, int $timeToLive = self::MONTH, ?int $creationDate = null): mixed
+    {
         $key = $this->key($key);
         if ($value instanceof \Closure)
             $value = ($value)();
@@ -81,22 +87,26 @@ class Cache
         return $value;
     }
 
-    public function has(string $key): bool {
+    public function has(string $key): bool
+    {
         $key = $this->key($key);
         return $this->driver->has($key);
     }
 
-    public function delete(string $key): void {
+    public function delete(string $key): void
+    {
         $key = $this->key($key);
         $this->driver->delete($key);
     }
 
     /** @return string[] */
-    public function clear(): array {
+    public function clear(): array
+    {
         return $this->driver->clear($this->prefixKey ? $this->key('') : '');
     }
 
-    public function child(string $subkey): self {
+    public function child(string $subkey): self
+    {
         $child = clone $this;
         $child->prefixKey = $this->key($subkey);
 

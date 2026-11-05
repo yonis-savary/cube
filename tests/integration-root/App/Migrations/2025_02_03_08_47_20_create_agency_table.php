@@ -1,13 +1,13 @@
 <?php
 
 /**
- * Test RawSQLMigration execution
+ * Test RawSQLMigration execution.
  */
 
 use Cube\Data\Database\Migration\RawSQLMigration;
 
 return new RawSQLMigration(
-    "CREATE TABLE agency (
+    'CREATE TABLE agency (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name VARCHAR(200) NOT NULL UNIQUE
     );
@@ -19,4 +19,5 @@ return new RawSQLMigration(
         FOREIGN KEY (agency_id) REFERENCES agency(id),
         FOREIGN KEY (user_id) REFERENCES user(id)
     );
-");
+'
+);

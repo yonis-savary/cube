@@ -8,10 +8,10 @@ use Cube\Data\Classes\BunchOf;
 use Cube\Data\DataToObject;
 use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
-use Cube\Utils\Text;
 use Cube\Tests\Units\Data\Sample\Album;
 use Cube\Tests\Units\Data\Sample\AlbumCollection;
 use Cube\Tests\Units\Data\Sample\Artist;
+use Cube\Utils\Text;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -53,7 +53,7 @@ class DataToObjectTest extends TestCase
         $logger = new class extends NullLogger {
             public string $written = '';
 
-            public function log($level, null|string|\Stringable $message, array $context = []): void
+            public function log($level, string|\Stringable|null $message, array $context = []): void
             {
                 $this->written .= Text::interpolate($message, $context)."\n";
             }

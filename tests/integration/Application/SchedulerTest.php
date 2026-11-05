@@ -6,6 +6,9 @@ use Cube\Tests\Integration\Utils;
 use Cube\Utils\Shell;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class SchedulerTest extends TestCase
 {
     public function testTasksRunInParallel()
@@ -37,7 +40,7 @@ class SchedulerTest extends TestCase
         $logsBefore = $this->readLogs($logsFile);
 
         $first = Shell::launchInDirectory('exec php do routine:launch', $storage->getRoot());
-        for ($i = 0; $i < 50 && !str_contains(substr($this->readLogs($logsFile), strlen($logsBefore)), 'SlowReport started'); $i++)
+        for ($i = 0; $i < 50 && !str_contains(substr($this->readLogs($logsFile), strlen($logsBefore)), 'SlowReport started'); ++$i)
             usleep(100_000);
 
         $second = Shell::executeInDirectory('php do routine:launch', $storage->getRoot());
@@ -47,7 +50,7 @@ class SchedulerTest extends TestCase
 
         $logs = substr($this->readLogs($logsFile), strlen($logsBefore));
         $this->assertEquals(1, substr_count($logs, 'SlowReport started'));
-        $this->assertStringContainsString('Skipped App\\Routines\\SlowReport', $logs);
+        $this->assertStringContainsString('Skipped App\Routines\SlowReport', $logs);
         $this->assertEquals(2, substr_count($logs, 'Heartbeat ping'), 'Only the busy task is skipped');
     }
 

@@ -2,12 +2,10 @@
 
 namespace Cube\Security\Encryption;
 
-use Exception;
-
 use function Cube\appKey;
 
 /**
- * Authenticated encryption (AES-256-GCM) with a key derived from the given one, or from `APP_KEY`
+ * Authenticated encryption (AES-256-GCM) with a key derived from the given one, or from `APP_KEY`.
  */
 class Encryption
 {
@@ -23,7 +21,7 @@ class Encryption
 
         $ciphertext = openssl_encrypt($content, self::CIPHER, $key, OPENSSL_RAW_DATA, $nonce, $tag, '', self::TAG_LENGTH);
         if (false === $ciphertext)
-            throw new Exception('Encryption failed.');
+            throw new \Exception('Encryption failed.');
 
         return self::PREFIX.base64_encode($nonce.$tag.$ciphertext);
     }
@@ -38,11 +36,11 @@ class Encryption
         $key = self::deriveKey($key);
 
         if (!self::supports($encrypted) || false === $data = base64_decode(substr($encrypted, strlen(self::PREFIX)), true))
-            throw new Exception('Invalid encrypted input.');
+            throw new \Exception('Invalid encrypted input.');
 
         $nonceLength = openssl_cipher_iv_length(self::CIPHER);
         if (strlen($data) < $nonceLength + self::TAG_LENGTH)
-            throw new Exception('Decryption failed.');
+            throw new \Exception('Decryption failed.');
 
         $nonce = substr($data, 0, $nonceLength);
         $tag = substr($data, $nonceLength, self::TAG_LENGTH);
@@ -50,7 +48,7 @@ class Encryption
 
         $plaintext = openssl_decrypt($ciphertext, self::CIPHER, $key, OPENSSL_RAW_DATA, $nonce, $tag);
         if (false === $plaintext)
-            throw new Exception('Decryption failed.');
+            throw new \Exception('Decryption failed.');
 
         return $plaintext;
     }

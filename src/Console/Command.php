@@ -13,10 +13,12 @@ abstract class Command
     {
         return Injector::getInstance()
             ->instanciate(static::class)
-            ->execute($args ?? new Args);
+            ->execute($args ?? new Args())
+        ;
     }
 
-    public function abort(string $errorMessage, int $returnCode = 1): int {
+    public function abort(string $errorMessage, int $returnCode = 1): int
+    {
         Console::print($errorMessage);
         return $returnCode;
     }
@@ -29,10 +31,10 @@ abstract class Command
     /**
      * @return string|string[]
      */
-    public function getManual(): string|array {
-        return $this->getFullIdentifier() . " - No manual given";
+    public function getManual(): array|string
+    {
+        return $this->getFullIdentifier().' - No manual given';
     }
-
 
     final public function getFullIdentifier(): string
     {
@@ -68,7 +70,8 @@ abstract class Command
 
         return Bunch::wrap(Autoloader::classesThatExtends($base))
             ->filter(fn (string $class) => $class === $name || str_ends_with($class, '\\'.$name))
-            ->values();
+            ->values()
+        ;
     }
 
     abstract public function execute(Args $args): int;

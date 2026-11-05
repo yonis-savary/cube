@@ -54,7 +54,7 @@ class Console
 
     public static function print(string|\Stringable ...$elements): void
     {
-        if (php_sapi_name() !== 'cli') {
+        if ('cli' !== php_sapi_name()) {
             return;
         }
 

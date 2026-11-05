@@ -5,16 +5,21 @@ namespace Cube\Tests\Units\Web\HttpClient;
 use Cube\Web\Http\MockServers;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class HttpMockServerTest extends TestCase
 {
-    public function testDirectRegistering() {
+    public function testDirectRegistering()
+    {
         $connector = new MathAppConnector();
-        $connector->setMockServer(new MathAppMocker);
+        $connector->setMockServer(new MathAppMocker());
 
         $this->assertEquals(10, $connector->double(5));
     }
 
-    public function testIndirectRegisteringThroughComponent() {
+    public function testIndirectRegisteringThroughComponent()
+    {
         $connector = new MathAppConnector();
         $mocker = new MathAppMocker();
 
@@ -34,5 +39,4 @@ class HttpMockServerTest extends TestCase
         MockServers::getInstance()->set(MathAppConnector::class, MathAppMocker::class);
         $this->assertEquals(10, $connector->double(5));
     }
-
 }

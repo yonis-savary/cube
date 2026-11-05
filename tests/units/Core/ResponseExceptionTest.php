@@ -7,9 +7,12 @@ use Cube\Web\Http\Response;
 use Cube\Web\Http\StatusCode;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class ResponseExceptionTest extends TestCase
 {
-    public function test_it_carries_the_response_to_send()
+    public function testItCarriesTheResponseToSend()
     {
         $response = Response::notFound('No such product');
 
@@ -19,7 +22,7 @@ class ResponseExceptionTest extends TestCase
         $this->assertEquals(StatusCode::NOT_FOUND, $exception->response->getStatusCode());
     }
 
-    public function test_it_behaves_like_a_regular_exception()
+    public function testItBehavesLikeARegularException()
     {
         $exception = new ResponseException('Product is missing', Response::notFound());
 
@@ -28,7 +31,7 @@ class ResponseExceptionTest extends TestCase
         $this->assertNotEmpty($exception->getTraceAsString());
     }
 
-    public function test_it_can_be_caught_as_a_throwable_carrying_its_answer()
+    public function testItCanBeCaughtAsAThrowableCarryingItsAnswer()
     {
         $deepService = function () {
             throw new ResponseException('Unauthorized', Response::unauthorized('Token expired'));

@@ -7,6 +7,9 @@ use Cube\Queue\Drivers\LocalDiskQueueDriver;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class LocalDiskQueueDriverTest extends TestCase
 {
     use HasTemporaryStorage;
@@ -28,7 +31,7 @@ class LocalDiskQueueDriverTest extends TestCase
     }
 
     /** A job file caught before its content is written unserializes to false, which next() cannot return. */
-    public function test_an_empty_job_file_gives_nothing_to_process()
+    public function testAnEmptyJobFileGivesNothingToProcess()
     {
         $this->storage->write(uniqid(time().'-'), '');
 

@@ -16,7 +16,10 @@ abstract class WebAPI
      * This method can return
      * - a Response that will be displayed
      * - a Route that will be executed.
-     * - `null` meaning that the API is not concerned
+     * - `null` meaning that the API is not concerned.
      */
-    public function handle(Request $request): Response|Route|null { return null; }
+    public function handle(Request $request): Response|Route|null
+    {
+        return null;
+    }
 }

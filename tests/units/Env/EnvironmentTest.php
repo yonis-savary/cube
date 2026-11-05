@@ -6,28 +6,33 @@ use Cube\Env\Environment;
 use Cube\Env\Storage;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class EnvironmentTest extends TestCase
 {
-    public function testMergeWithFileContainingComments() {
-        $sampleFile = Storage::getInstance()->path(uniqid() . '.env');
+    public function testMergeWithFileContainingComments()
+    {
+        $sampleFile = Storage::getInstance()->path(uniqid().'.env');
         file_put_contents($sampleFile, join("\n", [
-            "# Some Comment Here !",
-            "A=1",
-            "# Another Comment",
-            "# A=2",
-            "B=2"
+            '# Some Comment Here !',
+            'A=1',
+            '# Another Comment',
+            '# A=2',
+            'B=2',
         ]));
 
         $env = new Environment();
         $env->mergeWithFile($sampleFile);
 
-        $this->assertEquals("1", $env->get("A"));
-        $this->assertEquals("2", $env->get("B"));
+        $this->assertEquals('1', $env->get('A'));
+        $this->assertEquals('2', $env->get('B'));
 
         unlink($sampleFile);
     }
 
-    public function testEnvironmentStartsFromTheProcessEnvironment() {
+    public function testEnvironmentStartsFromTheProcessEnvironment()
+    {
         $_ENV['CUBE_TEST_VARIABLE'] = 'from-the-process';
 
         $env = new Environment();
@@ -37,10 +42,11 @@ class EnvironmentTest extends TestCase
         unset($_ENV['CUBE_TEST_VARIABLE']);
     }
 
-    public function testFileValuesOverrideTheProcessOnes() {
+    public function testFileValuesOverrideTheProcessOnes()
+    {
         $_ENV['CUBE_TEST_VARIABLE'] = 'from-the-process';
 
-        $sampleFile = $this->writeEnvironmentFile("CUBE_TEST_VARIABLE=from-the-file");
+        $sampleFile = $this->writeEnvironmentFile('CUBE_TEST_VARIABLE=from-the-file');
         $env = (new Environment())->mergeWithFile($sampleFile);
 
         $this->assertEquals('from-the-file', $env->get('CUBE_TEST_VARIABLE'));
@@ -50,7 +56,8 @@ class EnvironmentTest extends TestCase
     }
 
     /** The environment only read $_ENV, which is empty under the production php.ini (variables_order=GPCS). */
-    public function testEnvironmentReadsTheProcessVariables() {
+    public function testEnvironmentReadsTheProcessVariables()
+    {
         putenv('CUBE_TEST_GETENV=from-getenv');
 
         try {
@@ -60,7 +67,8 @@ class EnvironmentTest extends TestCase
         }
     }
 
-    public function testIniKeywordsKeepTheirFormerValues() {
+    public function testIniKeywordsKeepTheirFormerValues()
+    {
         $sampleFile = $this->writeEnvironmentFile("DEBUG=false\nCACHED=true\nLEGACY=yes\nNOTHING=null\nCOUNT=42");
         $env = (new Environment())->mergeWithFile($sampleFile);
         unlink($sampleFile);
@@ -72,14 +80,16 @@ class EnvironmentTest extends TestCase
         $this->assertSame('42', $env->get('COUNT'));
     }
 
-    public function testGetFallsBackOnTheGivenDefault() {
+    public function testGetFallsBackOnTheGivenDefault()
+    {
         $env = new Environment();
 
         $this->assertNull($env->get('CUBE_UNKNOWN_VARIABLE'));
         $this->assertEquals('fallback', $env->get('CUBE_UNKNOWN_VARIABLE', 'fallback'));
     }
 
-    public function testSetOverridesAValue() {
+    public function testSetOverridesAValue()
+    {
         $env = new Environment();
         $env->set('CUBE_TEST_VARIABLE', 'first');
         $env->set('CUBE_TEST_VARIABLE', 'second');
@@ -87,14 +97,16 @@ class EnvironmentTest extends TestCase
         $this->assertEquals('second', $env->get('CUBE_TEST_VARIABLE'));
     }
 
-    public function testAMissingFileIsIgnored() {
+    public function testAMissingFileIsIgnored()
+    {
         $env = new Environment();
 
         $this->assertSame($env, $env->mergeWithFile(uniqid('no-such-file-').'.env'));
         $this->assertNull($env->get('CUBE_TEST_VARIABLE'));
     }
 
-    public function testAnUnparsableFileIsLeftOut() {
+    public function testAnUnparsableFileIsLeftOut()
+    {
         $sampleFile = $this->writeEnvironmentFile("A=1\n[unclosed-section\n");
 
         $env = new Environment();
@@ -115,7 +127,8 @@ class EnvironmentTest extends TestCase
     }
 
     /** parse_ini_string() rejects an unquoted "=" or "!", and the whole file is then left out. */
-    public function testValuesHoldingIniOperatorsAreRead() {
+    public function testValuesHoldingIniOperatorsAreRead()
+    {
         $sampleFile = $this->writeEnvironmentFile("APP_KEY=c2VjcmV0==\nDATABASE_PASSWORD=abc!def\nAPP_NAME=shop");
 
         set_error_handler(fn () => true);
@@ -132,8 +145,9 @@ class EnvironmentTest extends TestCase
         $this->assertEquals('shop', $env->get('APP_NAME'));
     }
 
-    protected function writeEnvironmentFile(string $content): string {
-        $file = Storage::getInstance()->path(uniqid('environment-') . '.env');
+    protected function writeEnvironmentFile(string $content): string
+    {
+        $file = Storage::getInstance()->path(uniqid('environment-').'.env');
         file_put_contents($file, $content);
 
         return $file;

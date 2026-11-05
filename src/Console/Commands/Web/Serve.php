@@ -26,12 +26,12 @@ class Serve extends Command
 
     public function getScope(): string
     {
-        return "web";
+        return 'web';
     }
 
     public function getHelp(): string
     {
-        return "Launch integrated web server to serve your app";
+        return 'Launch integrated web server to serve your app';
     }
 
     public function execute(Args $args): int

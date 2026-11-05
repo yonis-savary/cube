@@ -2,12 +2,10 @@
 
 namespace Cube\Data\OpenAPI\Attributes;
 
-use Attribute;
-
 /**
- * Keys of what a `ModelResource` answers that may be missing : the document leaves them out of `required`
+ * Keys of what a `ModelResource` answers that may be missing : the document leaves them out of `required`.
  */
-#[Attribute(Attribute::TARGET_CLASS)]
+#[\Attribute(\Attribute::TARGET_CLASS)]
 class Optional
 {
     /**
@@ -15,7 +13,5 @@ class Optional
      */
     public function __construct(
         public array $keys
-    )
-    {
-    }
+    ) {}
 }

@@ -1,6 +1,7 @@
 <?php
 
 use function Cube\render;
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +13,7 @@ use function Cube\render;
 <body>
     client details
 
-    <?= \Cube\asset('hello.js') ?>
-    <?= render("client/row") ?>
+    <?php echo \Cube\asset('hello.js'); ?>
+    <?php echo render('client/row'); ?>
 </body>
 </html>

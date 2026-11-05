@@ -8,11 +8,14 @@ use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * @internal
+ */
 class OpenAPISpecificationTest extends TestCase
 {
-    const OPENAPI_SCHEMA = 'https://spec.openapis.org/oas/3.1/schema/2022-10-07';
+    public const OPENAPI_SCHEMA = 'https://spec.openapis.org/oas/3.1/schema/2022-10-07';
 
-    const SCHEMA_FILES = [
+    public const SCHEMA_FILES = [
         'https://spec.openapis.org/oas/3.1/schema/2022-10-07' => 'oas-3.1-schema.json',
         'https://spec.openapis.org/oas/3.1/dialect/base' => 'oas-3.1-dialect-base.json',
         'https://spec.openapis.org/oas/3.1/meta/base' => 'oas-3.1-meta-base.json',
@@ -25,15 +28,6 @@ class OpenAPISpecificationTest extends TestCase
         'https://json-schema.org/draft/2020-12/meta/format-annotation' => 'draft-2020-12-format-annotation.json',
         'https://json-schema.org/draft/2020-12/meta/content' => 'draft-2020-12-content.json',
     ];
-
-    public static function generatedDocuments(): array
-    {
-        $documents = [];
-        foreach (glob(Path::join(__DIR__, 'Fixtures', 'OAD*.json')) as $file)
-            $documents[basename($file)] = [$file];
-
-        return $documents;
-    }
 
     protected function getValidator(): Validator
     {
@@ -55,6 +49,15 @@ class OpenAPISpecificationTest extends TestCase
         $result = $this->getValidator()->validate($document, self::OPENAPI_SCHEMA);
 
         $errors = $result->isValid() ? [] : (new ErrorFormatter())->format($result->error());
-        $this->assertTrue($result->isValid(), basename($file) . " is not a valid OpenAPI 3.1 document : " . json_encode($errors, JSON_PRETTY_PRINT));
+        $this->assertTrue($result->isValid(), basename($file).' is not a valid OpenAPI 3.1 document : '.json_encode($errors, JSON_PRETTY_PRINT));
+    }
+
+    public static function generatedDocuments(): array
+    {
+        $documents = [];
+        foreach (glob(Path::join(__DIR__, 'Fixtures', 'OAD*.json')) as $file)
+            $documents[basename($file)] = [$file];
+
+        return $documents;
     }
 }

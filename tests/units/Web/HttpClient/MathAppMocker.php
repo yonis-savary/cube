@@ -12,11 +12,12 @@ class MathAppMocker extends HttpMockServer
     public function routes(Router $router): void
     {
         $router->addRoutes(
-            Route::get("/double/{int:number}", [self::class, 'double'])
+            Route::get('/double/{int:number}', [self::class, 'double'])
         );
     }
 
-    public static function double($req, int $number) {
-        return Response::json(['result' => $number*2]);
+    public static function double($req, int $number)
+    {
+        return Response::json(['result' => $number * 2]);
     }
 }

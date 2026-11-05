@@ -6,7 +6,7 @@ use function Cube\appKey;
 
 /**
  * Prepends an HMAC (keyed on `APP_KEY`) to a payload stored outside the application, so that it can
- * be checked before being trusted : `unserialize()` must never read something an attacker could write
+ * be checked before being trusted : `unserialize()` must never read something an attacker could write.
  */
 class SignedPayload
 {

@@ -3,8 +3,8 @@
 namespace Cube\Tests\Units\Core;
 
 use Cube\Core\Injector;
-use Cube\Env\Logger\Logger;
 use Cube\Data\Bunch;
+use Cube\Env\Logger\Logger;
 use Cube\Tests\Units\Core\Classes\Bird;
 use Cube\Tests\Units\Core\Classes\Canary;
 use Cube\Tests\Units\Core\Classes\Cat;
@@ -31,8 +31,10 @@ use Cube\Tests\Units\Core\Contracts\CanTalk;
 use Cube\Tests\Units\Core\Contracts\CanWalk;
 use Cube\Tests\Units\Core\Contracts\Pet;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
+/**
+ * @internal
+ */
 class InjectorTest extends TestCase
 {
     private Injector $injector;
@@ -43,16 +45,20 @@ class InjectorTest extends TestCase
     }
 
     public static function processCanFly(CanFly ...$thingsThatCanFly) {}
-    public static function processCanTalk(CanTalk ...$thingsThatCanTalk){}
-    public static function processCanFitInAHouse(CanFitInAHouse ...$thingsThatCanFitInAHouse){}
-    public static function processCanWalk(CanWalk ...$thingsThatCanWalk){}
 
-    public static function processAll(Common ...$allThings){}
+    public static function processCanTalk(CanTalk ...$thingsThatCanTalk) {}
 
-    public function test_interface_variadic_injection() {
-        $reduceClassesFor = function($callable) {
+    public static function processCanFitInAHouse(CanFitInAHouse ...$thingsThatCanFitInAHouse) {}
+
+    public static function processCanWalk(CanWalk ...$thingsThatCanWalk) {}
+
+    public static function processAll(Common ...$allThings) {}
+
+    public function testInterfaceVariadicInjection()
+    {
+        $reduceClassesFor = function ($callable) {
             $objects = $this->injector->getDependencies($callable);
-            return Bunch::wrap($objects)->filter()->map(fn($x) => $x::class)->sort()->toArray();
+            return Bunch::wrap($objects)->filter()->map(fn ($x) => $x::class)->sort()->toArray();
         };
 
         $this->assertEquals([Bird::class, Dragon::class], $reduceClassesFor([self::class, 'processCanFly']));
@@ -61,17 +67,19 @@ class InjectorTest extends TestCase
         $this->assertEquals([Dragon::class, Zombie::class], $reduceClassesFor([self::class, 'processCanWalk']));
     }
 
-    public function test_extends_variadic_injection() {
-        $reduceClassesFor = function($callable) {
+    public function testExtendsVariadicInjection()
+    {
+        $reduceClassesFor = function ($callable) {
             $objects = $this->injector->getDependencies($callable);
-            return Bunch::wrap($objects)->map(fn($x) => $x::class)->sort()->toArray();
+            return Bunch::wrap($objects)->map(fn ($x) => $x::class)->sort()->toArray();
         };
 
         $this->assertEquals([Bird::class, Dragon::class, Zombie::class], $reduceClassesFor([self::class, 'processAll']));
     }
 
-    public function test_can_instanciate_simple_object() {
-        $function = function(Bird $bird) {};
+    public function testCanInstanciateSimpleObject()
+    {
+        $function = function (Bird $bird) {};
         $params = $this->injector->getDependencies($function);
 
         $this->assertCount(1, $params);
@@ -81,7 +89,8 @@ class InjectorTest extends TestCase
         $this->assertInstanceOf(Bird::class, $instance);
     }
 
-    public function test_can_instanciate_complex_object() {
+    public function testCanInstanciateComplexObject()
+    {
         $strangeGroup = $this->injector->instanciate(StrangeGroup::class);
         $this->assertInstanceOf(StrangeGroup::class, $strangeGroup);
 
@@ -89,33 +98,38 @@ class InjectorTest extends TestCase
         $this->assertInstanceOf(StrangeGroupVariadic::class, $strangeGroupVariadic);
     }
 
-    public function test_injector_can_handle_optionnal_parameters() {
+    public function testInjectorCanHandleOptionnalParameters()
+    {
         $paramClass = $this->injector->instanciate(DefaultParamClass::class, ['some-name']);
         $this->assertInstanceOf(DefaultParamClass::class, $paramClass);
     }
 
-    public function test_a_null_given_on_purpose_is_a_value() {
-        $function = function(?string $label='from-the-signature') {};
+    public function testANullGivenOnPurposeIsAValue()
+    {
+        $function = function (?string $label = 'from-the-signature') {};
 
         $this->assertEquals([null], $this->injector->getDependencies($function, [null]));
         $this->assertEquals(['given'], $this->injector->getDependencies($function, ['given']));
         $this->assertEquals(['from-the-signature'], $this->injector->getDependencies($function));
     }
 
-    public function test_union_typed_parameter_keeps_the_given_value() {
-        $function = function(string|int $value) {};
+    public function testUnionTypedParameterKeepsTheGivenValue()
+    {
+        $function = function (int|string $value) {};
 
         $this->assertEquals([12], $this->injector->getDependencies($function, [12]));
     }
 
-    public function test_union_typed_parameter_falls_back_to_its_default() {
-        $function = function(string|int $value=5) {};
+    public function testUnionTypedParameterFallsBackToItsDefault()
+    {
+        $function = function (int|string $value = 5) {};
 
         $this->assertEquals([5], $this->injector->getDependencies($function));
     }
 
-    public function test_union_typed_parameter_without_any_value_is_reported() {
-        $function = function(string|int $value) {};
+    public function testUnionTypedParameterWithoutAnyValueIsReported()
+    {
+        $function = function (int|string $value) {};
 
         $this->expectException(\InvalidArgumentException::class);
         $this->injector->getDependencies($function);
@@ -123,38 +137,43 @@ class InjectorTest extends TestCase
 
     public static function processPets(Pet ...$pets) {}
 
-    public function test_provided_instance_is_returned_by_instanciate() {
+    public function testProvidedInstanceIsReturnedByInstanciate()
+    {
         $collar = new RedCollar();
         $this->injector->provide(Collar::class, $collar);
 
         $this->assertSame($collar, $this->injector->instanciate(Collar::class));
     }
 
-    public function test_providers_are_not_shared_between_instances() {
+    public function testProvidersAreNotSharedBetweenInstances()
+    {
         $this->injector->provide(Collar::class, new RedCollar());
 
         $this->assertNotInstanceOf(RedCollar::class, (new Injector())->instanciate(Collar::class));
     }
 
-    public function test_provided_instance_is_injected_as_constructor_dependency() {
+    public function testProvidedInstanceIsInjectedAsConstructorDependency()
+    {
         $collar = new RedCollar();
         $this->injector->provide(Collar::class, $collar);
 
         $this->assertSame($collar, $this->injector->instanciate(Kennel::class)->collar);
     }
 
-    public function test_provided_instance_is_injected_in_a_closure() {
+    public function testProvidedInstanceIsInjectedInAClosure()
+    {
         $collar = new RedCollar();
         $this->injector->provide(Collar::class, $collar);
 
-        $this->assertSame([$collar], $this->injector->getDependencies(function(Collar $collar) {}));
+        $this->assertSame([$collar], $this->injector->getDependencies(function (Collar $collar) {}));
     }
 
-    public function test_provided_callback_receives_the_requesting_class() {
+    public function testProvidedCallbackReceivesTheRequestingClass()
+    {
         $callers = [];
-        $this->injector->provide(Collar::class, function(?string $caller) use (&$callers) {
+        $this->injector->provide(Collar::class, function (?string $caller) use (&$callers) {
             $callers[] = $caller;
-            return $caller === Kennel::class ? new RedCollar() : new Collar();
+            return Kennel::class === $caller ? new RedCollar() : new Collar();
         });
 
         $this->assertInstanceOf(RedCollar::class, $this->injector->instanciate(Kennel::class)->collar);
@@ -166,9 +185,10 @@ class InjectorTest extends TestCase
         $this->assertEquals([Kennel::class, Cattery::class], $callers);
     }
 
-    public function test_provided_callback_receives_the_class_of_a_method_callback() {
+    public function testProvidedCallbackReceivesTheClassOfAMethodCallback()
+    {
         $callers = [];
-        $this->injector->provide(Collar::class, function(?string $caller) use (&$callers) {
+        $this->injector->provide(Collar::class, function (?string $caller) use (&$callers) {
             $callers[] = $caller;
             return new Collar();
         });
@@ -180,48 +200,54 @@ class InjectorTest extends TestCase
 
     public static function processCollar(Collar $collar) {}
 
-    public function test_provided_callback_receives_null_when_nothing_requested_it() {
+    public function testProvidedCallbackReceivesNullWhenNothingRequestedIt()
+    {
         $callers = [];
-        $this->injector->provide(Collar::class, function(?string $caller) use (&$callers) {
+        $this->injector->provide(Collar::class, function (?string $caller) use (&$callers) {
             $callers[] = $caller;
             return new Collar();
         });
 
         $this->injector->instanciate(Collar::class);
-        $this->injector->getDependencies(function(Collar $collar) {});
+        $this->injector->getDependencies(function (Collar $collar) {});
 
         $this->assertEquals([null, null], $callers);
     }
 
-    public function test_provided_instance_is_injected_for_an_interface_typed_parameter() {
+    public function testProvidedInstanceIsInjectedForAnInterfaceTypedParameter()
+    {
         $cat = new Cat();
         $this->injector->provide(Pet::class, $cat);
 
         $this->assertSame($cat, $this->injector->instanciate(Home::class)->pet);
     }
 
-    public function test_provided_value_not_extending_the_requested_class_is_rejected() {
+    public function testProvidedValueNotExtendingTheRequestedClassIsRejected()
+    {
         $this->injector->provide(Collar::class, new Cat());
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->injector->instanciate(Kennel::class);
     }
 
-    public function test_provided_value_not_implementing_the_requested_interface_is_rejected() {
+    public function testProvidedValueNotImplementingTheRequestedInterfaceIsRejected()
+    {
         $this->injector->provide(Pet::class, new Collar());
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->injector->instanciate(Home::class);
     }
 
-    public function test_variadic_values_are_discovered_without_provider() {
+    public function testVariadicValuesAreDiscoveredWithoutProvider()
+    {
         $this->assertEqualsCanonicalizing(
             [Cat::class, Dog::class],
-            Bunch::wrap($this->injector->getDependencies([self::class, 'processPets']))->map(fn($x) => $x::class)->toArray()
+            Bunch::wrap($this->injector->getDependencies([self::class, 'processPets']))->map(fn ($x) => $x::class)->toArray()
         );
     }
 
-    public function test_provided_variadic_values_replace_discovery() {
+    public function testProvidedVariadicValuesReplaceDiscovery()
+    {
         $cat = new Cat();
         $this->injector->provideVariadic(Pet::class, [$cat]);
 
@@ -229,28 +255,32 @@ class InjectorTest extends TestCase
         $this->assertSame([$cat], $this->injector->instanciate(Shelter::class)->pets);
     }
 
-    public function test_provided_variadic_callback_receives_the_requesting_class() {
+    public function testProvidedVariadicCallbackReceivesTheRequestingClass()
+    {
         $cat = new Cat();
         $dog = new Dog();
-        $this->injector->provideVariadic(Pet::class, fn(?string $caller) => $caller === Shelter::class ? [$cat, $dog] : [$dog]);
+        $this->injector->provideVariadic(Pet::class, fn (?string $caller) => Shelter::class === $caller ? [$cat, $dog] : [$dog]);
 
         $this->assertSame([$cat, $dog], $this->injector->instanciate(Shelter::class)->pets);
         $this->assertSame([$dog], $this->injector->getDependencies([self::class, 'processPets']));
     }
 
-    public function test_provided_variadic_value_not_implementing_the_interface_is_rejected() {
+    public function testProvidedVariadicValueNotImplementingTheInterfaceIsRejected()
+    {
         $this->injector->provideVariadic(Pet::class, [new Cat(), new Collar()]);
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->injector->instanciate(Shelter::class);
     }
 
     /** The PSR LoggerInterface provision instanciates Logger, whose constructor needs a file name. */
-    public function test_a_psr_logger_interface_is_resolved_to_cube_logger() {
+    public function testAPsrLoggerInterfaceIsResolvedToCubeLogger()
+    {
         $this->assertInstanceOf(Logger::class, Injector::getInstance()->instanciate(Logbook::class)->logger);
     }
 
-    public function test_a_provided_component_name_gives_its_ambient_instance() {
+    public function testAProvidedComponentNameGivesItsAmbientInstance()
+    {
         $ambient = new SpecializedCounter('ambient');
 
         SpecializedCounter::withInstance($ambient, function () use ($ambient) {
@@ -261,7 +291,8 @@ class InjectorTest extends TestCase
     }
 
     /** A provided invokable object is called as if it were a resolving callback. */
-    public function test_a_provided_invokable_object_is_handed_as_is() {
+    public function testAProvidedInvokableObjectIsHandedAsIs()
+    {
         $canary = new Canary();
         $this->injector->provide(CanSing::class, $canary);
 
@@ -269,10 +300,11 @@ class InjectorTest extends TestCase
     }
 
     /** A provided scalar reaches $provided::class, which throws a TypeError on a non-object. */
-    public function test_a_provided_scalar_is_rejected_like_a_mismatching_object() {
+    public function testAProvidedScalarIsRejectedLikeAMismatchingObject()
+    {
         $this->injector->provide(Pet::class, 42);
 
-        $this->expectException(RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->injector->instanciate(Pet::class);
     }
 }

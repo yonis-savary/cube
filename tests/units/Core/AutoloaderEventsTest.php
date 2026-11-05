@@ -2,6 +2,7 @@
 
 namespace Cube\Tests\Units\Core;
 
+use Cube\Console\Command;
 use Cube\Core\Autoloader;
 use Cube\Core\Autoloader\Applications;
 use Cube\Core\Autoloader\AutoloaderConfiguration;
@@ -13,7 +14,6 @@ use Cube\Event\Events;
 use Cube\Event\Events\ApplicationsLoaded;
 use Cube\Event\Events\FrameworkLoaded;
 use Cube\Event\Events\PostDeployment;
-use Cube\Console\Command;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use PHPUnit\Framework\TestCase;
 
@@ -61,7 +61,7 @@ class AutoloaderEventsTest extends TestCase
         return $received;
     }
 
-    public function test_initialize_dispatches_framework_loaded_then_applications_loaded()
+    public function testInitializeDispatchesFrameworkLoadedThenApplicationsLoaded()
     {
         $received = $this->initializeAndListen();
 
@@ -69,7 +69,7 @@ class AutoloaderEventsTest extends TestCase
         $this->assertCount(1, $received[ApplicationsLoaded::class]);
     }
 
-    public function test_applications_loaded_lists_every_known_application()
+    public function testApplicationsLoadedListsEveryKnownApplication()
     {
         $known = $this->initializeAndListen()[ApplicationsLoaded::class][0]->loaded;
 
@@ -86,7 +86,7 @@ class AutoloaderEventsTest extends TestCase
      * A cached boot finds its applications already known and explores nothing : the event must
      * still list them, or a listener would hear a different list depending on the cache state.
      */
-    public function test_applications_loaded_lists_already_known_applications_again()
+    public function testApplicationsLoadedListsAlreadyKnownApplicationsAgain()
     {
         $app = $this->storage->child('ShopApp')->getRoot();
         $configuration = new Configuration(new Applications($app));
@@ -100,7 +100,7 @@ class AutoloaderEventsTest extends TestCase
         $this->assertContains($app, $received[ApplicationsLoaded::class][0]->loaded);
     }
 
-    public function test_applications_loaded_ignores_missing_applications()
+    public function testApplicationsLoadedIgnoresMissingApplications()
     {
         $missing = $this->storage->path('Missing');
 
@@ -109,7 +109,7 @@ class AutoloaderEventsTest extends TestCase
         $this->assertNotContains($missing, $received[ApplicationsLoaded::class][0]->loaded);
     }
 
-    public function test_an_application_can_listen_to_its_own_loading()
+    public function testAnApplicationCanListenToItsOwnLoading()
     {
         $app = $this->storage->child('ShopApp');
         $app->child('Requires')->write('listeners.php', <<<'PHP'
@@ -126,7 +126,7 @@ class AutoloaderEventsTest extends TestCase
         unset($GLOBALS['shop-app-heard']);
     }
 
-    public function test_post_deployment_cleans_the_autoloader_cache()
+    public function testPostDeploymentCleansTheAutoloaderCache()
     {
         $cache = new Cache(new CacheConfiguration(new LocalDiskCache($this->storage->child('Cache'))));
         $autoloaderCache = $cache->child('autoloader');
@@ -139,10 +139,10 @@ class AutoloaderEventsTest extends TestCase
         (new PostDeployment())->dispatch();
 
         foreach (['classes', 'apps', 'assets', 'require', 'routes', 'views'] as $key)
-            $this->assertFalse($autoloaderCache->has($key), "[$key] should be gone from the autoloader cache");
+            $this->assertFalse($autoloaderCache->has($key), "[{$key}] should be gone from the autoloader cache");
     }
 
-    public function test_a_cached_query_is_answered_without_reading_the_classes_list()
+    public function testACachedQueryIsAnsweredWithoutReadingTheClassesList()
     {
         $cacheStorage = $this->storage->child('Cache');
         $bootAndQuery = function () use ($cacheStorage) {
