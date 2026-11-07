@@ -156,7 +156,8 @@ production.
 Long-running and scheduled work does not go through php-fpm
 
 - add a line printed by `php do routine:generate` to your crontab : it runs `php do routine:launch`
-  every minute, which launches your [schedules](./28-schedules.md) (not your [queues](./29-queues.md)) ;
+  every minute, which launches your [schedules](./28-schedules.md) (not your [queues](./29-queues.md)).
+  With the Docker stack, a [scheduler container](#the-scheduler-container) can do it instead ;
 - supervise the long-running processes, `php do cube:queue` ([Queues](./29-queues.md)),
   `php do websocket:serve` ([Websockets](./30-websockets.md)) and `php do unix:serve`
   ([Unix socket server](./31-unix-socket-server.md)), and restart them on each release : they keep
@@ -274,7 +275,78 @@ And in `docker-compose.override.yml`, so that it runs your mounted code in devel
   leaving.
 - `make deploy` restarts every service on the new image. In development, run
   `docker compose restart <service>` after changing the code it runs.
-- Schedules are not a service : they stay in the host's crontab (`php do routine:generate`).
+- Schedules need a process calling `routine:launch` every minute : the host's crontab
+  (`php do routine:generate`), or the [scheduler container](#the-scheduler-container).
+
+## The scheduler container
+
+`routine:launch` must be called once a minute (see [Schedules](./28-schedules.md#running-them)).
+Instead of a host cron calling `make launch-scheduler`, a dedicated service can do it : it uses the
+application image and needs no setup on the host.
+
+Here it is, in `docker-compose.yml`
+
+```yaml
+  scheduler:
+    image: ${COMPOSE_PROJECT_NAME}-php
+    command: sh -c 'while true; do sleep $$((60 - $$(date +%s) % 60)); php do routine:launch & done'
+    restart: unless-stopped
+    init: true
+    stop_signal: SIGTERM
+    volumes:
+      - ./Storage:/var/www/Storage
+      - ./.env:/var/www/.env:ro
+    depends_on:
+      - php-fpm # builds the image
+```
+
+And in `docker-compose.override.yml`, so that it runs your mounted code in development
+
+```yaml
+  scheduler:
+    volumes:
+      - .:/var/www
+      - vendor:/var/www/vendor
+```
+
+### Why a separate container
+
+`make launch-scheduler` runs the tasks in the php-fpm container. It works, but
+
+- restarting php-fpm kills the tasks running in it, while a separate container lets you restart
+  php-fpm alone,
+- a heavy task takes CPU and memory from the requests, a separate container can have its own limits,
+- what your tasks print goes to `docker compose logs scheduler`, apart from the application. What
+  they log still goes to `Storage/Logs/launch.csv`.
+
+### Why this command
+
+| Part | Reason |
+|---|---|
+| `sleep` before the launch | a container restarted in the middle of a minute waits for the next one : launching first would run the tasks of the current minute twice |
+| `60 - $(date +%s) % 60` | wakes up at the start of the next minute : a plain `sleep 60` drifts, and ends up skipping a minute |
+| `&` after `routine:launch` | `routine:launch` waits for its tasks : without it, a long task would delay the next launches, and the schedules of those minutes would never fire |
+| `$$` | Compose interpolates `$` in its files, `$$` gives a literal `$` to the shell |
+
+Launches can overlap, as with a cron : the lock of each task skips a run while the previous one is
+still running, unless the schedule disabled it (see
+[Overlapping runs](./28-schedules.md#overlapping-runs)).
+
+### Why these options
+
+| Option | Reason |
+|---|---|
+| `init: true` | `sh` as PID 1 ignores `SIGTERM`, `init` forwards the signal to it and reaps the finished launches |
+| `stop_signal: SIGTERM` | the official PHP images change the stop signal (`SIGQUIT` for `fpm`, `SIGWINCH` for `apache`) : with `SIGWINCH`, `sh` does not stop, and `docker stop` waits 10 seconds before killing the container |
+
+### Limits
+
+- **Tasks are killed on stop.** Stopping or restarting the container kills the tasks it is running,
+  and `make deploy` stops every service. Prefer a [queue](./29-queues.md) for work that must not be
+  interrupted.
+- **No catching up.** The schedules of the minutes spent stopped never fire.
+- **One container only.** Two of them would launch every schedule twice, and the lock only protects
+  tasks that overlap.
 
 ## Container user
 
@@ -324,7 +396,8 @@ would be created by Docker, as root, and the containers could not write in it.
 - [ ] `php do migrate`
 - [ ] `php do cube:dispatch --event PostDeployment`, then `php do configuration:cache` if you cache
       the configuration, **then** restart php-fpm
-- [ ] the long-running servers restarted, the `routine:launch` cron line in place
+- [ ] the long-running servers restarted, the `routine:launch` cron line or the scheduler container
+      in place
 - [ ] log rotation set up for `Storage/Logs`
 - [ ] security headers declared in `RouterConfiguration(securityHeaders:)` (Cube only adds
       `X-Content-Type-Options: nosniff` by itself), CORS origins set (see

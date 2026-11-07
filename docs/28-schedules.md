@@ -27,6 +27,9 @@ With the Docker stack of the server files, `make launch-scheduler` runs it insid
 * * * * * cd /srv/shop && make launch-scheduler
 ```
 
+To keep the host out of it, a dedicated container can call it instead : see
+[The scheduler container](./34-deployment.md#the-scheduler-container).
+
 ## Writing a task
 
 A task is a public method, given as `[Class::class, 'method']`, or an invokable class, given by its
@@ -126,7 +129,8 @@ An expression that is not five fields, or whose values fall outside their bounds
 ## Running them
 
 `routine:launch` runs every schedule whose expression matches the current minute. Nothing calls it
-for you : call it every minute from the host's cron, or from a container's scheduler. `routine:generate`
+for you : call it every minute from the host's cron, or from a
+[scheduler container](./34-deployment.md#the-scheduler-container). `routine:generate`
 prints the crontab lines for your project : `make launch-scheduler` for the Docker stack first, then
 `php do routine:launch`. Both `cd` to the project path as Cube sees it : run from inside the container,
 that is `/var/www`, so replace it with the path on the host
