@@ -178,6 +178,16 @@ both cases, without being part of the search
 $product = Product::findOrCreate(['name' => 'screen'], extrasProperties: ['price_dollar' => 20]);
 ```
 
+Give it a `created` variable to know which case happened : it receives `true` when the row was
+inserted, `false` when it was found
+
+```php
+$product = Product::findOrCreate(['name' => 'screen'], created: $created);
+
+if ($created)
+    $product->notifyManagers();
+```
+
 `select()`, `insert()`, `update()` and `delete()` return a `Query` you can keep building — see
 [Database and queries](./16-database-and-queries.md#building-queries)
 

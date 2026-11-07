@@ -320,12 +320,20 @@ abstract class Model extends EventDispatcher
         return static::findWhere([$primaryKey => $primaryKeyValue], $with, $database);
     }
 
-    public static function findOrCreate(array $data, array $with = [], ?Database $database = null, array $extrasProperties = []): static
+    /**
+     * @param ?bool $created Receives `true` when the row was inserted, `false` when it was found.
+     *                       Nullable so that a variable not defined yet can be given.
+     */
+    public static function findOrCreate(array $data, array $with = [], ?Database $database = null, array $extrasProperties = [], ?bool &$created = null): static
     {
         $database ??= Database::getInstance();
 
-        if (!$model = self::findWhere($data, $with, $database))
+        $model = self::findWhere($data, $with, $database);
+        $created = null === $model;
+
+        if ($created)
             return self::insertArray(array_merge($data, $extrasProperties), $database);
+
         foreach ($extrasProperties as $key => $value)
             $model->{$key} = $value;
 

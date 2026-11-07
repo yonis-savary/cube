@@ -322,6 +322,18 @@ class ModelTest extends TestCase
         });
     }
 
+    #[DataProvider('getDatabases')]
+    public function testFindOrCreateTellsIfTheModelWasCreated(Database $database)
+    {
+        $this->withBaseProducts($database, function () {
+            Product::findOrCreate(['name' => 'printer'], created: $created);
+            $this->assertTrue($created);
+
+            Product::findOrCreate(['name' => 'printer'], created: $created);
+            $this->assertFalse($created);
+        });
+    }
+
     /** findOrCreate() saved a found model on the global database instead of the one it was given. */
     #[DataProvider('getDatabases')]
     public function testFindOrCreateSavesOnTheGivenDatabase(Database $database)
