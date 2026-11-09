@@ -59,7 +59,7 @@ class WebsocketRouter implements MessageComponentInterface
                 return;
             }
 
-            $channel->subscribe($path, $connection);
+            $channel->subscribe($path, $connection, $slugValues);
             return;
         }
 
@@ -86,7 +86,23 @@ class WebsocketRouter implements MessageComponentInterface
 
     public function onMessage(ConnectionInterface $from, $msg)
     {
-        $this->logger->info(static::class.': this class does not support the onMessage() method');
+        foreach ($this->channels as $channel) {
+            if (!$subscriber = $channel->getSubscriber($from))
+                continue;
+            // Ratchet only catches \Exception : an \Error would leave the event loop and drop every client
+            try {
+                $channel->receive($subscriber, (string) $msg, $this->configuration->maxMessagesPerMinute);
+            } catch (\Throwable $thrown) {
+                $this->logger->logThrowable($thrown);
+                $subscriber->send(['error' => 'Internal error']);
+            }
+            return;
+        }
+    }
+
+    public function getChannel(string $class): ?Channel
+    {
+        return $this->channels[$class] ?? null;
     }
 
     public function broadcast($message)

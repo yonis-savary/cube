@@ -4,6 +4,9 @@ namespace Cube\Web\Websocket\Servers;
 
 use Cube\Core\Component;
 use Cube\Env\Logger\Logger;
+use Cube\Web\Websocket\Broadcast\Broadcast;
+use Cube\Web\Websocket\Broadcast\BroadcastConfiguration;
+use Cube\Web\Websocket\Broadcast\LocalBroadcast;
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
 use Ratchet\WebSocket\WsServer;
@@ -57,6 +60,9 @@ class Websocket
             $this->logger->warning('No broadcastSecret configured : anyone reaching {origin} can broadcast', ['origin' => $httpOrigin]);
         }
 
-        $loop->run();
+        Broadcast::withInstance(
+            new LocalBroadcast(BroadcastConfiguration::resolve(), $this->router),
+            fn () => $loop->run()
+        );
     }
 }

@@ -10,7 +10,8 @@ class WebsocketConfiguration extends ConfigurationElement
     public const BROADCAST_SECRET_HEADER = 'X-Broadcast-Secret';
 
     /**
-     * @param ?string[] $allowedOrigins Full origins a browser may connect from (`https://app.example.org`), `['*']` for any, the `CORSConfiguration` ones by default
+     * @param ?string[] $allowedOrigins       Full origins a browser may connect from (`https://app.example.org`), `['*']` for any, the `CORSConfiguration` ones by default
+     * @param ?int      $maxMessagesPerMinute Messages one connection may send to a channel accepting them, null for no limit
      */
     public function __construct(
         public readonly string $websocketHost = '0.0.0.0',
@@ -19,6 +20,7 @@ class WebsocketConfiguration extends ConfigurationElement
         public readonly int $httpPort = 8089,
         public readonly ?string $broadcastSecret = null,
         public readonly ?array $allowedOrigins = null,
+        public readonly ?int $maxMessagesPerMinute = 600,
     ) {}
 
     /**

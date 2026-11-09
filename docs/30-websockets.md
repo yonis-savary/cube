@@ -3,7 +3,8 @@
 # Websockets
 
 Cube pushes server-side events to browsers through **channels** : your backend emits on a channel,
-and every browser subscribed to it receives the payload. PHP cannot hold a socket open while it
+and every browser subscribed to it receives the payload. A channel can also receive messages from
+those browsers. PHP cannot hold a socket open while it
 answers requests, so a separate long-running process, started with `php do websocket:serve`, holds
 the connections.
 
@@ -136,7 +137,7 @@ Channels are discovered by class, so the file is enough — nothing to register.
 builds every channel when it starts.
 
 A connection to a path no channel answers is closed. Messages a client sends on the socket are
-ignored : channels only flow from the backend to the browser.
+ignored unless the channel [declares what it accepts](#receiving-messages-from-the-browser).
 
 ## Deciding who may subscribe
 
@@ -248,6 +249,82 @@ that read the header themselves
 return $jobChannel->redirect([$id]);   // Location: ws://localhost:8088/job/394898
 ```
 
+## Receiving messages from the browser
+
+A channel accepts messages once it declares their shape with `getMessageRule()`. `onMessage()` then
+receives each valid message, along with the subscriber who sent it
+
+```php
+class CartChannel extends Channel
+{
+    public function getRoute(): string
+    {
+        return '/cart/{id}';
+    }
+
+    public function authorize(array $slugs, RequestInterface $request): ?string
+    {
+        return null;
+    }
+
+    public function getMessageRule(): ?Rule
+    {
+        return Param::object(['quantity' => Param::integer()]);
+    }
+
+    public function onMessage(ChannelSubscriber $from, array $data): void
+    {
+        $this->emit(['quantity' => $data['quantity']], [$from->slugs['id']]);   // every subscriber of this cart
+        $from->send(['saved' => true]);                                         // only the sender
+    }
+}
+```
+
+The browser sends JSON on the socket it opened
+
+```js
+socket.send(JSON.stringify({quantity: 3}));
+```
+
+A connection belongs to one channel, the one its URL matched, so a message needs no address. To
+handle several kinds of messages, validate a field and `match` on it, or open one channel per kind.
+
+### Who sent the message
+
+`$from->slugs` holds the slug values of the subscribed path, and `$from->connection->httpRequest` the
+handshake request. Read the client's token from it and check it in `onMessage()` : a socket outlives
+its handshake, and a token revoked since then must not keep writing.
+
+### What the client receives on a refusal
+
+Each refusal is a frame on the socket, and the connection stays open.
+
+| Frame | When |
+|---|---|
+| `{"error": "Message must be a JSON object"}` | the message is not a JSON object or array |
+| `{"error": {"quantity": ["..."]}}` | the message does not satisfy `getMessageRule()` |
+| `{"error": "Too many messages"}` | the connection exceeded `maxMessagesPerMinute` |
+| `{"error": "Internal error"}` | `onMessage()` threw, the exception is logged |
+
+### Keep the handler short
+
+`onMessage()` runs in the event loop of the socket process : while it works, no client is served.
+Keep it to short operations, and hand the rest to a [queue](./29-queues.md), whose worker calls
+`emit()` once done
+
+```php
+public function onMessage(ChannelSubscriber $from, array $data): void
+{
+    ExportQueue::queue($from->slugs['id'], $data['format']);
+}
+```
+
+`emit()` works the same from a handler or from your backend : inside the socket process, it reaches
+subscribers directly rather than through the HTTP side.
+
+The socket process keeps its database connection for its whole life, and Cube does not reconnect :
+if your database server closes idle connections, queries fail until the process restarts.
+
 ## Running the server
 
 ```sh
@@ -291,6 +368,7 @@ The process builds your channels once, at start : restart it after a deployment.
 | `httpPort` | `8089` | port the HTTP server binds |
 | `broadcastSecret` | `null` | secret required in the `X-Broadcast-Secret` header — required when `httpHost` is not a loopback |
 | `allowedOrigins` | `null` | origins a browser may connect from, `['*']` for any, `CORSConfiguration`'s when `null` |
+| `maxMessagesPerMinute` | `600` | messages one connection may send to a channel accepting them, `null` for no limit |
 
 `BroadcastConfiguration`, read by your backend — every option falls back to `WebsocketConfiguration`
 
@@ -310,6 +388,15 @@ The process builds your channels once, at start : restart it after a deployment.
 | `path(array $routeParams = []): string` | the channel path for those parameters |
 | `lockParams(array $params)` / `unlockParams()` | fixes the path used by `emit()` |
 | `redirect(array $routeParams = []): Response` | a `307` to the full websocket URL |
+| `getMessageRule(): ?Rule` | the shape of accepted messages, `null` (default) ignores them |
+| `onMessage(ChannelSubscriber $from, array $data): void` | handles a validated message |
+
+| `ChannelSubscriber` member | Holds |
+|---|---|
+| `slugs` | slug values of the subscribed path |
+| `path` | the subscribed path |
+| `connection` | the Ratchet connection, `connection->httpRequest` being the handshake request |
+| `send(array $data): void` | sends `$data` to this subscriber only |
 
 | HTTP side answers | When |
 |---|---|

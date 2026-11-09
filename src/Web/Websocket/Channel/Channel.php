@@ -5,6 +5,7 @@ namespace Cube\Web\Websocket\Channel;
 use Cube\Env\Logger\Logger;
 use Cube\Web\Http\Request;
 use Cube\Web\Http\Response;
+use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\StatusCode;
 use Cube\Web\Router\Route;
 use Cube\Web\Websocket\Broadcast\Broadcast;
@@ -87,11 +88,56 @@ abstract class Channel implements ChannelInterface
         $this->cachedPath = null;
     }
 
-    public function subscribe(string $path, ConnectionInterface $connection)
+    /**
+     * @return ?Rule null => messages sent by clients are ignored
+     */
+    public function getMessageRule(): ?Rule
+    {
+        return null;
+    }
+
+    /**
+     * @param array<mixed> $data Result of `getMessageRule()`
+     */
+    public function onMessage(ChannelSubscriber $from, array $data): void {}
+
+    final public function receive(ChannelSubscriber $from, string $message, ?int $maxMessagesPerMinute = null): void
+    {
+        if (!$rule = $this->getMessageRule())
+            return;
+        if (null !== $maxMessagesPerMinute && !$from->consumeMessageAllowance($maxMessagesPerMinute)) {
+            $from->send(['error' => 'Too many messages']);
+            return;
+        }
+
+        $data = json_decode($message, true);
+        if (!is_array($data)) {
+            $from->send(['error' => 'Message must be a JSON object']);
+            return;
+        }
+
+        $validation = $rule->validate($data);
+        if (!$validation->isValid()) {
+            $from->send(['error' => $validation->getErrors()]);
+            return;
+        }
+
+        $this->onMessage($from, $validation->getResult());
+    }
+
+    public function getSubscriber(ConnectionInterface $connection): ?ChannelSubscriber
+    {
+        return $this->subscribers[$connection->resourceId] ?? null;
+    }
+
+    /**
+     * @param array<string,string> $slugs Slug values of the subscribed path
+     */
+    public function subscribe(string $path, ConnectionInterface $connection, array $slugs = [])
     {
         $resourceId = $connection->resourceId;
         $this->log("new subscriber {$resourceId} ({$path})");
-        $this->subscribers[$resourceId] = new ChannelSubscriber($path, $connection);
+        $this->subscribers[$resourceId] = new ChannelSubscriber($path, $connection, $slugs);
     }
 
     public function dispatch(string $path, array $data = [])
@@ -99,7 +145,7 @@ abstract class Channel implements ChannelInterface
         $dispatchedCount = 0;
         foreach ($this->subscribers as $_ => $subscriber) {
             if ($subscriber->path === $path) {
-                $subscriber->connection->send(json_encode($data, JSON_THROW_ON_ERROR));
+                $subscriber->send($data);
                 ++$dispatchedCount;
             }
         }

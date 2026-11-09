@@ -114,6 +114,10 @@ change it asks from your application.
 
 ### Added
 
+- Websocket channels can receive messages from clients : declare their shape with
+  `Channel::getMessageRule()` and handle them in `Channel::onMessage()`. A connection may send
+  `WebsocketConfiguration::$maxMessagesPerMinute` messages (600 by default), and `emit()` works inside the
+  socket process.
 - `php do migrate:rollback [--steps=N]`, calling `Migration::down()`.
 - `php do make:integration <openapi.json|url>` generates, from an OpenAPI 3.0 / 3.1 JSON document read from a
   file or fetched from a URL (`--header` adds a header to that request), an `HttpClient` with one method
