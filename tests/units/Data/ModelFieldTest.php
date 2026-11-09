@@ -116,6 +116,23 @@ class ModelFieldTest extends TestCase
         $this->assertEquals($field, $rebuilt);
     }
 
+    public function testADefaultExpressionSurvivesTheExpression()
+    {
+        $field = ModelField::timestamp('created_at')->defaultExpression('CURRENT_TIMESTAMP');
+        $expression = str_replace('new ModelField', 'new \\'.ModelField::class, $field->toPHPExpression());
+
+        $this->assertStringContainsString("->defaultExpression('CURRENT_TIMESTAMP')", $expression);
+        $this->assertEquals($field, eval('return '.$expression.';'));
+    }
+
+    public function testALiteralDefaultReplacesADefaultExpression()
+    {
+        $field = ModelField::string('status')->defaultExpression('CURRENT_TIMESTAMP')->default('draft');
+
+        $this->assertFalse($field->defaultIsExpression);
+        $this->assertStringContainsString("->default('draft')", $field->toPHPExpression());
+    }
+
     public function testABooleanRuleFollowsTheFieldNullability()
     {
         $this->assertTrue(ModelField::boolean('active')->nullable()->toRule()->validate(null)->isValid());

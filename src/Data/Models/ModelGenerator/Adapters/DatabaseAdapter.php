@@ -140,6 +140,20 @@ abstract class DatabaseAdapter
             $field->references($relation->toModel, $relation->toColumn);
     }
 
+    /**
+     * Keeps a default computed by the database. The schemas give it back without the parentheses
+     * MySQL and SQLite require around anything but a keyword : they are put back.
+     */
+    protected function applyDefaultExpression(ModelField $field, string $expression): void
+    {
+        $expression = trim($expression);
+
+        if (!preg_match('/^(CURRENT_TIMESTAMP|CURRENT_DATE|CURRENT_TIME|LOCALTIMESTAMP|LOCALTIME)(\(\d*\))?$/i', $expression))
+            $expression = "({$expression})";
+
+        $field->defaultExpression($expression);
+    }
+
     protected function getModelFieldType(string $sqlType): string
     {
         $fieldType = strtoupper($sqlType);

@@ -56,8 +56,13 @@ class MySQL extends DatabaseAdapter
         $field->nullable($nullable);
         $field->hasDefault($nullable || (null !== $column['Default']));
 
-        if (str_contains(strtolower($column['Extra']), 'generated')) {
+        $extra = strtolower($column['Extra']);
+
+        // DEFAULT_GENERATED marks a default expression (DEFAULT CURRENT_TIMESTAMP), not a generated column
+        if (str_contains($extra, 'virtual generated') || str_contains($extra, 'stored generated')) {
             $field->generated();
+        } elseif (str_contains($extra, 'default_generated') && null !== $column['Default']) {
+            $this->applyDefaultExpression($field, $column['Default']);
         }
 
         $this->applyReference($table, $field);

@@ -64,6 +64,12 @@ class SQLite extends DatabaseAdapter
         $field->nullable($nullable);
         $field->hasDefault($nullable || (null !== $column['dflt_value']));
 
+        // A literal comes back quoted ('text') or as a number, an expression as a keyword or in parentheses
+        $default = $column['dflt_value'];
+        if (null !== $default && (str_starts_with($default, '(') || preg_match('/^CURRENT_(TIMESTAMP|DATE|TIME)$/i', $default))) {
+            $this->applyDefaultExpression($field, $default);
+        }
+
         $this->applyReference($table, $field);
 
         if ($column['pk']) {

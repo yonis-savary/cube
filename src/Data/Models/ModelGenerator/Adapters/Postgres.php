@@ -90,6 +90,10 @@ class Postgres extends DatabaseAdapter
             $field->generated();
         }
 
+        if ($this->isDefaultExpression($column['column_default'])) {
+            $this->applyDefaultExpression($field, $column['column_default']);
+        }
+
         $this->applyReference($table, $field);
 
         if (str_contains($column['column_default'] ?? '', 'id_seq')) {
@@ -98,5 +102,21 @@ class Postgres extends DatabaseAdapter
         }
 
         return $field;
+    }
+
+    /**
+     * A literal comes back quoted ('text'::character varying), as a number or a boolean, a sequence
+     * as nextval() : anything else is computed by the database.
+     */
+    protected function isDefaultExpression(?string $default): bool
+    {
+        if (null === $default || is_numeric($default))
+            return false;
+        $lowerDefault = strtolower($default);
+
+        return !str_starts_with($default, "'")
+            && !str_starts_with($lowerDefault, 'nextval(')
+            && !str_starts_with($lowerDefault, 'null::')
+            && !in_array($lowerDefault, ['true', 'false', 'null'], true);
     }
 }

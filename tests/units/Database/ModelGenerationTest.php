@@ -92,6 +92,18 @@ class ModelGenerationTest extends TestCase
             $this->assertEquals(ModelField::FLOAT, $resultColumn->type);
             $this->assertTrue($resultColumn->isGenerated());
         });
+
+        // MySQL flags `DEFAULT CURRENT_TIMESTAMP` as DEFAULT_GENERATED : it was read as a generated column, never written
+        $this->assertForTableField($tables, 'product', 'created_at', function ($createdAtColumn) {
+            $this->assertFalse($createdAtColumn->isGenerated());
+            $this->assertTrue($createdAtColumn->hasDefault);
+            $this->assertTrue($createdAtColumn->defaultIsExpression);
+            $this->assertEquals('CURRENT_TIMESTAMP', strtoupper($createdAtColumn->default));
+        });
+
+        $this->assertForTableField($tables, 'product', 'name', function ($nameColumn) {
+            $this->assertFalse($nameColumn->defaultIsExpression);
+        });
     }
 
     /** Table and column names were written into the generated PHP as is : a column named `x'.system('id').'` ran on the next generation. */

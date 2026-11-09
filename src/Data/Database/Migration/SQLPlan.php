@@ -45,9 +45,17 @@ abstract class SQLPlan extends Plan
             $query .= ' UNIQUE';
 
         if ($field->hasDefault)
-            $query .= ' DEFAULT '.$this->database->build('{}', [$field->default]);
+            $query .= ' DEFAULT '.$this->getDefaultExpression($field);
 
         return $query;
+    }
+
+    /** The value of a `DEFAULT` clause : a SQL expression as is, any other value bound as a literal */
+    protected function getDefaultExpression(ModelField $field): string
+    {
+        return $field->defaultIsExpression
+            ? $field->default
+            : $this->database->build('{}', [$field->default]);
     }
 
     protected function getOnDeleteClause(?string $deleteBehavior): string

@@ -338,6 +338,58 @@ class MigrationTest extends TestCase
         $this->assertEquals('{}', $database->query('SELECT value FROM setting')[0]['value']);
     }
 
+    /** A default expression was bound as a string : `DEFAULT 'CURRENT_TIMESTAMP'` */
+    #[DataProvider('getDatabases')]
+    public function testADefaultExpressionIsComputedByTheDatabase(Database $database)
+    {
+        $migration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create('visit', [
+                    ModelField::id(),
+                    ModelField::string('page', 50),
+                    ModelField::timestamp('visited_at')->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
+                ]);
+            }
+        };
+
+        $thrown = $migration->execute($this->getDatabasePlan($database), $database);
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+
+        $database->exec("INSERT INTO visit (page) VALUES ('home')");
+        $database->exec("INSERT INTO visit (page, visited_at) VALUES ('about', '2020-01-02 03:04:05')");
+
+        $rows = $database->query('SELECT page, visited_at FROM visit ORDER BY id');
+        $this->assertNotNull($rows[0]['visited_at']);
+        $this->assertNotEquals('CURRENT_TIMESTAMP', $rows[0]['visited_at']);
+        $this->assertEqualsWithDelta(time(), strtotime($rows[0]['visited_at'].' UTC'), 60 * 60 * 24);
+        $this->assertEquals('2020-01-02 03:04:05', $rows[1]['visited_at']);
+    }
+
+    #[DataProvider('getDatabases')]
+    public function testAlterColumnSetsADefaultExpression(Database $database)
+    {
+        if ('sqlite' === $database->getDriver())
+            $this->markTestSkipped('SQLite cannot alter a column');
+
+        $migration = new class extends Migration {
+            public function up(Plan $plan, Database $database)
+            {
+                $plan->create('visit', [
+                    ModelField::id(),
+                    ModelField::timestamp('visited_at'),
+                ]);
+                $plan->alterColumn('visit', 'visited_at', ModelField::timestamp('visited_at')->defaultExpression('CURRENT_TIMESTAMP'));
+            }
+        };
+
+        $thrown = $migration->execute($this->getDatabasePlan($database), $database);
+        $this->assertNull($thrown, $thrown?->getMessage() ?? 'Nothing thrown');
+
+        $database->exec('INSERT INTO visit (id) VALUES (1)');
+        $this->assertNotNull($database->query('SELECT visited_at FROM visit')[0]['visited_at']);
+    }
+
     /**
      * PostgreSQL has no DATETIME type, create() maps it to TIMESTAMP but alterColumn() does not.
      */

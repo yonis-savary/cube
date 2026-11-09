@@ -38,6 +38,8 @@ class ModelField
     public bool $nullable = true;
     public bool $hasDefault = false;
     public mixed $default = null;
+    /** `$default` is a SQL expression (`CURRENT_TIMESTAMP`), written as is rather than bound as a value */
+    public bool $defaultIsExpression = false;
 
     public int $flags = 0;
 
@@ -185,6 +187,22 @@ class ModelField
     {
         $this->default = $defaultValue;
         $this->hasDefault = true;
+        $this->defaultIsExpression = false;
+
+        return $this;
+    }
+
+    /**
+     * A default computed by the database, such as `CURRENT_TIMESTAMP`. The expression is written as is
+     * in the `DEFAULT` clause : wrap anything other than a keyword in parentheses, as MySQL and SQLite
+     * require. Unlike a `generated()` field, the field stays writable : the default only fills a row
+     * inserted without it.
+     */
+    public function defaultExpression(string $expression): self
+    {
+        $this->default = $expression;
+        $this->hasDefault = true;
+        $this->defaultIsExpression = true;
 
         return $this;
     }
@@ -235,6 +253,15 @@ class ModelField
         return true;
     }
 
+    protected function getDefaultPHPExpression(): string
+    {
+        return match (true) {
+            !$this->hasDefault => '->hasDefault(false)',
+            $this->defaultIsExpression => '->defaultExpression('.var_export($this->default, true).')',
+            default => '->default('.var_export($this->default, true).')',
+        };
+    }
+
     public function toPHPExpression(): string
     {
         return
@@ -244,9 +271,7 @@ class ModelField
             .($this->autoIncrement ? '->autoIncrement()' : '')
             .(($this->nullable && !$this->autoIncrement) ? '->nullable()' : '->notNull()')
             .($this->isUnique ? '->unique()' : '')
-            .($this->hasDefault
-                ? '->default('.var_export($this->default, true).')'
-                : '->hasDefault(false)')
+            .$this->getDefaultPHPExpression()
             .($this->referenceModel ? '->references('.$this->referenceModel."::class,'".$this->referenceField."')" : '')
             .(self::ON_DELETE_CASCADE === $this->onDeleteBehavior ? '->onDeleteCascade()' : '')
             .(self::ON_DELETE_SET_NULL === $this->onDeleteBehavior ? '->onDeleteSetNull()' : '')

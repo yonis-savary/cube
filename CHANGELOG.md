@@ -135,6 +135,9 @@ change it asks from your application.
   `#[ModelResponse]` take a `with` list of the relations an endpoint loads. In the OpenAPI document,
   a model schema now references the schema of each relation's model, optional, instead of inlining it.
 - `ModelField::references()` accepts a model class as well as a table name.
+- `ModelField::defaultExpression('CURRENT_TIMESTAMP')`, a default computed by the database and written
+  as is in the `DEFAULT` clause, where `default()` binds a literal. `models:generate` reads them back
+  from MySQL, PostgreSQL and SQLite.
 - `TestContext::useTemporaryStorage()`, `Configuration::removeFromCache()`, `Router::cleanCache()`.
 - `CubeTestCase` resets `MockServers` after each test, and `assertModelExists()` works.
 - `php do test` forwards its arguments to PHPUnit and answers its exit code.
@@ -147,6 +150,9 @@ change it asks from your application.
 See `ROADMAP.md` for the detail of each point : `S01`–`S46` (security audit) and `R01`–`R36`.
 
 Also fixed :
+- `models:generate` on MySQL marked a column with `DEFAULT CURRENT_TIMESTAMP` as `generated()` (its
+  `DEFAULT_GENERATED` extra), so the ORM never wrote it, even when given a value. Such a column is now
+  generated with `defaultExpression()` : regenerate your models to drop the wrong `generated()`.
 - Postgres and SQLite `UPDATE` queries with a join but no `where()` lost their `WHERE` keyword.
 - `HttpMessage::getJSON()` decodes the displayed body, so it reads a `Response::file()`.
 - `ResponseAssert::json()` throws on an invalid body instead of answering `null`.

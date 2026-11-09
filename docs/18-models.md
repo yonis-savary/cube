@@ -129,7 +129,7 @@ ModelField::boolean('active');
 ModelField::decimal('price', 10, 2);
 ModelField::date('released_on');
 ModelField::datetime('created_at')->generated();
-ModelField::timestamp('updated_at');
+ModelField::timestamp('updated_at')->defaultExpression('CURRENT_TIMESTAMP');
 
 ModelField::integer('agency_id')
     ->references(Agency::class, 'id')
@@ -140,7 +140,8 @@ ModelField::string('email')->unique();
 ```
 
 A field is nullable unless you call `notNull()`. A `generated()` field is never written when saving
-(the database computes it). [Migrations](./17-migrations.md#describing-columns) use these same
+(the database computes it). A field with a `defaultExpression()` is written like any other : the
+database only computes it for a row inserted without a value. [Migrations](./17-migrations.md#describing-columns) use these same
 builders to describe columns.
 
 Field values are **formatted** when written, and by `toArray()`, so the same way when a route

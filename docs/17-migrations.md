@@ -156,6 +156,7 @@ ModelField::string('name', 255)->notNull();         // VARCHAR(255), TEXT withou
 ModelField::integer('stock')->default(0);
 ModelField::float('weight');
 ModelField::boolean('active')->default(true);
+ModelField::timestamp('created_at')->defaultExpression('CURRENT_TIMESTAMP');
 ModelField::decimal('price', 10, 2);                // DECIMAL(10,2), (10,5) when left out
 ModelField::date('released_on');
 ModelField::datetime('created_at');
@@ -166,6 +167,11 @@ ModelField::integer('agency_id')
     ->references('agency', 'id')                    // a table name, or a model class (Agency::class)
     ->onDeleteCascade();                            // or ->onDeleteSetNull()
 ```
+
+`default()` binds its value as a literal, `defaultExpression()` writes a SQL expression as is in the
+`DEFAULT` clause, for a value the database computes on insert. Anything but a keyword such as
+`CURRENT_TIMESTAMP` must be in parentheses for MySQL and SQLite (`'(UUID())'`). SQLite refuses a
+column added by `addColumn()` with an expression default : declare it in `create()`.
 
 A field is nullable unless you call `notNull()` (a primary key always is). `references()` takes a
 table name or a model class : a model class is replaced by its `table()` in the `REFERENCES` clause.

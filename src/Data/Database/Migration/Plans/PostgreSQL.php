@@ -51,6 +51,6 @@ class PostgreSQL extends SQLPlan
             $this->database->exec("ALTER TABLE {$this->quote($table)} ADD UNIQUE ({$this->quote($newProperties->name)})");
 
         if ($newProperties->hasDefault)
-            $this->database->exec("{$column} SET DEFAULT ".$this->database->build('{}', [$newProperties->default]));
+            $this->database->exec("{$column} SET DEFAULT ".$this->getDefaultExpression($newProperties));
     }
 }
