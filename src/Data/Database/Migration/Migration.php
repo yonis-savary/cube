@@ -33,7 +33,7 @@ abstract class Migration
     {
         if ($error = $database->dryRun(fn () => $this->tryOnDryRunPlan($step, $database)))
             return $error;
-        return $database->transaction(fn () => $step($plan, $database));
+        return $plan->transaction(fn () => $step($plan, $database));
     }
 
     /**

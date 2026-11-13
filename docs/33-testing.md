@@ -82,7 +82,8 @@ whatever the previous one wrote. A test of yours overriding `setUp()` calls `par
 Keep in mind
 
 - The test database is **always SQLite**, whatever your `DatabaseConfiguration` says : your
-  migrations must run on SQLite. Migrations written with the `Plan` API do ; a
+  migrations must run on SQLite. Migrations written with the `Plan` API do, column changes included
+  (see [SQLite and table rebuilds](./17-migrations.md#sqlite-and-table-rebuilds)) ; a
   [raw SQL migration](./17-migrations.md#raw-sql-migrations) must use SQL that SQLite understands.
 - Only the database is reset. Any other component you set in a test stays set for the next tests of
   the same process : put it back in `tearDown()` (see

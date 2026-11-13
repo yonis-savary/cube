@@ -84,7 +84,9 @@ Each migration goes through two steps
    renaming a table onto an existing one. Any of those — or any other exception thrown by `up()` —
    stops the migration before anything is applied.
 2. **Transaction.** `up()` is called again with the plan of your driver, inside
-   `Database::transaction()`. The migration is recorded as done only when it succeeds.
+   `Plan::transaction()` — `Database::transaction()`, with foreign keys handled around it on SQLite
+   (see [SQLite and table rebuilds](#sqlite-and-table-rebuilds)). The migration is recorded as done
+   only when it succeeds.
 
 The `Database` given to `up()` is the real connection : use it for data you insert along with the
 schema. Its queries are no-ops during the dry run
@@ -142,9 +144,45 @@ throws a `RuntimeException` naming it.
 On MySQL and PostgreSQL, `dropTable()`, `dropColumn()`, `dropConstraint()` and `alterColumn()` throw
 a `RuntimeException` when the table or the column does not exist.
 
-SQLite cannot change a column once it exists : on SQLite, `alterColumn()`, `addForeignKey()` and
-`addUniqueIndex()` only log a warning, and `addColumn()` adds the column without its `unique()` or
-foreign key constraint. Declare those in `create()`, or rebuild the table.
+Like MySQL's `MODIFY`, `alterColumn()` keeps the column's existing uniqueness and foreign key when
+`$newProperties` does not repeat them.
+
+## SQLite and table rebuilds
+
+SQLite can add, rename and drop a plain column in place, but cannot change one or add a constraint to
+an existing table. For those, the SQLite plan rebuilds the table, as SQLite recommends : it creates a
+copy with the new definition, copies the rows, drops the original and renames the copy into place.
+Your migration stays the one you write for MySQL or PostgreSQL
+
+```php
+public function up(Plan $plan, Database $database)
+{
+    // Rebuilds the table on SQLite, a plain ALTER TABLE elsewhere
+    $plan->alterColumn('product', 'label', ModelField::string('label', 200)->notNull());
+}
+```
+
+| Method | On SQLite |
+|---|---|
+| `alterColumn()` | rebuilds the table, after a native rename when the name changes |
+| `addForeignKey()` | rebuilds the table |
+| `addColumn()` | adds in place, rebuilds for a `unique()` or primary key column, a `defaultExpression()`, a `notNull()` column without default, a foreign key column with a default |
+| `dropColumn()` | rebuilds the table, and drops the indexes on that column |
+| `dropConstraint()` | drops the index of that name, or rebuilds the table without the `CONSTRAINT <name>` it declares — a `RuntimeException` otherwise |
+
+A rebuild keeps the rows, the auto-increment sequence, the indexes, the triggers, the other
+definitions of the table as they were written (checks, collations, generated columns,
+`WITHOUT ROWID`), and the foreign keys of other tables pointing to it.
+
+Rebuilding a table referenced by other ones with foreign keys enforced would cascade its deletion to
+their rows, and SQLite ignores `PRAGMA foreign_keys` inside a transaction. So, on SQLite, a migration
+switches foreign keys off before its transaction starts, runs `PRAGMA foreign_key_check` before
+committing — any row left referencing a missing one fails the migration — and switches them back on.
+A rebuild requested outside of a migration does the same on its own, and throws a `RuntimeException`
+when it is requested inside a transaction you opened with foreign keys on.
+
+Names MySQL generates, such as a foreign key's `customer_order_ibfk_1`, do not exist on SQLite :
+`dropConstraint()` with such a name fails there.
 
 ## Describing columns
 
