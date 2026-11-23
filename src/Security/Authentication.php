@@ -11,6 +11,7 @@ use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Security\Authentication\Events\LoggedInUser;
 use Cube\Security\Authentication\Events\LoggedOutUser;
+use Cube\Security\Authentication\VerifiesCredentials;
 
 class Authentication
 {
@@ -31,6 +32,9 @@ class Authentication
 
     public function attempt(string $login, #[\SensitiveParameter] ?string $userPassword = null): bool
     {
+        if (!$this->provider instanceof VerifiesCredentials)
+            throw new \RuntimeException(sprintf('%s cannot verify credentials : attempt() needs a provider implementing %s', $this->provider::class, VerifiesCredentials::class));
+
         $this->resetSession();
 
         if (!$user = $this->provider->attempt($login, $userPassword)) {

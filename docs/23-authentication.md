@@ -3,8 +3,10 @@
 # Authentication
 
 The `Authentication` component answers one question — who is making this request — and keeps the
-answer in a session scoped to itself. It does not know how credentials are checked : that is an
-`AuthenticationProvider`, and `PasswordAuthentication` is the one shipped with Cube.
+answer in a session scoped to itself. It does not know where users are stored nor how credentials
+are checked : that is an `AuthenticationProvider`. Cube ships two, `PasswordAuthentication` for a
+login form and `ModelAuthentication` for applications whose users sign in through
+[single sign-on](./26-single-sign-on.md).
 
 Declare the provider in your `cube.php`
 
@@ -56,7 +58,7 @@ from the database (`User::find($auth->userId())`), not from `user()`.
 
 | Method | Does |
 |---|---|
-| `attempt(string $login, ?string $password = null)` | checks credentials through the provider and opens the session, `false` when rejected |
+| `attempt(string $login, ?string $password = null)` | checks credentials through the provider and opens the session, `false` when rejected. Throws a `RuntimeException` when the provider does not implement `VerifiesCredentials` |
 | `login(Model $user)` | opens the session for a user you already have |
 | `loginById(mixed $id)` | loads the user through the provider, then logs them in. `false` when the provider finds nobody |
 | `logout()` | closes the session, does nothing when nobody is logged in |
@@ -128,13 +130,27 @@ not tell whether a login exists.
 The models `attempt()` and `userById()` return come without their `passwordField` and `saltField`, the
 fields `getCredentialFields()` names. Use `find()` when you need those columns.
 
-### Your own provider
+## Without passwords
 
-Implement `AuthenticationProvider` — three methods — and pass it to the configuration instead. This is
-the way in for an LDAP directory, an API token, or a single sign-on.
+`ModelAuthentication` finds users by primary key and checks nothing. Use it when users sign in
+through [single sign-on](./26-single-sign-on.md), a magic link, or any check of your own followed
+by `login()`
 
 ```php
-class TokenAuthentication implements AuthenticationProvider
+new AuthenticationConfiguration(new ModelAuthentication(User::class))
+```
+
+`login()`, `loginById()` and [Remember me](./25-remember-me.md) work as usual. `attempt()` throws a
+`RuntimeException`, since there is no credential to check.
+
+### Your own provider
+
+Implement `AuthenticationProvider` and pass it to the configuration instead. Add
+`VerifiesCredentials` when it can check an identifier and a secret, which is what `attempt()` needs.
+This is the way in for an LDAP directory or an API token.
+
+```php
+class TokenAuthentication implements AuthenticationProvider, VerifiesCredentials
 {
     public function attempt(string $identifier, ?string $password = null): Model|false
     {
@@ -216,12 +232,15 @@ FailedAuthentication::on(function (FailedAuthentication $event) {
 
 | Option of `AuthenticationConfiguration` | Default | Does |
 |---|---|---|
-| `provider` | none, required | the `AuthenticationProvider` checking credentials |
+| `provider` | none, required | the `AuthenticationProvider` finding users |
 
 | Method of `AuthenticationProvider` | Returns |
 |---|---|
-| `attempt(string $identifier, ?string $password = null)` | the user `Model`, or `false` when the credentials are rejected |
 | `userById(mixed $id)` | the user `Model`, or `false` when nobody has that id |
 | `getCredentialFields()` | the fields `login()` keeps out of the session, `[]` when there are none |
+
+| Method of `VerifiesCredentials` | Returns |
+|---|---|
+| `attempt(string $identifier, ?string $password = null)` | the user `Model`, or `false` when the credentials are rejected |
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./22-sessions.md">Previous : Sessions</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./24-user-component.md">Next : User component</a></div></td></tr></table>

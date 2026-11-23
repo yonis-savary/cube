@@ -10,6 +10,7 @@ use Cube\Security\Authentication\Events\AuthenticatedUser;
 use Cube\Security\Authentication\Events\FailedAuthentication;
 use Cube\Security\Authentication\Events\LoggedInUser;
 use Cube\Security\Authentication\Events\LoggedOutUser;
+use Cube\Security\Authentication\ModelAuthentication;
 use Cube\Security\Authentication\PasswordAuthentication;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Models\User;
@@ -292,6 +293,34 @@ class AuthenticationTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         new PasswordAuthentication(\stdClass::class, 'login', 'password');
+    }
+
+    /** An application signing users in through single sign-on only has no password to check. */
+    public function testAModelProviderLogsUsersInById()
+    {
+        $authentication = new Authentication(new AuthenticationConfiguration(new ModelAuthentication(User::class)));
+        $id = User::findWhere(['login' => 'alice'])->id();
+
+        $this->assertTrue($authentication->loginById($id));
+        $this->assertEquals('alice', $authentication->user()->login);
+        $this->assertFalse($authentication->loginById(404));
+    }
+
+    public function testAProviderThatCannotVerifyCredentialsCannotAttempt()
+    {
+        $authentication = new Authentication(new AuthenticationConfiguration(new ModelAuthentication(User::class)));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(ModelAuthentication::class);
+
+        $authentication->attempt('alice', 'correct-horse');
+    }
+
+    public function testAModelProviderMustBeGivenAModelClass()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new ModelAuthentication(\stdClass::class);
     }
 
     protected function timeOf(callable $callback): float

@@ -122,7 +122,8 @@ the IDE cannot help with a name.
 | `CORSConfiguration(allowedOrigins:, allowHeaders:, allowCredentials:, maxAge:)` | CORS answers |
 | `CacheConfiguration(driver)` | the default `Cache` driver |
 | `SessionConfiguration(namespace:, driver:)` | the session driver |
-| `AuthenticationConfiguration(provider)` | the `Authentication` provider |
+| `AuthenticationConfiguration(provider)` | the `Authentication` provider : `PasswordAuthentication`, or `ModelAuthentication` without passwords |
+| `SingleSignOnConfiguration(...$providers)` | the single sign-on providers (`OpenIDConnectProvider`, `OpenIDConnectProvider::google()`, any `IdentityProvider`) |
 | `UserRegisterConfiguration(...)` | the remember-me cookie |
 | `OpenAPIConfiguration(outputFile:, title:, version:, authenticationScheme:)` | the generated OpenAPI document |
 | `WebsocketConfiguration(...)`, `BroadcastConfiguration(...)` | the websocket server and its broadcast client |
