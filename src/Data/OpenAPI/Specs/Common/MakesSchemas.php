@@ -9,6 +9,7 @@ use Cube\Data\Models\ModelField;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Request;
+use Cube\Web\Http\RequestSource;
 use Cube\Web\Http\Rules\AnyParam;
 use Cube\Web\Http\Rules\ArrayParam;
 use Cube\Web\Http\Rules\ObjectParam;
@@ -112,6 +113,7 @@ trait MakesSchemas
             'date-time' => ['type' => 'string', 'anyOf' => [['pattern' => Route::SLUG_FORMATS['datetime']], ['format' => 'date-time']]],
             'hex' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
             'uuid' => ['type' => 'string', 'format' => 'uuid'],
+            'base64' => ['type' => 'string', 'contentEncoding' => 'base64'],
         };
     }
 
@@ -200,15 +202,27 @@ trait MakesSchemas
 
     protected function getRequestRules(Route $route): ?Rule
     {
+        if (!$request = $this->getRequestOf($route))
+            return null;
+        $rules = $request->getObjectParam();
+
+        return $rules instanceof AnyParam ? null : $rules;
+    }
+
+    protected function getRequestSource(Route $route): RequestSource
+    {
+        return $this->getRequestOf($route)?->getValidatedSource() ?? RequestSource::Merged;
+    }
+
+    private function getRequestOf(Route $route): ?Request
+    {
         $requestParameter = $route->getReflectionMethod()->getParameters()[0] ?? null;
         if (!$requestParameter)
             return null;
         $requestType = $this->getReflectionTypeName($requestParameter->getType());
         if (!$requestType || !Autoloader::extends($requestType, Request::class))
             return null;
-        /** @var class-string<Request> $requestType */
-        $rules = (new $requestType())->getObjectParam();
-        return $rules instanceof AnyParam ? null : $rules;
+        return new $requestType();
     }
 
     protected function getReflectionTypeName(\ReflectionIntersectionType|\ReflectionNamedType|\ReflectionUnionType|null $type): ?string

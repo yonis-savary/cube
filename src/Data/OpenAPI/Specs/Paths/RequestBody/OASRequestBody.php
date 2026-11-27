@@ -6,6 +6,7 @@ use Cube\Data\AutoDataToObject;
 use Cube\Data\OpenAPI\Attributes\RawBody;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
+use Cube\Web\Http\RequestSource;
 use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Router\Route;
 
@@ -33,6 +34,10 @@ class OASRequestBody extends AutoDataToObject
     {
         if ($rawBody = $route->getReflectionMethod()->getAttributes(RawBody::class)[0] ?? null) {
             $this->processRawBody($rawBody->newInstance());
+            return;
+        }
+        if (RequestSource::RawBody === $this->getRequestSource($route)) {
+            $this->processRawBody(new RawBody());
             return;
         }
 

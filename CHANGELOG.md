@@ -144,6 +144,11 @@ change it asks from your application.
 - `HttpClient::withPublicOnly()` (or `isPublicOnly()` overridden) refuses any host resolving to an
   address that is not public, with a `NonPublicAddressException`, and pins the checked addresses with
   `CURLOPT_RESOLVE`, redirections included. `IpAddress::isPublic()` is the check on its own.
+- `Request::getValidatedSource()` chooses what the rules validate : `RequestSource::Merged` (the query
+  string merged with the body, the default), `Body` (the body alone, a JSON list or scalar included)
+  or `RawBody` (the raw string). `UploadRule::fromBase64()` turns a base64 string or a data URI into an
+  `Upload`, checking a data URI's declared type against the content, and `UploadRule::fromRawBody()`
+  does the same for a raw body. `Upload::fromContent()` builds an upload from bytes.
 - `DatabaseDriver` enum (`SQLite`, `MySQL`, `Postgres`) for `DatabaseConfiguration::$driver` and the
   `Database` constructor, which still take a PDO driver name as a string for a DBMS you add.
   `Database::getDriver()` is now lowercased and trimmed, as its documentation said.

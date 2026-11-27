@@ -4723,12 +4723,6 @@ parameters:
 			path: src/Web/Http/Request.php
 
 		-
-			message: '#^Method Cube\\Web\\Http\\Request\:\:getBodyMergedWithUpload\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Web/Http/Request.php
-
-		-
 			message: '#^Method Cube\\Web\\Http\\Request\:\:getCookies\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -5085,7 +5079,7 @@ parameters:
 		-
 			message: '#^Unsafe usage of new static\(\)\.$#'
 			identifier: new.static
-			count: 1
+			count: 2
 			path: src/Web/Http/Upload.php
 
 		-

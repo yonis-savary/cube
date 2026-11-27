@@ -433,7 +433,11 @@ class StoreProductRequest extends Request
 ```
 
 Read the coerced values with `$request->validated()` (or `validated('name')`). The controller never
-re-checks what the rules already guarantee. Use named arguments on `Param` factories : their
+re-checks what the rules already guarantee. The rules see the query string merged with the body (the
+query string wins a shared key) : override `getValidatedSource()` to return `RequestSource::Body`
+(the body alone, a JSON list or scalar included) or `RequestSource::RawBody` (the raw string). A file
+in a JSON field is `UploadRule::fromBase64()` (base64 or data URI), a file sent as the body is
+`UploadRule::fromRawBody()` : both give an `Upload`, like a multipart file. Use named arguments on `Param` factories : their
 boolean parameters are unreadable otherwise.
 
 ## Shaping responses with resources

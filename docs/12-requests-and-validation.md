@@ -172,6 +172,8 @@ before it : **use named arguments**, `Param::string(nullable: true)` reads where
 | `Param::model(string $modelClass, ?string $column = null, bool $nullable = false, array $with = [])` | a value that exists in `$column` (the primary key by default), **replaced by the model** |
 | `Param::exists(string $modelClass, ?string $column = null, bool $nullable = false)` | a value that exists in `$column`, kept as is |
 | `UploadRule::new(bool $nullable = false, bool $rejectUploadsWithErrors = true)` | an uploaded file, see [Uploads](#uploads) |
+| `UploadRule::fromBase64(bool $nullable = false)` | a file sent as a base64 string or a data URI, **replaced by an `Upload`**, see [Files sent in base64](#files-sent-in-base64) |
+| `UploadRule::fromRawBody(bool $nullable = false)` | the raw body, **replaced by an `Upload`**, see [A raw body](#a-raw-body) |
 
 A plain array in place of a rule is read as `Param::object()` of that array
 
@@ -260,6 +262,39 @@ class WriteProductsRequest extends Request
 }
 ```
 
+By default the rules see the query string merged with the body, which mixes the two : a list body
+gets the query parameters added to it. To validate the body alone, see the next section.
+
+### Choosing what the rules validate
+
+`getValidatedSource()` tells what `getRules()` is checked against. Override it in your `Request`
+subclass
+
+```php
+class DeleteProductsRequest extends Request
+{
+    public function getValidatedSource(): RequestSource
+    {
+        return RequestSource::Body;
+    }
+
+    public function getRules(): Rule
+    {
+        return Param::array(Param::integer()); // the body is [12, 15, 18]
+    }
+}
+```
+
+| `RequestSource` | The rules validate |
+|---|---|
+| `Merged` (default) | the query string merged with the parsed body and the uploads ; **the query string wins** a key both hold |
+| `Body` | the body as sent : a JSON object, list or scalar, or the form fields, with the uploads — never the query string |
+| `RawBody` | the body as a raw string, whatever its content type : for a file sent as is, see [A raw body](#a-raw-body) |
+
+Prefer `Body` for anything a client should not be able to change from the URL : with `Merged`,
+`POST /pay?amount=1` replaces the `amount` of the JSON body. On a `Body` or `RawBody` request,
+`validated('key')` throws an `InvalidArgumentException` when the body is not an object.
+
 ### Validating by hand
 
 When you need the errors rather than a `422`, take a plain `Request` and validate it yourself :
@@ -341,5 +376,66 @@ public static function uploadDocument(StoreDocumentRequest $request)
 
 `move()` defaults to the `Uploads` directory of your `Storage` and a generated name ; a string
 destination is a directory inside your `Storage`. It refuses to overwrite an existing file.
+
+### Files sent in base64
+
+A JSON client often sends a file as a base64 string. `UploadRule::fromBase64()` decodes it into an
+`Upload`, so the checks and `move()` work exactly as for a multipart file
+
+```php
+class StoreAvatarRequest extends Request
+{
+    public function getRules(): array
+    {
+        return [
+            'avatar' => UploadRule::fromBase64()
+                ->withMimeType('image/png')
+                ->withMaxSize(File::MEGABYTES * 2),
+        ];
+    }
+}
+
+// { "avatar": "iVBORw0KGgo..." } or { "avatar": "data:image/png;base64,iVBORw0KGgo..." }
+$request->validated('avatar')->move('avatars', "{$user->id}.png");
+```
+
+| Accepted | Detail |
+|---|---|
+| base64 | the standard alphabet or the URL-safe one (`-`, `_`), with or without `=` padding |
+| a data URI | `data:<type>;base64,<data>` : the declared type must be the one detected from the content, or the value is refused |
+
+The decoded file gets the type detected from its content, and a name made of the input name and the
+matching extension (`base64.png`). `withMaxSize()` applies to the decoded size. The temporary file is
+deleted at the end of the request, unless `move()` took it.
+
+### A raw body
+
+A client can send a file as the body itself (`Content-Type: application/pdf`). Validate the
+`RawBody` with `UploadRule::fromRawBody()`, and `validated()` gives the `Upload`
+
+```php
+class StoreScanRequest extends Request
+{
+    public function getValidatedSource(): RequestSource
+    {
+        return RequestSource::RawBody;
+    }
+
+    public function getRules(): Rule
+    {
+        return UploadRule::fromRawBody()->withMimeType('application/pdf');
+    }
+}
+
+public static function storeScan(StoreScanRequest $request)
+{
+    $path = $request->validated()->move('scans');
+    // ...
+}
+```
+
+An empty body is refused, unless the rule is `nullable`. A body holding a base64 file validates the
+same way with `UploadRule::fromBase64()`, and any other rule (`Param::string()`, your own checks)
+receives the raw string.
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./11-routing-and-middlewares.md">Previous : Routing and middlewares</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./13-controllers-and-responses.md">Next : Controllers and responses</a></div></td></tr></table>

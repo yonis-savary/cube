@@ -57,8 +57,10 @@ method to document : it is skipped too, with a warning in the generation logs.
 |---|---|
 | a slug `{product}` | a path parameter, typed from the callback parameter at the same position (the first one after the request) — a model gives the type of its primary key |
 | a typed slug `{int:id}` | a path parameter of that type (`int`, `float`, `date`, `time`, `datetime`, `hex`, `uuid`, or your regex as a `pattern`) |
-| a `Request` subclass with `getRules()`, on `GET` / `DELETE` | one query parameter per rule |
-| a `Request` subclass with `getRules()`, on `POST` / `PUT` / `PATCH` | a required JSON request body |
+| a `Request` subclass with `getRules()`, on `GET` / `DELETE` | one query parameter per rule, unless it validates `RequestSource::Body` or `RawBody` |
+| a `Request` subclass with `getRules()`, on `POST` / `PUT` / `PATCH` | a required JSON request body, a list or a scalar too when it validates `RequestSource::Body` |
+| a `Request` validating `RequestSource::RawBody`, on `POST` / `PUT` / `PATCH` | a required binary request body |
+| `UploadRule::fromBase64()` | a string with `contentEncoding: base64` |
 | `#[RawBody]`, on `POST` / `PUT` / `PATCH` | a required binary request body, see [Receiving a raw body](#receiving-a-raw-body) |
 | the same `Request` subclass | a `422` response, its body described by the shared `ValidationErrors` schema |
 | a slug received as a model (`Product $product`) | a `404` response |

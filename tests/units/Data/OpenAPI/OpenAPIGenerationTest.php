@@ -11,6 +11,7 @@ use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
 use Cube\Env\Configuration;
 use Cube\Env\Storage;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\BodyController;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\DocumentedController;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\SampleController;
 use Cube\Tests\Units\Data\OpenAPI\Middlewares\RequiresAnApiKey;
@@ -370,6 +371,48 @@ class OpenAPIGenerationTest extends TestCase
         $router->addRoutes($route);
 
         return $this->generateAsArray($router)['paths'][$path]['get']['responses'];
+    }
+
+    public function testABase64FileIsAStringCarryingItsEncoding()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/avatar', [BodyController::class, 'storeAvatar']));
+
+        $schema = $this->generateAsArray($router)['paths']['/avatar']['post']['requestBody']['content']['application/json']['schema'];
+
+        $this->assertEquals(['type' => 'string', 'contentEncoding' => 'base64'], $schema['properties']['avatar']);
+    }
+
+    public function testABodySourceDescribesAListBody()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/many', [BodyController::class, 'deleteMany']));
+
+        $schema = $this->generateAsArray($router)['paths']['/many']['post']['requestBody']['content']['application/json']['schema'];
+
+        $this->assertEquals('array', $schema['type']);
+        $this->assertEquals('integer', $schema['items']['type']);
+    }
+
+    /** Rules validating the body are no query parameters, even on a GET. */
+    public function testABodySourceGivesNoQueryParameter()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get('/search', [BodyController::class, 'searchByIds']));
+
+        $operation = $this->generateAsArray($router)['paths']['/search']['get'];
+
+        $this->assertEmpty(array_filter($operation['parameters'] ?? [], fn ($parameter) => 'query' === $parameter['in']));
+    }
+
+    public function testARawBodySourceIsABinaryBody()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/document', [BodyController::class, 'storeDocument']));
+
+        $body = $this->generateAsArray($router)['paths']['/document']['post']['requestBody'];
+
+        $this->assertEquals(['type' => 'string', 'format' => 'binary'], $body['content']['application/octet-stream']['schema']);
     }
 
     public function testRawFileResponseGeneration()
