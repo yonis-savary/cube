@@ -2,7 +2,7 @@
 
 # Introduction
 
-Cube is a back-end web framework for PHP 8.5, installed as a composer library : routing, request
+Cube is a back-end web framework for PHP 8.6, installed as a composer library : routing, request
 validation, models and migrations, commands, queues, scheduling and websockets, with no front-end
 layer on top.
 

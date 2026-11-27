@@ -1,6 +1,6 @@
 {
     "name": "yonis-savary/cube",
-    "description": "Back-end web framework for PHP 8.5+",
+    "description": "Back-end web framework for PHP 8.6+",
     "keywords": ["php", "web", "framework", "backend"],
     "type": "library",
     "license": "MIT",
@@ -26,7 +26,7 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": "^8.5",
+        "php": "^8.6",
         "psr/log": "^3.0.2",
         "symfony/process": "^7.4",
         "cboden/ratchet": "^0.4.4",

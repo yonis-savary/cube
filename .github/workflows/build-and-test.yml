@@ -27,8 +27,9 @@ jobs:
           # Without it, an extension that cannot be installed is only a warning
           fail-fast: true
         with:
-          php-version: '8.5'
-          extensions: pdo_mysql, pdo_pgsql, pdo_sqlite, redis, curl, pcntl
+          php-version: '8.6'
+          # TODO(yonis-savary): back to plain `redis` once phpredis ships a stable release building on PHP 8.6
+          extensions: pdo_mysql, pdo_pgsql, pdo_sqlite, redis-6.4.0RC1, curl, pcntl
           # The runner's redis package depends on apcu, which setup-php loads with apc.enable_cli off
           ini-values: apc.enable_cli=1
           coverage: none

@@ -2,7 +2,7 @@
 
 # Installation
 
-Cube is a composer library (`yonis-savary/cube`, PHP 8.5 or later) : you install it, copy its server
+Cube is a composer library (`yonis-savary/cube`, PHP 8.6 or later) : you install it, copy its server
 files at the root of your project, and declare your application in `cube.php`.
 
 Here is the whole setup
