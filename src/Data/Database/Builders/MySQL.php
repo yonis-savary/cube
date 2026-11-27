@@ -3,13 +3,14 @@
 namespace Cube\Data\Database\Builders;
 
 use Cube\Data\Bunch;
+use Cube\Data\Database\DatabaseDriver;
 use Cube\Data\Database\Query\UpdateField;
 
 class MySQL extends QueryBuilder
 {
     public static function supports(string $pdoDriver): bool
     {
-        return 'mysql' === $pdoDriver;
+        return DatabaseDriver::MySQL->value === $pdoDriver;
     }
 
     public function getIdentifierDelimiters(): array

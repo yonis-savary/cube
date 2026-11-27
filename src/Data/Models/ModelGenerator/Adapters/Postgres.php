@@ -3,13 +3,14 @@
 namespace Cube\Data\Models\ModelGenerator\Adapters;
 
 use Cube\Data\Bunch;
+use Cube\Data\Database\DatabaseDriver;
 use Cube\Data\Models\ModelField;
 
 class Postgres extends DatabaseAdapter
 {
     public static function supports(string $driver): bool
     {
-        return 'pgsql' === $driver;
+        return DatabaseDriver::Postgres->value === $driver;
     }
 
     protected function listTables(): array

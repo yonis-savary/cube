@@ -46,7 +46,7 @@ return [
     new Applications('App'),
 
     new DatabaseConfiguration(
-        driver: 'mysql',
+        driver: DatabaseDriver::MySQL,
         database: env('DB_NAME'),
         host: env('DB_HOST'),
         port: (int) env('DB_PORT', 3306),
@@ -119,7 +119,7 @@ the IDE cannot help with a name.
 |---|---|
 | `Applications(...$paths)` | the application directories to load |
 | `AutoloaderConfiguration(cached:, displayErrors:)` | class index caching (on in production) and error display (on in debug) |
-| `DatabaseConfiguration(driver:, database:, host:, port:, user:, password:, keepAliveInterval:)` | the SQL connection (`sqlite`, `mysql`, `pgsql`) ; `websocket:serve` and `cube:queue` check it every `keepAliveInterval` seconds and reconnect |
+| `DatabaseConfiguration(driver:, database:, host:, port:, user:, password:, keepAliveInterval:)` | the SQL connection : `DatabaseDriver::SQLite` / `MySQL` / `Postgres` (or a PDO driver name for a DBMS you add) ; `websocket:serve` and `cube:queue` check it every `keepAliveInterval` seconds and reconnect |
 | `MigrationManagerConfiguration(tableName:, directoryName:)` | the migrations table and directory |
 | `DateTimeConfiguration(outputFormat:)` | how `toArray()` and JSON responses write a `DATETIME`/`TIMESTAMP` or a `DateTime` (ATOM by default) |
 | `RouterConfiguration(cached:, loadControllers:, loadRoutesFiles:, apis:, commonMiddlewares:, commonPrefix:, securityHeaders:)` | routing, global middlewares, extra `WebAPI`s such as a `StaticServer` |

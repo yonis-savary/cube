@@ -4,6 +4,7 @@ namespace Cube\Test;
 
 use Cube\Core\Component;
 use Cube\Data\Database\Database;
+use Cube\Data\Database\DatabaseDriver;
 use Cube\Data\Database\Migration\MigrationManagerConfiguration;
 use Cube\Data\Database\MigrationManager;
 use Cube\Env\Configuration;
@@ -83,7 +84,7 @@ class TestContext
 
     public function createEmptyApplicationDatabase(): Database
     {
-        $database = new Database('sqlite', uniqid('app-db-'));
+        $database = new Database(DatabaseDriver::SQLite, uniqid('app-db-'));
 
         $database->asGlobalInstance(function () use ($database) {
             $config = MigrationManagerConfiguration::resolve(Configuration::getInstance());
@@ -103,7 +104,7 @@ class TestContext
         $newDatabasePath = Storage::getInstance()->path(uniqid('testdb', true));
         copy($path, $newDatabasePath);
 
-        $newDatabase = new Database('sqlite', $newDatabasePath);
+        $newDatabase = new Database(DatabaseDriver::SQLite, $newDatabasePath);
         $this->database = $newDatabase;
         Database::setInstance($this->database);
     }

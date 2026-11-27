@@ -144,6 +144,9 @@ change it asks from your application.
 - `HttpClient::withPublicOnly()` (or `isPublicOnly()` overridden) refuses any host resolving to an
   address that is not public, with a `NonPublicAddressException`, and pins the checked addresses with
   `CURLOPT_RESOLVE`, redirections included. `IpAddress::isPublic()` is the check on its own.
+- `DatabaseDriver` enum (`SQLite`, `MySQL`, `Postgres`) for `DatabaseConfiguration::$driver` and the
+  `Database` constructor, which still take a PDO driver name as a string for a DBMS you add.
+  `Database::getDriver()` is now lowercased and trimmed, as its documentation said.
 - `websocket:serve` and `cube:queue` check the database connection every
   `DatabaseConfiguration::$keepAliveInterval` seconds (300 by default) and reconnect when the server
   closed it. `Database::ping()`, `reconnect()` and `keepAlive()` do the same in your own processes.

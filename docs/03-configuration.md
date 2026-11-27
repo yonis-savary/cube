@@ -14,7 +14,7 @@ return [
     new Applications('App'),
 
     new DatabaseConfiguration(
-        driver: 'mysql',
+        driver: DatabaseDriver::MySQL,
         database: env('DB_NAME'),
         host: env('DB_HOST'),
         port: (int) env('DB_PORT', 3306),
@@ -48,7 +48,7 @@ $database->driver; // 'mysql'
 | Step | Returns |
 |---|---|
 | the element is in your configuration | that element |
-| a default is passed : `resolve(default: new DatabaseConfiguration('sqlite'))` | the given default |
+| a default is passed : `resolve(default: new DatabaseConfiguration(DatabaseDriver::SQLite))` | the given default |
 | otherwise | `new static()`, the element with its constructor defaults |
 
 Its first parameter is the `Configuration` to read from, the global one when `null` : pass your own
@@ -73,7 +73,7 @@ one. Elements are added in the order they are listed, so the last one wins.
 
 ```php
 return [
-    new DatabaseConfiguration('sqlite', 'database.sqlite'),
+    new DatabaseConfiguration(DatabaseDriver::SQLite, 'database.sqlite'),
 
     // Replaces the sqlite configuration when Config/production.php declares a DatabaseConfiguration
     new Import('Config/production.php'),
@@ -104,7 +104,7 @@ return [
 [Installation](./02-installation.md#the-env-file)). Call it from your configuration files only
 
 ```php
-new DatabaseConfiguration('sqlite', env('DB_FILENAME', 'database.sqlite')),
+new DatabaseConfiguration(DatabaseDriver::SQLite, env('DB_FILENAME', 'database.sqlite')),
 ```
 
 Once the configuration is cached, `cube.php` is no longer read : the values `env()` returned are
@@ -186,7 +186,7 @@ readable by your application only. See [Deployment](./36-deployment.md) for the 
 |---|---|---|
 | `Applications(...$paths)` | `'App'` when no path is given | the application directories to load, see [Applications and discovery](./04-applications-and-discovery.md) |
 | `AutoloaderConfiguration` | `cached` (`isProduction()`), `displayErrors` (`isDebug()`) | the cache of class discovery and PHP error display, see [Deployment](./36-deployment.md) |
-| `DatabaseConfiguration` | `driver` (`'sqlite'`), `database` (`'db.sqlite'`), `host`, `port`, `user`, `password`, `keepAliveInterval` (`300`) | the SQL connection : `sqlite`, `mysql`, `pgsql`, see [Database and queries](./16-database-and-queries.md) |
+| `DatabaseConfiguration` | `driver` (`DatabaseDriver::SQLite`, or a PDO driver name), `database` (`'db.sqlite'`), `host`, `port`, `user`, `password`, `keepAliveInterval` (`300`) | the SQL connection : `sqlite`, `mysql`, `pgsql`, see [Database and queries](./16-database-and-queries.md) |
 | `DateTimeConfiguration` | `outputFormat` (`DATE_ATOM`) | how models and JSON responses write a date with a time, see [Models](./18-models.md) |
 | `MigrationManagerConfiguration` | `tableName` (`'__cube_migration'`), `directoryName` (`'Migrations'`) | the table recording migrations and their directory in each application, see [Migrations](./17-migrations.md) |
 | `RouterConfiguration` | `cached` (`false`), `loadControllers` (`true`), `loadRoutesFiles` (`true`), `apis` (`[]`), `commonMiddlewares` (`[]`), `commonPrefix` (`'/'`), `securityHeaders` (`[]`) | routing, global middlewares and extra `WebAPI`s, see [Routing and middlewares](./11-routing-and-middlewares.md) |

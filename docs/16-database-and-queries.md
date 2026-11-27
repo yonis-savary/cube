@@ -25,7 +25,7 @@ Declare a `DatabaseConfiguration` in your `cube.php`
 
 ```php
 new DatabaseConfiguration(
-    driver: 'mysql',
+    driver: DatabaseDriver::MySQL,
     database: env('DB_NAME', 'app'),
     host: env('DB_HOST', '127.0.0.1'),
     port: 3306,
@@ -34,11 +34,15 @@ new DatabaseConfiguration(
 )
 ```
 
-| Driver | DBMS |
-|--------|------|
-| `sqlite` | SQLite — `database` is a path inside your `Storage`, an empty string gives an in-memory database |
-| `mysql` | MySQL, MariaDB |
-| `pgsql` | PostgreSQL |
+| Driver | PDO name | DBMS |
+|--------|----------|------|
+| `DatabaseDriver::SQLite` | `sqlite` | SQLite — `database` is a path inside your `Storage`, an empty string gives an in-memory database |
+| `DatabaseDriver::MySQL` | `mysql` | MySQL, MariaDB |
+| `DatabaseDriver::Postgres` | `pgsql` | PostgreSQL |
+
+`driver` also takes the PDO name as a string (`'mysql'`), lowercased and trimmed : that is the way in
+for a DBMS you [support yourself](#supporting-another-dbms), which has no `DatabaseDriver` case. Prefer
+the enum for the drivers Cube ships, your IDE completes it and a typo cannot reach production.
 
 Without any `DatabaseConfiguration`, Cube uses SQLite on `Storage/db.sqlite`. A SQLite connection
 runs `PRAGMA foreign_keys = ON` when it opens, so its foreign keys are enforced.
@@ -61,7 +65,7 @@ every query after that fails. `websocket:serve` and `cube:queue` check the globa
 
 ```php
 new DatabaseConfiguration(
-    driver: 'mysql',
+    driver: DatabaseDriver::MySQL,
     // ...
     keepAliveInterval: 60, // 0 never checks
 )
@@ -161,7 +165,7 @@ Bunch::fromQuery('SELECT id FROM product', [], null, 'id'); // Bunch of ids
 ## Inspecting the connection
 
 ```php
-$database->getDriver();        // 'mysql', 'pgsql' or 'sqlite'
+$database->getDriver();        // the PDO name : 'mysql', 'pgsql', 'sqlite' (compare with DatabaseDriver::MySQL->value)
 $database->getDatabase();      // database name (null for an in-memory SQLite)
 $database->getHost();
 $database->getPort();
@@ -402,7 +406,8 @@ $total = Product::select()->count($otherDatabase);
 ## Supporting another DBMS
 
 A driver is one class extending `QueryBuilder`, which already renders standard SQL : the driver
-declares what it supports and how it quotes identifiers
+declares what it supports and how it quotes identifiers. It answers for a PDO driver name, so it
+needs no `DatabaseDriver` case : configure it with that name as a string (`driver: 'oci'`)
 
 ```php
 class Oracle extends QueryBuilder

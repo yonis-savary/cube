@@ -3,6 +3,7 @@
 namespace Cube\Tests\Units\Database\Classes;
 
 use Cube\Data\Database\Database;
+use Cube\Data\Database\DatabaseDriver;
 use Cube\Tests\Units\Database\DatabaseProvider;
 use Cube\Tests\Units\Database\Providers\MySQLProvider;
 use Cube\Tests\Units\Database\Providers\PostgresProvider;
@@ -20,8 +21,8 @@ trait LosesItsConnection
         $name = $provider->getEmptyDatabase()->getDatabase();
 
         return match (true) {
-            $provider instanceof MySQLProvider => new Database('mysql', $name, '127.0.0.1', (int) env('CUBE_TEST_MYSQL_PORT', 9901), 'root', env('CUBE_TEST_DATABASE_PASSWORD', 'root')),
-            $provider instanceof PostgresProvider => new Database('pgsql', $name, '127.0.0.1', (int) env('CUBE_TEST_POSTGRES_PORT', 9902), 'postgres', env('CUBE_TEST_DATABASE_PASSWORD', 'root')),
+            $provider instanceof MySQLProvider => new Database(DatabaseDriver::MySQL, $name, '127.0.0.1', (int) env('CUBE_TEST_MYSQL_PORT', 9901), 'root', env('CUBE_TEST_DATABASE_PASSWORD', 'root')),
+            $provider instanceof PostgresProvider => new Database(DatabaseDriver::Postgres, $name, '127.0.0.1', (int) env('CUBE_TEST_POSTGRES_PORT', 9902), 'postgres', env('CUBE_TEST_DATABASE_PASSWORD', 'root')),
         };
     }
 
@@ -29,9 +30,9 @@ trait LosesItsConnection
     {
         $other = $provider->getConnection();
 
-        match ($database->getDriver()) {
-            'mysql' => $other->exec('KILL '.(int) $database->query('SELECT CONNECTION_ID() AS id')[0]['id']),
-            'pgsql' => $other->query('SELECT pg_terminate_backend('.(int) $database->query('SELECT pg_backend_pid() AS pid')[0]['pid'].')'),
+        match (DatabaseDriver::from($database->getDriver())) {
+            DatabaseDriver::MySQL => $other->exec('KILL '.(int) $database->query('SELECT CONNECTION_ID() AS id')[0]['id']),
+            DatabaseDriver::Postgres => $other->query('SELECT pg_terminate_backend('.(int) $database->query('SELECT pg_backend_pid() AS pid')[0]['pid'].')'),
         };
     }
 

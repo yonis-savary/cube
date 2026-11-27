@@ -13,6 +13,7 @@ class Database
 {
     use Component;
 
+    protected string $driver;
     protected \PDO $connection;
     protected \PDOStatement $lastStatement;
 
@@ -20,7 +21,7 @@ class Database
     protected bool $builtFromConnection = false;
 
     public function __construct(
-        protected string $driver = 'sqlite',
+        DatabaseDriver|string $driver = DatabaseDriver::SQLite,
         protected ?string $database = null,
         protected ?string $host = null,
         protected ?int $port = null,
@@ -30,15 +31,17 @@ class Database
         protected ?QueryBuilder $queryBuilder = null,
         ?\PDO $connection = null
     ) {
+        $this->driver = $driver instanceof DatabaseDriver ? $driver->value : strtolower(trim($driver));
+
         if ($connection) {
             $this->driver = $connection->getAttribute(\PDO::ATTR_DRIVER_NAME);
             $this->connection = $connection;
             $this->builtFromConnection = true;
 
-            if ('mysql' === $this->driver)
+            if (DatabaseDriver::MySQL->value === $this->driver)
                 self::assertQuotableCharset($connection);
         } else {
-            if ('sqlite' === $driver)
+            if (DatabaseDriver::SQLite->value === $this->driver)
                 $this->database = $database ? Storage::getInstance()->path($database) : null;
 
             $this->connect();
@@ -57,7 +60,7 @@ class Database
 
     protected function connect(): void
     {
-        if ('sqlite' === $this->driver) {
+        if (DatabaseDriver::SQLite->value === $this->driver) {
             $this->connection = new \PDO($this->database ? 'sqlite:'.$this->database : 'sqlite::memory:');
             $this->exec('PRAGMA foreign_keys = ON');
 
@@ -67,7 +70,7 @@ class Database
         $dsn = "{$this->driver}:dbname={$this->database};host={$this->host};port={$this->port}";
         $options = [];
 
-        if ('mysql' === $this->driver) { // Values are escaped with PDO::quote(), whose safety depends on the connection charset
+        if (DatabaseDriver::MySQL->value === $this->driver) { // Values are escaped with PDO::quote(), whose safety depends on the connection charset
             $dsn .= ';charset=utf8mb4';
             $options[Mysql::ATTR_MULTI_STATEMENTS] = false;
         }
@@ -91,7 +94,7 @@ class Database
     {
         if ($this->builtFromConnection)
             throw new \RuntimeException('This database was built from an existing PDO connection : Cube does not know how to open it again');
-        if ('sqlite' === $this->driver && !$this->database)
+        if (DatabaseDriver::SQLite->value === $this->driver && !$this->database)
             throw new \RuntimeException('Reconnecting to an in-memory SQLite database would lose its content');
 
         $this->connect();

@@ -3,6 +3,7 @@
 namespace Cube\Data\Models\ModelGenerator\Adapters;
 
 use Cube\Data\Bunch;
+use Cube\Data\Database\DatabaseDriver;
 use Cube\Data\Models\ModelField;
 
 class SQLite extends DatabaseAdapter
@@ -11,7 +12,7 @@ class SQLite extends DatabaseAdapter
 
     public static function supports(string $driver): bool
     {
-        return 'sqlite' === $driver;
+        return DatabaseDriver::SQLite->value === $driver;
     }
 
     public function process(): void
