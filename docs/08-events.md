@@ -167,7 +167,7 @@ On the `Events` component
 | `PostRouting` | the router answered, before the response is displayed (web entry point only) | `router`, `request`, `response` |
 | `DisplayingResponse` | a response is about to be sent ; preventing it sends nothing | `response` |
 | `PostDeployment` | you dispatch it after a deployment (`php do cube:dispatch --event PostDeployment`) ; Cube empties its class index cache, its remembered routes and the configuration cache | — |
-| `AuthenticatedUser` | a user passed authentication | `authenticatedUser`, `userId` |
+| `AuthenticatedUser` | a session was opened for a user (a bearer token dispatches nothing) | `authenticatedUser`, `userId` |
 | `LoggedInUser` | a user session was opened | `authenticatedUser`, `userId` |
 | `LoggedOutUser` | a user session was closed | `authenticatedUser`, `userId` |
 | `FailedAuthentication` | credentials were rejected | `identifier` (the login tried) |

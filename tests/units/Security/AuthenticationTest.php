@@ -14,6 +14,7 @@ use Cube\Security\Authentication\ModelAuthentication;
 use Cube\Security\Authentication\PasswordAuthentication;
 use Cube\Tests\Units\Database\Providers\SQLiteProvider;
 use Cube\Tests\Units\Models\User;
+use Cube\Tests\Units\Security\Classes\BearerTokenAuthentication;
 use Cube\Tests\Units\Security\Classes\ExposedPasswordAuthentication;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
@@ -360,6 +361,73 @@ class AuthenticationTest extends TestCase
 
         $this->assertArrayNotHasKey('password', $authentication->user()->toArray());
         $this->assertNotNull($user->password, 'The model given to login() must be left untouched');
+    }
+
+    public function testABearerTokenAuthenticatesTheRequest()
+    {
+        $authentication = $this->newAuthentication(new BearerTokenAuthentication());
+
+        $this->assertTrue($authentication->attemptBearerToken(BearerTokenAuthentication::ALICE_TOKEN));
+
+        $this->assertTrue($authentication->isLogged());
+        $this->assertEquals('alice', $authentication->user()->login);
+        $this->assertEquals(User::findWhere(['login' => 'alice'])->id(), $authentication->userId());
+        $this->assertArrayNotHasKey('password', $authentication->user()->toArray());
+    }
+
+    public function testAnUnknownBearerTokenIsRefused()
+    {
+        $authentication = $this->newAuthentication(new BearerTokenAuthentication());
+
+        $this->assertFalse($authentication->attemptBearerToken('forged-token'));
+        $this->assertFalse($authentication->isLogged());
+    }
+
+    /** An API client keeps no cookie : opening a session for it would create one per request. */
+    #[RunInSeparateProcess]
+    public function testABearerTokenLeavesTheSessionAlone()
+    {
+        $authentication = $this->newAuthentication(new BearerTokenAuthentication());
+
+        $authentication->attemptBearerToken(BearerTokenAuthentication::ALICE_TOKEN);
+        $authentication->isLogged();
+        $authentication->user();
+        $authentication->userId();
+
+        $this->assertArrayNotHasKey($authentication->getScope(), $_SESSION['cube'] ?? []);
+    }
+
+    /** The remember-me listener registers on AuthenticatedUser : announcing a bearer request would hand an API client a cookie. */
+    public function testABearerTokenAnnouncesNoLogin()
+    {
+        $seen = [];
+
+        Events::withInstance(new Events(), function (Events $events) use (&$seen) {
+            $events->on(AuthenticatedUser::class, function () use (&$seen) { $seen[] = 'authenticated'; });
+            $events->on(LoggedInUser::class, function () use (&$seen) { $seen[] = 'logged-in'; });
+
+            $this->newAuthentication(new BearerTokenAuthentication())->attemptBearerToken(BearerTokenAuthentication::ALICE_TOKEN);
+        });
+
+        $this->assertEquals([], $seen);
+    }
+
+    public function testLogoutForgetsTheBearerUser()
+    {
+        $authentication = $this->newAuthentication(new BearerTokenAuthentication());
+        $authentication->attemptBearerToken(BearerTokenAuthentication::ALICE_TOKEN);
+
+        $authentication->logout();
+
+        $this->assertFalse($authentication->isLogged());
+    }
+
+    public function testAProviderThatCannotVerifyBearerTokensCannotAttemptOne()
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(PasswordAuthentication::class);
+
+        $this->newAuthentication()->attemptBearerToken(BearerTokenAuthentication::ALICE_TOKEN);
     }
 
     protected function newAuthentication(?PasswordAuthentication $provider = null): Authentication

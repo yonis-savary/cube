@@ -3733,6 +3733,30 @@ parameters:
 			path: src/Security/Authentication/PasswordAuthentication.php
 
 		-
+			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(static,static\) \$callback\)\: Unexpected token "\(", expected variable at offset 26 on line 2$#'
+			identifier: phpDoc.parseError
+			count: 2
+			path: src/Security/BearerAuthentication.php
+
+		-
+			message: '#^PHPDoc tag @var above a method has no effect\.$#'
+			identifier: varTag.misplaced
+			count: 1
+			path: src/Security/BearerAuthentication.php
+
+		-
+			message: '#^Unsafe access to private property Cube\\Security\\BearerAuthentication\:\:\$instances through static\:\:\.$#'
+			identifier: staticClassAccess.privateProperty
+			count: 5
+			path: src/Security/BearerAuthentication.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Security/BearerAuthentication.php
+
+		-
 			message: '#^Left side of \|\| is always false\.$#'
 			identifier: booleanOr.leftAlwaysFalse
 			count: 1
