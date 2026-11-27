@@ -8,7 +8,8 @@ use Cube\Data\Models\ModelField;
 
 class SQLite extends DatabaseAdapter
 {
-    protected array $tablesWithSequence = [];
+    /** @var string[] */
+    protected array $tablesWithAutoIncrement = [];
 
     public static function supports(string $driver): bool
     {
@@ -17,7 +18,9 @@ class SQLite extends DatabaseAdapter
 
     public function process(): void
     {
-        $this->tablesWithSequence = Bunch::fromQuery('SELECT name FROM sqlite_sequence', [], $this->database)
+        // sqlite_sequence only exists once a table declares AUTOINCREMENT, and only lists a table after its first insert
+        $this->tablesWithAutoIncrement = Bunch::fromQuery("SELECT name, sql FROM sqlite_master WHERE type='table'", [], $this->database)
+            ->filter(fn (array $table) => preg_match('/\bAUTOINCREMENT\b/i', (string) $table['sql']))
             ->key('name')
             ->get()
         ;
@@ -77,7 +80,7 @@ class SQLite extends DatabaseAdapter
             $primary = $fieldName;
         }
 
-        if ($column['pk'] && in_array($table, $this->tablesWithSequence)) {
+        if ($column['pk'] && in_array($table, $this->tablesWithAutoIncrement)) {
             $field->autoIncrement();
         }
         if ('2' == $column['hidden']) {

@@ -40,9 +40,18 @@ abstract class DatabaseAdapter
         'NUMERIC' => ModelField::FLOAT,
         'DECIMAL' => ModelField::DECIMAL,
         'BOOLEAN' => ModelField::BOOLEAN,
+        'BOOL' => ModelField::BOOLEAN,
         'DATE' => ModelField::DATE,
         'DATETIME' => ModelField::DATETIME,
         'TIMESTAMP' => ModelField::TIMESTAMP,
+        // Postgres types starting like a known one : without them, an interval would be an integer
+        'INTERVAL' => ModelField::STRING,
+        'INT4RANGE' => ModelField::STRING,
+        'INT8RANGE' => ModelField::STRING,
+        'INT4MULTIRANGE' => ModelField::STRING,
+        'INT8MULTIRANGE' => ModelField::STRING,
+        'DATERANGE' => ModelField::STRING,
+        'DATEMULTIRANGE' => ModelField::STRING,
     ];
 
     protected Database $database;

@@ -43,7 +43,36 @@ class ModelFieldTypeMappingTest extends TestCase
             'double precision' => ['double precision', ModelField::FLOAT],
             'decimal' => ['decimal(10,2)', ModelField::DECIMAL],
             'unknown' => ['json', ModelField::STRING],
+            'Postgres bool' => ['bool', ModelField::BOOLEAN],
+            'Postgres interval' => ['interval', ModelField::STRING],
+            'Postgres int4range' => ['int4range', ModelField::STRING],
+            'Postgres datemultirange' => ['datemultirange', ModelField::STRING],
         ];
+    }
+
+    /** The adapter read sqlite_sequence, which SQLite only creates once a table declares AUTOINCREMENT. */
+    public function testASqliteDatabaseWithoutAutoIncrementIsGenerated()
+    {
+        $database = new Database();
+        $database->exec('CREATE TABLE tag (id INTEGER PRIMARY KEY, label TEXT)');
+
+        $adapter = new SQLite($database);
+        $adapter->process();
+
+        $this->assertEquals('tag', $adapter->getTables()[0]->table);
+        $this->assertFalse($adapter->getTables()[0]->fields[0]->autoIncrement);
+    }
+
+    /** sqlite_sequence only lists a table after its first insert : a freshly migrated table lost its AUTOINCREMENT. */
+    public function testAnEmptySqliteTableKeepsItsAutoIncrement()
+    {
+        $database = new Database();
+        $database->exec('CREATE TABLE tag (id INTEGER PRIMARY KEY AUTOINCREMENT, label TEXT)');
+
+        $adapter = new SQLite($database);
+        $adapter->process();
+
+        $this->assertTrue($adapter->getTables()[0]->fields[0]->autoIncrement);
     }
 
     public function testASqliteDatetimeColumnIsGeneratedAsADatetimeField()

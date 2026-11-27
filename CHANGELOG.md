@@ -207,6 +207,11 @@ Also fixed :
 - `models:generate` generated every `DATETIME` column as a `DATE` field, its type name starting with
   `DATE` : the field answered no ATOM date, validated as a bare date, and a `DateTime` written to it
   lost its time. Regenerate your models.
+- `models:generate` failed on a SQLite database without any `AUTOINCREMENT` table (`no such table:
+  sqlite_sequence`), and missed the `AUTOINCREMENT` of a table not inserted into yet : it reads the
+  table declarations instead.
+- `models:generate` on Postgres generated a `bool` column as a string, and an `interval` or a range
+  (`int4range`, `daterange`...) as an integer or a date : they are a boolean and strings.
 - `models:generate` on MySQL marked a column with `DEFAULT CURRENT_TIMESTAMP` as `generated()` (its
   `DEFAULT_GENERATED` extra), so the ORM never wrote it, even when given a value. Such a column is now
   generated with `defaultExpression()` : regenerate your models to drop the wrong `generated()`.

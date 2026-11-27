@@ -2023,12 +2023,6 @@ parameters:
 			path: src/Data/Models/ModelGenerator/Adapters/SQLite.php
 
 		-
-			message: '#^Property Cube\\Data\\Models\\ModelGenerator\\Adapters\\SQLite\:\:\$tablesWithSequence type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Models/ModelGenerator/Adapters/SQLite.php
-
-		-
 			message: '#^Access to an undefined property Cube\\Data\\Models\\Relations\\Relation\:\:\$fromColumn\.$#'
 			identifier: property.notFound
 			count: 1
