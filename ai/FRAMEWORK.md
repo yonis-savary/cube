@@ -522,6 +522,12 @@ public function healthCheck(): Response
 | `#[RawResponse(data, file:, responseCode:)]` | any other shape, from an example value or a JSON file |
 | `#[Hidden]` | the route must stay out of the document |
 
+The response attributes (`ModelResponse`, `ResourceResponse`, `ObjectResponse`, `RawResponse`,
+`NoContentResponse`) also go on a controller class (every method) or a middleware class (every route
+it guards, e.g. its `401`) : declare a shared response once instead of repeating it. For one status
+code, the method wins over what Cube infers from it, which wins over the controller, which wins over
+the middlewares.
+
 `operationId` must be unique in the whole document : one route per verb, and distinct method names
 or `#[Endpoint]` summaries. Declare the title, version and authentication scheme in
 `OpenAPIConfiguration`.

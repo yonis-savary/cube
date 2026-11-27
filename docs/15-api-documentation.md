@@ -312,6 +312,40 @@ default.
 `#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]` and `#[RawResponse]` can be repeated
 on a method, one per status code : two attributes describing the same code keep the last one read.
 
+## Sharing responses between routes
+
+The five response attributes go on a class too. On a controller, they document each of its methods ;
+on a middleware, every route it guards — which is how the `401` or `403` it answers gets documented
+
+```php
+#[RawResponse(['error' => 'Missing or invalid API key'], responseCode: StatusCode::UNAUTHORIZED)]
+class RequireApiKey implements Middleware
+{
+    // ...
+}
+
+#[RawResponse(['error' => 'This agency is closed'], responseCode: StatusCode::CONFLICT)]
+class AgencyController extends Controller
+{
+    // every route of AgencyController documents the 409, and the 401 when RequireApiKey guards it
+}
+```
+
+The middlewares Cube reads are the ones the route runs : its own, those of its groups and the
+`commonMiddlewares` of `RouterConfiguration`.
+
+When several places describe the same status code, the most specific one wins, in this order
+
+| Read | From |
+|---|---|
+| 1 | the middlewares, in the order they run |
+| 2 | the controller class |
+| 3 | what Cube reads from the method : request rules (`422`), model slug (`404`), return type |
+| 4 | the attributes of the method |
+
+So a `200` declared on a controller is a default : a method returning a `Product` documents the
+product instead, and an attribute on the method replaces both.
+
 ## Authentication
 
 Declare how your API authenticates and every operation of the document requires it
@@ -330,8 +364,9 @@ new OpenAPIConfiguration(
 Both take a `componentNameInDoc` too (`BearerAuth`, `ApiTokenAuth`), the name of the scheme in
 `components.securitySchemes`.
 
-The scheme applies to the whole document : a public route still shows as protected. The `401` or
-`403` your middleware answers are not documented either, as Cube cannot know them.
+The scheme applies to the whole document : a public route still shows as protected. Cube cannot
+guess the `401` or `403` your middleware answers : declare them with an attribute on the middleware,
+see [Sharing responses between routes](#sharing-responses-between-routes).
 
 ## Generating from code
 

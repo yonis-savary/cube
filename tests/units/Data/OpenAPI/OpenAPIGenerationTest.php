@@ -9,7 +9,9 @@ use Cube\Data\OpenAPI\Configuration\Authentication\OpenApiAuthScheme;
 use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
 use Cube\Env\Storage;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\DocumentedController;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\SampleController;
+use Cube\Tests\Units\Data\OpenAPI\Middlewares\RequiresAnApiKey;
 use Cube\Utils\Path;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
@@ -308,6 +310,63 @@ class OpenAPIGenerationTest extends TestCase
         $fixture = $this->readFixture('OADRawResponse.json');
 
         $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADRawResponse.json fixture");
+    }
+
+    public function testAResponseDeclaredOnTheControllerDocumentsEachOfItsMethods()
+    {
+        $responses = $this->responsesOf('/undocumented', Route::get('/undocumented', [DocumentedController::class, 'undocumented']));
+
+        $this->assertEquals('Refused by the controller', $responses['403']['description']);
+        $this->assertEquals('Answered by the controller', $responses['200']['description']);
+        $this->assertEquals('Nothing left to answer', $responses['204']['description']);
+    }
+
+    public function testAResponseDeclaredOnTheMethodReplacesTheControllerOne()
+    {
+        $responses = $this->responsesOf('/refusing', Route::get('/refusing', [DocumentedController::class, 'refusingByItself']));
+
+        $this->assertEquals('Refused by the method', $responses['403']['description']);
+    }
+
+    /** A class-level 200 is a default : what the method returns describes it better. */
+    public function testTheReturnTypeOfTheMethodReplacesAResponseDeclaredOnTheController()
+    {
+        $responses = $this->responsesOf('/product', Route::get('/product', [DocumentedController::class, 'product']));
+
+        $this->assertNotEquals('Answered by the controller', $responses['200']['description']);
+        $this->assertArrayHasKey('$ref', $responses['200']['content']['application/json']['schema']);
+    }
+
+    public function testAResponseDeclaredOnAMiddlewareDocumentsEveryRouteBehindIt()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->group('/api', [RequiresAnApiKey::class], function: function (Router $router) {
+            $router->addRoutes(Route::get('/simple-route', [SampleController::class, 'simpleRoute']));
+        });
+
+        $responses = $this->generateAsArray($router)['paths']['/api/simple-route']['get']['responses'];
+
+        $this->assertEquals('No API key', $responses['401']['description']);
+        $this->assertEquals('Refused by the middleware', $responses['403']['description']);
+    }
+
+    public function testAResponseDeclaredOnTheControllerReplacesTheMiddlewareOne()
+    {
+        $responses = $this->responsesOf('/undocumented', Route::get('/undocumented', [DocumentedController::class, 'undocumented'], [RequiresAnApiKey::class]));
+
+        $this->assertEquals('No API key', $responses['401']['description']);
+        $this->assertEquals('Refused by the controller', $responses['403']['description']);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    protected function responsesOf(string $path, Route $route): array
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes($route);
+
+        return $this->generateAsArray($router)['paths'][$path]['get']['responses'];
     }
 
     public function testRawFileResponseGeneration()
