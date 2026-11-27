@@ -68,8 +68,11 @@ method to document : it is skipped too, with a warning in the generation logs.
 
 From the rules, a `nullable` rule becomes a nullable type, a rule that is not `optional()` a required
 key or parameter, `inArray()` an `enum` of the rule's type and `isBetween()` a `minimum` and a
-`maximum` — on a number only, OpenAPI has no bound for a date or a string. A datetime is a string
-with the `YYYY-MM-DD HH:MM:SS` `pattern` Cube reads and answers, not the RFC 3339 `date-time` format.
+`maximum` — on a number only, OpenAPI has no bound for a date or a string. A datetime a route
+receives is a string matching either `YYYY-MM-DD HH:MM:SS` or the RFC 3339 `date-time` format, the
+two `Param::datetime()` accepts. A datetime field a model answers is a `date-time`, or a plain string
+when `DateTimeConfiguration` sets a format that is not RFC 3339 ; so is a `DateTime` in a
+`#[RawResponse]` example or in what a resource returns.
 A rule without a type (`new Param()`) gives the empty schema `{}`, which accepts any value.
 
 Every model a response refers to is described once in `components.schemas`, from

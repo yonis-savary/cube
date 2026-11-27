@@ -68,6 +68,11 @@ change it asks from your application.
   `ModelGenerator` adapters no longer extend `SQLite` : a custom adapter implements `listTables()`,
   `listForeignKeys()`, `listColumns()` and `getModelField()`.
 - SQLite quotes every table and column name it renders.
+- A `DATETIME` or `TIMESTAMP` field is answered in ATOM format (`2026-11-27T14:30:00+01:00`) by
+  `toArray()` and JSON responses, where it used to be `Y-m-d H:i:s` ; a `DateTimeInterface` inside an
+  answered array too, where it was encoded as an object. Your API clients read RFC 3339 dates, or you
+  keep the former format with `new DateTimeConfiguration('Y-m-d H:i:s')` in `cube.php`. `DATE` fields
+  keep `Y-m-d`.
 
 **Background work and CLI**
 - Schedules take `[Class::class, 'method']` or an invokable class name instead of a callable :
@@ -113,6 +118,10 @@ change it asks from your application.
 - New `AGENTS.md` and `CLAUDE.md`, pointing coding agents to `vendor/yonis-savary/cube/ai/FRAMEWORK.md`.
 
 ### Added
+
+- `DateTimeConfiguration::$outputFormat` sets how dates with a time are answered, ATOM by default.
+  `Param::datetime()` accepts RFC 3339 dates as well, and a model writes any RFC 3339 date it holds in
+  the application timezone. OpenAPI documents an answered date as `format: date-time`.
 
 - Websocket channels can receive messages from clients : declare their shape with
   `Channel::getMessageRule()` and handle them in `Channel::onMessage()`. A connection may send

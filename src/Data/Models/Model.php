@@ -6,6 +6,7 @@ use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Exceptions\MissingModelPrimaryKeyException;
 use Cube\Data\Models\Relations\HasMany;
@@ -308,7 +309,7 @@ abstract class Model extends EventDispatcher
     public static function toResponseObjectParam(): ObjectParam
     {
         return Param::object(
-            array_map(fn (ModelField $field) => $field->toRule(), static::fields())
+            array_map(fn (ModelField $field) => $field->toResponseRule(), static::fields())
         );
     }
 
@@ -483,12 +484,13 @@ abstract class Model extends EventDispatcher
     public function dataToArray(): array
     {
         $fields = static::fields();
+        $dateTimeFormat = DateTimeConfiguration::resolve()->outputFormat;
 
         $data = (array) $this->data;
         $array = [];
         foreach ($data as $name => $value) {
             $field = $fields[$name] ?? new ModelField($name);
-            $array[$name] = $field->format($value);
+            $array[$name] = $field->toOutput($value, $dateTimeFormat);
         }
 
         return $array;

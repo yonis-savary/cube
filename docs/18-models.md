@@ -144,15 +144,25 @@ A field is nullable unless you call `notNull()`. A `generated()` field is never 
 database only computes it for a row inserted without a value. [Migrations](./17-migrations.md#describing-columns) use these same
 builders to describe columns.
 
-Field values are **formatted** when written, and by `toArray()`, so the same way when a route
-answers the model
+Field values are **formatted** when written to the database, and by `toArray()` when a route answers
+the model
 
-| Type | Written and answered as |
-|---|---|
-| `BOOLEAN` | `bool` (`1`, `true`, `t`, `y`, `yes`, `on` are true), whatever the driver returns |
-| `DATE` | `Y-m-d`, from a `DateTime` |
-| `DATETIME` | `Y-m-d H:i:s`, from a `DateTime` |
-| other types | as is |
+| Type | Written as | Answered as |
+|---|---|---|
+| `BOOLEAN` | `bool` (`1`, `true`, `t`, `y`, `yes`, `on` are true), whatever the driver returns | the same `bool` |
+| `DATE` | `Y-m-d`, from a `DateTime` | `Y-m-d` |
+| `DATETIME`, `TIMESTAMP` | `Y-m-d H:i:s`, from a `DateTime` or an RFC 3339 string, in the application timezone | ATOM : `2026-11-27T14:30:00+01:00` |
+| other types | as is | as is |
+
+Set another answered format with `DateTimeConfiguration` in your `cube.php`, as
+`DateTimeInterface::format()` reads it
+
+```php
+new DateTimeConfiguration(outputFormat: 'Y-m-d H:i:s'), // the format Cube answered before ATOM
+```
+
+A model copied from another one's `toArray()` holds ATOM strings : saving it writes them back as
+`Y-m-d H:i:s`, so the column keeps one format.
 
 Reading a model keeps its fields as the database driver returns them : a MySQL or SQLite boolean is
 `0`/`1` on `$model->active`, a date is a string. Only the `HasOne` relations a query joins through `with()` are parsed

@@ -310,6 +310,21 @@ class ValidationTest extends TestCase
         $rule = Param::datetime(false, true); // Add time if missing
         $this->testRule($rule, '2025-01-01 00:00:00');
         $this->testRule($rule, '2025-01-01', true, '2025-01-01 00:00:00');
+        $this->testRule($rule, '2025-01-01T10:00:00+01:00');
+    }
+
+    /** Models answer their dates in ATOM : a client sending one back must not get a 422. */
+    public function testAnRfc3339DatetimeIsAccepted()
+    {
+        $rule = Param::datetime();
+
+        $this->testRule($rule, '2025-01-01T10:00:00+01:00');
+        $this->testRule($rule, '2025-01-01T10:00:00Z');
+        $this->testRule($rule, '2025-01-01t10:00:00.123456z');
+
+        $this->testRule($rule, '2025-01-01T10:00:00', false);
+        $this->testRule($rule, '2025-02-30T10:00:00+01:00', false);
+        $this->testRule($rule, '2025-01-01T24:00:00+01:00', false);
     }
 
     public function testUuidValidation()

@@ -4,6 +4,7 @@ namespace Cube\Web\Http;
 
 use Cube\Data\Bunch;
 use Cube\Data\DataToObject;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\Models\Model;
 use Cube\Env\Logger\Logger;
 use Cube\Event\Events\DisplayingResponse;
@@ -398,6 +399,7 @@ class Response extends HttpMessage
         return match (true) {
             $value instanceof Model => $value->toArray(),
             $value instanceof Bunch => self::toJsonValue($value->toArray()),
+            $value instanceof \DateTimeInterface => $value->format(DateTimeConfiguration::resolve()->outputFormat),
             is_array($value) => array_map(self::toJsonValue(...), $value),
             default => $value,
         };

@@ -120,6 +120,7 @@ the IDE cannot help with a name.
 | `AutoloaderConfiguration(cached:, displayErrors:)` | class index caching (on in production) and error display (on in debug) |
 | `DatabaseConfiguration(driver:, database:, host:, port:, user:, password:)` | the SQL connection (`sqlite`, `mysql`, `pgsql`) |
 | `MigrationManagerConfiguration(tableName:, directoryName:)` | the migrations table and directory |
+| `DateTimeConfiguration(outputFormat:)` | how `toArray()` and JSON responses write a `DATETIME`/`TIMESTAMP` or a `DateTime` (ATOM by default) |
 | `RouterConfiguration(cached:, loadControllers:, loadRoutesFiles:, apis:, commonMiddlewares:, commonPrefix:, securityHeaders:)` | routing, global middlewares, extra `WebAPI`s such as a `StaticServer` |
 | `CORSConfiguration(allowedOrigins:, allowHeaders:, allowCredentials:, maxAge:)` | CORS answers |
 | `CacheConfiguration(driver)` | the default `Cache` driver |

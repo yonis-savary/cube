@@ -73,7 +73,7 @@
                             "string",
                             "null"
                         ],
-                        "pattern": "\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}\\:\\d{2}\\:\\d{2}"
+                        "format": "date-time"
                     },
                     "name": {
                         "type": "string"
@@ -100,7 +100,7 @@
                 "example": {
                     "price_dollar": "9.99000",
                     "id": 588,
-                    "created_at": "2003-10-19 18:06:12",
+                    "created_at": "2003-10-19T18:06:12+00:00",
                     "name": "natus sit consequatur"
                 }
             },

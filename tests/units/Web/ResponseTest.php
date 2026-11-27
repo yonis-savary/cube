@@ -3,6 +3,8 @@
 namespace Cube\Tests\Units\Web;
 
 use Cube\Data\Bunch;
+use Cube\Data\DateTimeConfiguration;
+use Cube\Env\Configuration;
 use Cube\Env\Environment;
 use Cube\Env\Storage;
 use Cube\Event\Events;
@@ -114,6 +116,23 @@ class ResponseTest extends TestCase
             $this->assertEquals('/login', $response->getHeader('location'));
             $this->assertEquals('', $response->getBody());
         }
+    }
+
+    /** A date in a resource's array was encoded as {"date":...,"timezone_type":...}. */
+    public function testADateIsAnsweredInAtomFormat()
+    {
+        $response = Response::json(['sent_at' => new \DateTimeImmutable('2026-11-27 14:30:00+01:00')]);
+
+        $this->assertEquals('{"sent_at":"2026-11-27T14:30:00+01:00"}', $response->getBody());
+    }
+
+    public function testADateIsAnsweredInTheConfiguredFormat()
+    {
+        $response = (new Configuration(new DateTimeConfiguration('d/m/Y')))->asGlobalInstance(
+            fn () => Response::json(['sent_at' => new \DateTime('2026-11-27 14:30:00')])
+        );
+
+        $this->assertEquals('{"sent_at":"27\/11\/2026"}', $response->getBody());
     }
 
     public function testJsonSetsItsContentType()

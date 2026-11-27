@@ -3,6 +3,7 @@
 namespace Cube\Data\Models;
 
 use Cube\Core\Autoloader;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
@@ -309,11 +310,43 @@ class ModelField
     {
         if (self::BOOLEAN === $this->type)
             return $this->parse($value);
+        // A date read from an output or a request holds an offset : the column stores the time of the application timezone
+        if ($this->holdsATime() && is_string($value) && preg_match(Param::RFC3339_DATE_TIME, $value))
+            $value = (new \DateTime($value))->setTimezone(new \DateTimeZone(date_default_timezone_get()));
         if (!$value instanceof \DateTimeInterface) {
             return $value;
         }
 
         return $value->format(self::DATE === $this->type ? 'Y-m-d' : 'Y-m-d H:i:s');
+    }
+
+    public function toOutput(mixed $value, ?string $dateTimeFormat = null): mixed
+    {
+        if (!$this->holdsATime() || null === $value)
+            return $this->format($value);
+        $dateTimeFormat ??= DateTimeConfiguration::resolve()->outputFormat;
+
+        $date = $value instanceof \DateTimeInterface ? $value : new \DateTime($value);
+
+        return $date->format($dateTimeFormat);
+    }
+
+    public function toResponseRule(?DateTimeConfiguration $configuration = null): Rule
+    {
+        if (!$this->holdsATime())
+            return $this->toRule();
+        $configuration ??= DateTimeConfiguration::resolve();
+
+        $rule = Param::string(false, $this->nullable);
+
+        return $configuration->isRfc3339()
+            ? $rule->withMetadata([Rule::META_FORMAT => 'date-time'])
+            : $rule;
+    }
+
+    public function holdsATime(): bool
+    {
+        return in_array($this->type, [self::DATETIME, self::TIMESTAMP], true);
     }
 
     public function toRule(?bool $forceNullable = null): Rule

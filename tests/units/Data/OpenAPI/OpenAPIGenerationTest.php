@@ -3,16 +3,19 @@
 namespace Cube\Tests\Units\Data\OpenAPI;
 
 use Cube\Data\Database\Database;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Configuration\Authentication\BearerToken;
 use Cube\Data\OpenAPI\Configuration\Authentication\OpenApiAuthScheme;
 use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
+use Cube\Env\Configuration;
 use Cube\Env\Storage;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\DocumentedController;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\SampleController;
 use Cube\Tests\Units\Data\OpenAPI\Middlewares\RequiresAnApiKey;
 use Cube\Utils\Path;
+use Cube\Web\Http\Rules\Param;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
@@ -659,13 +662,45 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['type' => ['string', 'null'], 'format' => 'date'], $schema['properties']['released_at']);
     }
 
-    /** Datetimes were announced as RFC 3339 date-time, while Cube reads and writes them as `Y-m-d H:i:s`. */
-    public function testADatetimeIsDescribedByItsPattern()
+    public function testAnAnsweredDatetimeIsDescribedAsAnRfc3339DateTime()
     {
         $schema = $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album'];
 
-        $this->assertEquals(['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']], $schema['properties']['last_update']);
-        $this->assertMatchesRegularExpression('~^'.Route::SLUG_FORMATS['datetime'].'$~', $schema['example']['last_update']);
+        $this->assertEquals(['type' => 'string', 'format' => 'date-time'], $schema['properties']['last_update']);
+        $this->assertMatchesRegularExpression(Param::RFC3339_DATE_TIME, $schema['example']['last_update']);
+    }
+
+    /** OpenAPI has no format for anything else than RFC 3339 : announcing date-time would be a lie. */
+    public function testAnotherOutputFormatIsDescribedAsAString()
+    {
+        $schema = (new Configuration(new DateTimeConfiguration('d/m/Y H:i')))->asGlobalInstance(
+            fn () => $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album']
+        );
+
+        $this->assertEquals(['type' => 'string'], $schema['properties']['last_update']);
+        $this->assertMatchesRegularExpression('~^\d{2}/\d{2}/\d{4} \d{2}:\d{2}$~', $schema['example']['last_update']);
+    }
+
+    public function testAReceivedDatetimeAcceptsBothFormats()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/post-route', [SampleController::class, 'postEndpointWithCustomRequest']));
+
+        $schema = $this->generateAsArray($router)['paths']['/post-route']['post']['requestBody']['content']['application/json']['schema'];
+
+        $this->assertContains(['type' => 'string', 'anyOf' => [['pattern' => Route::SLUG_FORMATS['datetime']], ['format' => 'date-time']]], $this->allSchemasOf($schema));
+    }
+
+    /**
+     * @param array<mixed> $schema
+     *
+     * @return array<mixed>[]
+     */
+    protected function allSchemasOf(array $schema): array
+    {
+        $children = array_merge(array_values($schema['properties'] ?? []), isset($schema['items']) ? [$schema['items']] : []);
+
+        return array_merge([$schema], ...array_map(fn ($child) => is_array($child) ? $this->allSchemasOf($child) : [], $children));
     }
 
     /** An untyped schema was encoded as an empty JSON array, which is not a schema. */

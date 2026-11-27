@@ -3,6 +3,7 @@
 namespace Cube\Data\OpenAPI\Specs\Common;
 
 use Cube\Core\Autoloader;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
@@ -84,6 +85,9 @@ trait MakesSchemas
         if ($enum = $meta[Rule::META_ENUM] ?? false)
             $schema['enum'] = $enum;
 
+        if ($format = $meta[Rule::META_FORMAT] ?? false)
+            $schema['format'] = $format;
+
         // OpenAPI only bounds numbers : isBetween() on a date or a string has no standard keyword
         if (!in_array($schema['type'] ?? '', ['number', 'integer']))
             return;
@@ -105,7 +109,7 @@ trait MakesSchemas
             'boolean' => ['type' => 'boolean'],
             'date' => ['type' => 'string', 'format' => 'date'],
             'time' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['time']],
-            'date-time' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']],
+            'date-time' => ['type' => 'string', 'anyOf' => [['pattern' => Route::SLUG_FORMATS['datetime']], ['format' => 'date-time']]],
             'hex' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
             'uuid' => ['type' => 'string', 'format' => 'uuid'],
         };
@@ -184,8 +188,10 @@ trait MakesSchemas
             $schema = ['type' => 'integer'];
         } elseif (is_bool($data)) {
             $schema = ['type' => 'boolean'];
-        } elseif ($data instanceof \DateTime) {
-            $schema = ['type' => 'string', 'format' => 'date'];
+        } elseif ($data instanceof \DateTimeInterface) {
+            $schema = DateTimeConfiguration::resolve()->isRfc3339()
+                ? ['type' => 'string', 'format' => 'date-time']
+                : ['type' => 'string'];
         } else {
             OpenAPIGenerationContext::getInstance()->log(" - Warning: used 'any' data type on parameter");
             $schema = [];

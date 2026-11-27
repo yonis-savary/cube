@@ -165,7 +165,7 @@ before it : **use named arguments**, `Param::string(nullable: true)` reads where
 | `Param::url(bool $nullable = false)` | a URL, the scheme being optional |
 | `Param::uuid(bool $nullable = false)` | a UUID, any case |
 | `Param::date(bool $nullable = false)` | a `YYYY-MM-DD` date that exists in the calendar |
-| `Param::datetime(bool $nullable = false, bool $addTimeIfMissing = false)` | a `YYYY-MM-DD HH:MM:SS` date-time ; `addTimeIfMissing` appends `00:00:00` to a bare date |
+| `Param::datetime(bool $nullable = false, bool $addTimeIfMissing = false)` | a `YYYY-MM-DD HH:MM:SS` date-time, or an RFC 3339 one (`2026-11-27T14:30:00+01:00`, the format models answer) kept as given ; `addTimeIfMissing` appends `00:00:00` to a bare date |
 | `Param::object(array $rules = [], bool $nullable = false)` | an associative array, each key checked by its rule |
 | `Param::array(Rule\|array $childRule, bool $nullable = false)` | a list whose every item matches `$childRule` |
 | `Param::anyKeyObject(Rule\|array $valueRule, bool $nullable = false)` | a map with unknown keys and a known value shape |
