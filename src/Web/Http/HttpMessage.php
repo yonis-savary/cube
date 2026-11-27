@@ -29,7 +29,7 @@ abstract class HttpMessage
 
     public function headerName(string $name): string
     {
-        return strtolower(trim($name));
+        return $name |> trim(...) |> strtolower(...);
     }
 
     public function setHeader(string $name, string $value): self

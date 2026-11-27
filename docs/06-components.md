@@ -154,7 +154,7 @@ foreach ($messages as $message)
 The `Injector` is always kept, so the bindings you declared with `provide()` stay available inside
 the callback. Static properties are not components : they are left as they are.
 
-This is how the [unix socket server](./31-unix-socket-server.md) isolates its requests.
+This is how the [unix socket server](./34-unix-socket-server.md) isolates its requests.
 
 ## Framework components
 
@@ -176,10 +176,10 @@ This is how the [unix socket server](./31-unix-socket-server.md) isolates its re
 | `Session` | the session ([Sessions](./22-sessions.md)) |
 | `Authentication` | the authenticated user ([Authentication](./23-authentication.md)) |
 | `RememberMe` | the remember-me tokens ([Remember me](./25-remember-me.md)) |
-| `Scheduler` | the scheduled tasks ([Schedules](./28-schedules.md)) |
-| `Websocket`, `Broadcast` | the websocket server and its client ([Websockets](./30-websockets.md)) |
+| `Scheduler` | the scheduled tasks ([Schedules](./31-schedules.md)) |
+| `Websocket`, `Broadcast` | the websocket server and its client ([Websockets](./33-websockets.md)) |
 | `LargeUploadManager` | the chunked uploads ([Controllers and responses](./13-controllers-and-responses.md)) |
-| `MockServers`, `TestContext` | the test doubles ([Testing](./33-testing.md)) |
+| `MockServers`, `TestContext` | the test doubles ([Testing](./36-testing.md)) |
 | `RequestContext` | the context of `RequestContext::run()` |
 
 `UserComponent` is a variant whose instance is tied to the authenticated user, see

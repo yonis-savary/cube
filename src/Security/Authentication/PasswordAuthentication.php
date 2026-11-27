@@ -2,11 +2,10 @@
 
 namespace Cube\Security\Authentication;
 
-use Cube\Core\Autoloader;
 use Cube\Data\Models\Model;
 use Cube\Utils\Utils;
 
-class PasswordAuthentication implements AuthenticationProvider
+class PasswordAuthentication extends ModelAuthentication implements VerifiesCredentials
 {
     // Hash of a random value nobody knows, with PHP's default bcrypt cost : an unknown login costs one verification, like a known one
     protected const DECOY_HASH = '$2y$12$vBUoAnEM4IjmK9UXG/XQ0us4Q8iTt15U1gV4HPqSVC.58o6tWl0Za';
@@ -15,14 +14,12 @@ class PasswordAuthentication implements AuthenticationProvider
      * @param class-string<Model> $model
      */
     public function __construct(
-        public readonly string $model,
+        string $model,
         public readonly array|string $loginFields,
         public readonly string $passwordField,
         public readonly ?string $saltField = null
     ) {
-        if (!Autoloader::extends($model, Model::class)) {
-            throw new \InvalidArgumentException("{$model} class does not extends Model");
-        }
+        parent::__construct($model);
     }
 
     public function attempt(string $identifier, #[\SensitiveParameter] ?string $password = null): false|Model
@@ -62,16 +59,14 @@ class PasswordAuthentication implements AuthenticationProvider
 
     public function userById(mixed $id): false|Model
     {
-        $model = $this->model;
-
-        if (!$user = $model::find($id))
-            return false;
-        return $this->withoutCredentials($user);
+        if ($user = parent::userById($id))
+            return $this->withoutCredentials($user);
+        return false;
     }
 
     public function getCredentialFields(): array
     {
-        return array_values(array_filter([$this->passwordField, $this->saltField]));
+        return [$this->passwordField, $this->saltField] |> array_filter(...) |> array_values(...);
     }
 
     protected function withoutCredentials(Model $user): Model

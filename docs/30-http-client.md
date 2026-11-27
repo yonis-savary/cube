@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./26-encryption-and-signing.md">Previous : Encryption and signing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./28-schedules.md">Next : Schedules</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-identifiers-and-secrets.md">Previous : Identifiers and secrets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-schedules.md">Next : Schedules</a></div></td></tr></table>
 
 # Http client
 
@@ -66,7 +66,7 @@ Everything a connector answers for is a method you may override
 | Method | Default | Applies to |
 |---|---|---|
 | `baseURL()` | `null` | prefixed to every relative path |
-| `baseUnixSocket()` | `null` | the unix socket every request goes through ([Unix socket server](./31-unix-socket-server.md#calling-the-socket-from-php)) |
+| `baseUnixSocket()` | `null` | the unix socket every request goes through ([Unix socket server](./34-unix-socket-server.md#calling-the-socket-from-php)) |
 | `baseHeaders()` | `[]` | merged into every request's headers |
 | `baseURLParameters()` | `[]` | merged into every query string |
 | `basePostParameters()` | `[]` | merged into every body |
@@ -184,8 +184,9 @@ $response = (new Request('GET', 'https://partner.example.com/stock'))->fetch(
 
 A redirection is always followed with a `GET`. When it leads to another origin, it is sent through
 a bare `HttpClient`, without the mutator and without the base headers and parameters, since they
-often carry credentials. A redirection to anything but `http` or `https` is not followed : the
-`3xx` response is returned as is.
+often carry credentials, but it stays [public only](#calling-a-url-a-user-gave-you) when the
+client is. A redirection to anything but `http` or `https` is not followed : the `3xx` response is
+returned as is.
 
 ### How much gets logged
 
@@ -210,6 +211,58 @@ $client->fetch($request, logFlags: HttpClient::DEBUG_REQUEST_HEADERS | HttpClien
 Header values whose name looks like a credential (`auth`, `cookie`, `token`, `secret`, `key`,
 `password`, `session`) are logged as `[redacted]`. Bodies are not : think twice before turning
 `DEBUG_ALL` on in production.
+
+## Calling a URL a user gave you
+
+A URL that comes from a user, a webhook target, an avatar or a link preview, can point at your own
+network : `http://localhost:6379`, a database on `10.0.0.5`, or the cloud metadata service on
+`169.254.169.254`. Make the client **public only** and it refuses to reach anything but a public
+address
+
+```php
+try {
+    $page = (new HttpClient())->withPublicOnly()->get($request->validated('url'));
+} catch (NonPublicAddressException $exception) {
+    return Response::unprocessableContent("{$exception->host} is not a public address");
+}
+```
+
+A connector that only ever calls user URLs answers for itself
+
+```php
+class FaviconClient extends HttpClient
+{
+    public function isPublicOnly(): bool
+    {
+        return true;
+    }
+}
+```
+
+Before connecting, the client resolves the host and refuses it when **any** of its addresses is not
+public. It then hands those exact addresses to cURL (`CURLOPT_RESOLVE`), so cURL never asks the DNS
+again : a second answer pointing elsewhere, the trick known as DNS rebinding, is never used. Each
+redirection goes through the same check.
+
+| Refused | Examples |
+|---|---|
+| everything that is not globally routable (RFC 6890) | `127.0.0.1`, `10/8`, `172.16/12`, `192.168/16`, `169.254/16`, `100.64/10`, `0.0.0.0`, documentation ranges |
+| multicast | `224.0.0.0/4`, `ff00::/8` |
+| IPv6 forms of the above | `::1`, `fe80::/10`, `fc00::/7`, `::ffff:127.0.0.1`, `64:ff9b::7f00:1` (NAT64) |
+
+`IpAddress::isPublic($address)` is that check, for an address you want to test yourself.
+
+| Situation | What happens |
+|---|---|
+| the host resolves to an address that is not public | `NonPublicAddressException`, carrying `host` and `address`, before anything is sent |
+| the host does not resolve | a `RuntimeException`, as for any unreachable host |
+| `fetchAsync()` on a public only client | a `RuntimeException` : it opens its socket by host name and cannot pin the checked address |
+| a client with a `baseUnixSocket()` | a `RuntimeException` : the request never leaves the machine anyway |
+| a mock server is registered | the mock answers, nothing is resolved |
+
+A `curlMutator` runs after the client has set its options : it can undo the protection, for
+example by setting `CURLOPT_RESOLVE` or a proxy itself. The same goes for a proxy given through the
+`http_proxy` environment variables, which resolves the host on its own.
 
 ## Testing without the network
 
@@ -271,7 +324,7 @@ $server = HttpMockServer::fromArray([
 `fromArray()` answers those paths for any method. `fromRoutes(Route ...$routes)` is the same idea
 when you want the full `Route` syntax — slugs, methods, middlewares.
 
-See [Testing](./33-testing.md) for the rest of the test harness.
+See [Testing](./36-testing.md) for the rest of the test harness.
 
 ## Reference
 
@@ -289,5 +342,8 @@ See [Testing](./33-testing.md) for the rest of the test harness.
 | `HttpClient::toCurlHandle(Request $request, ...)` | the configured `CurlHandle`, without executing it |
 | `HttpClient::lastDuration()` | duration of the last `fetch()`, in milliseconds |
 | `HttpClient::setMockServer(HttpMockServer $mockServer)` | answers this instance's requests in-process |
+| `HttpClient::withPublicOnly(bool $publicOnly = true)` | the client, refusing every address that is not public |
+| `HttpClient::isPublicOnly()` | whether the client is public only, override it to make a connector always so |
+| `IpAddress::isPublic(string $address)` | whether an IPv4 or IPv6 address is publicly routable |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./26-encryption-and-signing.md">Previous : Encryption and signing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./28-schedules.md">Next : Schedules</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-identifiers-and-secrets.md">Previous : Identifiers and secrets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-schedules.md">Next : Schedules</a></div></td></tr></table>

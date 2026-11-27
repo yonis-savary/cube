@@ -2,7 +2,9 @@
 
 namespace Cube\Tests\Units\Data;
 
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\Models\ModelField;
+use Cube\Env\Configuration;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -11,6 +13,53 @@ use PHPUnit\Framework\TestCase;
  */
 class ModelFieldTest extends TestCase
 {
+    public function testADatetimeIsOutputInAtomFormat()
+    {
+        $value = new \DateTime('2026-11-27 14:30:00', new \DateTimeZone('+01:00'));
+
+        $this->assertEquals('2026-11-27T14:30:00+01:00', ModelField::datetime('sent_at')->toOutput($value));
+    }
+
+    /** A timestamp is kept as the database gives it : the output has to read the string. */
+    public function testATimestampStringIsOutputInAtomFormat()
+    {
+        $expected = (new \DateTime('2026-11-27 14:30:00'))->format(DATE_ATOM);
+
+        $this->assertEquals($expected, ModelField::timestamp('created_at')->toOutput('2026-11-27 14:30:00'));
+    }
+
+    public function testADateIsOutputWithoutTime()
+    {
+        $this->assertEquals('2026-11-27', ModelField::date('due_on')->toOutput(new \DateTime('2026-11-27 14:30:00')));
+        $this->assertNull(ModelField::datetime('sent_at')->toOutput(null));
+    }
+
+    public function testTheOutputFormatIsConfigurable()
+    {
+        $output = (new Configuration(new DateTimeConfiguration('d/m/Y H:i')))->asGlobalInstance(
+            fn () => ModelField::datetime('sent_at')->toOutput(new \DateTime('2026-11-27 14:30:00'))
+        );
+
+        $this->assertEquals('27/11/2026 14:30', $output);
+    }
+
+    /** A model copied from its own toArray(), or a date sent back by a client, carries an offset the column cannot hold. */
+    public function testAnRfc3339DateIsStoredInTheApplicationTimezone()
+    {
+        $expected = (new \DateTime('2026-11-27 13:30:00', new \DateTimeZone('UTC')))
+            ->setTimezone(new \DateTimeZone(date_default_timezone_get()))
+            ->format('Y-m-d H:i:s')
+        ;
+
+        $this->assertEquals($expected, ModelField::datetime('sent_at')->format('2026-11-27T14:30:00+01:00'));
+        $this->assertEquals($expected, ModelField::timestamp('created_at')->format('2026-11-27T13:30:00Z'));
+    }
+
+    public function testADatabaseFormattedDateIsStoredAsIs()
+    {
+        $this->assertEquals('2026-11-27 14:30:00.123456', ModelField::datetime('sent_at')->format('2026-11-27 14:30:00.123456'));
+    }
+
     public function testDecimalWithoutAnyPrecision()
     {
         $field = ModelField::decimal('price');

@@ -65,7 +65,7 @@ class LocalDiskQueueDriver extends BasicQueueDriver
         $name = sprintf(
             '%020d-%s',
             (int) (microtime(true) * 1_000_000),
-            bin2hex(random_bytes(8))
+            random_bytes(8) |> bin2hex(...)
         );
 
         // Written under a locked name first : a worker must never read a file still being written

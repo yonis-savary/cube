@@ -38,6 +38,10 @@ Tests can be automatically written by agents.
   - Model Factories (fake models from their fields, with Faker)
   - DB Migration system, with dry run and rollback !
   - Password Authentication System (+ Support for Custom Authentication)
+  - Bearer Token Authentication for API clients
+  - Single Sign-On (Google, Microsoft, any OpenID Connect provider, or your own)
+  - UUID v4/v6, prefixed secrets and expiring signed payloads
+  - Rate limiting (sliding window, `429` middleware, throttling your own calls to an API)
 
 ## 🔥 Installation
 

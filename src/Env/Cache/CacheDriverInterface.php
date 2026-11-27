@@ -22,6 +22,13 @@ interface CacheDriverInterface
 
     public function delete(string $key): void;
 
+    /**
+     * Add `$by` to an integer counter atomically, even between processes, creating it at 0 with the given time to live.
+     *
+     * @return int The counter after the addition
+     */
+    public function increment(string $key, int $by = 1, int $timeToLive = self::MONTH): int;
+
     /** @return string[] What was removed : files for a disk cache, keys otherwise */
     public function clear(string $keyPrefix = ''): array;
 

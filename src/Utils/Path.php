@@ -148,7 +148,7 @@ class Path
 
         return Bunch::fromExplode('/', self::toRelative($directory))
             ->filter()
-            ->map(fn (string $segment) => str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $segment))))
+            ->map(fn (string $segment) => str_replace(' ', '', str_replace(['-', '_'], ' ', $segment) |> ucwords(...)))
             ->join('\\')
         ;
     }

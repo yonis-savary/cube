@@ -11,6 +11,7 @@ use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\ValidationReturn;
 use Cube\Web\Router\Route;
+use Cube\Web\Router\RouterConfiguration;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Log\LoggerInterface;
@@ -208,6 +209,29 @@ class Request extends HttpMessage
         return $this->ip;
     }
 
+    /**
+     * The address of the client : `getIp()`, or what the trusted proxies of the `RouterConfiguration` forwarded.
+     */
+    public function getClientIp(?RouterConfiguration $configuration = null): ?string
+    {
+        $configuration ??= RouterConfiguration::resolve();
+        $isTrusted = fn (string $address) => Bunch::wrap($configuration->trustedProxies)
+            ->any(fn (string $proxy) => IpAddress::isInRange($address, $proxy))
+        ;
+
+        // Each proxy appends the address it received from : read from the right, only while a trusted proxy wrote the entry
+        $client = $this->ip;
+        foreach (explode(',', $this->getHeader('x-forwarded-for', '')) |> array_reverse(...) as $hop) {
+            if (null === $client || !$isTrusted($client))
+                break;
+            if (false === filter_var($hop = trim($hop), FILTER_VALIDATE_IP))
+                break;
+            $client = $hop;
+        }
+
+        return $client;
+    }
+
     public function get(): array
     {
         return $this->get;
@@ -283,7 +307,35 @@ class Request extends HttpMessage
             : new AnyParam();
     }
 
-    protected function getBodyMergedWithUpload(Rule $validator): array
+    public function getValidatedSource(): RequestSource
+    {
+        return RequestSource::Merged;
+    }
+
+    protected function getValidatedInput(Rule $validator): mixed
+    {
+        return match ($this->getValidatedSource()) {
+            RequestSource::Merged => array_merge($this->all(), $this->getShapedUploads($validator)),
+            RequestSource::Body => $this->getBodyWithUploads($validator),
+            RequestSource::RawBody => $this->getBody(),
+        };
+    }
+
+    protected function getBodyWithUploads(Rule $validator): mixed
+    {
+        $body = $this->isJSON() && '' !== $this->getBody()
+            ? json_decode($this->getBody(), true)
+            : $this->post;
+
+        if (!is_array($body) || (count($body) && array_is_list($body)))
+            return $body;
+        return array_merge($body, $this->getShapedUploads($validator));
+    }
+
+    /**
+     * @return array<string,Upload|Upload[]>
+     */
+    protected function getShapedUploads(Rule $validator): array
     {
         $rules = $validator instanceof ObjectParam ? $validator->getRules() : [];
 
@@ -294,7 +346,7 @@ class Request extends HttpMessage
         foreach ($uploads as $inputName => &$inputUploads)
             $inputUploads = self::shapeUploadsFor($inputUploads, $rules[$inputName] ?? null);
 
-        return array_merge($this->all(), $uploads);
+        return $uploads;
     }
 
     /**
@@ -313,7 +365,7 @@ class Request extends HttpMessage
     {
         $validator = $this->getObjectParam();
 
-        return $validator->validate($this->getBodyMergedWithUpload($validator), 'request');
+        return $validator->validate($this->getValidatedInput($validator), 'request');
     }
 
     public function isValid(): bool
@@ -324,10 +376,12 @@ class Request extends HttpMessage
     public function validated(?string $key = null, ?Rule $validator = null): mixed
     {
         $validator ??= $this->getObjectParam();
-        $result = $validator->validate($this->getBodyMergedWithUpload($validator), 'request')->getResult();
+        $result = $validator->validate($this->getValidatedInput($validator), 'request')->getResult();
 
         if (!$key)
             return $result;
+        if (!is_array($result) || (count($result) && array_is_list($result)))
+            throw new \InvalidArgumentException("{$key} key does not exists in validated values : the request validates a ".(is_array($result) ? 'list' : get_debug_type($result)).', not an object');
         if (array_key_exists($key, $result))
             return $result[$key];
         if ($validator instanceof ObjectParam && array_key_exists($key, $validator->getRules()))

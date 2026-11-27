@@ -3,14 +3,21 @@
 namespace Cube\Tests\Units\Data\OpenAPI;
 
 use Cube\Data\Database\Database;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\OpenAPI\Attributes\RawResponse;
 use Cube\Data\OpenAPI\Configuration\Authentication\BearerToken;
 use Cube\Data\OpenAPI\Configuration\Authentication\OpenApiAuthScheme;
 use Cube\Data\OpenAPI\OpenAPIConfiguration;
 use Cube\Data\OpenAPI\OpenAPIGenerator;
+use Cube\Env\Configuration;
 use Cube\Env\Storage;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\BodyController;
+use Cube\Tests\Units\Data\OpenAPI\Controllers\DocumentedController;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\SampleController;
+use Cube\Tests\Units\Data\OpenAPI\Middlewares\RequiresAnApiKey;
+use Cube\Tests\Units\Security\Classes\TwoPerMinuteThrottle;
 use Cube\Utils\Path;
+use Cube\Web\Http\Rules\Param;
 use Cube\Web\Router\Route;
 use Cube\Web\Router\Router;
 use Cube\Web\Router\RouterConfiguration;
@@ -310,6 +317,127 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals($fixture, file_get_contents($file), "File {$file} does not match OADRawResponse.json fixture");
     }
 
+    public function testAResponseDeclaredOnTheControllerDocumentsEachOfItsMethods()
+    {
+        $responses = $this->responsesOf('/undocumented', Route::get('/undocumented', [DocumentedController::class, 'undocumented']));
+
+        $this->assertEquals('Refused by the controller', $responses['403']['description']);
+        $this->assertEquals('Answered by the controller', $responses['200']['description']);
+        $this->assertEquals('Nothing left to answer', $responses['204']['description']);
+    }
+
+    public function testAResponseDeclaredOnTheMethodReplacesTheControllerOne()
+    {
+        $responses = $this->responsesOf('/refusing', Route::get('/refusing', [DocumentedController::class, 'refusingByItself']));
+
+        $this->assertEquals('Refused by the method', $responses['403']['description']);
+    }
+
+    /** A class-level 200 is a default : what the method returns describes it better. */
+    public function testTheReturnTypeOfTheMethodReplacesAResponseDeclaredOnTheController()
+    {
+        $responses = $this->responsesOf('/product', Route::get('/product', [DocumentedController::class, 'product']));
+
+        $this->assertNotEquals('Answered by the controller', $responses['200']['description']);
+        $this->assertArrayHasKey('$ref', $responses['200']['content']['application/json']['schema']);
+    }
+
+    public function testAResponseDeclaredOnAMiddlewareDocumentsEveryRouteBehindIt()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->group('/api', [RequiresAnApiKey::class], function: function (Router $router) {
+            $router->addRoutes(Route::get('/simple-route', [SampleController::class, 'simpleRoute']));
+        });
+
+        $responses = $this->generateAsArray($router)['paths']['/api/simple-route']['get']['responses'];
+
+        $this->assertEquals('No API key', $responses['401']['description']);
+        $this->assertEquals('Refused by the middleware', $responses['403']['description']);
+    }
+
+    public function testAResponseDeclaredOnTheControllerReplacesTheMiddlewareOne()
+    {
+        $responses = $this->responsesOf('/undocumented', Route::get('/undocumented', [DocumentedController::class, 'undocumented'], [RequiresAnApiKey::class]));
+
+        $this->assertEquals('No API key', $responses['401']['description']);
+        $this->assertEquals('Refused by the controller', $responses['403']['description']);
+    }
+
+    public function testAThrottleDocumentsItsRefusalOnEveryRouteBehindIt()
+    {
+        $responses = $this->responsesOf('/simple-route', Route::get('/simple-route', [SampleController::class, 'simpleRoute'], [TwoPerMinuteThrottle::class]));
+
+        $this->assertArrayHasKey('429', $responses);
+        $this->assertArrayHasKey('text/plain', $responses['429']['content']);
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    protected function responsesOf(string $path, Route $route): array
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes($route);
+
+        return $this->generateAsArray($router)['paths'][$path]['get']['responses'];
+    }
+
+    public function testABase64FileIsAStringCarryingItsEncoding()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/avatar', [BodyController::class, 'storeAvatar']));
+
+        $schema = $this->generateAsArray($router)['paths']['/avatar']['post']['requestBody']['content']['application/json']['schema'];
+
+        $this->assertEquals(['type' => 'string', 'contentEncoding' => 'base64'], $schema['properties']['avatar']);
+    }
+
+    public function testABodySourceDescribesAListBody()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/many', [BodyController::class, 'deleteMany']));
+
+        $schema = $this->generateAsArray($router)['paths']['/many']['post']['requestBody']['content']['application/json']['schema'];
+
+        $this->assertEquals('array', $schema['type']);
+        $this->assertEquals('integer', $schema['items']['type']);
+    }
+
+    /** Rules validating the body are no query parameters, even on a GET. */
+    public function testABodySourceGivesNoQueryParameter()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get('/search', [BodyController::class, 'searchByIds']));
+
+        $operation = $this->generateAsArray($router)['paths']['/search']['get'];
+
+        $this->assertEmpty(array_filter($operation['parameters'] ?? [], fn ($parameter) => 'query' === $parameter['in']));
+    }
+
+    public function testARawBodySourceIsABinaryBody()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/document', [BodyController::class, 'storeDocument']));
+
+        $body = $this->generateAsArray($router)['paths']['/document']['post']['requestBody'];
+
+        $this->assertEquals(['type' => 'string', 'format' => 'binary'], $body['content']['application/octet-stream']['schema']);
+    }
+
+    /** The example kept the resource's date objects, encoded as {"date": ..., "timezone_type": ...}. */
+    public function testAResourceExampleWritesItsDatesAsAResponseDoes()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get('/album-dates', [BodyController::class, 'albumDates']));
+
+        $content = $this->generateAsArray($router)['paths']['/album-dates']['get']['responses']['200']['content']['application/json'];
+
+        $this->assertMatchesRegularExpression(Param::RFC3339_DATE_TIME, $content['example']['updated']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $content['example']['released']);
+        $this->assertEquals(['type' => 'string', 'format' => 'date-time'], $content['schema']['properties']['updated']);
+        $this->assertEquals('date', $content['schema']['properties']['released']['format']);
+    }
+
     public function testRawFileResponseGeneration()
     {
         $router = $this->getStandaloneRouter();
@@ -600,13 +728,45 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['type' => ['string', 'null'], 'format' => 'date'], $schema['properties']['released_at']);
     }
 
-    /** Datetimes were announced as RFC 3339 date-time, while Cube reads and writes them as `Y-m-d H:i:s`. */
-    public function testADatetimeIsDescribedByItsPattern()
+    public function testAnAnsweredDatetimeIsDescribedAsAnRfc3339DateTime()
     {
         $schema = $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album'];
 
-        $this->assertEquals(['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']], $schema['properties']['last_update']);
-        $this->assertMatchesRegularExpression('~^'.Route::SLUG_FORMATS['datetime'].'$~', $schema['example']['last_update']);
+        $this->assertEquals(['type' => 'string', 'format' => 'date-time'], $schema['properties']['last_update']);
+        $this->assertMatchesRegularExpression(Param::RFC3339_DATE_TIME, $schema['example']['last_update']);
+    }
+
+    /** OpenAPI has no format for anything else than RFC 3339 : announcing date-time would be a lie. */
+    public function testAnotherOutputFormatIsDescribedAsAString()
+    {
+        $schema = (new Configuration(new DateTimeConfiguration('d/m/Y H:i')))->asGlobalInstance(
+            fn () => $this->generateAsArray($this->getOutputShapesRouter())['components']['schemas']['Album']
+        );
+
+        $this->assertEquals(['type' => 'string'], $schema['properties']['last_update']);
+        $this->assertMatchesRegularExpression('~^\d{2}/\d{2}/\d{4} \d{2}:\d{2}$~', $schema['example']['last_update']);
+    }
+
+    public function testAReceivedDatetimeAcceptsBothFormats()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::post('/post-route', [SampleController::class, 'postEndpointWithCustomRequest']));
+
+        $schema = $this->generateAsArray($router)['paths']['/post-route']['post']['requestBody']['content']['application/json']['schema'];
+
+        $this->assertContains(['type' => 'string', 'anyOf' => [['pattern' => Route::SLUG_FORMATS['datetime']], ['format' => 'date-time']]], $this->allSchemasOf($schema));
+    }
+
+    /**
+     * @param array<mixed> $schema
+     *
+     * @return array<mixed>[]
+     */
+    protected function allSchemasOf(array $schema): array
+    {
+        $children = array_merge(array_values($schema['properties'] ?? []), isset($schema['items']) ? [$schema['items']] : []);
+
+        return array_merge([$schema], ...array_map(fn ($child) => is_array($child) ? $this->allSchemasOf($child) : [], $children));
     }
 
     /** An untyped schema was encoded as an empty JSON array, which is not a schema. */

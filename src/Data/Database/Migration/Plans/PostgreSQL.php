@@ -2,6 +2,7 @@
 
 namespace Cube\Data\Database\Migration\Plans;
 
+use Cube\Data\Database\DatabaseDriver;
 use Cube\Data\Database\Migration\SQLPlan;
 use Cube\Data\Models\ModelField;
 
@@ -9,7 +10,7 @@ class PostgreSQL extends SQLPlan
 {
     public static function supports(string $driver): bool
     {
-        return 'pgsql' === strtolower($driver);
+        return DatabaseDriver::Postgres->value === $driver;
     }
 
     protected function getAutoIncrementClause(): string

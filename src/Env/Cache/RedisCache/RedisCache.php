@@ -61,7 +61,11 @@ class RedisCache implements CacheDriverInterface
     {
         if (!$this->has($key))
             return null;
-        if (null === $payload = SignedPayload::verify($this->connection->get($key))) {
+        $stored = $this->connection->get($key);
+        // increment() keeps counters unsigned for INCRBY : a bare integer is never unserialized
+        if (preg_match('/^-?\d+$/', $stored))
+            return (int) $stored;
+        if (null === $payload = SignedPayload::verify($stored)) {
             Logger::getInstance()->warning('Redis cache entry [{key}] has an invalid signature, it is ignored', ['key' => $key]);
             return null;
         }
@@ -82,6 +86,18 @@ class RedisCache implements CacheDriverInterface
         if (self::PERMANENT === $timeToLive)
             $this->connection->set($key, $value);
         else $this->connection->setex($key, $timeToLive, $value);
+    }
+
+    public function increment(string $key, int $by = 1, int $timeToLive = self::MONTH): int
+    {
+        $createOptions = self::PERMANENT === $timeToLive ? ['nx'] : ['nx', 'ex' => $timeToLive];
+        [, $counter] = $this->connection->multi()
+            ->set($key, 0, $createOptions)
+            ->incrBy($key, $by)
+            ->exec()
+        ;
+
+        return $counter;
     }
 
     public function has(string $key): bool

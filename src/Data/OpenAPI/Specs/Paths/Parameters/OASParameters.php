@@ -6,6 +6,7 @@ use Cube\Data\AutoDataToObject;
 use Cube\Data\Bunch;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
+use Cube\Web\Http\RequestSource;
 use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Router\Route;
 
@@ -68,6 +69,8 @@ class OASParameters extends AutoDataToObject
 
     public function processQueryParameters(Route $route)
     {
+        if (RequestSource::Merged !== $this->getRequestSource($route))
+            return;
         if (!$rules = $this->getRequestRules($route))
             return;
         if (!$rules instanceof ObjectParam) {

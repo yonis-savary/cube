@@ -144,19 +144,53 @@ A field is nullable unless you call `notNull()`. A `generated()` field is never 
 database only computes it for a row inserted without a value. [Migrations](./17-migrations.md#describing-columns) use these same
 builders to describe columns.
 
-Field values are **formatted** when written, and by `toArray()`, so the same way when a route
-answers the model
+Field values are **formatted** when written to the database, and by `toArray()` when a route answers
+the model
 
-| Type | Written and answered as |
-|---|---|
-| `BOOLEAN` | `bool` (`1`, `true`, `t`, `y`, `yes`, `on` are true), whatever the driver returns |
-| `DATE` | `Y-m-d`, from a `DateTime` |
-| `DATETIME` | `Y-m-d H:i:s`, from a `DateTime` |
-| other types | as is |
+| Type | Written as | Answered as |
+|---|---|---|
+| `BOOLEAN` | `bool` (`1`, `true`, `t`, `y`, `yes`, `on` are true), whatever the driver returns | the same `bool` |
+| `DATE` | `Y-m-d`, from a `DateTime` | `Y-m-d` |
+| `DATETIME`, `TIMESTAMP` | `Y-m-d H:i:s`, from a `DateTime` or an RFC 3339 string, in the application timezone | ATOM : `2026-11-27T14:30:00+01:00` |
+| other types | as is | as is |
 
-Reading a model keeps its fields as the database driver returns them : a MySQL or SQLite boolean is
-`0`/`1` on `$model->active`, a date is a string. Only the `HasOne` relations a query joins through `with()` are parsed
-(`int`, `float`, `bool`, `DateTime`).
+Set another answered format with `DateTimeConfiguration` in your `cube.php`, as
+`DateTimeInterface::format()` reads it
+
+```php
+new DateTimeConfiguration(outputFormat: 'Y-m-d H:i:s'), // the format Cube answered before ATOM
+```
+
+A model copied from another one's `toArray()` holds ATOM strings : saving it writes them back as
+`Y-m-d H:i:s`, so the column keeps one format.
+
+Date fields are always objects, however the model was made (read from the database, `fromArray()`,
+`fromRequest()`, an assignment) :
+
+| Type | `$model->field` holds | Answered by `toArray()` and in a JSON response |
+|---|---|---|
+| `DATETIME`, `TIMESTAMP` | a `DateTimeImmutable` | ATOM, or the format of `DateTimeConfiguration` |
+| `DATE` | a `Cube\Data\Date`, a `DateTimeImmutable` meaning a calendar day | `Y-m-d` |
+
+So a resource copying a date answers it formatted, with nothing to convert
+
+```php
+public function toArray(Model $order): array
+{
+    return [
+        'placed_at' => $order->created_at,             // "2026-11-27T14:30:00+01:00"
+        'due' => $order->due_on->modify('+30 days'),   // "2026-12-27", a Date stays a Date
+    ];
+}
+```
+
+Assigning a string parses it (`$order->due_on = '2026-12-01'`), and a mutable `DateTime` becomes
+immutable : a date never changes behind the model's back. A string that is no date throws when
+assigned.
+
+The other fields keep what the database driver returns : a MySQL or SQLite boolean is `0`/`1` on
+`$model->active`. Only the `HasOne` relations a query joins through `with()` are parsed (`int`,
+`float`, `bool`).
 
 ## Reading
 
@@ -400,7 +434,7 @@ save bound children after their parent. See [Events](./08-events.md) for the dis
 ## Faking models
 
 `Product::factory()` builds models filled with fake values, for your tests and seeders — see
-[Testing](./33-testing.md#faking-models).
+[Testing](./36-testing.md#faking-models).
 
 ## Sharing your types with the front-end
 

@@ -3,6 +3,8 @@
 namespace Cube\Data\Models;
 
 use Cube\Core\Autoloader;
+use Cube\Data\Date;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Http\Rules\Rule;
@@ -287,7 +289,8 @@ class ModelField
         if (null === $value) {
             return null;
         }
-
+        if ($this->holdsADate())
+            return $this->toDateValue($value);
         switch ($this->type) {
             case self::INTEGER:
                 return (int) $value;
@@ -295,11 +298,6 @@ class ModelField
                 return (float) $value;
             case self::BOOLEAN:
                 return in_array(strtolower((string) $value), ['1', 'true', 't', 'y', 'yes', 'on']);
-            case self::DATE:
-            case self::DATETIME:
-                return new \DateTime($value);
-            case self::TIMESTAMP:
-                return $value;
             default:
                 return $value;
         }
@@ -309,11 +307,62 @@ class ModelField
     {
         if (self::BOOLEAN === $this->type)
             return $this->parse($value);
+        // A date read from an output or a request holds an offset : the column stores the time of the application timezone
+        if ($this->holdsATime() && is_string($value) && preg_match(Param::RFC3339_DATE_TIME, $value))
+            $value = (new \DateTime($value))->setTimezone(new \DateTimeZone(date_default_timezone_get()));
         if (!$value instanceof \DateTimeInterface) {
             return $value;
         }
 
         return $value->format(self::DATE === $this->type ? 'Y-m-d' : 'Y-m-d H:i:s');
+    }
+
+    public function toOutput(mixed $value, ?string $dateTimeFormat = null): mixed
+    {
+        if (!$this->holdsATime() || null === $value)
+            return $this->format($value);
+        $dateTimeFormat ??= DateTimeConfiguration::resolve()->outputFormat;
+
+        $date = $value instanceof \DateTimeInterface ? $value : new \DateTime($value);
+
+        return $date->format($dateTimeFormat);
+    }
+
+    public function toResponseRule(?DateTimeConfiguration $configuration = null): Rule
+    {
+        if (!$this->holdsATime())
+            return $this->toRule();
+        $configuration ??= DateTimeConfiguration::resolve();
+
+        $rule = Param::string(false, $this->nullable);
+
+        return $configuration->isRfc3339()
+            ? $rule->withMetadata([Rule::META_FORMAT => 'date-time'])
+            : $rule;
+    }
+
+    public function holdsATime(): bool
+    {
+        return in_array($this->type, [self::DATETIME, self::TIMESTAMP], true);
+    }
+
+    public function holdsADate(): bool
+    {
+        return self::DATE === $this->type || $this->holdsATime();
+    }
+
+    /**
+     * @return \DateTimeImmutable A `Date` for a `DATE` field
+     */
+    protected function toDateValue(\DateTimeInterface|string $value): \DateTimeImmutable
+    {
+        $class = self::DATE === $this->type ? Date::class : \DateTimeImmutable::class;
+        // Keeping the instance given : a model compares it to its original value to know what to save
+        if ($value instanceof \DateTimeImmutable && $class === $value::class)
+            return $value;
+        return $value instanceof \DateTimeInterface
+            ? $class::createFromInterface($value)
+            : new $class($value);
     }
 
     public function toRule(?bool $forceNullable = null): Rule

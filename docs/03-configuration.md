@@ -14,7 +14,7 @@ return [
     new Applications('App'),
 
     new DatabaseConfiguration(
-        driver: 'mysql',
+        driver: DatabaseDriver::MySQL,
         database: env('DB_NAME'),
         host: env('DB_HOST'),
         port: (int) env('DB_PORT', 3306),
@@ -48,7 +48,7 @@ $database->driver; // 'mysql'
 | Step | Returns |
 |---|---|
 | the element is in your configuration | that element |
-| a default is passed : `resolve(default: new DatabaseConfiguration('sqlite'))` | the given default |
+| a default is passed : `resolve(default: new DatabaseConfiguration(DatabaseDriver::SQLite))` | the given default |
 | otherwise | `new static()`, the element with its constructor defaults |
 
 Its first parameter is the `Configuration` to read from, the global one when `null` : pass your own
@@ -73,7 +73,7 @@ one. Elements are added in the order they are listed, so the last one wins.
 
 ```php
 return [
-    new DatabaseConfiguration('sqlite', 'database.sqlite'),
+    new DatabaseConfiguration(DatabaseDriver::SQLite, 'database.sqlite'),
 
     // Replaces the sqlite configuration when Config/production.php declares a DatabaseConfiguration
     new Import('Config/production.php'),
@@ -104,7 +104,7 @@ return [
 [Installation](./02-installation.md#the-env-file)). Call it from your configuration files only
 
 ```php
-new DatabaseConfiguration('sqlite', env('DB_FILENAME', 'database.sqlite')),
+new DatabaseConfiguration(DatabaseDriver::SQLite, env('DB_FILENAME', 'database.sqlite')),
 ```
 
 Once the configuration is cached, `cube.php` is no longer read : the values `env()` returned are
@@ -173,32 +173,34 @@ php do configuration:cache
 
 From then on, **`cube.php` is ignored** : a change to `cube.php`, to an imported file or to a `.env`
 value used in them only applies after running `configuration:cache` again. The `PostDeployment` event
-drops the cache, so that a release reads `cube.php` again (see [Deployment](./34-deployment.md)) ;
+drops the cache, so that a release reads `cube.php` again (see [Deployment](./37-deployment.md)) ;
 `cache:clear` does not, as the cache lives apart under `Storage/cube/configuration`.
 
 The cache holds your elements as they are, passwords included, and a `RedisSession` puts its
 password in `session.save_path`, which `phpinfo()` shows : keep `Storage` outside your web root and
-readable by your application only. See [Deployment](./34-deployment.md) for the production checklist.
+readable by your application only. See [Deployment](./37-deployment.md) for the production checklist.
 
 ## Built-in elements
 
 | Element | Options (defaults) | Configures |
 |---|---|---|
 | `Applications(...$paths)` | `'App'` when no path is given | the application directories to load, see [Applications and discovery](./04-applications-and-discovery.md) |
-| `AutoloaderConfiguration` | `cached` (`isProduction()`), `displayErrors` (`isDebug()`) | the cache of class discovery and PHP error display, see [Deployment](./34-deployment.md) |
-| `DatabaseConfiguration` | `driver` (`'sqlite'`), `database` (`'db.sqlite'`), `host`, `port`, `user`, `password` | the SQL connection : `sqlite`, `mysql`, `pgsql`, see [Database and queries](./16-database-and-queries.md) |
+| `AutoloaderConfiguration` | `cached` (`isProduction()`), `displayErrors` (`isDebug()`) | the cache of class discovery and PHP error display, see [Deployment](./37-deployment.md) |
+| `DatabaseConfiguration` | `driver` (`DatabaseDriver::SQLite`, or a PDO driver name), `database` (`'db.sqlite'`), `host`, `port`, `user`, `password`, `keepAliveInterval` (`300`) | the SQL connection : `sqlite`, `mysql`, `pgsql`, see [Database and queries](./16-database-and-queries.md) |
+| `DateTimeConfiguration` | `outputFormat` (`DATE_ATOM`) | how models and JSON responses write a date with a time, see [Models](./18-models.md) |
 | `MigrationManagerConfiguration` | `tableName` (`'__cube_migration'`), `directoryName` (`'Migrations'`) | the table recording migrations and their directory in each application, see [Migrations](./17-migrations.md) |
-| `RouterConfiguration` | `cached` (`false`), `loadControllers` (`true`), `loadRoutesFiles` (`true`), `apis` (`[]`), `commonMiddlewares` (`[]`), `commonPrefix` (`'/'`), `securityHeaders` (`[]`) | routing, global middlewares and extra `WebAPI`s, see [Routing and middlewares](./11-routing-and-middlewares.md) |
+| `RouterConfiguration` | `cached` (`false`), `loadControllers` (`true`), `loadRoutesFiles` (`true`), `apis` (`[]`), `commonMiddlewares` (`[]`), `commonPrefix` (`'/'`), `securityHeaders` (`[]`), `trustedProxies` (`[]`) | routing, global middlewares and extra `WebAPI`s, see [Routing and middlewares](./11-routing-and-middlewares.md) |
 | `CORSConfiguration` | `allowedOrigins` (`CORS_ALLOWED_ORIGINS`), `allowHeaders` (`CORS_ALLOWED_HEADERS`), `allowCredentials` (`CORS_ALLOWED_CREDENTIALS`), `maxAge` (`86400`) | CORS answers, see [Routing and middlewares](./11-routing-and-middlewares.md) |
 | `CacheConfiguration` | `driver` (a `LocalDiskCache` in `Storage/Cache`) | the default `Cache` driver, see [Storage and caching](./21-storage-and-caching.md) |
 | `SessionConfiguration` | `namespace` (`'cube'`), `driver` (a `PHPGlobalSession`) | the session driver, see [Sessions](./22-sessions.md) |
 | `AuthenticationConfiguration` | `provider`, **required** | the `Authentication` provider, see [Authentication](./23-authentication.md) |
+| `SingleSignOnConfiguration(...$providers)` | no provider | the identity providers of single sign-on, see [Single sign on](./26-single-sign-on.md) |
 | `UserRegisterConfiguration` | `cookieName` (`'remember-me-token'`), `cookieDuration` (two weeks), `refreshTokenOnRemember` (`true`), `cookieSecure` (`true`), `cookieHttpOnly` (`true`), `cookiePath` (`'/'`), `cookieSameSite` (`'Lax'`) | the remember-me cookie, see [Remember me](./25-remember-me.md) |
 | `OpenAPIConfiguration` | `outputFile` (`Storage/openapi.json`), `title` (`'Application'`), `version` (`'0.0.1'`), `authenticationScheme`, `jsonFlags`, `displayLogs` (`true`) | the generated OpenAPI document, see [API documentation](./15-api-documentation.md) |
 | `ToTypesConfiguration` | `outputFile` (`Storage/cube-types.ts`) | the output of `models:to-types`, see [Models](./18-models.md) |
 | `LargeUploadManagerConfiguration` | `storageName` (`'/large-upload-temp'`), `maxSize` (none) | chunked uploads, see [Controllers and responses](./13-controllers-and-responses.md) |
-| `WebsocketConfiguration` | `websocketHost` (`'0.0.0.0'`), `websocketPort` (`8088`), `httpHost` (`'127.0.0.1'`), `httpPort` (`8089`), `broadcastSecret`, `allowedOrigins` (the CORS ones) | the websocket server, see [Websockets](./30-websockets.md) |
-| `BroadcastConfiguration` | `socketHost`, `socketPort`, `httpHost`, `httpPort`, `broadcastSecret` (the `WebsocketConfiguration` ones) | the client broadcasting to the websocket server, see [Websockets](./30-websockets.md) |
+| `WebsocketConfiguration` | `websocketHost` (`'0.0.0.0'`), `websocketPort` (`8088`), `httpHost` (`'127.0.0.1'`), `httpPort` (`8089`), `broadcastSecret`, `allowedOrigins` (the CORS ones) | the websocket server, see [Websockets](./33-websockets.md) |
+| `BroadcastConfiguration` | `socketHost`, `socketPort`, `httpHost`, `httpPort`, `broadcastSecret` (the `WebsocketConfiguration` ones) | the client broadcasting to the websocket server, see [Websockets](./33-websockets.md) |
 | `Import($fileToImport)` | | the elements of another file, see [above](#splitting-the-configuration-with-import) |
 | `GenericElement($name, $value)` | | an untyped value, see [above](#untyped-values-with-genericelement) |
 

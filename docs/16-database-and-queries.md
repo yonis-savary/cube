@@ -25,7 +25,7 @@ Declare a `DatabaseConfiguration` in your `cube.php`
 
 ```php
 new DatabaseConfiguration(
-    driver: 'mysql',
+    driver: DatabaseDriver::MySQL,
     database: env('DB_NAME', 'app'),
     host: env('DB_HOST', '127.0.0.1'),
     port: 3306,
@@ -34,11 +34,15 @@ new DatabaseConfiguration(
 )
 ```
 
-| Driver | DBMS |
-|--------|------|
-| `sqlite` | SQLite — `database` is a path inside your `Storage`, an empty string gives an in-memory database |
-| `mysql` | MySQL, MariaDB |
-| `pgsql` | PostgreSQL |
+| Driver | PDO name | DBMS |
+|--------|----------|------|
+| `DatabaseDriver::SQLite` | `sqlite` | SQLite — `database` is a path inside your `Storage`, an empty string gives an in-memory database |
+| `DatabaseDriver::MySQL` | `mysql` | MySQL, MariaDB |
+| `DatabaseDriver::Postgres` | `pgsql` | PostgreSQL |
+
+`driver` also takes the PDO name as a string (`'mysql'`), lowercased and trimmed : that is the way in
+for a DBMS you [support yourself](#supporting-another-dbms), which has no `DatabaseDriver` case. Prefer
+the enum for the drivers Cube ships, your IDE completes it and a typo cannot reach production.
 
 Without any `DatabaseConfiguration`, Cube uses SQLite on `Storage/db.sqlite`. A SQLite connection
 runs `PRAGMA foreign_keys = ON` when it opens, so its foreign keys are enforced.
@@ -52,6 +56,36 @@ $database = Database::fromPDO($pdo, 'my-database');
 
 Every method that queries the database takes an optional `Database` as its last argument, and falls
 back to the global instance — see [Components](./06-components.md) to swap that instance.
+
+## Long-running processes
+
+A server closes a connection left idle long enough (MySQL `wait_timeout`, a proxy, a failover), and
+every query after that fails. `websocket:serve` and `cube:queue` check the global connection every
+`keepAliveInterval` seconds, 300 by default, and reconnect when it was closed
+
+```php
+new DatabaseConfiguration(
+    driver: DatabaseDriver::MySQL,
+    // ...
+    keepAliveInterval: 60, // 0 never checks
+)
+```
+
+The check is a `SELECT 1`, made only when the process has already used the database : a worker
+that never queries it opens no connection. A failed reconnection throws, which ends the process for
+its supervisor to restart.
+
+The same methods serve your own long-running process
+
+```php
+$database->ping();       // false once the server closed the connection
+$database->reconnect();  // opens a new connection with the same settings
+$database->keepAlive();  // ping(), then reconnect() with a logged warning when it failed
+```
+
+`reconnect()` throws a `RuntimeException` for a database built with `fromPDO()`, whose settings
+Cube does not know, and for an in-memory SQLite, which would lose its content. A reconnection
+starts a new session : an open transaction or a session variable (`SET ...`) is gone.
 
 ## Raw queries
 
@@ -131,13 +165,14 @@ Bunch::fromQuery('SELECT id FROM product', [], null, 'id'); // Bunch of ids
 ## Inspecting the connection
 
 ```php
-$database->getDriver();        // 'mysql', 'pgsql' or 'sqlite'
+$database->getDriver();        // the PDO name : 'mysql', 'pgsql', 'sqlite' (compare with DatabaseDriver::MySQL->value)
 $database->getDatabase();      // database name (null for an in-memory SQLite)
 $database->getHost();
 $database->getPort();
 $database->getUser();
 $database->getConnection();    // the underlying PDO
 $database->isConnected();
+$database->ping();             // whether the connection still answers
 $database->lastInsertId();
 $database->getLastStatement(); // the last PDOStatement run by query()
 $database->hasTable('product');
@@ -371,7 +406,8 @@ $total = Product::select()->count($otherDatabase);
 ## Supporting another DBMS
 
 A driver is one class extending `QueryBuilder`, which already renders standard SQL : the driver
-declares what it supports and how it quotes identifiers
+declares what it supports and how it quotes identifiers. It answers for a PDO driver name, so it
+needs no `DatabaseDriver` case : configure it with that name as a string (`driver: 'oci'`)
 
 ```php
 class Oracle extends QueryBuilder

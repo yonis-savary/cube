@@ -32,7 +32,7 @@ class PHPGlobalSession implements SessionDriverInterface
 
     protected function start(): void
     {
-        session_name(md5(Path::getProjectPath()));
+        Path::getProjectPath() |> md5(...) |> session_name(...);
         session_set_cookie_params([
             'httponly' => true,
             'secure' => $this->isCookieSecure(),

@@ -146,7 +146,8 @@ class ModelTest extends TestCase
             'name' => 'Book',
             'price_dollar' => 20,
         ]));
-        $this->assertEquals(['created_at' => '2025-01-01 01:01:01', 'name' => 'Book', 'price_dollar' => '20'], $prod->toArray());
+        $createdAt = (new \DateTime('2025-01-01 01:01:01'))->format(DATE_ATOM);
+        $this->assertEquals(['created_at' => $createdAt, 'name' => 'Book', 'price_dollar' => '20'], $prod->toArray());
 
         $prod = Product::fromRequest($sampleReq([
             'id' => 1,

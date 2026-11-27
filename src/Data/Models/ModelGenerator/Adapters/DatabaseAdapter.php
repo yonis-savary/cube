@@ -40,9 +40,18 @@ abstract class DatabaseAdapter
         'NUMERIC' => ModelField::FLOAT,
         'DECIMAL' => ModelField::DECIMAL,
         'BOOLEAN' => ModelField::BOOLEAN,
+        'BOOL' => ModelField::BOOLEAN,
         'DATE' => ModelField::DATE,
         'DATETIME' => ModelField::DATETIME,
         'TIMESTAMP' => ModelField::TIMESTAMP,
+        // Postgres types starting like a known one : without them, an interval would be an integer
+        'INTERVAL' => ModelField::STRING,
+        'INT4RANGE' => ModelField::STRING,
+        'INT8RANGE' => ModelField::STRING,
+        'INT4MULTIRANGE' => ModelField::STRING,
+        'INT8MULTIRANGE' => ModelField::STRING,
+        'DATERANGE' => ModelField::STRING,
+        'DATEMULTIRANGE' => ModelField::STRING,
     ];
 
     protected Database $database;
@@ -157,12 +166,14 @@ abstract class DatabaseAdapter
     protected function getModelFieldType(string $sqlType): string
     {
         $fieldType = strtoupper($sqlType);
-        foreach (self::SQLITE_TYPES as $sqliteType => $modelType) {
-            if (str_starts_with($fieldType, $sqliteType))
-                return $modelType;
-        }
 
-        return ModelField::STRING;
+        // Longest first : a DATETIME column also starts with DATE
+        $matchingType = Bunch::wrap(array_keys(self::SQLITE_TYPES))
+            ->sort(fn (string $sqliteType) => -strlen($sqliteType))
+            ->first(fn (string $sqliteType) => str_starts_with($fieldType, $sqliteType))
+        ;
+
+        return null === $matchingType ? ModelField::STRING : self::SQLITE_TYPES[$matchingType];
     }
 
     public function addTable(Table $table): void

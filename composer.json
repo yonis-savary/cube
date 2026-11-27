@@ -15,7 +15,8 @@
             "Tests\\": "tests/integration-root/Tests",
             "Cube\\Tests\\Units\\": "tests/units",
             "Cube\\Tests\\Integration\\": "tests/integration",
-            "Cube\\Tests\\Apcu\\": "tests/apcu"
+            "Cube\\Tests\\Apcu\\": "tests/apcu",
+            "Cube\\Tests\\Generated\\": "tests/generated"
         }
     },
     "authors": [

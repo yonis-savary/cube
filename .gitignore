@@ -2,6 +2,7 @@
 /composer.lock
 /.phpunit.result.cache
 /tests/integration-apps
+/tests/generated
 /tests/integration-root/Storage
 /Storage
 /tests/Storage

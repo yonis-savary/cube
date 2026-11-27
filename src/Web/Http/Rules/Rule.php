@@ -9,6 +9,7 @@ abstract class Rule
     public const META_MAX = 'max-value';
     public const META_MODEL = 'model';
     public const META_ENUM = 'enum-value';
+    public const META_FORMAT = 'format';
 
     /**
      * As Param can be quite generic, this metadata map can hold

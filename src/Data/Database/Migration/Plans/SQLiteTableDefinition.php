@@ -49,14 +49,14 @@ class SQLiteTableDefinition
             }
 
             if (',' === $char && 1 === $depth) {
-                $definitions[] = trim(substr($sql, $start, $i - $start));
+                $definitions[] = substr($sql, $start, $i - $start) |> trim(...);
                 $start = $i + 1;
                 continue;
             }
 
             if (')' === $char && 0 === --$depth) {
-                $definitions[] = trim(substr($sql, $start, $i - $start));
-                return new self($definitions, trim(substr($sql, $i + 1)));
+                $definitions[] = substr($sql, $start, $i - $start) |> trim(...);
+                return new self($definitions, substr($sql, $i + 1) |> trim(...));
             }
         }
 
@@ -204,12 +204,12 @@ class SQLiteTableDefinition
     /** Removes the column and every table constraint naming it */
     public function removeColumn(string $column): self
     {
-        $this->definitions = array_values(array_filter(
+        $this->definitions = array_filter(
             $this->definitions,
             fn ($definition) => self::isTableConstraint($definition)
                 ? !self::mentions($definition, $column)
                 : 0 !== strcasecmp(self::getColumnName($definition) ?? '', $column)
-        ));
+        ) |> array_values(...);
 
         return $this;
     }

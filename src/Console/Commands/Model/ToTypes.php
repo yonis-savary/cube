@@ -66,11 +66,11 @@ class ToTypes extends Command
 
     public function toPascalCase(string $string): string
     {
-        return ucfirst(preg_replace_callback(
+        return preg_replace_callback(
             '/([a-z])(?:_|-)([a-z])/',
             fn ($matches) => $matches[1].strtoupper($matches[2]),
             $string
-        ));
+        ) |> ucfirst(...);
     }
 
     /**

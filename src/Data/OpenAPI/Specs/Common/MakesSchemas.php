@@ -3,11 +3,14 @@
 namespace Cube\Data\OpenAPI\Specs\Common;
 
 use Cube\Core\Autoloader;
+use Cube\Data\Date;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
 use Cube\Data\OpenAPI\OpenAPIGenerationContext;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Request;
+use Cube\Web\Http\RequestSource;
 use Cube\Web\Http\Rules\AnyParam;
 use Cube\Web\Http\Rules\ArrayParam;
 use Cube\Web\Http\Rules\ObjectParam;
@@ -84,6 +87,9 @@ trait MakesSchemas
         if ($enum = $meta[Rule::META_ENUM] ?? false)
             $schema['enum'] = $enum;
 
+        if ($format = $meta[Rule::META_FORMAT] ?? false)
+            $schema['format'] = $format;
+
         // OpenAPI only bounds numbers : isBetween() on a date or a string has no standard keyword
         if (!in_array($schema['type'] ?? '', ['number', 'integer']))
             return;
@@ -105,9 +111,10 @@ trait MakesSchemas
             'boolean' => ['type' => 'boolean'],
             'date' => ['type' => 'string', 'format' => 'date'],
             'time' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['time']],
-            'date-time' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['datetime']],
+            'date-time' => ['type' => 'string', 'anyOf' => [['pattern' => Route::SLUG_FORMATS['datetime']], ['format' => 'date-time']]],
             'hex' => ['type' => 'string', 'pattern' => Route::SLUG_FORMATS['hex']],
             'uuid' => ['type' => 'string', 'format' => 'uuid'],
+            'base64' => ['type' => 'string', 'contentEncoding' => 'base64'],
         };
     }
 
@@ -184,8 +191,12 @@ trait MakesSchemas
             $schema = ['type' => 'integer'];
         } elseif (is_bool($data)) {
             $schema = ['type' => 'boolean'];
-        } elseif ($data instanceof \DateTime) {
+        } elseif ($data instanceof Date) {
             $schema = ['type' => 'string', 'format' => 'date'];
+        } elseif ($data instanceof \DateTimeInterface) {
+            $schema = DateTimeConfiguration::resolve()->isRfc3339()
+                ? ['type' => 'string', 'format' => 'date-time']
+                : ['type' => 'string'];
         } else {
             OpenAPIGenerationContext::getInstance()->log(" - Warning: used 'any' data type on parameter");
             $schema = [];
@@ -194,15 +205,27 @@ trait MakesSchemas
 
     protected function getRequestRules(Route $route): ?Rule
     {
+        if (!$request = $this->getRequestOf($route))
+            return null;
+        $rules = $request->getObjectParam();
+
+        return $rules instanceof AnyParam ? null : $rules;
+    }
+
+    protected function getRequestSource(Route $route): RequestSource
+    {
+        return $this->getRequestOf($route)?->getValidatedSource() ?? RequestSource::Merged;
+    }
+
+    private function getRequestOf(Route $route): ?Request
+    {
         $requestParameter = $route->getReflectionMethod()->getParameters()[0] ?? null;
         if (!$requestParameter)
             return null;
         $requestType = $this->getReflectionTypeName($requestParameter->getType());
         if (!$requestType || !Autoloader::extends($requestType, Request::class))
             return null;
-        /** @var class-string<Request> $requestType */
-        $rules = (new $requestType())->getObjectParam();
-        return $rules instanceof AnyParam ? null : $rules;
+        return new $requestType();
     }
 
     protected function getReflectionTypeName(\ReflectionIntersectionType|\ReflectionNamedType|\ReflectionUnionType|null $type): ?string

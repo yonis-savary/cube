@@ -466,4 +466,34 @@ class RequestTest extends TestCase
     {
         return new Upload(['name' => 'photo.png', 'type' => 'image/png', 'tmp_name' => '/tmp/photo', 'error' => UPLOAD_ERR_OK, 'size' => 1], $inputName);
     }
+
+    #[DataProvider('getForwardedRequests')]
+    public function testTheClientAddressIsForwardedOnlyByTrustedProxies(?string $remoteAddress, ?string $forwardedFor, array $trustedProxies, ?string $clientAddress)
+    {
+        $request = new Request(headers: null === $forwardedFor ? [] : ['X-Forwarded-For' => $forwardedFor], ip: $remoteAddress);
+
+        $this->assertSame($clientAddress, $request->getClientIp(new RouterConfiguration(trustedProxies: $trustedProxies)));
+    }
+
+    public static function getForwardedRequests(): array
+    {
+        return [
+            'no proxy' => ['93.184.215.14', null, [], '93.184.215.14'],
+            'header from an untrusted client' => ['93.184.215.14', '1.2.3.4', [], '93.184.215.14'],
+            'trusted proxy' => ['10.0.0.5', '93.184.215.14', ['10.0.0.0/8'], '93.184.215.14'],
+            'a forged entry before the real one' => ['10.0.0.5', '1.2.3.4, 93.184.215.14', ['10.0.0.0/8'], '93.184.215.14'],
+            'chain of trusted proxies' => ['10.0.0.5', '93.184.215.14, 10.0.0.9', ['10.0.0.0/8'], '93.184.215.14'],
+            'trusted proxy without header' => ['10.0.0.5', null, ['10.0.0.0/8'], '10.0.0.5'],
+            'invalid entry' => ['10.0.0.5', '93.184.215.14, not-an-ip', ['10.0.0.0/8'], '10.0.0.5'],
+            'IPv6 proxy' => ['fd00::1', '2606:2800:21f:cb07:6820:80da:af6b:8b2c', ['fd00::/8'], '2606:2800:21f:cb07:6820:80da:af6b:8b2c'],
+            'no address' => [null, '93.184.215.14', ['10.0.0.0/8'], null],
+        ];
+    }
+
+    public function testATrustedProxyMustBeAnAddressOrANetwork()
+    {
+        $this->expectExceptionMessage('Trusted proxy [proxy.internal]');
+
+        new RouterConfiguration(trustedProxies: ['proxy.internal']);
+    }
 }

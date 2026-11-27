@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-static-server.md">Previous : Static server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-deployment.md">Next : Deployment</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./35-static-server.md">Previous : Static server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./37-deployment.md">Next : Deployment</a></div></td></tr></table>
 
 # Testing
 
@@ -252,7 +252,7 @@ the network again unless it registers its own. A test of yours overriding `tearD
 `parent::tearDown()`.
 
 The mock declares real routes and returns real responses. See
-[Http client](./27-http-client.md#testing-without-the-network) for writing one.
+[Http client](./30-http-client.md#testing-without-the-network) for writing one.
 
 ## Tests without the application
 
@@ -394,4 +394,4 @@ with the relations the attribute names in `with`.
 A factory giving realistic values gives a realistic documentation. See
 [API documentation](./15-api-documentation.md#describing-a-response).
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-static-server.md">Previous : Static server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-deployment.md">Next : Deployment</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./35-static-server.md">Previous : Static server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./37-deployment.md">Next : Deployment</a></div></td></tr></table>

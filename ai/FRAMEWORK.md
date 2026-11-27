@@ -30,6 +30,12 @@ Cube already provides most plumbing. Use the framework tool before implementing 
 | a CLI command | a `Command` subclass |
 | logging | `Logger::getInstance()`, `Cube\info()`, `Cube\error()`... |
 | react to something | `Event` + `EventDispatcher` |
+| a UUID, an API token, a webhook secret | `Identifier::uuid4()`/`uuid6()`/`prefixed()`, stored with `Identifier::hash()` |
+| a short-lived token or link | `SignedPayload::sign($payload, expiresAt: ...)` |
+| limit requests, logins or calls to an API | a `RateLimiter` subclass (`attempt()`, `wait()`), a `Throttle` middleware for routes |
+| a counter shared between processes | `Cache::increment()`, never `get()` then `set()` |
+| the client address behind a proxy | `$request->getClientIp()` with `RouterConfiguration(trustedProxies:)` |
+| call a URL a user supplied (webhook, avatar, preview) | `(new HttpClient())->withPublicOnly()`, it refuses private addresses and pins the checked one |
 | API documentation | `php do make:openapi`, plus OpenAPI attributes |
 | call an API that publishes an OpenAPI document | `php do make:integration <openapi.json\|url>`, then the generated `<Name>Client` |
 
@@ -43,7 +49,7 @@ return [
     new Applications('App'),
 
     new DatabaseConfiguration(
-        driver: 'mysql',
+        driver: DatabaseDriver::MySQL,
         database: env('DB_NAME'),
         host: env('DB_HOST'),
         port: (int) env('DB_PORT', 3306),
@@ -116,13 +122,15 @@ the IDE cannot help with a name.
 |---|---|
 | `Applications(...$paths)` | the application directories to load |
 | `AutoloaderConfiguration(cached:, displayErrors:)` | class index caching (on in production) and error display (on in debug) |
-| `DatabaseConfiguration(driver:, database:, host:, port:, user:, password:)` | the SQL connection (`sqlite`, `mysql`, `pgsql`) |
+| `DatabaseConfiguration(driver:, database:, host:, port:, user:, password:, keepAliveInterval:)` | the SQL connection : `DatabaseDriver::SQLite` / `MySQL` / `Postgres` (or a PDO driver name for a DBMS you add) ; `websocket:serve` and `cube:queue` check it every `keepAliveInterval` seconds and reconnect |
 | `MigrationManagerConfiguration(tableName:, directoryName:)` | the migrations table and directory |
-| `RouterConfiguration(cached:, loadControllers:, loadRoutesFiles:, apis:, commonMiddlewares:, commonPrefix:, securityHeaders:)` | routing, global middlewares, extra `WebAPI`s such as a `StaticServer` |
+| `DateTimeConfiguration(outputFormat:)` (date fields hold a `DateTimeImmutable`, a `DATE` a `Cube\Data\Date` answered `Y-m-d`) | how `toArray()` and JSON responses write a `DATETIME`/`TIMESTAMP` or a `DateTime` (ATOM by default) |
+| `RouterConfiguration(cached:, loadControllers:, loadRoutesFiles:, apis:, commonMiddlewares:, commonPrefix:, securityHeaders:, trustedProxies:)` | routing, global middlewares, extra `WebAPI`s such as a `StaticServer`, the reverse proxies trusted for `getClientIp()` |
 | `CORSConfiguration(allowedOrigins:, allowHeaders:, allowCredentials:, maxAge:)` | CORS answers |
 | `CacheConfiguration(driver)` | the default `Cache` driver |
 | `SessionConfiguration(namespace:, driver:)` | the session driver |
-| `AuthenticationConfiguration(provider)` | the `Authentication` provider |
+| `AuthenticationConfiguration(provider)` | the `Authentication` provider : `PasswordAuthentication`, or `ModelAuthentication` without passwords |
+| `SingleSignOnConfiguration(...$providers)` | the single sign-on providers (`OpenIDConnectProvider`, `OpenIDConnectProvider::google()`, any `IdentityProvider`) |
 | `UserRegisterConfiguration(...)` | the remember-me cookie |
 | `OpenAPIConfiguration(outputFile:, title:, version:, authenticationScheme:)` | the generated OpenAPI document |
 | `WebsocketConfiguration(...)`, `BroadcastConfiguration(...)` | the websocket server and its broadcast client |
@@ -428,7 +436,11 @@ class StoreProductRequest extends Request
 ```
 
 Read the coerced values with `$request->validated()` (or `validated('name')`). The controller never
-re-checks what the rules already guarantee. Use named arguments on `Param` factories : their
+re-checks what the rules already guarantee. The rules see the query string merged with the body (the
+query string wins a shared key) : override `getValidatedSource()` to return `RequestSource::Body`
+(the body alone, a JSON list or scalar included) or `RequestSource::RawBody` (the raw string). A file
+in a JSON field is `UploadRule::fromBase64()` (base64 or data URI), a file sent as the body is
+`UploadRule::fromRawBody()` : both give an `Upload`, like a multipart file. Use named arguments on `Param` factories : their
 boolean parameters are unreadable otherwise.
 
 ## Shaping responses with resources
@@ -518,6 +530,12 @@ public function healthCheck(): Response
 | `#[ModelResponse(Model::class, isArray:, responseCode:)]` | the route answers a model the return type cannot express (`array`, `Response`) |
 | `#[RawResponse(data, file:, responseCode:)]` | any other shape, from an example value or a JSON file |
 | `#[Hidden]` | the route must stay out of the document |
+
+The response attributes (`ModelResponse`, `ResourceResponse`, `ObjectResponse`, `RawResponse`,
+`NoContentResponse`) also go on a controller class (every method) or a middleware class (every route
+it guards, e.g. its `401`) : declare a shared response once instead of repeating it. For one status
+code, the method wins over what Cube infers from it, which wins over the controller, which wins over
+the middlewares.
 
 `operationId` must be unique in the whole document : one route per verb, and distinct method names
 or `#[Endpoint]` summaries. Declare the title, version and authentication scheme in

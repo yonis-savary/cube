@@ -57,8 +57,10 @@ method to document : it is skipped too, with a warning in the generation logs.
 |---|---|
 | a slug `{product}` | a path parameter, typed from the callback parameter at the same position (the first one after the request) — a model gives the type of its primary key |
 | a typed slug `{int:id}` | a path parameter of that type (`int`, `float`, `date`, `time`, `datetime`, `hex`, `uuid`, or your regex as a `pattern`) |
-| a `Request` subclass with `getRules()`, on `GET` / `DELETE` | one query parameter per rule |
-| a `Request` subclass with `getRules()`, on `POST` / `PUT` / `PATCH` | a required JSON request body |
+| a `Request` subclass with `getRules()`, on `GET` / `DELETE` | one query parameter per rule, unless it validates `RequestSource::Body` or `RawBody` |
+| a `Request` subclass with `getRules()`, on `POST` / `PUT` / `PATCH` | a required JSON request body, a list or a scalar too when it validates `RequestSource::Body` |
+| a `Request` validating `RequestSource::RawBody`, on `POST` / `PUT` / `PATCH` | a required binary request body |
+| `UploadRule::fromBase64()` | a string with `contentEncoding: base64` |
 | `#[RawBody]`, on `POST` / `PUT` / `PATCH` | a required binary request body, see [Receiving a raw body](#receiving-a-raw-body) |
 | the same `Request` subclass | a `422` response, its body described by the shared `ValidationErrors` schema |
 | a slug received as a model (`Product $product`) | a `404` response |
@@ -68,13 +70,16 @@ method to document : it is skipped too, with a warning in the generation logs.
 
 From the rules, a `nullable` rule becomes a nullable type, a rule that is not `optional()` a required
 key or parameter, `inArray()` an `enum` of the rule's type and `isBetween()` a `minimum` and a
-`maximum` — on a number only, OpenAPI has no bound for a date or a string. A datetime is a string
-with the `YYYY-MM-DD HH:MM:SS` `pattern` Cube reads and answers, not the RFC 3339 `date-time` format.
+`maximum` — on a number only, OpenAPI has no bound for a date or a string. A datetime a route
+receives is a string matching either `YYYY-MM-DD HH:MM:SS` or the RFC 3339 `date-time` format, the
+two `Param::datetime()` accepts. A datetime field a model answers is a `date-time`, or a plain string
+when `DateTimeConfiguration` sets a format that is not RFC 3339 ; so is a `DateTime` in a
+`#[RawResponse]` example or in what a resource returns.
 A rule without a type (`new Param()`) gives the empty schema `{}`, which accepts any value.
 
 Every model a response refers to is described once in `components.schemas`, from
 `Model::toResponseObjectParam()`, with an example made by its factory (see
-[Testing](./33-testing.md#faking-models)) : that is what a model answered as is gives. A model read
+[Testing](./36-testing.md#faking-models)) : that is what a model answered as is gives. A model read
 from the database holds all its columns, so every field is a required property, the primary key
 included, and a nullable column is typed `[type, null]`. Each relation is an optional property
 pointing to the schema of its model, since a relation only appears once loaded
@@ -207,7 +212,7 @@ public function profiles(): array
 
 Two endpoints can answer the same resource with different relations loaded : `with` names the ones
 this endpoint loads, and the factory makes exactly those on the example model (see
-[Testing](./33-testing.md#faking-relations))
+[Testing](./36-testing.md#faking-relations))
 
 ```php
 #[ResourceResponse(OrderResource::class, with: ['customer', 'lines.product'])]
@@ -312,6 +317,43 @@ default.
 `#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]` and `#[RawResponse]` can be repeated
 on a method, one per status code : two attributes describing the same code keep the last one read.
 
+## Sharing responses between routes
+
+The five response attributes go on a class too. On a controller, they document each of its methods ;
+on a middleware, every route it guards — which is how the `401` or `403` it answers gets documented
+
+```php
+#[RawResponse(['error' => 'Missing or invalid API key'], responseCode: StatusCode::UNAUTHORIZED)]
+class RequireApiKey implements Middleware
+{
+    // ...
+}
+
+#[RawResponse(['error' => 'This agency is closed'], responseCode: StatusCode::CONFLICT)]
+class AgencyController extends Controller
+{
+    // every route of AgencyController documents the 409, and the 401 when RequireApiKey guards it
+}
+```
+
+The middlewares Cube reads are the ones the route runs : its own, those of its groups and the
+`commonMiddlewares` of `RouterConfiguration`.
+
+The attributes of a parent class apply to its subclasses, which can replace a status code with their
+own. That is how every `Throttle` documents its `429` (see [Rate limiting](./27-rate-limiting.md)).
+
+When several places describe the same status code, the most specific one wins, in this order
+
+| Read | From |
+|---|---|
+| 1 | the middlewares, in the order they run |
+| 2 | the controller class |
+| 3 | what Cube reads from the method : request rules (`422`), model slug (`404`), return type |
+| 4 | the attributes of the method |
+
+So a `200` declared on a controller is a default : a method returning a `Product` documents the
+product instead, and an attribute on the method replaces both.
+
 ## Authentication
 
 Declare how your API authenticates and every operation of the document requires it
@@ -330,8 +372,9 @@ new OpenAPIConfiguration(
 Both take a `componentNameInDoc` too (`BearerAuth`, `ApiTokenAuth`), the name of the scheme in
 `components.securitySchemes`.
 
-The scheme applies to the whole document : a public route still shows as protected. The `401` or
-`403` your middleware answers are not documented either, as Cube cannot know them.
+The scheme applies to the whole document : a public route still shows as protected. Cube cannot
+guess the `401` or `403` your middleware answers : declare them with an attribute on the middleware,
+see [Sharing responses between routes](#sharing-responses-between-routes).
 
 ## Generating from code
 

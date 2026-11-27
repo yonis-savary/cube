@@ -74,6 +74,7 @@ $filters = $request->params(['name', 'price']);    // several, keyed
 | `getBody()` / `getJSON()` | the raw body, or the body decoded as JSON |
 | `isJSON()` | whether the body is declared as JSON |
 | `getMethod()` / `getPath()` / `getIp()` / `getCookies()` | the request line and its context |
+| `getClientIp()` | the client address : `getIp()`, or what your `trustedProxies` forwarded (see [Rate limiting](./27-rate-limiting.md#behind-a-reverse-proxy)) |
 | `getRoute()` / `getSlugValues()` / `getSlugObject(string $name)` | what the router matched (see [Routing](./11-routing-and-middlewares.md#route-parameters-slugs)) |
 
 The request body is bounded by PHP and your web server, not by Cube : set `post_max_size`,
@@ -165,13 +166,15 @@ before it : **use named arguments**, `Param::string(nullable: true)` reads where
 | `Param::url(bool $nullable = false)` | a URL, the scheme being optional |
 | `Param::uuid(bool $nullable = false)` | a UUID, any case |
 | `Param::date(bool $nullable = false)` | a `YYYY-MM-DD` date that exists in the calendar |
-| `Param::datetime(bool $nullable = false, bool $addTimeIfMissing = false)` | a `YYYY-MM-DD HH:MM:SS` date-time ; `addTimeIfMissing` appends `00:00:00` to a bare date |
+| `Param::datetime(bool $nullable = false, bool $addTimeIfMissing = false)` | a `YYYY-MM-DD HH:MM:SS` date-time, or an RFC 3339 one (`2026-11-27T14:30:00+01:00`, the format models answer) kept as given ; `addTimeIfMissing` appends `00:00:00` to a bare date |
 | `Param::object(array $rules = [], bool $nullable = false)` | an associative array, each key checked by its rule |
 | `Param::array(Rule\|array $childRule, bool $nullable = false)` | a list whose every item matches `$childRule` |
 | `Param::anyKeyObject(Rule\|array $valueRule, bool $nullable = false)` | a map with unknown keys and a known value shape |
 | `Param::model(string $modelClass, ?string $column = null, bool $nullable = false, array $with = [])` | a value that exists in `$column` (the primary key by default), **replaced by the model** |
 | `Param::exists(string $modelClass, ?string $column = null, bool $nullable = false)` | a value that exists in `$column`, kept as is |
 | `UploadRule::new(bool $nullable = false, bool $rejectUploadsWithErrors = true)` | an uploaded file, see [Uploads](#uploads) |
+| `UploadRule::fromBase64(bool $nullable = false)` | a file sent as a base64 string or a data URI, **replaced by an `Upload`**, see [Files sent in base64](#files-sent-in-base64) |
+| `UploadRule::fromRawBody(bool $nullable = false)` | the raw body, **replaced by an `Upload`**, see [A raw body](#a-raw-body) |
 
 A plain array in place of a rule is read as `Param::object()` of that array
 
@@ -260,6 +263,39 @@ class WriteProductsRequest extends Request
 }
 ```
 
+By default the rules see the query string merged with the body, which mixes the two : a list body
+gets the query parameters added to it. To validate the body alone, see the next section.
+
+### Choosing what the rules validate
+
+`getValidatedSource()` tells what `getRules()` is checked against. Override it in your `Request`
+subclass
+
+```php
+class DeleteProductsRequest extends Request
+{
+    public function getValidatedSource(): RequestSource
+    {
+        return RequestSource::Body;
+    }
+
+    public function getRules(): Rule
+    {
+        return Param::array(Param::integer()); // the body is [12, 15, 18]
+    }
+}
+```
+
+| `RequestSource` | The rules validate |
+|---|---|
+| `Merged` (default) | the query string merged with the parsed body and the uploads ; **the query string wins** a key both hold |
+| `Body` | the body as sent : a JSON object, list or scalar, or the form fields, with the uploads — never the query string |
+| `RawBody` | the body as a raw string, whatever its content type : for a file sent as is, see [A raw body](#a-raw-body) |
+
+Prefer `Body` for anything a client should not be able to change from the URL : with `Merged`,
+`POST /pay?amount=1` replaces the `amount` of the JSON body. On a `Body` or `RawBody` request,
+`validated('key')` throws an `InvalidArgumentException` when the body is not an object.
+
 ### Validating by hand
 
 When you need the errors rather than a `422`, take a plain `Request` and validate it yourself :
@@ -341,5 +377,66 @@ public static function uploadDocument(StoreDocumentRequest $request)
 
 `move()` defaults to the `Uploads` directory of your `Storage` and a generated name ; a string
 destination is a directory inside your `Storage`. It refuses to overwrite an existing file.
+
+### Files sent in base64
+
+A JSON client often sends a file as a base64 string. `UploadRule::fromBase64()` decodes it into an
+`Upload`, so the checks and `move()` work exactly as for a multipart file
+
+```php
+class StoreAvatarRequest extends Request
+{
+    public function getRules(): array
+    {
+        return [
+            'avatar' => UploadRule::fromBase64()
+                ->withMimeType('image/png')
+                ->withMaxSize(File::MEGABYTES * 2),
+        ];
+    }
+}
+
+// { "avatar": "iVBORw0KGgo..." } or { "avatar": "data:image/png;base64,iVBORw0KGgo..." }
+$request->validated('avatar')->move('avatars', "{$user->id}.png");
+```
+
+| Accepted | Detail |
+|---|---|
+| base64 | the standard alphabet or the URL-safe one (`-`, `_`), with or without `=` padding |
+| a data URI | `data:<type>;base64,<data>` : the declared type must be the one detected from the content, or the value is refused |
+
+The decoded file gets the type detected from its content, and a name made of the input name and the
+matching extension (`base64.png`). `withMaxSize()` applies to the decoded size. The temporary file is
+deleted at the end of the request, unless `move()` took it.
+
+### A raw body
+
+A client can send a file as the body itself (`Content-Type: application/pdf`). Validate the
+`RawBody` with `UploadRule::fromRawBody()`, and `validated()` gives the `Upload`
+
+```php
+class StoreScanRequest extends Request
+{
+    public function getValidatedSource(): RequestSource
+    {
+        return RequestSource::RawBody;
+    }
+
+    public function getRules(): Rule
+    {
+        return UploadRule::fromRawBody()->withMimeType('application/pdf');
+    }
+}
+
+public static function storeScan(StoreScanRequest $request)
+{
+    $path = $request->validated()->move('scans');
+    // ...
+}
+```
+
+An empty body is refused, unless the rule is `nullable`. A body holding a base64 file validates the
+same way with `UploadRule::fromBase64()`, and any other rule (`Param::string()`, your own checks)
+receives the raw string.
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./11-routing-and-middlewares.md">Previous : Routing and middlewares</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./13-controllers-and-responses.md">Next : Controllers and responses</a></div></td></tr></table>

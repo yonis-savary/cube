@@ -52,6 +52,28 @@ class Upload
         $this->extension = pathinfo($this->filename, PATHINFO_EXTENSION);
     }
 
+    /**
+     * An upload made of bytes received another way than a multipart form (a base64 field, a raw body).
+     * Its temporary file is removed at shutdown unless `move()` took it.
+     */
+    public static function fromContent(string $content, string $inputName = 'uploads', ?string $filename = null): static
+    {
+        $tempName = tempnam(sys_get_temp_dir(), 'cube-upload-');
+        file_put_contents($tempName, $content);
+        register_shutdown_function(fn () => is_file($tempName) && unlink($tempName));
+
+        $type = (new \finfo(FILEINFO_MIME_TYPE))->buffer($content) ?: 'application/octet-stream';
+        $extension = array_search($type, FileMIMETypes::MIME_TYPES, true);
+
+        return new static([
+            'name' => $filename ?? $inputName.(false !== $extension ? '.'.$extension : ''),
+            'type' => $type,
+            'tmp_name' => $tempName,
+            'error' => UPLOAD_ERR_OK,
+            'size' => strlen($content),
+        ], $inputName);
+    }
+
     public static function fromPsrUploadedFile(UploadedFileInterface $file, string $inputName = 'uploads'): static
     {
         $tempName = '';

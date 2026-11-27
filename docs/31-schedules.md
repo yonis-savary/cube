@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./27-http-client.md">Previous : Http client</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./29-queues.md">Next : Queues</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./30-http-client.md">Previous : Http client</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./32-queues.md">Next : Queues</a></div></td></tr></table>
 
 # Schedules
 
@@ -28,7 +28,7 @@ With the Docker stack of the server files, `make launch-scheduler` runs it insid
 ```
 
 To keep the host out of it, a dedicated container can call it instead : see
-[The scheduler container](./34-deployment.md#the-scheduler-container).
+[The scheduler container](./37-deployment.md#the-scheduler-container).
 
 ## Writing a task
 
@@ -130,7 +130,7 @@ An expression that is not five fields, or whose values fall outside their bounds
 
 `routine:launch` runs every schedule whose expression matches the current minute. Nothing calls it
 for you : call it every minute from the host's cron, or from a
-[scheduler container](./34-deployment.md#the-scheduler-container). `routine:generate`
+[scheduler container](./37-deployment.md#the-scheduler-container). `routine:generate`
 prints the crontab lines for your project : `make launch-scheduler` for the Docker stack first, then
 `php do routine:launch`. Both `cd` to the project path as Cube sees it : run from inside the container,
 that is `/var/www`, so replace it with the path on the host
@@ -226,4 +226,4 @@ from a test only when that is what you mean to check.
 | `CronExpression::matches(DateTime\|string $datetime = 'now')` | whether the expression matches that minute |
 | `CronExpression::everyMinute()`, `everyHour()`, `everyDayOfTheMonth()`, `everyDayOfTheWeek()` | named constructors, each taking an optional `$step` |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./27-http-client.md">Previous : Http client</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./29-queues.md">Next : Queues</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./30-http-client.md">Previous : Http client</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./32-queues.md">Next : Queues</a></div></td></tr></table>

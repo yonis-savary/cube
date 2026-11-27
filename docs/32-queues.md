@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./28-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./30-websockets.md">Next : Websockets</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-websockets.md">Next : Websockets</a></div></td></tr></table>
 
 # Queues
 
@@ -183,7 +183,7 @@ services:
 
 A worker is a long-running process : give it a supervisor that restarts it, one service per queue.
 With the Docker stack, that is one more service on your application image (see
-[Deployment](./34-deployment.md#background-services))
+[Deployment](./37-deployment.md#background-services))
 
 ```yaml
 services:
@@ -194,7 +194,9 @@ services:
 ```
 
 The worker holds your code in memory : restart it after a deployment, or it keeps running the old
-version.
+version. Between two items, it checks its database connection every `keepAliveInterval` seconds of
+`DatabaseConfiguration`, and reconnects when the server closed it (see
+[Database and queries](./16-database-and-queries.md#long-running-processes)).
 
 ## Testing a queue
 
@@ -232,4 +234,4 @@ $this->assertFalse($queue->processNext());
 | `loop(?Logger $attachedLogger = null)` | runs the worker, what `cube:queue` calls |
 | `stop()` | asks a running loop to leave after the current item |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./28-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./30-websockets.md">Next : Websockets</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-websockets.md">Next : Websockets</a></div></td></tr></table>

@@ -28,7 +28,9 @@ change it asks from your application.
 
 **Cache and deployment**
 - `CacheDriverInterface::clear()` takes a `string $keyPrefix = ''` parameter : add it to your own
-  cache drivers. `Cache::clear()` on a `child()` now only empties that child's keys.
+  cache drivers.
+- `CacheDriverInterface` gains `increment(string $key, int $by = 1, int $timeToLive = self::MONTH): int`,
+  which must be atomic between processes : implement it in your own cache drivers. `Cache::clear()` on a `child()` now only empties that child's keys.
 - `PostDeployment` empties the class index cache, the remembered routes and the configuration cache,
   instead of the whole `Cache` : run `php do cache:clear` to empty everything. Run
   `configuration:cache` **after** dispatching it.
@@ -47,6 +49,10 @@ change it asks from your application.
   (return `[]` when there is none). `Authentication::login()` keeps those fields out of the session.
 - `HasScopedSession` scopes changed key once (`md5(static::class)`) : scoped session values, the
   authentication one included, are lost on the first request after the upgrade, so users log in again.
+- `AuthenticationProvider` no longer declares `attempt()` : a provider checking credentials implements
+  `VerifiesCredentials` as well, and `Authentication::attempt()` throws a `RuntimeException` with a
+  provider that does not. `PasswordAuthentication` extends `ModelAuthentication`.
+- `Authentication` opens its session on first use instead of when it is built.
 
 **Data**
 - `SavedModel::$database` is never `null`.
@@ -68,6 +74,16 @@ change it asks from your application.
   `ModelGenerator` adapters no longer extend `SQLite` : a custom adapter implements `listTables()`,
   `listForeignKeys()`, `listColumns()` and `getModelField()`.
 - SQLite quotes every table and column name it renders.
+- Date fields are hydrated whenever a model is built or assigned : `DATETIME` and `TIMESTAMP` hold a
+  `DateTimeImmutable`, `DATE` a `Cube\Data\Date` (answered `Y-m-d`). They used to hold the string the
+  driver returned, and a joined relation a mutable `DateTime`. Code treating them as strings
+  (`substr($model->created_at, 0, 10)`) reads them through `format()` now ; regenerate your models
+  for the `@property` types.
+- A `DATETIME` or `TIMESTAMP` field is answered in ATOM format (`2026-11-27T14:30:00+01:00`) by
+  `toArray()` and JSON responses, where it used to be `Y-m-d H:i:s` ; a `DateTimeInterface` inside an
+  answered array too, where it was encoded as an object. Your API clients read RFC 3339 dates, or you
+  keep the former format with `new DateTimeConfiguration('Y-m-d H:i:s')` in `cube.php`. `DATE` fields
+  keep `Y-m-d`.
 
 **Background work and CLI**
 - Schedules take `[Class::class, 'method']` or an invokable class name instead of a callable :
@@ -114,6 +130,52 @@ change it asks from your application.
 
 ### Added
 
+- Single sign-on : `SingleSignOn::redirect()` sends the user to an identity provider and `callback()`
+  gives back an `ExternalIdentity`, through the authorization code flow with PKCE and a `state` check.
+  `OpenIDConnectProvider` works with any OpenID Connect issuer (`OpenIDConnectProvider::google()`),
+  `AuthorizationCodeProvider` is the base for any other OAuth 2.0 provider, and
+  `SingleSignOnConfiguration` declares them. `ModelAuthentication` finds users by id without
+  checking a password, and `Test\FakeIdentityProvider` fakes a provider in your tests.
+- Bearer tokens : the `BearerAuthentication` middleware authenticates a request by its
+  `Authorization: Bearer` header, through a provider implementing `VerifiesBearerTokens`, for that
+  request only (no session, no cookie). A refused token is answered `401` with
+  `WWW-Authenticate: Bearer error="invalid_token"`.
+- `Identifier` : `uuid4()`, time-ordered `uuid6()`, `prefixed('whsec_')` secrets recognizable when they
+  leak, and `hash()` / `matches()` (HMAC on `APP_KEY`, constant-time) to store a secret you never read
+  back. `hash256()` / `matches256()` do the same without key, and are less secure.
+- `SignedPayload::sign($payload, expiresAt: ...)` : `verify()` refuses the payload from that moment on.
+  Payloads signed before stay readable.
+- OpenAPI response attributes (`#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]`,
+  `#[RawResponse]`, `#[NoContentResponse]`) go on a controller class, for each of its methods, and on a
+  middleware class, for every route it guards. The most specific declaration of a status code wins.
+- Rate limiting : extend `RateLimiter` with a `limit()` and a `window()` to get a policy counted over a
+  sliding window, then `attempt()` (refused attempts count nothing), `wait()` with an optional timeout
+  to stay under a third-party API limit, `availableIn()` and `clear()`. `RequestRateLimiter` keys it on
+  the client address, and a `Throttle` middleware subclass answers `429` with `Retry-After` and the
+  `RateLimit` / `RateLimit-Policy` headers, documented in OpenAPI on its own.
+- `Cache::increment()` adds to a counter atomically, even between processes.
+- `RouterConfiguration::$trustedProxies` and `Request::getClientIp()` : the client address forwarded in
+  `X-Forwarded-For` by your reverse proxies, and only by them. `IpAddress::isRange()` and
+  `isInRange()` check CIDR networks.
+- OpenAPI response attributes declared on a parent class apply to its subclasses.
+- `HttpClient::withPublicOnly()` (or `isPublicOnly()` overridden) refuses any host resolving to an
+  address that is not public, with a `NonPublicAddressException`, and pins the checked addresses with
+  `CURLOPT_RESOLVE`, redirections included. `IpAddress::isPublic()` is the check on its own.
+- `Request::getValidatedSource()` chooses what the rules validate : `RequestSource::Merged` (the query
+  string merged with the body, the default), `Body` (the body alone, a JSON list or scalar included)
+  or `RawBody` (the raw string). `UploadRule::fromBase64()` turns a base64 string or a data URI into an
+  `Upload`, checking a data URI's declared type against the content, and `UploadRule::fromRawBody()`
+  does the same for a raw body. `Upload::fromContent()` builds an upload from bytes.
+- `DatabaseDriver` enum (`SQLite`, `MySQL`, `Postgres`) for `DatabaseConfiguration::$driver` and the
+  `Database` constructor, which still take a PDO driver name as a string for a DBMS you add.
+  `Database::getDriver()` is now lowercased and trimmed, as its documentation said.
+- `websocket:serve` and `cube:queue` check the database connection every
+  `DatabaseConfiguration::$keepAliveInterval` seconds (300 by default) and reconnect when the server
+  closed it. `Database::ping()`, `reconnect()` and `keepAlive()` do the same in your own processes.
+- `DateTimeConfiguration::$outputFormat` sets how dates with a time are answered, ATOM by default.
+  `Param::datetime()` accepts RFC 3339 dates as well, and a model writes any RFC 3339 date it holds in
+  the application timezone. OpenAPI documents an answered date as `format: date-time`.
+
 - Websocket channels can receive messages from clients : declare their shape with
   `Channel::getMessageRule()` and handle them in `Channel::onMessage()`. A connection may send
   `WebsocketConfiguration::$maxMessagesPerMinute` messages (600 by default), and `emit()` works inside the
@@ -159,6 +221,14 @@ change it asks from your application.
 See `ROADMAP.md` for the detail of each point : `S01`–`S46` (security audit) and `R01`–`R36`.
 
 Also fixed :
+- `models:generate` generated every `DATETIME` column as a `DATE` field, its type name starting with
+  `DATE` : the field answered no ATOM date, validated as a bare date, and a `DateTime` written to it
+  lost its time. Regenerate your models.
+- `models:generate` failed on a SQLite database without any `AUTOINCREMENT` table (`no such table:
+  sqlite_sequence`), and missed the `AUTOINCREMENT` of a table not inserted into yet : it reads the
+  table declarations instead.
+- `models:generate` on Postgres generated a `bool` column as a string, and an `interval` or a range
+  (`int4range`, `daterange`...) as an integer or a date : they are a boolean and strings.
 - `models:generate` on MySQL marked a column with `DEFAULT CURRENT_TIMESTAMP` as `generated()` (its
   `DEFAULT_GENERATED` extra), so the ORM never wrote it, even when given a value. Such a column is now
   generated with `defaultExpression()` : regenerate your models to drop the wrong `generated()`.

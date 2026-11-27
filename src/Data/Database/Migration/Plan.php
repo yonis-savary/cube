@@ -149,6 +149,6 @@ abstract class Plan
             ->zip(fn ($field) => [$field->name, $field])
         ;
 
-        return array_values(array_merge($modelFields, $diffFields));
+        return array_merge($modelFields, $diffFields) |> array_values(...);
     }
 }

@@ -30,13 +30,13 @@ class Identifier
 
     public static function assertOperator(string $operator): void
     {
-        if (!in_array(strtoupper(trim($operator)), self::OPERATORS, true))
+        if (!in_array($operator |> trim(...) |> strtoupper(...), self::OPERATORS, true))
             throw new \InvalidArgumentException("Invalid SQL operator [{$operator}], expected one of ".join(', ', self::OPERATORS));
     }
 
     public static function assertJoinType(string $type): void
     {
-        if (!in_array(strtoupper(trim($type)), self::JOIN_TYPES, true))
+        if (!in_array($type |> trim(...) |> strtoupper(...), self::JOIN_TYPES, true))
             throw new \InvalidArgumentException("Invalid SQL join type [{$type}], expected one of ".join(', ', self::JOIN_TYPES));
     }
 }

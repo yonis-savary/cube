@@ -3,6 +3,7 @@
 namespace Cube\Data\Database\Migration\Plans;
 
 use Cube\Data\Bunch;
+use Cube\Data\Database\DatabaseDriver;
 use Cube\Data\Database\Migration\SQLPlan;
 use Cube\Data\Models\ModelField;
 
@@ -16,7 +17,7 @@ class SQLite extends SQLPlan
 
     public static function supports(string $driver): bool
     {
-        return 'sqlite' === strtolower($driver);
+        return DatabaseDriver::SQLite->value === $driver;
     }
 
     protected function getAutoIncrementClause(): string

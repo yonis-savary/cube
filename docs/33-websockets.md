@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>
 
 # Websockets
 
@@ -309,7 +309,7 @@ Each refusal is a frame on the socket, and the connection stays open.
 ### Keep the handler short
 
 `onMessage()` runs in the event loop of the socket process : while it works, no client is served.
-Keep it to short operations, and hand the rest to a [queue](./29-queues.md), whose worker calls
+Keep it to short operations, and hand the rest to a [queue](./32-queues.md), whose worker calls
 `emit()` once done
 
 ```php
@@ -322,8 +322,9 @@ public function onMessage(ChannelSubscriber $from, array $data): void
 `emit()` works the same from a handler or from your backend : inside the socket process, it reaches
 subscribers directly rather than through the HTTP side.
 
-The socket process keeps its database connection for its whole life, and Cube does not reconnect :
-if your database server closes idle connections, queries fail until the process restarts.
+The socket process keeps its database connection for its whole life. It checks it every
+`keepAliveInterval` seconds of `DatabaseConfiguration` and reconnects when the server closed it,
+see [Database and queries](./16-database-and-queries.md#long-running-processes).
 
 ## Running the server
 
@@ -405,4 +406,4 @@ The process builds your channels once, at start : restart it after a deployment.
 | `403` | the broadcast secret is missing or wrong |
 | `422` | the `__class` key names no known channel |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>

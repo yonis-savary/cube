@@ -2,11 +2,13 @@
 
 namespace Cube\Data\Database\Builders;
 
+use Cube\Data\Database\DatabaseDriver;
+
 class SQLite extends QueryBuilder
 {
     public static function supports(string $pdoDriver): bool
     {
-        return 'sqlite' === $pdoDriver;
+        return DatabaseDriver::SQLite->value === $pdoDriver;
     }
 
     public function getIdentifierDelimiters(): array

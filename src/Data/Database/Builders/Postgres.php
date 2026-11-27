@@ -2,11 +2,13 @@
 
 namespace Cube\Data\Database\Builders;
 
+use Cube\Data\Database\DatabaseDriver;
+
 class Postgres extends QueryBuilder
 {
     public static function supports(string $pdoDriver): bool
     {
-        return 'pgsql' === $pdoDriver;
+        return DatabaseDriver::Postgres->value === $pdoDriver;
     }
 
     public function getIdentifierDelimiters(): array

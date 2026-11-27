@@ -6,6 +6,7 @@ use Cube\Core\Autoloader;
 use Cube\Data\Bunch;
 use Cube\Data\Database\Database;
 use Cube\Data\Database\Query;
+use Cube\Data\DateTimeConfiguration;
 use Cube\Data\Models\Events\SavedModel;
 use Cube\Data\Models\Exceptions\MissingModelPrimaryKeyException;
 use Cube\Data\Models\Relations\HasMany;
@@ -28,6 +29,9 @@ abstract class Model extends EventDispatcher
 
     protected bool $persisted = false;
 
+    /** @var array<class-string,array<string,ModelField>> */
+    private static array $dateFieldsByClass = [];
+
     public function __construct(array|Model $data = [], string $relationAccumulator = '')
     {
         if ($data instanceof Model)
@@ -38,7 +42,11 @@ abstract class Model extends EventDispatcher
             fn ($value) => !is_array($value)
         );
 
-        $this->data = (object) $modelData;
+        $hydratedData = [];
+        foreach ($modelData as $name => $value)
+            $hydratedData[$name] = $this->hydrate($name, $value);
+
+        $this->data = (object) $hydratedData;
         $this->markAsOriginal();
         $this->completeModelDataWithRelations(array_diff_key($data, $modelData), $relationAccumulator);
     }
@@ -59,7 +67,23 @@ abstract class Model extends EventDispatcher
             throw new \InvalidArgumentException(static::class." does not have a [{$name}] field, use merge() to ignore the keys a model does not hold");
         }
 
-        $this->data->{$name} = $value;
+        $this->data->{$name} = $this->hydrate($name, $value);
+    }
+
+    /**
+     * @return array<string,ModelField> The `DATE`, `DATETIME` and `TIMESTAMP` fields, by name
+     */
+    protected static function dateFields(): array
+    {
+        // fields() builds every ModelField on each call, and a model is hydrated on every assignment
+        return self::$dateFieldsByClass[static::class] ??= array_filter(static::fields(), fn (ModelField $field) => $field->holdsADate());
+    }
+
+    protected function hydrate(string $name, mixed $value): mixed
+    {
+        $field = static::dateFields()[$name] ?? null;
+
+        return $field && null !== $value ? $field->parse($value) : $value;
     }
 
     abstract public static function table(): string;
@@ -308,7 +332,7 @@ abstract class Model extends EventDispatcher
     public static function toResponseObjectParam(): ObjectParam
     {
         return Param::object(
-            array_map(fn (ModelField $field) => $field->toRule(), static::fields())
+            array_map(fn (ModelField $field) => $field->toResponseRule(), static::fields())
         );
     }
 
@@ -483,12 +507,13 @@ abstract class Model extends EventDispatcher
     public function dataToArray(): array
     {
         $fields = static::fields();
+        $dateTimeFormat = DateTimeConfiguration::resolve()->outputFormat;
 
         $data = (array) $this->data;
         $array = [];
         foreach ($data as $name => $value) {
             $field = $fields[$name] ?? new ModelField($name);
-            $array[$name] = $field->format($value);
+            $array[$name] = $field->toOutput($value, $dateTimeFormat);
         }
 
         return $array;

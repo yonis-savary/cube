@@ -87,6 +87,14 @@ class Cache
         return $value;
     }
 
+    /**
+     * Add `$by` to an integer counter atomically, even between processes : `$by = 0` reads it.
+     */
+    public function increment(string $key, int $by = 1, int $timeToLive = self::MONTH): int
+    {
+        return $this->driver->increment($this->key($key), $by, $timeToLive);
+    }
+
     public function has(string $key): bool
     {
         $key = $this->key($key);

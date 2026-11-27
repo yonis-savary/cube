@@ -5,7 +5,7 @@ namespace Cube\Data\OpenAPI\Attributes;
 use Cube\Data\Models\Model;
 use Cube\Web\Http\StatusCode;
 
-#[\Attribute(\Attribute::TARGET_METHOD | \Attribute::IS_REPEATABLE)]
+#[\Attribute(\Attribute::TARGET_METHOD | \Attribute::TARGET_CLASS | \Attribute::IS_REPEATABLE)]
 class ModelResponse
 {
     /**

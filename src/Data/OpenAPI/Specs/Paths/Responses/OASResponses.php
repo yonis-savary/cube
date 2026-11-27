@@ -30,6 +30,11 @@ class OASResponses extends AutoDataToObject
     {
         $method = $route->getReflectionMethod();
 
+        // From the least to the most specific : a later declaration of the same status code replaces an earlier one
+        foreach ($route->getMiddlewares() as $middleware)
+            $this->addClassDeclaredResponses(new \ReflectionClass($middleware));
+        $this->addClassDeclaredResponses(new \ReflectionClass($route->getCallback()[0]));
+
         if ($this->getRequestRules($route)) {
             $response = new OASResponse();
             $response->validationErrorsResponse();
@@ -43,38 +48,54 @@ class OASResponses extends AutoDataToObject
         }
 
         $this->addReturnTypeResponses($method);
+        $this->addDeclaredResponses($method);
+    }
 
-        $modelResponses = $method->getAttributes(ModelResponse::class);
-        foreach ($modelResponses as $responseReflectionAttribute) {
-            $responseAttribute = $responseReflectionAttribute->newInstance();
+    /**
+     * @param \ReflectionClass<object> $class
+     */
+    protected function addClassDeclaredResponses(\ReflectionClass $class): void
+    {
+        // PHP does not inherit attributes : a parent declares first, so that its subclass can replace a status code
+        if ($parent = $class->getParentClass())
+            $this->addClassDeclaredResponses($parent);
+        $this->addDeclaredResponses($class);
+    }
+
+    /**
+     * @param \ReflectionClass<object>|\ReflectionMethod $source
+     */
+    protected function addDeclaredResponses(\ReflectionClass|\ReflectionMethod $source): void
+    {
+        foreach ($source->getAttributes(ModelResponse::class) as $modelReflectionAttribute) {
+            $responseAttribute = $modelReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->modelResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
 
-        foreach ($method->getAttributes(ResourceResponse::class) as $resourceReflectionAttribute) {
+        foreach ($source->getAttributes(ResourceResponse::class) as $resourceReflectionAttribute) {
             $responseAttribute = $resourceReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->resourceResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
 
-        foreach ($method->getAttributes(ObjectResponse::class) as $objectReflectionAttribute) {
+        foreach ($source->getAttributes(ObjectResponse::class) as $objectReflectionAttribute) {
             $responseAttribute = $objectReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->objectResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
 
-        $rawResponses = $method->getAttributes(RawResponse::class);
-        foreach ($rawResponses as $rawResponseAttribute) {
-            $responseAttribute = $rawResponseAttribute->newInstance();
+        foreach ($source->getAttributes(RawResponse::class) as $rawReflectionAttribute) {
+            $responseAttribute = $rawReflectionAttribute->newInstance();
             $response = new OASResponse();
             $response->rawResponse($responseAttribute);
             $this->responses[$responseAttribute->responseCode] = $response->toArray();
         }
 
-        foreach ($method->getAttributes(NoContentResponse::class) as $noContentReflectionAttribute)
+        foreach ($source->getAttributes(NoContentResponse::class) as $noContentReflectionAttribute)
             $this->addNoContentResponse($noContentReflectionAttribute->newInstance()->description);
     }
 

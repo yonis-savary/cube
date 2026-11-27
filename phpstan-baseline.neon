@@ -967,6 +967,12 @@ parameters:
 			path: src/Data/DataToObject.php
 
 		-
+			message: '#^Method Cube\\Data\\DataToObject\\Generator\\ClientWriter\:\:callOf\(\) has parameter \$names with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Data/DataToObject/Generator/ClientWriter.php
+
+		-
 			message: '#^Call to function is_string\(\) with array\|Cube\\Data\\Database\\Query\\FieldComparaison\|Cube\\Data\\Database\\Query\\FieldCondition\|Cube\\Data\\Database\\Query\\RawCondition will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
@@ -1597,13 +1603,13 @@ parameters:
 			path: src/Data/Database/Query.php
 
 		-
-			message: '#^PHPDoc tag @param has invalid value \(\?\\Closure\(self\<TModel\>\) \$elseCallback\)\: Unexpected token "\(", expected variable at offset 74 on line 3$#'
+			message: '#^PHPDoc tag @param has invalid value \(\?\\Closure\(self\<TModel\>\) \$elseCallback\)\: Unexpected token "\(", expected variable at offset 75 on line 3$#'
 			identifier: phpDoc.parseError
 			count: 1
 			path: src/Data/Database/Query.php
 
 		-
-			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(self\<TModel\>\) \$callback\)\: Unexpected token "\(", expected variable at offset 26 on line 2$#'
+			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(self\<TModel\>\)  \$callback\)\: Unexpected token "\(", expected variable at offset 26 on line 2$#'
 			identifier: phpDoc.parseError
 			count: 1
 			path: src/Data/Database/Query.php
@@ -2012,12 +2018,6 @@ parameters:
 
 		-
 			message: '#^Method Cube\\Data\\Models\\ModelGenerator\\Adapters\\SQLite\:\:getModelField\(\) has parameter \$column with no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Data/Models/ModelGenerator/Adapters/SQLite.php
-
-		-
-			message: '#^Property Cube\\Data\\Models\\ModelGenerator\\Adapters\\SQLite\:\:\$tablesWithSequence type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
 			path: src/Data/Models/ModelGenerator/Adapters/SQLite.php
@@ -3727,6 +3727,30 @@ parameters:
 			path: src/Security/Authentication/PasswordAuthentication.php
 
 		-
+			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(static,static\) \$callback\)\: Unexpected token "\(", expected variable at offset 26 on line 2$#'
+			identifier: phpDoc.parseError
+			count: 2
+			path: src/Security/BearerAuthentication.php
+
+		-
+			message: '#^PHPDoc tag @var above a method has no effect\.$#'
+			identifier: varTag.misplaced
+			count: 1
+			path: src/Security/BearerAuthentication.php
+
+		-
+			message: '#^Unsafe access to private property Cube\\Security\\BearerAuthentication\:\:\$instances through static\:\:\.$#'
+			identifier: staticClassAccess.privateProperty
+			count: 5
+			path: src/Security/BearerAuthentication.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Security/BearerAuthentication.php
+
+		-
 			message: '#^Left side of \|\| is always false\.$#'
 			identifier: booleanOr.leftAlwaysFalse
 			count: 1
@@ -3755,6 +3779,36 @@ parameters:
 			identifier: new.static
 			count: 1
 			path: src/Security/RememberMe.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(static,static\) \$callback\)\: Unexpected token "\(", expected variable at offset 26 on line 2$#'
+			identifier: phpDoc.parseError
+			count: 2
+			path: src/Security/SingleSignOn.php
+
+		-
+			message: '#^PHPDoc tag @var above a method has no effect\.$#'
+			identifier: varTag.misplaced
+			count: 1
+			path: src/Security/SingleSignOn.php
+
+		-
+			message: '#^Unsafe access to private property Cube\\Security\\SingleSignOn\:\:\$instances through static\:\:\.$#'
+			identifier: staticClassAccess.privateProperty
+			count: 5
+			path: src/Security/SingleSignOn.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Security/SingleSignOn.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: src/Security/SingleSignOn/Providers/OpenIDConnectProvider.php
 
 		-
 			message: '#^Method Cube\\Test\\CubeTestCase\:\:assertModelExists\(\) has parameter \$data with no value type specified in iterable type array\.$#'
@@ -4663,12 +4717,6 @@ parameters:
 			path: src/Web/Http/Request.php
 
 		-
-			message: '#^Method Cube\\Web\\Http\\Request\:\:getBodyMergedWithUpload\(\) return type has no value type specified in iterable type array\.$#'
-			identifier: missingType.iterableValue
-			count: 1
-			path: src/Web/Http/Request.php
-
-		-
 			message: '#^Method Cube\\Web\\Http\\Request\:\:getCookies\(\) return type has no value type specified in iterable type array\.$#'
 			identifier: missingType.iterableValue
 			count: 1
@@ -5025,7 +5073,7 @@ parameters:
 		-
 			message: '#^Unsafe usage of new static\(\)\.$#'
 			identifier: new.static
-			count: 1
+			count: 2
 			path: src/Web/Http/Upload.php
 
 		-
@@ -5035,7 +5083,7 @@ parameters:
 			path: src/Web/ModelAPI/ModelAPI.php
 
 		-
-			message: '#^Method Cube\\Web\\ModelAPI\\ModelAPI\:\:forModel\(\) should return Cube\\Web\\ModelAPI\\ModelAPI\<TForModel of Cube\\Data\\Models\\Model\> but returns Cube\\Web\\ModelAPI\\ModelAPI@anonymous/Web/ModelAPI/ModelAPI\.php\:33\.$#'
+			message: '#^Method Cube\\Web\\ModelAPI\\ModelAPI\:\:forModel\(\) should return Cube\\Web\\ModelAPI\\ModelAPI\<TForModel of Cube\\Data\\Models\\Model\> but returns Cube\\Web\\ModelAPI\\ModelAPI@anonymous/Web/ModelAPI/ModelAPI\.php\:34\.$#'
 			identifier: return.type
 			count: 1
 			path: src/Web/ModelAPI/ModelAPI.php
@@ -5413,13 +5461,7 @@ parameters:
 			path: src/Web/Router/Router.php
 
 		-
-			message: '#^PHPDoc tag @param has invalid value \(Route\|\\Closure\(Router\)\|null \.\.\.\$routes\)\: Unexpected token "\(", expected variable at offset 32 on line 2$#'
-			identifier: phpDoc.parseError
-			count: 1
-			path: src/Web/Router/Router.php
-
-		-
-			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(Router,RouteGroup\) \$function\)\: Unexpected token "\(", expected variable at offset 120 on line 4$#'
+			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(Router,RouteGroup\)     \$function\)\: Unexpected token "\(", expected variable at offset 139 on line 4$#'
 			identifier: phpDoc.parseError
 			count: 1
 			path: src/Web/Router/Router.php
@@ -5428,6 +5470,12 @@ parameters:
 			message: '#^PHPDoc tag @param has invalid value \(\\Closure\(static,static\) \$callback\)\: Unexpected token "\(", expected variable at offset 26 on line 2$#'
 			identifier: phpDoc.parseError
 			count: 2
+			path: src/Web/Router/Router.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(null\|\\Closure\(Router\)\|Route \.\.\.\$routes\)\: Unexpected token "\(", expected variable at offset 31 on line 2$#'
+			identifier: phpDoc.parseError
+			count: 1
 			path: src/Web/Router/Router.php
 
 		-
@@ -5511,7 +5559,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Ratchet\\ConnectionInterface\:\:\$resourceId\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 3
 			path: src/Web/Websocket/Channel/Channel.php
 
 		-

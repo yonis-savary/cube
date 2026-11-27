@@ -9,6 +9,9 @@ use Cube\Utils\Text;
 
 class Param extends Rule
 {
+    // RFC 3339 §5.6 date-time : optional fraction, mandatory offset, "T" and "Z" in any case
+    public const RFC3339_DATE_TIME = '/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/i';
+
     protected mixed $value;
 
     public static function from(array|Rule $rule, bool $nullable = false): Rule
@@ -140,14 +143,16 @@ class Param extends Rule
 
         if ($addTimeIfMissing)
             $rule->withValueTransformer(function ($value) {
-                if (!is_string($value) || preg_match('/(\d{2}):(\d{2}):(\d{2})$/', $value))
+                if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value))
                     return $value;
                 return $value.' 00:00:00';
             });
 
         return $rule->withValueCondition(
             function (mixed $value) {
-                if (!is_string($value) || !preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $value, $matches))
+                if (!is_string($value))
+                    return false;
+                if (!preg_match('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $value, $matches) && !preg_match(self::RFC3339_DATE_TIME, $value, $matches))
                     return false;
                 list($_, $y, $m, $d, $h, $mm, $s) = $matches;
                 return
@@ -156,7 +161,7 @@ class Param extends Rule
                     && (00 <= $mm && $mm <= 59)
                     && (00 <= $s && $s <= 59);
             },
-            '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS, an existing day, HH=00-23, MM=00-59, SS=00-59), got [{value}]'
+            '{key} must be a datetime value (yyyy-mm-dd HH:MM:SS, or RFC 3339 as yyyy-mm-ddTHH:MM:SS+hh:mm, an existing day, HH=00-23, MM=00-59, SS=00-59), got [{value}]'
         )
             ->withMetadata([self::META_TYPE => 'date-time'])
         ;

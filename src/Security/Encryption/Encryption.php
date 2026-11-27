@@ -17,7 +17,7 @@ class Encryption
     public static function encrypt(#[\SensitiveParameter] string $content, #[\SensitiveParameter] ?string $key = null): string
     {
         $key = self::deriveKey($key);
-        $nonce = random_bytes(openssl_cipher_iv_length(self::CIPHER));
+        $nonce = openssl_cipher_iv_length(self::CIPHER) |> random_bytes(...);
 
         $ciphertext = openssl_encrypt($content, self::CIPHER, $key, OPENSSL_RAW_DATA, $nonce, $tag, '', self::TAG_LENGTH);
         if (false === $ciphertext)

@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-unix-socket-server.md">Previous : Unix socket server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-testing.md">Next : Testing</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./34-unix-socket-server.md">Previous : Unix socket server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./36-testing.md">Next : Testing</a></div></td></tr></table>
 
 # Static server
 
@@ -103,4 +103,4 @@ and `AssetServer` for the CSS and JavaScript files that live next to your applic
 | `$secure` | `true` | refuse symlinks escaping the directory, `.php` paths and dotfiles |
 | `$supportsIndex` | `true` | answer `/` with `index.html` when it exists, and allow `registerFallbackRoute()` |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-unix-socket-server.md">Previous : Unix socket server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-testing.md">Next : Testing</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./34-unix-socket-server.md">Previous : Unix socket server</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./36-testing.md">Next : Testing</a></div></td></tr></table>

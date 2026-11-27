@@ -83,7 +83,7 @@ converted for you
 | a `Response` | that response |
 | nothing, or `null` | `204 No Content`, empty body |
 | a `Model` | `200`, the model as a JSON object, every field and every loaded relation |
-| a `Bunch` or an array | `200`, a JSON array or object, models inside converted the same way |
+| a `Bunch` or an array | `200`, a JSON array or object, models inside converted the same way, a `DateTimeInterface` written in ATOM format and a `Cube\Data\Date` as `Y-m-d` (see [Models](./18-models.md)) |
 | any other value | `200`, that value encoded as JSON — a string answers `"OK"`, quotes included |
 
 ```php
@@ -214,7 +214,7 @@ new RouterConfiguration(
 
 The router asks every configured `WebAPI`, in order, before matching routes, and before a route
 remembered by the route cache. `StaticServer` and
-`AssetServer` are `WebAPI` services (see [Static server](./32-static-server.md) and
+`AssetServer` are `WebAPI` services (see [Static server](./35-static-server.md) and
 [Views and assets](./14-views-and-assets.md#serving-assets)).
 
 ## A CRUD API from a model
@@ -378,7 +378,7 @@ LargeUploadManager::getInstance()->delete($identifier);
 
 Nothing expires old transfers on its own : schedule a cleanup with `deleteOlderThan()`, which
 removes the transfers whose `info.json` file is older than the given number of seconds (see
-[Schedules](./28-schedules.md))
+[Schedules](./31-schedules.md))
 
 ```php
 class DeleteStaleUploads

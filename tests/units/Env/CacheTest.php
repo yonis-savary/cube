@@ -30,8 +30,11 @@ class CacheTest extends TestCase
         foreach (self::$temporaryCaches as $cache)
             $cache->clear();
 
-        foreach (self::$temporaryStorages as $storage)
+        foreach (self::$temporaryStorages as $storage) {
+            if (is_file($lock = $storage->path(LocalDiskCache::INCREMENT_LOCK_FILE)))
+                unlink($lock);
             rmdir($storage->getRoot());
+        }
 
         self::$temporaryCaches = [];
         self::$temporaryStorages = [];
@@ -160,6 +163,26 @@ class CacheTest extends TestCase
         $cache->child('sub')->child('subsub')->set('some-key', 'hello!');
 
         $this->assertEquals('hello!', $cache->get('sub-subsub-some-key'));
+    }
+
+    #[DataProvider('getCaches')]
+    public function testIncrementCountsFromZeroAndCanBeRead(Cache $cache)
+    {
+        $this->assertSame(0, $cache->increment('visits', 0));
+        $this->assertSame(1, $cache->increment('visits'));
+        $this->assertSame(6, $cache->increment('visits', 5));
+        $this->assertSame(4, $cache->increment('visits', -2));
+
+        $this->assertSame(4, $cache->get('visits'));
+    }
+
+    #[DataProvider('getCaches')]
+    public function testAnIncrementedCounterExpires(Cache $cache)
+    {
+        $cache->increment('short-lived', 1, 1);
+        sleep(2);
+
+        $this->assertSame(1, $cache->increment('short-lived', 1, 1));
     }
 
     /**

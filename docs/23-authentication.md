@@ -3,8 +3,11 @@
 # Authentication
 
 The `Authentication` component answers one question — who is making this request — and keeps the
-answer in a session scoped to itself. It does not know how credentials are checked : that is an
-`AuthenticationProvider`, and `PasswordAuthentication` is the one shipped with Cube.
+answer in a session scoped to itself, or for the request only when an API client sends a
+[bearer token](#bearer-tokens). It does not know where users are stored nor how credentials
+are checked : that is an `AuthenticationProvider`. Cube ships two, `PasswordAuthentication` for a
+login form and `ModelAuthentication` for applications whose users sign in through
+[single sign-on](./26-single-sign-on.md).
 
 Declare the provider in your `cube.php`
 
@@ -56,11 +59,12 @@ from the database (`User::find($auth->userId())`), not from `user()`.
 
 | Method | Does |
 |---|---|
-| `attempt(string $login, ?string $password = null)` | checks credentials through the provider and opens the session, `false` when rejected |
+| `attempt(string $login, ?string $password = null)` | checks credentials through the provider and opens the session, `false` when rejected. Throws a `RuntimeException` when the provider does not implement `VerifiesCredentials` |
 | `login(Model $user)` | opens the session for a user you already have |
 | `loginById(mixed $id)` | loads the user through the provider, then logs them in. `false` when the provider finds nobody |
-| `logout()` | closes the session, does nothing when nobody is logged in |
-| `isLogged()` / `user()` / `userId()` | read the current session |
+| `logout()` | forgets the bearer user, closes the session, does nothing when nobody is logged in |
+| `attemptBearerToken(string $token)` | authenticates the current request only, see [Bearer tokens](#bearer-tokens) |
+| `isLogged()` / `user()` / `userId()` | read the bearer user of the request when there is one, the current session otherwise |
 
 `login()` is the one to use after a registration, or after any check of your own — it skips the
 provider entirely
@@ -128,17 +132,35 @@ not tell whether a login exists.
 The models `attempt()` and `userById()` return come without their `passwordField` and `saltField`, the
 fields `getCredentialFields()` names. Use `find()` when you need those columns.
 
-### Your own provider
+## Without passwords
 
-Implement `AuthenticationProvider` — three methods — and pass it to the configuration instead. This is
-the way in for an LDAP directory, an API token, or a single sign-on.
+`ModelAuthentication` finds users by primary key and checks nothing. Use it when users sign in
+through [single sign-on](./26-single-sign-on.md), a magic link, or any check of your own followed
+by `login()`
 
 ```php
-class TokenAuthentication implements AuthenticationProvider
+new AuthenticationConfiguration(new ModelAuthentication(User::class))
+```
+
+`login()`, `loginById()` and [Remember me](./25-remember-me.md) work as usual. `attempt()` throws a
+`RuntimeException`, since there is no credential to check.
+
+### Your own provider
+
+Implement `AuthenticationProvider` and pass it to the configuration instead. Add
+`VerifiesCredentials` when it can check an identifier and a secret, which is what `attempt()` needs.
+This is the way in for an LDAP directory
+
+```php
+class LdapAuthentication implements AuthenticationProvider, VerifiesCredentials
 {
     public function attempt(string $identifier, ?string $password = null): Model|false
     {
-        return User::findWhere(['api_token' => $identifier]) ?? false;
+        // an empty password makes an anonymous bind, which most directories accept
+        if ('' === (string) $password || !@ldap_bind(ldap_connect('ldaps://directory.example.com'), $identifier, $password))
+            return false;
+
+        return User::findWhere(['login' => $identifier]) ?? false;
     }
 
     public function userById(mixed $id): Model|false
@@ -146,16 +168,75 @@ class TokenAuthentication implements AuthenticationProvider
         return User::find($id) ?? false;
     }
 
-    // kept out of the session copy of the user
     public function getCredentialFields(): array
     {
-        return ['api_token'];
+        return [];
     }
 }
 
 // cube.php
-new AuthenticationConfiguration(new TokenAuthentication())
+new AuthenticationConfiguration(new LdapAuthentication())
 ```
+
+For API tokens, add `VerifiesBearerTokens` instead, described in [Bearer tokens](#bearer-tokens).
+
+## Bearer tokens
+
+An API client authenticates each request with an `Authorization: Bearer <token>` header. The
+`BearerAuthentication` middleware reads it and asks the provider who owns the token ; the user is
+known for that request only, nothing is written to the session and no cookie is sent.
+
+Give your provider the `VerifiesBearerTokens` capability. Issuing, storing and revoking the tokens
+stays in your application : generate them with `Identifier::prefixed()` and store their
+`Identifier::hash()`, never the token itself (see [Identifiers and secrets](./29-identifiers-and-secrets.md))
+
+```php
+class ApiAuthentication extends PasswordAuthentication implements VerifiesBearerTokens
+{
+    public function userByBearerToken(string $token): Model|false
+    {
+        $owner = ApiToken::findWhere(['hash' => Identifier::hash($token)])?->user_id;
+
+        return $owner ? $this->userById($owner) : false;
+    }
+}
+
+// cube.php
+new AuthenticationConfiguration(new ApiAuthentication(
+    model: User::class,
+    loginFields: 'email',
+    passwordField: 'password_hash',
+))
+```
+
+Then put the middleware in front of your API routes
+
+```php
+$router->group('/api', [BearerAuthentication::class], function: function (Router $router) {
+    $router->addRoutes(
+        Route::get('/products', [ProductController::class, 'list']),
+    );
+});
+```
+
+| The request carries | `BearerAuthentication` |
+|---|---|
+| no `Authorization` header, or another scheme (`Basic`...) | lets it through, unauthenticated : your route decides |
+| `Bearer` and a token the provider recognizes | lets it through, `Authentication` answers for that user |
+| `Bearer` and an unknown or empty token | answers `401` with `WWW-Authenticate: Bearer error="invalid_token"` |
+
+The scheme name is case-insensitive (`bearer` works too). In a route, read the user as usual with
+`isLogged()`, `user()` and `userId()` ; like `login()`, the user comes without the fields
+`getCredentialFields()` names. The bearer user takes precedence over a session user for that
+request, and `logout()` forgets it.
+
+`attemptBearerToken()` dispatches no event : the [Remember me](./25-remember-me.md) listener
+registers on `AuthenticatedUser`, and an API client has no use for a cookie. When `RememberMe` is a
+common middleware too, list `BearerAuthentication` before it : `RememberMe` only looks for its
+cookie when nobody is authenticated yet, so a bearer request never opens a session.
+
+`Authentication` opens its session on first use, not when it is built : a request authenticated by
+bearer token never starts one.
 
 ## Restricting routes
 
@@ -170,7 +251,8 @@ each user their own instance of a service, see [User component](./24-user-compon
 
 Cube has no CSRF token : cross-site requests are kept away by `SameSite=Lax`, which stops the
 browser from sending the session cookie with a `POST`, `PUT` or `DELETE` coming from another site.
-Two consequences :
+Bearer tokens are not concerned : a browser never adds an `Authorization` header on its own.
+Two consequences for the session :
 
 - never change state on a `GET` route (nor on `Route::any()`, which accepts `GET`)
 - subdomains of your site count as the *same* site — if they host content you do not control, add a
@@ -183,7 +265,8 @@ asking first, stays a plain text body.
 
 ## Reacting to authentication
 
-Four events are dispatched on the `Events` component. Subscribing to them is how you write an audit
+Four events are dispatched on the `Events` component, by the session methods only : a bearer
+token dispatches none. Subscribing to them is how you write an audit
 trail or a brute-force counter without touching the login route — see [Events](./08-events.md).
 
 ```php
@@ -202,26 +285,31 @@ LoggedInUser::on(function (LoggedInUser $event) {
 `RememberMe` adds a fifth, `RememberedUser` — see [Remember me](./25-remember-me.md#reacting-to-a-remembered-user).
 
 `FailedAuthentication` fires once per rejected attempt, whether the login is unknown or the password
-wrong. Cube has no rate limiting of its own : count the failures per `identifier` in a listener (in the
-`Cache`, for example) and refuse the attempt in your login route once a threshold is reached
-
-```php
-FailedAuthentication::on(function (FailedAuthentication $event) {
-    $failures = Cache::getInstance()->child('login-failures');
-    $failures->set($event->identifier, $failures->get($event->identifier, 0) + 1, Cache::HOUR);
-});
-```
+wrong. To refuse a login after too many failures, count them with a `RateLimiter` : see
+[Rate limiting](./27-rate-limiting.md#limiting-login-attempts).
 
 ## Reference
 
 | Option of `AuthenticationConfiguration` | Default | Does |
 |---|---|---|
-| `provider` | none, required | the `AuthenticationProvider` checking credentials |
+| `provider` | none, required | the `AuthenticationProvider` finding users |
 
 | Method of `AuthenticationProvider` | Returns |
 |---|---|
-| `attempt(string $identifier, ?string $password = null)` | the user `Model`, or `false` when the credentials are rejected |
 | `userById(mixed $id)` | the user `Model`, or `false` when nobody has that id |
 | `getCredentialFields()` | the fields `login()` keeps out of the session, `[]` when there are none |
+
+| Method of `VerifiesCredentials` | Returns |
+|---|---|
+| `attempt(string $identifier, ?string $password = null)` | the user `Model`, or `false` when the credentials are rejected |
+
+| Method of `VerifiesBearerTokens` | Returns |
+|---|---|
+| `userByBearerToken(string $token)` | the user `Model`, or `false` when nobody owns the token |
+
+| Method of `BearerAuthentication` | Does |
+|---|---|
+| `handleRequest(Request $request)` | authenticates the request, or answers `401` for a refused token |
+| `tokenOf(Request $request)` (static) | the bearer token of the request, `''` when the header holds none, `null` without a `Bearer` header |
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./22-sessions.md">Previous : Sessions</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./24-user-component.md">Next : User component</a></div></td></tr></table>

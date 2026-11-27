@@ -7,7 +7,7 @@ use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
 use Cube\Utils\Path;
 
 /**
- * Gives a generation command a namespace of its own under `Cube\Tests\Units\Console`, which composer
+ * Gives a generation command a namespace of its own under `Cube\Tests\Generated`, which composer
  * autoloads, and removes what it wrote once the test is done.
  */
 trait GeneratesIntoATestNamespace
@@ -22,10 +22,16 @@ trait GeneratesIntoATestNamespace
      */
     protected function generatedNamespace(): string
     {
-        $segment = 'Generated'.bin2hex(random_bytes(6));
-        $this->generatedDirectory = Path::relative("tests/units/Console/{$segment}");
+        // Outside the directories the test Autoloader explores : another worker indexing them would list files this test then deletes
+        $root = Path::relative('tests/generated');
+        // Without its root, Path::namespaceToPath() cannot resolve the PSR-4 directory and answers composer's raw "../.." path
+        if (!is_dir($root))
+            mkdir($root, recursive: true);
 
-        return "Cube\\Tests\\Units\\Console\\{$segment}";
+        $segment = 'Generated'.bin2hex(random_bytes(6));
+        $this->generatedDirectory = Path::join($root, $segment);
+
+        return "Cube\\Tests\\Generated\\{$segment}";
     }
 
     protected function removeGeneratedDirectory(): void
