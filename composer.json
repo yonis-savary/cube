@@ -38,7 +38,7 @@
         "brianium/paratest": "7.25.0",
         "opis/json-schema": "2.6.0",
         "fakerphp/faker": "^1.24",
-        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan": "^2.3.7",
         "friendsofphp/php-cs-fixer": "v3.95.28"
     },
     "suggest": {

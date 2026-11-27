@@ -35,7 +35,10 @@ class Encryption
     {
         $key = self::deriveKey($key);
 
-        if (!self::supports($encrypted) || false === $data = base64_decode(substr($encrypted, strlen(self::PREFIX)), true))
+        $data = self::supports($encrypted)
+            ? substr($encrypted, strlen(self::PREFIX)) |> base64_decode(?, true)
+            : false;
+        if (false === $data)
             throw new \Exception('Invalid encrypted input.');
 
         $nonceLength = openssl_cipher_iv_length(self::CIPHER);

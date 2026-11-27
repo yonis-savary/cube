@@ -250,8 +250,11 @@ class HttpClient
      */
     protected function resolveLocation(string $currentURL, string $location): ?string
     {
-        if (preg_match('/^([a-z][a-z0-9+.-]*):/i', $location, $scheme))
-            return in_array(strtolower($scheme[1]), ['http', 'https']) ? $location : null;
+        if (preg_match('/^([a-z][a-z0-9+.-]*):/i', $location, $scheme)) {
+            $isHttpScheme = strtolower($scheme[1]) |> in_array(?, ['http', 'https']);
+
+            return $isHttpScheme ? $location : null;
+        }
         $current = parse_url($currentURL);
         $origin = $current['scheme'].'://'.$current['host'].(isset($current['port']) ? ':'.$current['port'] : '');
 
@@ -702,7 +705,7 @@ class HttpClient
     {
         $result = Bunch::fromExplode("\n", $headers)
             ->filter(fn ($line) => str_contains($line, ':'))
-            ->map(fn ($line) => explode(':', trim($line), 2))
+            ->map(fn ($line) => trim($line) |> explode(':', ?, 2))
             ->map(fn ($pair) => [trim($pair[0]), trim($pair[1])])
             ->zip()
         ;

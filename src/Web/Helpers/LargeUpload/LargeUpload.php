@@ -41,7 +41,7 @@ class LargeUpload
     protected function sizeWithout(string $chunk): int
     {
         return Bunch::wrap($this->storage->files())
-            ->filter(fn (string $file) => str_starts_with(basename($file), 'chunk-') && basename($file) !== $chunk)
+            ->filter(fn (string $file) => (basename($file) |> str_starts_with(?, 'chunk-')) && basename($file) !== $chunk)
             ->sum(fn (string $file) => filesize($file))
         ;
     }

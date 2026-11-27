@@ -88,7 +88,7 @@ abstract class ModelFactory
      */
     public function makeMany(int $count, array $overrides = []): array
     {
-        return array_map(fn () => $this->make($overrides), range(1, $count));
+        return range(1, $count) |> array_map(fn () => $this->make($overrides), ?);
     }
 
     /**
@@ -96,7 +96,7 @@ abstract class ModelFactory
      */
     public function createMany(int $count, array $overrides = [], ?Database $database = null): array
     {
-        return array_map(fn () => $this->create($overrides, $database), range(1, $count));
+        return range(1, $count) |> array_map(fn () => $this->create($overrides, $database), ?);
     }
 
     /**

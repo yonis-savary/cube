@@ -70,7 +70,8 @@ class SQLiteTableDefinition
     protected static function skipQuotedOrComment(string $sql, int $offset): int
     {
         foreach (self::ENCLOSINGS as $opening => $closing) {
-            if (!str_starts_with(substr($sql, $offset, strlen($opening)), $opening))
+            $opensHere = substr($sql, $offset, strlen($opening)) |> str_starts_with(?, $opening);
+            if (!$opensHere)
                 continue;
             $from = $offset + strlen($opening);
             while (true) {
@@ -104,7 +105,7 @@ class SQLiteTableDefinition
             if ($skipped !== $i) {
                 $opening = $definition[$i];
                 if (in_array($opening, ['"', '`', '[']))
-                    $tokens[] = [str_replace($opening.$opening, $opening, substr($definition, $i + 1, $skipped - $i - 2)), true];
+                    $tokens[] = [substr($definition, $i + 1, $skipped - $i - 2) |> str_replace($opening.$opening, $opening, ?), true];
 
                 $i = $skipped - 1;
                 continue;
@@ -123,7 +124,7 @@ class SQLiteTableDefinition
     {
         [$first, $quoted] = self::tokenize($definition)[0] ?? ['', true];
 
-        return !$quoted && in_array(strtoupper($first), self::TABLE_CONSTRAINT_KEYWORDS);
+        return !$quoted && (strtoupper($first) |> in_array(?, self::TABLE_CONSTRAINT_KEYWORDS));
     }
 
     public static function getColumnName(string $definition): ?string

@@ -24,7 +24,7 @@ class RedisCache implements CacheDriverInterface
         #[\SensitiveParameter]
         ?string $password = null
     ) {
-        $identifier = preg_replace('/[^a-z0-9]/i', '.', strtolower($identifier));
+        $identifier = strtolower($identifier) |> preg_replace('/[^a-z0-9]/i', '.', ?);
         $this->identifier = "cache:{$identifier}:";
 
         $host ??= env('CACHE_REDIS_HOST', 'redis');

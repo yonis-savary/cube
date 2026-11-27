@@ -28,7 +28,7 @@ class CORSConfiguration extends ConfigurationElement
         ;
 
         $this->allowHeaders ??= env('CORS_ALLOWED_HEADERS', 'Content-Type, x-requested-with');
-        $this->allowCredentials ??= filter_var(env('CORS_ALLOWED_CREDENTIALS', false), FILTER_VALIDATE_BOOL);
+        $this->allowCredentials ??= env('CORS_ALLOWED_CREDENTIALS', false) |> filter_var(?, FILTER_VALIDATE_BOOL);
     }
 
     public function allowsAnyOrigin(): bool

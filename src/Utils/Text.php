@@ -6,7 +6,7 @@ class Text
 {
     public static function toFile(string $text, int $indentLevel = 2): string
     {
-        return trim(preg_replace("/^(    |\t){".$indentLevel.'}/m', '', $text), "\n");
+        return preg_replace("/^(    |\t){".$indentLevel.'}/m', '', $text) |> trim(?, "\n");
     }
 
     public static function endsWith(string $string, string $suffix): string
@@ -65,7 +65,7 @@ class Text
             true => 'true',
             false => 'false',
             null => 'null',
-            default => str_replace("\n", '', print_r($value, true)),
+            default => print_r($value, true) |> str_replace("\n", '', ?),
         };
     }
 

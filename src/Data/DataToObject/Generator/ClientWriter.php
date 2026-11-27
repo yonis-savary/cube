@@ -131,7 +131,7 @@ class ClientWriter
             ...Bunch::wrap($client->serverVariables)
                 ->map(fn (ServerVariable $variable) => $this->variableParameterOf($variable, $variables[$variable->name], $enums[$variable->name] ?? null))
                 ->toArray(),
-            ...array_map(fn (string $property) => '        public readonly ?string $'.$property.' = null,', array_values($this->credentialPropertiesOf($client))),
+            ...array_values($this->credentialPropertiesOf($client)) |> array_map(fn (string $property) => '        public readonly ?string $'.$property.' = null,', ?),
         ];
 
         $doc = count($variables)
@@ -350,7 +350,7 @@ class ClientWriter
 
         [$returnType, $return] = $this->returnOf($operation, $types, $this->callOf($operation, $names));
 
-        $doc = $docs ? "    /**\n".implode("\n", array_map(fn (string $tag) => "     * {$tag}", $docs))."\n     */\n" : '';
+        $doc = $docs ? "    /**\n".(array_map(fn (string $tag) => "     * {$tag}", $docs) |> implode("\n", ?))."\n     */\n" : '';
 
         return $doc.Text::interpolate(Text::toFile('
                 public function {name}({arguments}): {returnType}
@@ -411,7 +411,7 @@ class ClientWriter
         };
 
         $schemes = count($operation->security)
-            ? '['.implode(', ', array_map(fn (string $scheme) => var_export($scheme, true), $operation->security)).']'
+            ? '['.(array_map(fn (string $scheme) => var_export($scheme, true), $operation->security) |> implode(', ', ?)).']'
             : null;
 
         $send = '$this->send('.implode(', ', [
@@ -647,7 +647,7 @@ class ClientWriter
             };
         }
 
-        return implode('.', array_filter($fragments));
+        return array_filter($fragments) |> implode('.', ?);
     }
 
     /**
@@ -662,7 +662,9 @@ class ClientWriter
             ...self::HELPER_METHODS,
         ]);
 
-        return in_array(strtolower($name), $taken, true) ? $name.'Operation' : $name;
+        $clashesWithAClientMethod = strtolower($name) |> in_array(?, $taken, true);
+
+        return $clashesWithAClientMethod ? $name.'Operation' : $name;
     }
 
     protected function requestArgumentName(DtoType $request): string

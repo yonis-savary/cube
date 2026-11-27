@@ -22,7 +22,7 @@ if (!function_exists('Cube\env')) {
 
     function isProduction(): bool
     {
-        return str_starts_with(strtolower(environmentName() ?? 'debug'), 'prod');
+        return strtolower(environmentName() ?? 'debug') |> str_starts_with(?, 'prod');
     }
 
     /**
@@ -32,7 +32,7 @@ if (!function_exists('Cube\env')) {
     function isDebug(): bool
     {
         $debugEnvs = ['debug', 'dev', 'development', 'local', 'test', 'testing'];
-        return in_array(strtolower(environmentName() ?? ''), $debugEnvs, true);
+        return strtolower(environmentName() ?? '') |> in_array(?, $debugEnvs, true);
     }
 
     /**

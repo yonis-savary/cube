@@ -159,7 +159,7 @@ class OpenApiSource implements DtoSource
      */
     protected function matches(string $route, array $operation, string $endpoint): bool
     {
-        $endpoint = preg_replace('/\s+/', ' ', trim($endpoint));
+        $endpoint = trim($endpoint) |> preg_replace('/\s+/', ' ', ?);
 
         return $endpoint === ($operation['operationId'] ?? null)
             || preg_replace_callback('/^\S+/', fn ($method) => strtoupper($method[0]), $endpoint) === $route;
@@ -315,7 +315,7 @@ class OpenApiSource implements DtoSource
         if ($type = $this->referenceTypes[$key] ?? null)
             return $type;
         $schema = $this->resolvePointer($pointer);
-        $name = DtoNames::className(strtr(preg_replace('~.+/~', '', $pointer) |> rawurldecode(...), ['~1' => '/', '~0' => '~']));
+        $name = DtoNames::className(preg_replace('~.+/~', '', $pointer) |> rawurldecode(...) |> strtr(?, ['~1' => '/', '~0' => '~']));
         $namespace = DtoDirection::Input === $direction ? self::INPUT_NAMESPACE : self::OUTPUT_NAMESPACE;
 
         // Set before recursing, so a schema that refers to itself ends up typed by its own class (or mixed)
@@ -645,8 +645,8 @@ class OpenApiSource implements DtoSource
             throw new \InvalidArgumentException("Unsupported reference [{$pointer}] : only references inside the document (#/...) are supported");
 
         $target = $this->document;
-        foreach (explode('/', substr($pointer, 2)) as $segment) {
-            $segment = strtr(rawurldecode($segment), ['~1' => '/', '~0' => '~']);
+        foreach (substr($pointer, 2) |> explode('/', ?) as $segment) {
+            $segment = rawurldecode($segment) |> strtr(?, ['~1' => '/', '~0' => '~']);
 
             if (!is_array($target[$segment] ?? null))
                 throw new \InvalidArgumentException("Reference [{$pointer}] does not point to an object of the OpenAPI document");

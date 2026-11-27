@@ -126,6 +126,6 @@ abstract class AuthorizationCodeProvider implements IdentityProvider
 
     protected static function base64url(string $bytes): string
     {
-        return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+        return base64_encode($bytes) |> strtr(?, '+/', '-_') |> rtrim(?, '=');
     }
 }

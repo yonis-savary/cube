@@ -28,7 +28,7 @@ class Renderer
     {
         $viewName = '/'.ltrim($viewName, '/');
 
-        return $this->viewFiles->first(fn ($file) => str_ends_with('/'.ltrim(preg_replace('~\\.[^/]+$~', '', $file), '/'), $viewName));
+        return $this->viewFiles->first(fn ($file) => str_ends_with('/'.(preg_replace('~\.[^/]+$~', '', $file) |> ltrim(?, '/')), $viewName));
     }
 
     public function render(string $viewName, array $context = []): string

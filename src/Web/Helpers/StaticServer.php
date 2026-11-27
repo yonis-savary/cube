@@ -83,7 +83,8 @@ class StaticServer extends WebAPI
 
     protected function isPathPrivate(string $path): bool
     {
-        if (str_ends_with(strtolower($path), '.php'))
+        $isPhpFile = strtolower($path) |> str_ends_with(?, '.php');
+        if ($isPhpFile)
             return true;
         return Bunch::fromExplode('/', $path)
             ->any(fn (string $segment) => str_starts_with($segment, '.') && '.well-known' !== $segment)

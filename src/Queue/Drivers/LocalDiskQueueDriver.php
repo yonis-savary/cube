@@ -31,7 +31,7 @@ class LocalDiskQueueDriver extends BasicQueueDriver
         $storage = $this->getStorage();
 
         $toProcess = Bunch::wrap($storage->files())
-            ->first(fn ($file) => !str_starts_with(basename($file), '#'))
+            ->first(fn ($file) => !(basename($file) |> str_starts_with(?, '#')))
         ;
 
         if (!$toProcess) {

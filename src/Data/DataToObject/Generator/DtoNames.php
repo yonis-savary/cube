@@ -24,7 +24,8 @@ class DtoNames
     {
         $className = Bunch::wrap(self::words($name))->map(ucfirst(...))->join('');
 
-        if (in_array(strtolower($className), self::RESERVED_CLASS_NAMES, true))
+        $isReserved = strtolower($className) |> in_array(?, self::RESERVED_CLASS_NAMES, true);
+        if ($isReserved)
             return $className.'Dto';
         return self::withValidFirstCharacter($className);
     }
@@ -54,7 +55,7 @@ class DtoNames
         $taken = array_map(strtolower(...), $taken);
 
         $candidate = $name;
-        for ($suffix = 1; in_array(strtolower($candidate), $taken, true); ++$suffix)
+        for ($suffix = 1; strtolower($candidate) |> in_array(?, $taken, true); ++$suffix)
             $candidate = $name.$suffix;
 
         return $candidate;

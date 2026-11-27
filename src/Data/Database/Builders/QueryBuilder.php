@@ -213,7 +213,7 @@ abstract class QueryBuilder
 
     protected function getLikeEscape(string $operator): string
     {
-        return str_contains(strtoupper($operator), 'LIKE')
+        return (strtoupper($operator) |> str_contains(?, 'LIKE'))
             ? ' ESCAPE '.$this->getSQLValue('\\')
             : '';
     }

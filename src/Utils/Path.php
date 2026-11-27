@@ -141,14 +141,14 @@ class Path
         }
 
         if (null !== $matchingNamespace) {
-            $subNamespace = str_replace('/', '\\', trim(substr($directory, strlen($matchingRoot)), '/'));
+            $subNamespace = substr($directory, strlen($matchingRoot)) |> trim(?, '/') |> str_replace('/', '\\', ?);
 
             return rtrim($matchingNamespace.$subNamespace, '\\');
         }
 
         return Bunch::fromExplode('/', self::toRelative($directory))
             ->filter()
-            ->map(fn (string $segment) => str_replace(' ', '', str_replace(['-', '_'], ' ', $segment) |> ucwords(...)))
+            ->map(fn (string $segment) => str_replace(['-', '_'], ' ', $segment) |> ucwords(...) |> str_replace(' ', '', ?))
             ->join('\\')
         ;
     }
@@ -171,7 +171,7 @@ class Path
 
         if (null === $matchingRoot)
             return null;
-        return self::join($matchingRoot, str_replace('\\', '/', substr($namespace, strlen($matchingPrefix))));
+        return self::join($matchingRoot, substr($namespace, strlen($matchingPrefix)) |> str_replace('\\', '/', ?));
     }
 
     public static function resolveProjectPath(?string $forceProjectPath = null): void

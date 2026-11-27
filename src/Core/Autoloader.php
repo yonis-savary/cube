@@ -434,9 +434,9 @@ class Autoloader
 
     protected static function declaresTypeNamedAfterFile(string $file): bool
     {
-        $expectedName = preg_quote(pathinfo($file, PATHINFO_FILENAME), '/');
+        $expectedName = pathinfo($file, PATHINFO_FILENAME) |> preg_quote(?, '/');
 
-        return (bool) preg_match("/\\b(class|interface|trait|enum)\\s+{$expectedName}\\b/", file_get_contents($file));
+        return (bool) (file_get_contents($file) |> preg_match("/\\b(class|interface|trait|enum)\\s+{$expectedName}\\b/", ?));
     }
 
     public static function extends(mixed $class, string $parentClass, bool $considerSelfAsExtending = true): bool

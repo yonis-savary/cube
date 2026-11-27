@@ -100,7 +100,7 @@ class Param extends Rule
     {
         return (new static($nullable))
             ->withValueCondition(fn ($value) => is_scalar($value), '{key} must be a boolean, got {value}')
-            ->withValueTransformer(fn ($value) => is_bool($value) ? $value : in_array(strtolower((string) $value), ['on', 'true', 'yes', '1']))
+            ->withValueTransformer(fn ($value) => is_bool($value) ? $value : strtolower((string) $value) |> in_array(?, ['on', 'true', 'yes', '1']))
             ->withMetadata([self::META_TYPE => 'boolean'])
         ;
     }
@@ -174,7 +174,7 @@ class Param extends Rule
     {
         return (new static($nullable))
             ->withValueCondition(
-                fn ($value) => is_string($value) && (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', strtolower($value)),
+                fn ($value) => is_string($value) && (bool) (strtolower($value) |> preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', ?)),
                 '{key} must be an UUID, got [{value}]'
             )
             ->withMetadata([self::META_TYPE => 'uuid'])

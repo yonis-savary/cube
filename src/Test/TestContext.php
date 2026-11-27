@@ -68,7 +68,7 @@ class TestContext
     {
         if (!is_dir($path))
             return;
-        foreach (array_diff(scandir($path), ['.', '..']) as $entry) {
+        foreach (scandir($path) |> array_diff(?, ['.', '..']) as $entry) {
             $child = Path::join($path, $entry);
 
             if (is_link($child) || !is_dir($child)) {

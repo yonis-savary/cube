@@ -25,7 +25,8 @@ class PhpReferences
         foreach (array_unique($fullNames) as $fullName) {
             $shortName = preg_replace('/.+\\\/', '', $fullName);
 
-            if (in_array(strtolower($shortName), $takenShortNames, true) && self::namespaceOf($fullName) !== $namespace) {
+            $isTakenByAnotherNamespace = (strtolower($shortName) |> in_array(?, $takenShortNames, true)) && self::namespaceOf($fullName) !== $namespace;
+            if ($isTakenByAnotherNamespace) {
                 $this->names[$fullName] = '\\'.$fullName;
                 continue;
             }

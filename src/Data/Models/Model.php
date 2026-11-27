@@ -37,10 +37,7 @@ abstract class Model extends EventDispatcher
         if ($data instanceof Model)
             $data = $data->toArray();
 
-        $modelData = array_filter(
-            array_intersect_key($data, static::fields()),
-            fn ($value) => !is_array($value)
-        );
+        $modelData = array_intersect_key($data, static::fields()) |> array_filter(?, fn ($value) => !is_array($value));
 
         $hydratedData = [];
         foreach ($modelData as $name => $value)

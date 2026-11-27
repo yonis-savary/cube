@@ -132,7 +132,7 @@ class DtoWriter
 
     protected function blocks(string ...$blocks): string
     {
-        return implode("\n\n", array_filter($blocks));
+        return array_filter($blocks) |> implode("\n\n", ?);
     }
 
     /**

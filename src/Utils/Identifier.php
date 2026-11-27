@@ -22,7 +22,7 @@ class Identifier
         $bytes[6] = chr(ord($bytes[6]) & 0x0F | 0x40);
         $bytes[8] = chr(ord($bytes[8]) & 0x3F | 0x80);
 
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', bin2hex($bytes) |> str_split(?, 4));
     }
 
     public static function uuid6(): string
@@ -49,7 +49,7 @@ class Identifier
         if ($bytes < self::MINIMUM_RANDOM_BYTES)
             throw new \InvalidArgumentException('A prefixed identifier needs at least '.self::MINIMUM_RANDOM_BYTES." random bytes to stay unguessable, got [{$bytes}]");
 
-        return $prefix.rtrim(strtr($bytes |> random_bytes(...) |> base64_encode(...), '+/', '-_'), '=');
+        return $prefix.($bytes |> random_bytes(...) |> base64_encode(...) |> strtr(?, '+/', '-_') |> rtrim(?, '='));
     }
 
     public static function hash(#[\SensitiveParameter] string $secret, #[\SensitiveParameter] ?string $key = null): string
@@ -87,7 +87,7 @@ class Identifier
     private static function gregorianTicks(): int
     {
         // microtime(true) is a float : at 100 ns precision it loses the last digits
-        [$fraction, $seconds] = explode(' ', microtime());
+        [$fraction, $seconds] = microtime() |> explode(' ', ?);
 
         return (int) $seconds * 10_000_000 + (int) substr($fraction, 2, 7) + self::GREGORIAN_TO_UNIX_TICKS;
     }

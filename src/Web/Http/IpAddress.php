@@ -67,7 +67,8 @@ class IpAddress
     private static function embeddedNat64Address(string $address): ?string
     {
         $bytes = inet_pton($address);
-        if (16 !== strlen($bytes) || substr($bytes, 0, 12) !== substr(inet_pton(self::NAT64_PREFIX), 0, 12))
+        $hasNat64Prefix = 16 === strlen($bytes) && substr($bytes, 0, 12) === (inet_pton(self::NAT64_PREFIX) |> substr(?, 0, 12));
+        if (!$hasNat64Prefix)
             return null;
         return substr($bytes, 12) |> inet_ntop(...);
     }

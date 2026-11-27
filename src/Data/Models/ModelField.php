@@ -297,7 +297,7 @@ class ModelField
             case self::FLOAT:
                 return (float) $value;
             case self::BOOLEAN:
-                return in_array(strtolower((string) $value), ['1', 'true', 't', 'y', 'yes', 'on']);
+                return strtolower((string) $value) |> in_array(?, ['1', 'true', 't', 'y', 'yes', 'on']);
             default:
                 return $value;
         }

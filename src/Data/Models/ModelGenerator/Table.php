@@ -66,7 +66,7 @@ class Table
         $class = new \ReflectionClass($className);
 
         $file = $class->getFileName();
-        $lines = explode("\n", file_get_contents($file));
+        $lines = file_get_contents($file) |> explode("\n", ?);
 
         $methods = [];
 

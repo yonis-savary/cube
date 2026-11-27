@@ -169,7 +169,7 @@ class MigrationManager
 
         $this->createMigrationTableIfInexistant();
 
-        $names = array_slice(array_reverse($this->listDoneMigrations()), 0, $steps);
+        $names = array_reverse($this->listDoneMigrations()) |> array_slice(?, 0, $steps);
 
         if (!count($names)) {
             $this->log(Console::withBlueColor('Nothing to rollback !'));

@@ -81,7 +81,7 @@ class UploadRule extends Rule
             $value = substr($value, strlen($matches[0]));
         }
 
-        $bytes = base64_decode(strtr($value, '-_', '+/'), true);
+        $bytes = strtr($value, '-_', '+/') |> base64_decode(?, true);
 
         return false === $bytes || '' === $bytes ? null : [$bytes, $declaredType];
     }

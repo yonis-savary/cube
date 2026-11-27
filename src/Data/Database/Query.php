@@ -513,7 +513,7 @@ class Query
             $subJoinAcc = $joinAcc.'&'.$relation->getName();
 
             if ($relation instanceof HasMany) {
-                $newRelationAcc = array_slice(explode('&', $joinAcc ?? ''), 1);
+                $newRelationAcc = explode('&', $joinAcc ?? '') |> array_slice(?, 1);
                 $this->resolvers[] = new RelationResolver($relation, $newRelationAcc, $subtree);
                 continue;
             }
