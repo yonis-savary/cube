@@ -395,7 +395,10 @@ class Response extends HttpMessage
         return static::file($path, $code, $attachmentFile ?? basename($path));
     }
 
-    protected static function toJsonValue(mixed $value): mixed
+    /**
+     * What a value becomes in a JSON response : models and collections as arrays, dates as strings.
+     */
+    public static function toJsonValue(mixed $value): mixed
     {
         return match (true) {
             $value instanceof Model => $value->toArray(),

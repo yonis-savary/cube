@@ -19,6 +19,7 @@ use Cube\Data\OpenAPI\Attributes\ResourceResponse;
 use Cube\Data\OpenAPI\Attributes\ResourceSchema;
 use Cube\Data\OpenAPI\Specs\Common\MakesSchemas;
 use Cube\Utils\Utils;
+use Cube\Web\Http\Response;
 
 class OASResponse extends AutoDataToObject
 {
@@ -77,10 +78,12 @@ class OASResponse extends AutoDataToObject
         $data = $this->getResourceExample($resourceResponse->resourceClass, $resourceResponse->with);
         $schema = $this->toEncodableSchema($this->getResourceSchema($resourceResponse->resourceClass, $data));
 
+        $example = Response::toJsonValue($data);
+
         $this->description = $resourceResponse->description ?? '';
         $this->content[$resourceResponse->mimeType] = $resourceResponse->isArray
-            ? ['schema' => ['type' => 'array', 'items' => $schema], 'example' => [$data]]
-            : ['schema' => $schema, 'example' => $data];
+            ? ['schema' => ['type' => 'array', 'items' => $schema], 'example' => [$example]]
+            : ['schema' => $schema, 'example' => $example];
     }
 
     public function objectResponse(ObjectResponse $objectResponse): void

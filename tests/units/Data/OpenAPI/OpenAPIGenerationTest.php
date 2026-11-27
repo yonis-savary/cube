@@ -415,6 +415,20 @@ class OpenAPIGenerationTest extends TestCase
         $this->assertEquals(['type' => 'string', 'format' => 'binary'], $body['content']['application/octet-stream']['schema']);
     }
 
+    /** The example kept the resource's date objects, encoded as {"date": ..., "timezone_type": ...}. */
+    public function testAResourceExampleWritesItsDatesAsAResponseDoes()
+    {
+        $router = $this->getStandaloneRouter();
+        $router->addRoutes(Route::get('/album-dates', [BodyController::class, 'albumDates']));
+
+        $content = $this->generateAsArray($router)['paths']['/album-dates']['get']['responses']['200']['content']['application/json'];
+
+        $this->assertMatchesRegularExpression(Param::RFC3339_DATE_TIME, $content['example']['updated']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}$/', $content['example']['released']);
+        $this->assertEquals(['type' => 'string', 'format' => 'date-time'], $content['schema']['properties']['updated']);
+        $this->assertEquals('date', $content['schema']['properties']['released']['format']);
+    }
+
     public function testRawFileResponseGeneration()
     {
         $router = $this->getStandaloneRouter();
