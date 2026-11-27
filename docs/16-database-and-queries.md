@@ -53,6 +53,36 @@ $database = Database::fromPDO($pdo, 'my-database');
 Every method that queries the database takes an optional `Database` as its last argument, and falls
 back to the global instance — see [Components](./06-components.md) to swap that instance.
 
+## Long-running processes
+
+A server closes a connection left idle long enough (MySQL `wait_timeout`, a proxy, a failover), and
+every query after that fails. `websocket:serve` and `cube:queue` check the global connection every
+`keepAliveInterval` seconds, 300 by default, and reconnect when it was closed
+
+```php
+new DatabaseConfiguration(
+    driver: 'mysql',
+    // ...
+    keepAliveInterval: 60, // 0 never checks
+)
+```
+
+The check is a `SELECT 1`, made only when the process has already used the database : a worker
+that never queries it opens no connection. A failed reconnection throws, which ends the process for
+its supervisor to restart.
+
+The same methods serve your own long-running process
+
+```php
+$database->ping();       // false once the server closed the connection
+$database->reconnect();  // opens a new connection with the same settings
+$database->keepAlive();  // ping(), then reconnect() with a logged warning when it failed
+```
+
+`reconnect()` throws a `RuntimeException` for a database built with `fromPDO()`, whose settings
+Cube does not know, and for an in-memory SQLite, which would lose its content. A reconnection
+starts a new session : an open transaction or a session variable (`SET ...`) is gone.
+
 ## Raw queries
 
 `query()` returns the rows, `exec()` returns the number of affected rows
@@ -138,6 +168,7 @@ $database->getPort();
 $database->getUser();
 $database->getConnection();    // the underlying PDO
 $database->isConnected();
+$database->ping();             // whether the connection still answers
 $database->lastInsertId();
 $database->getLastStatement(); // the last PDOStatement run by query()
 $database->hasTable('product');

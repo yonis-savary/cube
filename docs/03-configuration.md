@@ -186,7 +186,7 @@ readable by your application only. See [Deployment](./36-deployment.md) for the 
 |---|---|---|
 | `Applications(...$paths)` | `'App'` when no path is given | the application directories to load, see [Applications and discovery](./04-applications-and-discovery.md) |
 | `AutoloaderConfiguration` | `cached` (`isProduction()`), `displayErrors` (`isDebug()`) | the cache of class discovery and PHP error display, see [Deployment](./36-deployment.md) |
-| `DatabaseConfiguration` | `driver` (`'sqlite'`), `database` (`'db.sqlite'`), `host`, `port`, `user`, `password` | the SQL connection : `sqlite`, `mysql`, `pgsql`, see [Database and queries](./16-database-and-queries.md) |
+| `DatabaseConfiguration` | `driver` (`'sqlite'`), `database` (`'db.sqlite'`), `host`, `port`, `user`, `password`, `keepAliveInterval` (`300`) | the SQL connection : `sqlite`, `mysql`, `pgsql`, see [Database and queries](./16-database-and-queries.md) |
 | `DateTimeConfiguration` | `outputFormat` (`DATE_ATOM`) | how models and JSON responses write a date with a time, see [Models](./18-models.md) |
 | `MigrationManagerConfiguration` | `tableName` (`'__cube_migration'`), `directoryName` (`'Migrations'`) | the table recording migrations and their directory in each application, see [Migrations](./17-migrations.md) |
 | `RouterConfiguration` | `cached` (`false`), `loadControllers` (`true`), `loadRoutesFiles` (`true`), `apis` (`[]`), `commonMiddlewares` (`[]`), `commonPrefix` (`'/'`), `securityHeaders` (`[]`) | routing, global middlewares and extra `WebAPI`s, see [Routing and middlewares](./11-routing-and-middlewares.md) |

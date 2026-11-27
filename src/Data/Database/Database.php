@@ -4,6 +4,7 @@ namespace Cube\Data\Database;
 
 use Cube\Core\Component;
 use Cube\Data\Database\Builders\QueryBuilder;
+use Cube\Env\Logger\Logger;
 use Cube\Env\Storage;
 use Cube\Utils\Implementations;
 use Pdo\Mysql;
@@ -16,6 +17,7 @@ class Database
     protected \PDOStatement $lastStatement;
 
     protected bool $dryRunMode = false;
+    protected bool $builtFromConnection = false;
 
     public function __construct(
         protected string $driver = 'sqlite',
@@ -31,31 +33,15 @@ class Database
         if ($connection) {
             $this->driver = $connection->getAttribute(\PDO::ATTR_DRIVER_NAME);
             $this->connection = $connection;
+            $this->builtFromConnection = true;
 
             if ('mysql' === $this->driver)
                 self::assertQuotableCharset($connection);
-        } elseif ('sqlite' === $driver) {
-            $this->database = $database
-                ? Storage::getInstance()->path($database)
-                : null;
-
-            $dsn = $this->database
-                ? 'sqlite:'.$this->database
-                : 'sqlite::memory:';
-
-            $this->connection = new \PDO($dsn);
-            $this->exec('PRAGMA foreign_keys = ON');
         } else {
-            $dsn = "{$driver}:dbname={$database};host={$host};port={$port}";
+            if ('sqlite' === $driver)
+                $this->database = $database ? Storage::getInstance()->path($database) : null;
 
-            $options = [];
-
-            if ('mysql' === $driver) { // Values are escaped with PDO::quote(), whose safety depends on the connection charset
-                $dsn .= ';charset=utf8mb4';
-                $options[Mysql::ATTR_MULTI_STATEMENTS] = false;
-            }
-
-            $this->connection = new \PDO($dsn, $user, $password, $options);
+            $this->connect();
         }
 
         if (!$this->queryBuilder) {
@@ -67,6 +53,62 @@ class Database
                 for: $driver
             );
         }
+    }
+
+    protected function connect(): void
+    {
+        if ('sqlite' === $this->driver) {
+            $this->connection = new \PDO($this->database ? 'sqlite:'.$this->database : 'sqlite::memory:');
+            $this->exec('PRAGMA foreign_keys = ON');
+
+            return;
+        }
+
+        $dsn = "{$this->driver}:dbname={$this->database};host={$this->host};port={$this->port}";
+        $options = [];
+
+        if ('mysql' === $this->driver) { // Values are escaped with PDO::quote(), whose safety depends on the connection charset
+            $dsn .= ';charset=utf8mb4';
+            $options[Mysql::ATTR_MULTI_STATEMENTS] = false;
+        }
+
+        $this->connection = new \PDO($dsn, $this->user, $this->password, $options);
+    }
+
+    public function ping(): bool
+    {
+        try {
+            // A dropped MySQL connection also raises a warning ("server has gone away") next to the exception
+            @$this->connection->query('SELECT 1');
+
+            return true;
+        } catch (\PDOException) {
+            return false;
+        }
+    }
+
+    public function reconnect(): void
+    {
+        if ($this->builtFromConnection)
+            throw new \RuntimeException('This database was built from an existing PDO connection : Cube does not know how to open it again');
+        if ('sqlite' === $this->driver && !$this->database)
+            throw new \RuntimeException('Reconnecting to an in-memory SQLite database would lose its content');
+
+        $this->connect();
+    }
+
+    /**
+     * For a long-running process : the server closes a connection left idle (MySQL `wait_timeout`, a
+     * proxy, a failover), and every query after that fails.
+     */
+    public function keepAlive(?Logger $logger = null): void
+    {
+        if ($this->ping())
+            return;
+        $logger ??= Logger::getInstance();
+
+        $logger->warning('Lost the {driver} connection to {database}, reconnecting', ['driver' => $this->driver, 'database' => $this->database]);
+        $this->reconnect();
     }
 
     public static function getDefaultInstance(): static

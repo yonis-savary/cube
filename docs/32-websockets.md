@@ -322,8 +322,9 @@ public function onMessage(ChannelSubscriber $from, array $data): void
 `emit()` works the same from a handler or from your backend : inside the socket process, it reaches
 subscribers directly rather than through the HTTP side.
 
-The socket process keeps its database connection for its whole life, and Cube does not reconnect :
-if your database server closes idle connections, queries fail until the process restarts.
+The socket process keeps its database connection for its whole life. It checks it every
+`keepAliveInterval` seconds of `DatabaseConfiguration` and reconnects when the server closed it,
+see [Database and queries](./16-database-and-queries.md#long-running-processes).
 
 ## Running the server
 

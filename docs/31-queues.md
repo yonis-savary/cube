@@ -194,7 +194,9 @@ services:
 ```
 
 The worker holds your code in memory : restart it after a deployment, or it keeps running the old
-version.
+version. Between two items, it checks its database connection every `keepAliveInterval` seconds of
+`DatabaseConfiguration`, and reconnects when the server closed it (see
+[Database and queries](./16-database-and-queries.md#long-running-processes)).
 
 ## Testing a queue
 

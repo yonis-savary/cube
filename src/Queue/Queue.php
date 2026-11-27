@@ -3,6 +3,8 @@
 namespace Cube\Queue;
 
 use Cube\Core\Injector;
+use Cube\Data\Database\Database;
+use Cube\Data\Database\DatabaseConfiguration;
 use Cube\Env\Logger\HasLogger;
 use Cube\Env\Logger\Logger;
 use Cube\Queue\Drivers\LocalDiskQueueDriver;
@@ -137,9 +139,17 @@ abstract class Queue
 
         $this->logger->info('Starting queue '.static::class.' ('.date('Y-m-d H:i:s').')');
 
+        $keepAliveInterval = DatabaseConfiguration::resolve()->keepAliveInterval;
+        $lastKeepAlive = time();
+
         try {
-            $this->logger->asGlobalInstance(function () {
+            $this->logger->asGlobalInstance(function () use ($keepAliveInterval, &$lastKeepAlive) {
                 while (!$this->shouldStop) {
+                    if ($keepAliveInterval && time() - $lastKeepAlive >= $keepAliveInterval) {
+                        $lastKeepAlive = time();
+                        $this->keepDatabaseAlive();
+                    }
+
                     if (!$this->processNext())
                         usleep(1000 * 50);
                 }
@@ -149,6 +159,13 @@ abstract class Queue
         }
 
         $this->logger->info('Stopped queue '.static::class.' ('.date('Y-m-d H:i:s').')');
+    }
+
+    protected function keepDatabaseAlive(): void
+    {
+        // A queue that never touched the database has no connection to keep : opening one would be a side effect
+        if (Database::hasInstance())
+            Database::getInstance()->keepAlive($this->logger);
     }
 
     /**

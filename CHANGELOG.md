@@ -144,6 +144,9 @@ change it asks from your application.
 - `HttpClient::withPublicOnly()` (or `isPublicOnly()` overridden) refuses any host resolving to an
   address that is not public, with a `NonPublicAddressException`, and pins the checked addresses with
   `CURLOPT_RESOLVE`, redirections included. `IpAddress::isPublic()` is the check on its own.
+- `websocket:serve` and `cube:queue` check the database connection every
+  `DatabaseConfiguration::$keepAliveInterval` seconds (300 by default) and reconnect when the server
+  closed it. `Database::ping()`, `reconnect()` and `keepAlive()` do the same in your own processes.
 - `DateTimeConfiguration::$outputFormat` sets how dates with a time are answered, ATOM by default.
   `Param::datetime()` accepts RFC 3339 dates as well, and a model writes any RFC 3339 date it holds in
   the application timezone. OpenAPI documents an answered date as `format: date-time`.
