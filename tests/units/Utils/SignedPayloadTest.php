@@ -51,6 +51,45 @@ class SignedPayloadTest extends TestCase
         SignedPayload::sign('payload', 'c2VjcmV0==');
     }
 
+    /** RedisCache and RedisQueue hold values signed before expirations existed : they must stay readable. */
+    public function testAPayloadSignedBeforeExpirationsExistedIsStillGivenBack()
+    {
+        $key = 'an-application-key-of-at-least-32-bytes';
+        $legacy = hash_hmac('sha256', 'payload', hash_hkdf('sha256', $key, 32, 'cube-signed-payload')).'payload';
+
+        $this->assertSame('payload', SignedPayload::verify($legacy, $key));
+    }
+
+    public function testAnExpiringPayloadIsGivenBackBeforeItExpires()
+    {
+        $this->assertSame('payload', SignedPayload::verify(SignedPayload::sign('payload', expiresAt: time() + 60)));
+        $this->assertSame('payload', SignedPayload::verify(SignedPayload::sign('payload', expiresAt: new \DateTimeImmutable('+1 hour'))));
+    }
+
+    public function testAnExpiredPayloadIsRefused()
+    {
+        $this->assertNull(SignedPayload::verify(SignedPayload::sign('payload', expiresAt: time() - 1)));
+        $this->assertNull(SignedPayload::verify(SignedPayload::sign('payload', expiresAt: time())));
+    }
+
+    public function testAnExtendedExpirationIsRefused()
+    {
+        $signed = SignedPayload::sign('payload', expiresAt: time() + 60);
+        $extended = substr($signed, 0, 64).(time() + 3600).substr($signed, 64 + strlen((string) (time() + 60)));
+
+        $this->assertNull(SignedPayload::verify($extended));
+    }
+
+    /** Without separate derivations, a permanent signature of "<future timestamp>.x" would read as an expiring one, and the opposite. */
+    public function testPermanentAndExpiringSignaturesCannotBeSwapped()
+    {
+        $expiring = SignedPayload::sign('payload', expiresAt: time() + 60);
+        $permanent = SignedPayload::sign((time() + 60).'.payload');
+
+        $this->assertSame((time() + 60).'.payload', SignedPayload::verify($permanent));
+        $this->assertNotEquals(substr($expiring, 0, 64), substr($permanent, 0, 64));
+    }
+
     public function testAGeneratedKeyIsAccepted()
     {
         $key = Generate::newKey();

@@ -106,6 +106,24 @@ $report = unserialize($payload);
 `verify()` returns the original payload, or `null` when the signature does not match. Like `encrypt()`,
 both methods take another key as their second argument.
 
+### Expiring payloads
+
+Give `sign()` an expiration, as a `DateTimeInterface` or a Unix timestamp, and `verify()` returns
+`null` from that moment on. This makes a short-lived token out of any string, readable by the client
+but impossible to forge or extend
+
+```php
+$token = SignedPayload::sign(json_encode(['invoice' => $invoice->id]), expiresAt: new DateTimeImmutable('+15 minutes'));
+
+if (null === $payload = SignedPayload::verify($request->param('token')))
+    return Response::forbidden('Invalid or expired link');
+```
+
+The expiration is covered by the signature : changing it invalidates the token. A payload signed
+without expiration never expires, and `verify()` accepts both kinds, so do not mix them for the same
+purpose. Expiring and permanent signatures use distinct derived keys : one can never pass for the
+other, and payloads signed before expirations existed stay readable.
+
 Sign anything you are about to `unserialize()` from a place another process can write to : an
 unserialized value can build objects of your classes.
 
@@ -136,8 +154,8 @@ Cube reads one key only : there is no list of previous keys. Changing `APP_KEY`
 | `Cube\appKey(?string $key = null): string` | the given key or `APP_KEY`, throws when missing or shorter than 32 bytes |
 | `Encryption::supports(string $encrypted): bool` | whether the value has the current `v2:` format |
 | `LegacyEncryption::decrypt(string $encrypted, ?string $key = null): string` | reads a value of the former format (deprecated) |
-| `SignedPayload::sign(string $payload, ?string $key = null): string` | prepends the signature |
-| `SignedPayload::verify(string $signed, ?string $key = null): ?string` | the payload, `null` when the signature does not match |
+| `SignedPayload::sign(string $payload, ?string $key = null, DateTimeInterface\|int\|null $expiresAt = null): string` | prepends the signature, and the expiration when given |
+| `SignedPayload::verify(string $signed, ?string $key = null): ?string` | the payload, `null` when the signature does not match or the payload expired |
 
 | Command | Does |
 |---|---|
