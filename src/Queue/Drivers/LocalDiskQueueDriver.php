@@ -42,8 +42,12 @@ class LocalDiskQueueDriver extends BasicQueueDriver
             return null;
         }
 
-        $element = unserialize(file_get_contents($locked));
+        $content = file_get_contents($locked);
         unlink($locked);
+
+        if ('' === $content)
+            return null;
+        $element = unserialize($content);
 
         return is_array($element) ? $element : null;
     }
