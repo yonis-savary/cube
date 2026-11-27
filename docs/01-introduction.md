@@ -122,7 +122,7 @@ Cube\everyMinute([StockSynchronizer::class, 'synchronize'], 5);   // every 5 min
 ```
 
 Pages : [Logging](./09-logging.md), [Collections](./07-collections.md),
-[HTTP client](./28-http-client.md), [Schedules](./29-schedules.md).
+[HTTP client](./29-http-client.md), [Schedules](./30-schedules.md).
 
 ## Reading this documentation
 
@@ -135,8 +135,8 @@ The pages follow one reading order, from the foundations to the most specific to
   [API documentation](./15-api-documentation.md) — answering HTTP requests.
 - [Database and queries](./16-database-and-queries.md) to
   [Data transfer objects](./20-data-transfer-objects.md) — the data layer.
-- [Storage and caching](./21-storage-and-caching.md) to [Static server](./33-static-server.md) —
+- [Storage and caching](./21-storage-and-caching.md) to [Static server](./34-static-server.md) —
   sessions, security, background work and other services.
-- [Testing](./34-testing.md) and [Deployment](./35-deployment.md) — shipping your application.
+- [Testing](./35-testing.md) and [Deployment](./36-deployment.md) — shipping your application.
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./README.md">Previous : Readme</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./02-installation.md">Next : Installation</a></div></td></tr></table>

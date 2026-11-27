@@ -30,6 +30,7 @@ Cube already provides most plumbing. Use the framework tool before implementing 
 | a CLI command | a `Command` subclass |
 | logging | `Logger::getInstance()`, `Cube\info()`, `Cube\error()`... |
 | react to something | `Event` + `EventDispatcher` |
+| a UUID, an API token, a webhook secret | `Identifier::uuid4()`/`uuid6()`/`prefixed()`, stored with `Identifier::hash()` |
 | API documentation | `php do make:openapi`, plus OpenAPI attributes |
 | call an API that publishes an OpenAPI document | `php do make:integration <openapi.json\|url>`, then the generated `<Name>Client` |
 

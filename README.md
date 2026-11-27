@@ -40,6 +40,7 @@ Tests can be automatically written by agents.
   - Password Authentication System (+ Support for Custom Authentication)
   - Bearer Token Authentication for API clients
   - Single Sign-On (Google, Microsoft, any OpenID Connect provider, or your own)
+  - UUID v4/v6 and prefixed secrets
 
 ## 🔥 Installation
 

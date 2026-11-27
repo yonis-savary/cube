@@ -187,14 +187,15 @@ An API client authenticates each request with an `Authorization: Bearer <token>`
 known for that request only, nothing is written to the session and no cookie is sent.
 
 Give your provider the `VerifiesBearerTokens` capability. Issuing, storing and revoking the tokens
-stays in your application : store a hash of each token, never the token itself
+stays in your application : generate them with `Identifier::prefixed()` and store their
+`Identifier::hash()`, never the token itself (see [Identifiers and secrets](./28-identifiers-and-secrets.md))
 
 ```php
 class ApiAuthentication extends PasswordAuthentication implements VerifiesBearerTokens
 {
     public function userByBearerToken(string $token): Model|false
     {
-        $owner = ApiToken::findWhere(['hash' => hash('sha256', $token)])?->user_id;
+        $owner = ApiToken::findWhere(['hash' => Identifier::hash($token)])?->user_id;
 
         return $owner ? $this->userById($owner) : false;
     }

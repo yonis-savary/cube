@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-websockets.md">Next : Websockets</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./30-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./32-websockets.md">Next : Websockets</a></div></td></tr></table>
 
 # Queues
 
@@ -183,7 +183,7 @@ services:
 
 A worker is a long-running process : give it a supervisor that restarts it, one service per queue.
 With the Docker stack, that is one more service on your application image (see
-[Deployment](./35-deployment.md#background-services))
+[Deployment](./36-deployment.md#background-services))
 
 ```yaml
 services:
@@ -232,4 +232,4 @@ $this->assertFalse($queue->processNext());
 | `loop(?Logger $attachedLogger = null)` | runs the worker, what `cube:queue` calls |
 | `stop()` | asks a running loop to leave after the current item |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-websockets.md">Next : Websockets</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./30-schedules.md">Previous : Schedules</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./32-websockets.md">Next : Websockets</a></div></td></tr></table>

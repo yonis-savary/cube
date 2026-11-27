@@ -167,8 +167,8 @@ All of them live in `Storage/Logs`
 | `fatal.csv` | uncaught exceptions, with their trace |
 | `warnings.csv` | PHP deprecation notices |
 | `console.csv` | what commands print with `Console::log()` |
-| `socket.csv`, `socket-fatal.csv` | the [unix socket server](./32-unix-socket-server.md) |
-| `broadcast-client.csv` | the [websocket](./31-websockets.md) broadcast client |
+| `socket.csv`, `socket-fatal.csv` | the [unix socket server](./33-unix-socket-server.md) |
+| `broadcast-client.csv` | the [websocket](./32-websockets.md) broadcast client |
 | `<class>.csv` | a class using `HasLogger`, queues included (`launch.csv` for `php do routine:launch`) |
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./08-events.md">Previous : Events</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./10-commands.md">Next : Commands</a></div></td></tr></table>

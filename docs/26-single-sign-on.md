@@ -351,7 +351,7 @@ class SignInTest extends CubeTestCase
 
 To test a provider of your own that extends `AuthorizationCodeProvider`, fake the provider's
 server instead. Every request goes through `IdentityProviderClient`, so register an
-`HttpMockServer` for it (see [Http client](./28-http-client.md#testing-without-the-network))
+`HttpMockServer` for it (see [Http client](./29-http-client.md#testing-without-the-network))
 
 ```php
 MockServers::getInstance()->set(IdentityProviderClient::class, FakeDiscordServer::class);

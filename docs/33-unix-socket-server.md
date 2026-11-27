@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-static-server.md">Next : Static server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-static-server.md">Next : Static server</a></div></td></tr></table>
 
 # Unix socket server
 
@@ -65,7 +65,7 @@ before the server dispatches the event.
 
 ## Calling the socket from PHP
 
-Write a [connector](./28-http-client.md#a-connector) whose `baseUnixSocket()` returns the socket
+Write a [connector](./29-http-client.md#a-connector) whose `baseUnixSocket()` returns the socket
 path : every request it sends goes through the socket, `fetch()` and `fetchAsync()` alike
 
 ```php
@@ -173,4 +173,4 @@ Each request and its response are logged as on the HTTP side, in `Storage/Logs/s
 | `Storage/Logs/socket.csv` | the server log, requests and responses |
 | `Storage/Logs/socket-fatal.csv` | exceptions escaping a callback |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-static-server.md">Next : Static server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-websockets.md">Previous : Websockets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-static-server.md">Next : Static server</a></div></td></tr></table>

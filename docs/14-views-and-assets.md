@@ -141,7 +141,7 @@ The file is answered with the content type of its extension. A request for an un
 `404` with a plain-text message naming it.
 
 To serve a whole front-end directory (a built single-page application, its `index.html` and its
-files), use `StaticServer` instead — see [Static server](./33-static-server.md).
+files), use `StaticServer` instead — see [Static server](./34-static-server.md).
 
 ## The components
 
