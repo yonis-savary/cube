@@ -49,7 +49,7 @@ class Identifier
         if ($bytes < self::MINIMUM_RANDOM_BYTES)
             throw new \InvalidArgumentException('A prefixed identifier needs at least '.self::MINIMUM_RANDOM_BYTES." random bytes to stay unguessable, got [{$bytes}]");
 
-        return $prefix.rtrim(strtr(base64_encode(random_bytes($bytes)), '+/', '-_'), '=');
+        return $prefix.rtrim(strtr($bytes |> random_bytes(...) |> base64_encode(...), '+/', '-_'), '=');
     }
 
     public static function hash(#[\SensitiveParameter] string $secret, #[\SensitiveParameter] ?string $key = null): string

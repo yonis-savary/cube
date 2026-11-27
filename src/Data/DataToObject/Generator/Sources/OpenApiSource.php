@@ -315,7 +315,7 @@ class OpenApiSource implements DtoSource
         if ($type = $this->referenceTypes[$key] ?? null)
             return $type;
         $schema = $this->resolvePointer($pointer);
-        $name = DtoNames::className(strtr(rawurldecode(preg_replace('~.+/~', '', $pointer)), ['~1' => '/', '~0' => '~']));
+        $name = DtoNames::className(strtr(preg_replace('~.+/~', '', $pointer) |> rawurldecode(...), ['~1' => '/', '~0' => '~']));
         $namespace = DtoDirection::Input === $direction ? self::INPUT_NAMESPACE : self::OUTPUT_NAMESPACE;
 
         // Set before recursing, so a schema that refers to itself ends up typed by its own class (or mixed)
@@ -344,10 +344,10 @@ class OpenApiSource implements DtoSource
             return $this->typeOf($schema['allOf'][0], $namespace, $name, $direction);
         if ($this->isObject($schema))
             return $this->objectTypeOf($schema, $namespace, $name, $direction);
-        $types = array_values(array_diff((array) ($schema['type'] ?? []), ['null']));
+        $types = array_diff((array) ($schema['type'] ?? []), ['null']) |> array_values(...);
         if (1 !== count($types))
             return new MixedType();
-        $enum = array_values(array_filter($schema['enum'] ?? [], fn ($value) => null !== $value));
+        $enum = array_filter($schema['enum'] ?? [], fn ($value) => null !== $value) |> array_values(...);
 
         return match ($types[0]) {
             'array' => new ListType($this->typeOf($schema['items'] ?? [], $namespace, $name.'Item', $direction)),

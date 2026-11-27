@@ -95,7 +95,7 @@ class RememberMe implements Middleware
             ? $user->userId
             : $user->id();
 
-        $token = bin2hex(random_bytes(32));
+        $token = random_bytes(32) |> bin2hex(...);
         $duration = $this->configuration->cookieDuration;
         $generation = $this->generationOf($userId) ?? self::newGeneration();
 
@@ -162,7 +162,7 @@ class RememberMe implements Middleware
 
     protected static function newGeneration(): string
     {
-        return bin2hex(random_bytes(16));
+        return random_bytes(16) |> bin2hex(...);
     }
 
     // Only a hash is stored : reading the cache, or its file names, must not hand out working cookies

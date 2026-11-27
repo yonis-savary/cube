@@ -165,9 +165,9 @@ class Table
                 $fromColumn = $relation->toColumn;
 
                 $relationName = lcfirst(Text::endsWith(str_replace(
-                    basename(str_replace('\\', '/', $fromModel)),
+                    str_replace('\\', '/', $fromModel) |> basename(...),
                     '',
-                    basename(str_replace('\\', '/', $toModel))
+                    str_replace('\\', '/', $toModel) |> basename(...)
                 ), 's'));
 
                 if (str_ends_with($relationName, 'ys'))
@@ -203,7 +203,7 @@ class Table
             $existingContent = $destination->read($fileName);
             preg_match_all('~^use (.+);~m', $existingContent, $fileUses);
             $uses = array_merge($uses, $fileUses[1]);
-            $uses = array_values(array_unique($uses));
+            $uses = $uses |> array_unique(...) |> array_values(...);
         }
 
         $usesString = Bunch::wrap($uses)

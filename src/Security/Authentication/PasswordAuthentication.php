@@ -61,13 +61,12 @@ class PasswordAuthentication extends ModelAuthentication implements VerifiesCred
     {
         if ($user = parent::userById($id))
             return $this->withoutCredentials($user);
-
         return false;
     }
 
     public function getCredentialFields(): array
     {
-        return array_values(array_filter([$this->passwordField, $this->saltField]));
+        return [$this->passwordField, $this->saltField] |> array_filter(...) |> array_values(...);
     }
 
     protected function withoutCredentials(Model $user): Model

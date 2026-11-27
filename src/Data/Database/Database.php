@@ -31,7 +31,9 @@ class Database
         protected ?QueryBuilder $queryBuilder = null,
         ?\PDO $connection = null
     ) {
-        $this->driver = $driver instanceof DatabaseDriver ? $driver->value : strtolower(trim($driver));
+        $this->driver = $driver instanceof DatabaseDriver
+            ? $driver->value
+            : $driver |> trim(...) |> strtolower(...);
 
         if ($connection) {
             $this->driver = $connection->getAttribute(\PDO::ATTR_DRIVER_NAME);

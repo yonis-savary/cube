@@ -28,7 +28,7 @@ class IpAddress
             return false;
         if (null === $prefixLength)
             return true;
-        return preg_match('/^\d{1,3}$/', $prefixLength) && (int) $prefixLength <= 8 * strlen(inet_pton($network));
+        return preg_match('/^\d{1,3}$/', $prefixLength) && (int) $prefixLength <= 8 * ($network |> inet_pton(...) |> strlen(...));
     }
 
     /**
@@ -69,6 +69,6 @@ class IpAddress
         $bytes = inet_pton($address);
         if (16 !== strlen($bytes) || substr($bytes, 0, 12) !== substr(inet_pton(self::NAT64_PREFIX), 0, 12))
             return null;
-        return inet_ntop(substr($bytes, 12));
+        return substr($bytes, 12) |> inet_ntop(...);
     }
 }

@@ -33,7 +33,7 @@ class FakeIdentityProvider implements IdentityProvider
 
     public function authorize(): PendingAuthorization
     {
-        $state = bin2hex(random_bytes(16));
+        $state = random_bytes(16) |> bin2hex(...);
 
         return $this->lastAuthorization = new PendingAuthorization(self::AUTHORIZATION_URL.'?state='.$state, $state);
     }

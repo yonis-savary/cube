@@ -19,7 +19,7 @@ abstract class RateLimiter
     {
         $shortName = (new \ReflectionClass($this))->getShortName();
 
-        return strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $shortName));
+        return preg_replace('/(?<!^)[A-Z]/', '-$0', $shortName) |> strtolower(...);
     }
 
     protected function cache(): Cache

@@ -44,7 +44,7 @@ abstract class AuthorizationCodeProvider implements IdentityProvider
 
     final public function authorize(): PendingAuthorization
     {
-        $state = bin2hex(random_bytes(16));
+        $state = random_bytes(16) |> bin2hex(...);
         $codeVerifier = self::base64url(random_bytes(32));
 
         $parameters = [

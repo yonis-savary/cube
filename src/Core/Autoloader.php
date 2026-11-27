@@ -280,7 +280,7 @@ class Autoloader
 
     protected static function exploredDirectoriesKey(): string
     {
-        return md5(implode("\n", self::getExploredDirectories()));
+        return implode("\n", self::getExploredDirectories()) |> md5(...);
     }
 
     protected static function forgetClassIndex(): void
@@ -583,14 +583,14 @@ class Autoloader
         try {
             $traits = [];
             foreach ([$class, ...class_parents($class, $autoload)] as $classOrParent) {
-                array_push($traits, ...array_values(class_uses($classOrParent, $autoload)));
+                array_push($traits, ...(class_uses($classOrParent, $autoload) |> array_values(...)));
             }
 
             foreach ($traits as $trait) {
                 array_push($traits, ...self::classUses($trait, $autoload));
             }
 
-            return array_values(array_unique($traits));
+            return $traits |> array_unique(...) |> array_values(...);
         } catch (\Throwable $_) {
             return [];
         }

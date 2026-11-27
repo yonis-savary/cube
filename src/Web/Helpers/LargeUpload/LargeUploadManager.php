@@ -24,7 +24,7 @@ class LargeUploadManager
 
     public function start(): LargeUpload
     {
-        $identifier = 'largeupload-'.bin2hex(random_bytes(16));
+        $identifier = 'largeupload-'.(random_bytes(16) |> bin2hex(...));
         return new LargeUpload($identifier, $this->getStorage(), $this->configuration->maxSize);
     }
 

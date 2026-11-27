@@ -21,7 +21,7 @@ abstract class UserStorage extends Storage
 
     private static function getBaseStorage(): Storage
     {
-        $path = strtolower(str_replace('\\', '/', static::class));
+        $path = str_replace('\\', '/', static::class) |> strtolower(...);
 
         return Storage::getInstance()->child($path);
     }

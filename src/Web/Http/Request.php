@@ -221,7 +221,7 @@ class Request extends HttpMessage
 
         // Each proxy appends the address it received from : read from the right, only while a trusted proxy wrote the entry
         $client = $this->ip;
-        foreach (array_reverse(explode(',', $this->getHeader('x-forwarded-for', ''))) as $hop) {
+        foreach (explode(',', $this->getHeader('x-forwarded-for', '')) |> array_reverse(...) as $hop) {
             if (null === $client || !$isTrusted($client))
                 break;
             if (false === filter_var($hop = trim($hop), FILTER_VALIDATE_IP))

@@ -27,6 +27,6 @@ class Generate extends Command
 
     public static function newKey(): string
     {
-        return base64_encode(random_bytes(32));
+        return random_bytes(32) |> base64_encode(...);
     }
 }
