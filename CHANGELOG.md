@@ -47,6 +47,10 @@ change it asks from your application.
   (return `[]` when there is none). `Authentication::login()` keeps those fields out of the session.
 - `HasScopedSession` scopes changed key once (`md5(static::class)`) : scoped session values, the
   authentication one included, are lost on the first request after the upgrade, so users log in again.
+- `AuthenticationProvider` no longer declares `attempt()` : a provider checking credentials implements
+  `VerifiesCredentials` as well, and `Authentication::attempt()` throws a `RuntimeException` with a
+  provider that does not. `PasswordAuthentication` extends `ModelAuthentication`.
+- `Authentication` opens its session on first use instead of when it is built.
 
 **Data**
 - `SavedModel::$database` is never `null`.
@@ -119,6 +123,24 @@ change it asks from your application.
 
 ### Added
 
+- Single sign-on : `SingleSignOn::redirect()` sends the user to an identity provider and `callback()`
+  gives back an `ExternalIdentity`, through the authorization code flow with PKCE and a `state` check.
+  `OpenIDConnectProvider` works with any OpenID Connect issuer (`OpenIDConnectProvider::google()`),
+  `AuthorizationCodeProvider` is the base for any other OAuth 2.0 provider, and
+  `SingleSignOnConfiguration` declares them. `ModelAuthentication` finds users by id without
+  checking a password, and `Test\FakeIdentityProvider` fakes a provider in your tests.
+- Bearer tokens : the `BearerAuthentication` middleware authenticates a request by its
+  `Authorization: Bearer` header, through a provider implementing `VerifiesBearerTokens`, for that
+  request only (no session, no cookie). A refused token is answered `401` with
+  `WWW-Authenticate: Bearer error="invalid_token"`.
+- `Identifier` : `uuid4()`, time-ordered `uuid6()`, `prefixed('whsec_')` secrets recognizable when they
+  leak, and `hash()` / `matches()` (HMAC on `APP_KEY`, constant-time) to store a secret you never read
+  back. `hash256()` / `matches256()` do the same without key, and are less secure.
+- `SignedPayload::sign($payload, expiresAt: ...)` : `verify()` refuses the payload from that moment on.
+  Payloads signed before stay readable.
+- OpenAPI response attributes (`#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]`,
+  `#[RawResponse]`, `#[NoContentResponse]`) go on a controller class, for each of its methods, and on a
+  middleware class, for every route it guards. The most specific declaration of a status code wins.
 - `DateTimeConfiguration::$outputFormat` sets how dates with a time are answered, ATOM by default.
   `Param::datetime()` accepts RFC 3339 dates as well, and a model writes any RFC 3339 date it holds in
   the application timezone. OpenAPI documents an answered date as `format: date-time`.

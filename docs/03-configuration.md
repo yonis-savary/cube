@@ -194,6 +194,7 @@ readable by your application only. See [Deployment](./36-deployment.md) for the 
 | `CacheConfiguration` | `driver` (a `LocalDiskCache` in `Storage/Cache`) | the default `Cache` driver, see [Storage and caching](./21-storage-and-caching.md) |
 | `SessionConfiguration` | `namespace` (`'cube'`), `driver` (a `PHPGlobalSession`) | the session driver, see [Sessions](./22-sessions.md) |
 | `AuthenticationConfiguration` | `provider`, **required** | the `Authentication` provider, see [Authentication](./23-authentication.md) |
+| `SingleSignOnConfiguration(...$providers)` | no provider | the identity providers of single sign-on, see [Single sign on](./26-single-sign-on.md) |
 | `UserRegisterConfiguration` | `cookieName` (`'remember-me-token'`), `cookieDuration` (two weeks), `refreshTokenOnRemember` (`true`), `cookieSecure` (`true`), `cookieHttpOnly` (`true`), `cookiePath` (`'/'`), `cookieSameSite` (`'Lax'`) | the remember-me cookie, see [Remember me](./25-remember-me.md) |
 | `OpenAPIConfiguration` | `outputFile` (`Storage/openapi.json`), `title` (`'Application'`), `version` (`'0.0.1'`), `authenticationScheme`, `jsonFlags`, `displayLogs` (`true`) | the generated OpenAPI document, see [API documentation](./15-api-documentation.md) |
 | `ToTypesConfiguration` | `outputFile` (`Storage/cube-types.ts`) | the output of `models:to-types`, see [Models](./18-models.md) |
