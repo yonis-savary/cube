@@ -136,6 +136,12 @@ class DatabaseSession extends PHPGlobalSession implements \SessionHandlerInterfa
         ;
     }
 
+    // session_create_id() would call back into this handler : 32 hex characters is PHP's default id format
+    public function create_sid(): string
+    {
+        return bin2hex(random_bytes(16));
+    }
+
     public function updateTimestamp(string $id, string $data): bool
     {
         Query::update($this->table)

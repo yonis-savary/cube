@@ -148,6 +148,17 @@ class DatabaseSessionTest extends TestCase
         });
     }
 
+    /** PHP 8.6 warns when a handler lacks create_sid(), which PHP 9.0 requires. */
+    public function testCreateSidGivesAFreshIdInPhpDefaultFormat()
+    {
+        $handler = new DatabaseSession();
+
+        $id = $handler->create_sid();
+
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $id);
+        $this->assertNotEquals($id, $handler->create_sid());
+    }
+
     protected function openHandler(): DatabaseSession
     {
         $handler = new DatabaseSession();
