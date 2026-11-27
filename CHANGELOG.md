@@ -141,6 +141,9 @@ change it asks from your application.
 - OpenAPI response attributes (`#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]`,
   `#[RawResponse]`, `#[NoContentResponse]`) go on a controller class, for each of its methods, and on a
   middleware class, for every route it guards. The most specific declaration of a status code wins.
+- `HttpClient::withPublicOnly()` (or `isPublicOnly()` overridden) refuses any host resolving to an
+  address that is not public, with a `NonPublicAddressException`, and pins the checked addresses with
+  `CURLOPT_RESOLVE`, redirections included. `IpAddress::isPublic()` is the check on its own.
 - `DateTimeConfiguration::$outputFormat` sets how dates with a time are answered, ATOM by default.
   `Param::datetime()` accepts RFC 3339 dates as well, and a model writes any RFC 3339 date it holds in
   the application timezone. OpenAPI documents an answered date as `format: date-time`.

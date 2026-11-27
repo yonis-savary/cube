@@ -7,6 +7,7 @@ use Cube\Env\Logger\Logger;
 use Cube\Env\Logger\NullLogger;
 use Cube\Utils\Path;
 use Cube\Utils\Utils;
+use Cube\Web\Http\Exceptions\NonPublicAddressException;
 
 class HttpClient
 {
@@ -48,10 +49,23 @@ class HttpClient
     protected ?HttpMockServer $httpMockServer = null;
 
     protected float $lastFetchDurationMilli = 0;
+    protected bool $publicOnly = false;
 
     public function baseLogger(): Logger
     {
         return new NullLogger();
+    }
+
+    public function withPublicOnly(bool $publicOnly = true): static
+    {
+        $this->publicOnly = $publicOnly;
+
+        return $this;
+    }
+
+    public function isPublicOnly(): bool
+    {
+        return $this->publicOnly;
     }
 
     public function setMockServer(HttpMockServer $mockServer): void
@@ -222,7 +236,7 @@ class HttpClient
         // Base values and the cURL mutator often carry credentials : only the same origin gets them again
         $sameOrigin = self::originOf($nextURL) === self::originOf($currentURL);
 
-        $client = $sameOrigin ? $this : new self();
+        $client = $sameOrigin ? $this : (new self())->withPublicOnly($this->isPublicOnly());
         $curlMutator = $sameOrigin ? $curlMutator : null;
 
         [$nextPath, $nextQuery] = explode('?', $nextURL, 2) + [1 => ''];
@@ -340,6 +354,11 @@ class HttpClient
         if ($socket = $this->baseUnixSocket()) {
             $logger->info('Setting CURLOPT_UNIX_SOCKET_PATH to {socket}', ['socket' => $socket]);
             $options[CURLOPT_UNIX_SOCKET_PATH] = $socket;
+        }
+
+        if ($this->isPublicOnly() && $pinnedAddresses = $this->pinPublicAddresses($url)) {
+            $logger->info('Setting CURLOPT_RESOLVE to {resolve}', ['resolve' => $pinnedAddresses]);
+            $options[CURLOPT_RESOLVE] = $pinnedAddresses;
         }
 
         $method = $request->getMethod();
@@ -535,6 +554,8 @@ class HttpClient
             $mockServer->handle($request);
             return true;
         }
+        if ($this->isPublicOnly())
+            throw new \RuntimeException(static::class.' is public only : fetchAsync() opens its socket by host name and cannot pin the checked address, use fetch()');
 
         $userAgent ??= $this->baseUserAgent();
         $logger ??= $this->baseLogger();
@@ -597,6 +618,57 @@ class HttpClient
         }
         $logger->error("Could not open socket for {$url}");
         return false;
+    }
+
+    /**
+     * @return string[] The `CURLOPT_RESOLVE` entries pinning the host to the addresses checked here, none for an IP literal
+     *
+     * @throws NonPublicAddressException When the host resolves to any address that is not public
+     */
+    protected function pinPublicAddresses(string $url): array
+    {
+        if ($this->baseUnixSocket())
+            throw new \RuntimeException(static::class.' sends its requests to a unix socket : it cannot be public only');
+
+        $parts = parse_url($url) ?: [];
+        $host = trim($parts['host'] ?? '', '[]');
+        if ('' === $host)
+            throw new \InvalidArgumentException("Cannot check the address of [{$url}] : it has no host");
+        $port = $parts['port'] ?? ('https' === strtolower($parts['scheme'] ?? '') ? 443 : 80);
+
+        $addresses = $this->resolveHost($host);
+        if (!count($addresses))
+            throw new \RuntimeException("Could not resolve [{$host}]");
+
+        foreach ($addresses as $address) {
+            if (!$this->isPublicAddress($address))
+                throw new NonPublicAddressException($host, $address);
+        }
+
+        if (false !== filter_var($host, FILTER_VALIDATE_IP))
+            return [];
+        $pinned = array_map(fn (string $address) => str_contains($address, ':') ? "[{$address}]" : $address, $addresses);
+
+        // Without it, curl resolves the host again : a second DNS answer could point to an address never checked
+        return ["{$host}:{$port}:".implode(',', $pinned)];
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function resolveHost(string $host): array
+    {
+        if (false !== filter_var($host, FILTER_VALIDATE_IP))
+            return [$host];
+        // dns_get_record() warns when the name does not exist, which an empty answer already says
+        $ipv6 = array_column(@dns_get_record($host, DNS_AAAA) ?: [], 'ipv6');
+
+        return [...(gethostbynamel($host) ?: []), ...$ipv6];
+    }
+
+    protected function isPublicAddress(string $address): bool
+    {
+        return IpAddress::isPublic($address);
     }
 
     /**
