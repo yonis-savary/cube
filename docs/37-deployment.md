@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./35-testing.md">Previous : Testing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./README.md">Next : Readme</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./36-testing.md">Previous : Testing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./README.md">Next : Readme</a></div></td></tr></table>
 
 # Deployment
 
@@ -44,7 +44,7 @@ Set both options explicitly to decouple them from the environment name
 new AutoloaderConfiguration(cached: true, displayErrors: false),
 ```
 
-`APP_KEY` must hold at least 32 bytes : see [Encryption and signing](./27-encryption-and-signing.md).
+`APP_KEY` must hold at least 32 bytes : see [Encryption and signing](./28-encryption-and-signing.md).
 
 ## The discovery cache
 
@@ -156,11 +156,11 @@ production.
 Long-running and scheduled work does not go through php-fpm
 
 - add a line printed by `php do routine:generate` to your crontab : it runs `php do routine:launch`
-  every minute, which launches your [schedules](./30-schedules.md) (not your [queues](./31-queues.md)).
+  every minute, which launches your [schedules](./31-schedules.md) (not your [queues](./32-queues.md)).
   With the Docker stack, a [scheduler container](#the-scheduler-container) can do it instead ;
-- supervise the long-running processes, `php do cube:queue` ([Queues](./31-queues.md)),
-  `php do websocket:serve` ([Websockets](./32-websockets.md)) and `php do unix:serve`
-  ([Unix socket server](./33-unix-socket-server.md)), and restart them on each release : they keep
+- supervise the long-running processes, `php do cube:queue` ([Queues](./32-queues.md)),
+  `php do websocket:serve` ([Websockets](./33-websockets.md)) and `php do unix:serve`
+  ([Unix socket server](./34-unix-socket-server.md)), and restart them on each release : they keep
   running the code they started with. With the Docker stack, each one is a service (see
   [Background services](#background-services)).
 
@@ -266,7 +266,7 @@ And in `docker-compose.override.yml`, so that it runs your mounted code in devel
 | Process | Command | Notes |
 |---|---|---|
 | a queue worker | `cube:queue --queue=<class> -l` | one service per queue |
-| the websocket server | `websocket:serve -l` | `ports:` the frontend port, `expose:` the backend one, see [Websockets](./32-websockets.md#running-the-server) |
+| the websocket server | `websocket:serve -l` | `ports:` the frontend port, `expose:` the backend one, see [Websockets](./33-websockets.md#running-the-server) |
 | the unix socket server | `unix:serve <path>` | put the socket in a volume shared with php-fpm |
 
 - `-l` sends the process log to stdout, read by `docker compose logs`.
@@ -280,7 +280,7 @@ And in `docker-compose.override.yml`, so that it runs your mounted code in devel
 
 ## The scheduler container
 
-`routine:launch` must be called once a minute (see [Schedules](./30-schedules.md#running-them)).
+`routine:launch` must be called once a minute (see [Schedules](./31-schedules.md#running-them)).
 Instead of a host cron calling `make launch-scheduler`, a dedicated service can do it : it uses the
 application image and needs no setup on the host.
 
@@ -330,7 +330,7 @@ And in `docker-compose.override.yml`, so that it runs your mounted code in devel
 
 Launches can overlap, as with a cron : the lock of each task skips a run while the previous one is
 still running, unless the schedule disabled it (see
-[Overlapping runs](./30-schedules.md#overlapping-runs)).
+[Overlapping runs](./31-schedules.md#overlapping-runs)).
 
 ### Why these options
 
@@ -342,7 +342,7 @@ still running, unless the schedule disabled it (see
 ### Limits
 
 - **Tasks are killed on stop.** Stopping or restarting the container kills the tasks it is running,
-  and `make deploy` stops every service. Prefer a [queue](./31-queues.md) for work that must not be
+  and `make deploy` stops every service. Prefer a [queue](./32-queues.md) for work that must not be
   interrupted.
 - **No catching up.** The schedules of the minutes spent stopped never fire.
 - **One container only.** Two of them would launch every schedule twice, and the lock only protects
@@ -404,4 +404,4 @@ would be created by Docker, as root, and the containers could not write in it.
       [Routing and middlewares](./11-routing-and-middlewares.md))
 - [ ] each application on its own php-fpm master
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./35-testing.md">Previous : Testing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./README.md">Next : Readme</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./36-testing.md">Previous : Testing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./README.md">Next : Readme</a></div></td></tr></table>

@@ -1,10 +1,10 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./26-single-sign-on.md">Previous : Single sign on</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./28-identifiers-and-secrets.md">Next : Identifiers and secrets</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./27-rate-limiting.md">Previous : Rate limiting</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./29-identifiers-and-secrets.md">Next : Identifiers and secrets</a></div></td></tr></table>
 
 # Encryption and signing
 
 Cube encrypts values you need to read back with `Cube\encrypt()` / `Cube\decrypt()`, and signs data it
 stores outside your application with `SignedPayload`. Both are keyed on your `APP_KEY`. To generate
-identifiers and secrets, see [Identifiers and secrets](./28-identifiers-and-secrets.md).
+identifiers and secrets, see [Identifiers and secrets](./29-identifiers-and-secrets.md).
 
 ```php
 $stored = encrypt($agency->iban);   // "v2:..." : safe to put in a column or a cookie
@@ -135,7 +135,7 @@ unserialized value can build objects of your classes.
 | `RedisQueue` | every job | the job is dropped, a warning is logged |
 
 So changing `APP_KEY` in effect empties a Redis cache, and drops the Redis jobs still waiting. See
-[Storage and caching](./21-storage-and-caching.md) and [Queues](./31-queues.md).
+[Storage and caching](./21-storage-and-caching.md) and [Queues](./32-queues.md).
 
 ## Changing the key
 
@@ -161,4 +161,4 @@ Cube reads one key only : there is no list of previous keys. Changing `APP_KEY`
 |---|---|
 | `php do key:generate` | prints a random `APP_KEY` line to paste in your `.env` |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./26-single-sign-on.md">Previous : Single sign on</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./28-identifiers-and-secrets.md">Next : Identifiers and secrets</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./27-rate-limiting.md">Previous : Rate limiting</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./29-identifiers-and-secrets.md">Next : Identifiers and secrets</a></div></td></tr></table>

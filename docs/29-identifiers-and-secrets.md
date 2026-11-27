@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./27-encryption-and-signing.md">Previous : Encryption and signing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./29-http-client.md">Next : Http client</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./28-encryption-and-signing.md">Previous : Encryption and signing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./30-http-client.md">Next : Http client</a></div></td></tr></table>
 # Identifiers and secrets
 
 `Identifier` generates UUIDs and prefixed secrets, and hashes the secrets you hand out once and never
@@ -65,7 +65,7 @@ methods suit random secrets and not passwords. Hash passwords with `password_has
 
 `hash()` throws a `RuntimeException` without an `APP_KEY`, and changing the key makes every stored
 hash unmatchable : the secrets have to be issued again. See
-[Encryption and signing](./27-encryption-and-signing.md#the-application-key).
+[Encryption and signing](./28-encryption-and-signing.md#the-application-key).
 
 `hash256()` and `matches256()` hash with plain SHA-256, without key. They survive a key change, but
 are **less secure** : whoever reads your hashes can test guesses against them without your
@@ -83,4 +83,4 @@ check.
 | `Identifier::matches(string $secret, string $hash, ?string $key = null): bool` | whether the secret has that `hash()`, in constant time |
 | `Identifier::hash256(string $secret): string` | the plain SHA-256 of the secret (less secure) |
 | `Identifier::matches256(string $secret, string $hash): bool` | whether the secret has that `hash256()`, in constant time |
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./27-encryption-and-signing.md">Previous : Encryption and signing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./29-http-client.md">Next : Http client</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./28-encryption-and-signing.md">Previous : Encryption and signing</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./30-http-client.md">Next : Http client</a></div></td></tr></table>

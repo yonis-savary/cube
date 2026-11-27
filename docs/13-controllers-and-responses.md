@@ -214,7 +214,7 @@ new RouterConfiguration(
 
 The router asks every configured `WebAPI`, in order, before matching routes, and before a route
 remembered by the route cache. `StaticServer` and
-`AssetServer` are `WebAPI` services (see [Static server](./34-static-server.md) and
+`AssetServer` are `WebAPI` services (see [Static server](./35-static-server.md) and
 [Views and assets](./14-views-and-assets.md#serving-assets)).
 
 ## A CRUD API from a model
@@ -378,7 +378,7 @@ LargeUploadManager::getInstance()->delete($identifier);
 
 Nothing expires old transfers on its own : schedule a cleanup with `deleteOlderThan()`, which
 removes the transfers whose `info.json` file is older than the given number of seconds (see
-[Schedules](./30-schedules.md))
+[Schedules](./31-schedules.md))
 
 ```php
 class DeleteStaleUploads

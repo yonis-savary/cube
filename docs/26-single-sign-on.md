@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./25-remember-me.md">Previous : Remember me</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./27-encryption-and-signing.md">Next : Encryption and signing</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./25-remember-me.md">Previous : Remember me</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./27-rate-limiting.md">Next : Rate limiting</a></div></td></tr></table>
 
 # Single sign on
 
@@ -351,7 +351,7 @@ class SignInTest extends CubeTestCase
 
 To test a provider of your own that extends `AuthorizationCodeProvider`, fake the provider's
 server instead. Every request goes through `IdentityProviderClient`, so register an
-`HttpMockServer` for it (see [Http client](./29-http-client.md#testing-without-the-network))
+`HttpMockServer` for it (see [Http client](./30-http-client.md#testing-without-the-network))
 
 ```php
 MockServers::getInstance()->set(IdentityProviderClient::class, FakeDiscordServer::class);
@@ -376,4 +376,4 @@ The mock server routes on the path only, so one server answers for every host th
 | `getName()` | the provider name |
 | `authorize()` | a `PendingAuthorization` : the URL to send the user to, the `state` and the PKCE `codeVerifier` |
 | `identify(string $code, PendingAuthorization $pending)` | the `ExternalIdentity`, or `null` when the provider refuses the code |
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./25-remember-me.md">Previous : Remember me</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./27-encryption-and-signing.md">Next : Encryption and signing</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./25-remember-me.md">Previous : Remember me</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./27-rate-limiting.md">Next : Rate limiting</a></div></td></tr></table>

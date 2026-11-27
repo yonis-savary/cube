@@ -111,7 +111,7 @@ class Invoice extends DataToObject
 ## From an HTTP response
 
 A `Response` builds one straight from its JSON body, which is the usual way to consume an external
-API — see [HTTP client](./29-http-client.md)
+API — see [HTTP client](./30-http-client.md)
 
 ```php
 $invoice = (new Request('GET', 'https://billing.example.com/invoices/12'))
@@ -125,7 +125,7 @@ and body.
 ## Generating a client from an OpenAPI document
 
 When the API you consume publishes an OpenAPI document, `make:integration` generates a ready-made
-[`HttpClient`](./29-http-client.md) for it : one method per operation, typed classes for what you send
+[`HttpClient`](./30-http-client.md) for it : one method per operation, typed classes for what you send
 and what you receive. A schema declares which fields are required, which are nullable and what a list
 contains, so the generated types are exact : this is the way to prefer
 

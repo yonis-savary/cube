@@ -74,6 +74,7 @@ $filters = $request->params(['name', 'price']);    // several, keyed
 | `getBody()` / `getJSON()` | the raw body, or the body decoded as JSON |
 | `isJSON()` | whether the body is declared as JSON |
 | `getMethod()` / `getPath()` / `getIp()` / `getCookies()` | the request line and its context |
+| `getClientIp()` | the client address : `getIp()`, or what your `trustedProxies` forwarded (see [Rate limiting](./27-rate-limiting.md#behind-a-reverse-proxy)) |
 | `getRoute()` / `getSlugValues()` / `getSlugObject(string $name)` | what the router matched (see [Routing](./11-routing-and-middlewares.md#route-parameters-slugs)) |
 
 The request body is bounded by PHP and your web server, not by Cube : set `post_max_size`,

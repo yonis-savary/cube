@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>
 
 # Websockets
 
@@ -309,7 +309,7 @@ Each refusal is a frame on the socket, and the connection stays open.
 ### Keep the handler short
 
 `onMessage()` runs in the event loop of the socket process : while it works, no client is served.
-Keep it to short operations, and hand the rest to a [queue](./31-queues.md), whose worker calls
+Keep it to short operations, and hand the rest to a [queue](./32-queues.md), whose worker calls
 `emit()` once done
 
 ```php
@@ -406,4 +406,4 @@ The process builds your channels once, at start : restart it after a deployment.
 | `403` | the broadcast secret is missing or wrong |
 | `422` | the `__class` key names no known channel |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./31-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./33-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./32-queues.md">Previous : Queues</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./34-unix-socket-server.md">Next : Unix socket server</a></div></td></tr></table>

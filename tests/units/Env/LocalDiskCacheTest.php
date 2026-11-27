@@ -6,6 +6,7 @@ use Cube\Env\Cache;
 use Cube\Env\Cache\CacheConfiguration;
 use Cube\Env\Cache\LocalDiskCache\LocalDiskCache;
 use Cube\Tests\Units\Env\Classes\HasTemporaryStorage;
+use Cube\Utils\Path;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -120,5 +121,41 @@ class LocalDiskCacheTest extends TestCase
 
         $this->assertTrue($cache->has('discount'));
         $this->assertNull($cache->get('discount', 'default'));
+    }
+
+    /** Each php-fpm worker loads the index once and writes it back on exit : counts made by another were lost. */
+    public function testIncrementCountsWhatOtherInstancesCounted()
+    {
+        $first = new LocalDiskCache($this->storage);
+        $second = new LocalDiskCache($this->storage);
+        $first->initialize();
+        $second->initialize();
+
+        $first->increment('attempts');
+        $second->increment('attempts');
+        $first->increment('attempts');
+
+        $this->assertSame(3, $second->increment('attempts', 0));
+    }
+
+    public function testConcurrentProcessesLoseNoIncrement()
+    {
+        $script = <<<'PHP'
+            require $argv[1];
+            $cache = new Cube\Env\Cache\LocalDiskCache\LocalDiskCache(new Cube\Env\Storage($argv[2]));
+            $cache->initialize();
+            for ($i = 0; $i < 50; ++$i)
+                $cache->increment('hits');
+            PHP;
+
+        $processes = [];
+        for ($i = 0; $i < 4; ++$i)
+            $processes[] = proc_open([PHP_BINARY, '-r', $script, Path::join(__DIR__, '../../../vendor/autoload.php'), $this->storage->getRoot()], [], $pipes);
+        foreach ($processes as $process)
+            $this->assertSame(0, proc_close($process));
+
+        $cache = new LocalDiskCache($this->storage);
+        $cache->initialize();
+        $this->assertSame(200, $cache->increment('hits', 0));
     }
 }

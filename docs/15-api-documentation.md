@@ -79,7 +79,7 @@ A rule without a type (`new Param()`) gives the empty schema `{}`, which accepts
 
 Every model a response refers to is described once in `components.schemas`, from
 `Model::toResponseObjectParam()`, with an example made by its factory (see
-[Testing](./35-testing.md#faking-models)) : that is what a model answered as is gives. A model read
+[Testing](./36-testing.md#faking-models)) : that is what a model answered as is gives. A model read
 from the database holds all its columns, so every field is a required property, the primary key
 included, and a nullable column is typed `[type, null]`. Each relation is an optional property
 pointing to the schema of its model, since a relation only appears once loaded
@@ -212,7 +212,7 @@ public function profiles(): array
 
 Two endpoints can answer the same resource with different relations loaded : `with` names the ones
 this endpoint loads, and the factory makes exactly those on the example model (see
-[Testing](./35-testing.md#faking-relations))
+[Testing](./36-testing.md#faking-relations))
 
 ```php
 #[ResourceResponse(OrderResource::class, with: ['customer', 'lines.product'])]
@@ -338,6 +338,9 @@ class AgencyController extends Controller
 
 The middlewares Cube reads are the ones the route runs : its own, those of its groups and the
 `commonMiddlewares` of `RouterConfiguration`.
+
+The attributes of a parent class apply to its subclasses, which can replace a status code with their
+own. That is how every `Throttle` documents its `429` (see [Rate limiting](./27-rate-limiting.md)).
 
 When several places describe the same status code, the most specific one wins, in this order
 

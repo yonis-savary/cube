@@ -49,7 +49,7 @@ The `server/` directory of Cube holds the files that live at the root of your pr
 | `Makefile` | `make dev` / `make dev-down` for development, `make build`, `make up`, `make down` and `make deploy` for production, `make exec` and `make launch-scheduler` for both |
 | `docker-compose.yml`, `docker-compose.override.yml`, `Docker/Dockerfile.php`, `Docker/vhost.conf` | a php-fpm (with APCu) + nginx stack serving your application, for production and for development |
 | `.gitignore`, `.dockerignore` | keep `vendor/`, `Storage/` and `.env` out of git and out of the Docker image |
-| `phpunit.xml`, `Tests/bootstrap.php`, `Tests/Unit/HelloWorldTest.php` | a PHPUnit setup with a temporary storage and database, see [Testing](./35-testing.md) |
+| `phpunit.xml`, `Tests/bootstrap.php`, `Tests/Unit/HelloWorldTest.php` | a PHPUnit setup with a temporary storage and database, see [Testing](./36-testing.md) |
 | `AGENTS.md`, `CLAUDE.md` | instructions for coding agents, pointing them to `vendor/yonis-savary/cube/ai/FRAMEWORK.md` |
 
 `AGENTS.md` ends with a *Project rules* section : add the rules specific to your application there.
@@ -101,7 +101,7 @@ The comparison ignores case. `Cube\environmentName()` gives the raw value.
 Two defaults follow the environment, both set by `AutoloaderConfiguration` :
 
 - `isProduction()` turns on the cache of class discovery, which must then be emptied after each
-  deployment : see [Deployment](./36-deployment.md).
+  deployment : see [Deployment](./37-deployment.md).
 - `isDebug()` turns on `display_errors` : outside a debug environment, PHP warnings and notices go to
   the error log instead of being printed into the response, absolute paths included.
 
@@ -116,7 +116,7 @@ php do key:generate
 # APP_KEY=...
 ```
 
-See [Encryption and signing](./27-encryption-and-signing.md).
+See [Encryption and signing](./28-encryption-and-signing.md).
 
 ## Running the application
 
@@ -132,7 +132,7 @@ your `.env` **before** the first start, from `.env.example` : it is mounted into
 than copied into the image, which would carry your secrets in its layers, and Docker creates a
 directory in place of a missing file. Set `UID` and `GID` in it to the output of `id -u` and `id -g` :
 the containers run as that user, so the files they write in `Storage/` stay yours (see
-[Deployment](./36-deployment.md#container-user)).
+[Deployment](./37-deployment.md#container-user)).
 
 For development, your whole project is mounted : a change to `App/`, `cube.php`, `Public/` or your
 tests applies without rebuilding
@@ -143,7 +143,7 @@ make dev-down
 ```
 
 The production stack copies your project into the image instead — see
-[Deployment](./36-deployment.md#the-docker-stack)
+[Deployment](./37-deployment.md#the-docker-stack)
 
 ```sh
 make build && make up   # nginx answers on http://localhost:8081
@@ -163,6 +163,6 @@ Commands run from the root of your project, the directory holding `vendor/` : Cu
 `Storage/` holds your logs, cache, sessions files and the cached configuration : keep it outside your
 web root (the provided nginx serves `Public/` only) and readable by your application only.
 
-Deployment and production caching are covered in [Deployment](./36-deployment.md).
+Deployment and production caching are covered in [Deployment](./37-deployment.md).
 
 <!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./01-introduction.md">Previous : Introduction</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./03-configuration.md">Next : Configuration</a></div></td></tr></table>

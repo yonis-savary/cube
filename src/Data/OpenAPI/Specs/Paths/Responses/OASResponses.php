@@ -32,8 +32,8 @@ class OASResponses extends AutoDataToObject
 
         // From the least to the most specific : a later declaration of the same status code replaces an earlier one
         foreach ($route->getMiddlewares() as $middleware)
-            $this->addDeclaredResponses(new \ReflectionClass($middleware));
-        $this->addDeclaredResponses(new \ReflectionClass($route->getCallback()[0]));
+            $this->addClassDeclaredResponses(new \ReflectionClass($middleware));
+        $this->addClassDeclaredResponses(new \ReflectionClass($route->getCallback()[0]));
 
         if ($this->getRequestRules($route)) {
             $response = new OASResponse();
@@ -49,6 +49,17 @@ class OASResponses extends AutoDataToObject
 
         $this->addReturnTypeResponses($method);
         $this->addDeclaredResponses($method);
+    }
+
+    /**
+     * @param \ReflectionClass<object> $class
+     */
+    protected function addClassDeclaredResponses(\ReflectionClass $class): void
+    {
+        // PHP does not inherit attributes : a parent declares first, so that its subclass can replace a status code
+        if ($parent = $class->getParentClass())
+            $this->addClassDeclaredResponses($parent);
+        $this->addDeclaredResponses($class);
     }
 
     /**

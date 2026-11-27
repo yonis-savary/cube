@@ -2,11 +2,14 @@
 
 namespace Cube\Env\Cache\LocalDiskCache;
 
+use Cube\Data\Bunch;
 use Cube\Env\Cache\CacheDriverInterface;
 use Cube\Env\Storage;
 
 class LocalDiskCache implements CacheDriverInterface
 {
+    public const INCREMENT_LOCK_FILE = '.increment-lock';
+
     protected Storage $storage;
 
     /** @var array<string,LocalDiskCacheElement> */
@@ -91,6 +94,34 @@ class LocalDiskCache implements CacheDriverInterface
             return;
         $this->index[$key]->destroy();
         unset($this->index[$key]);
+    }
+
+    public function increment(string $key, int $by = 1, int $timeToLive = self::MONTH): int
+    {
+        // The index is a snapshot taken at initialize() : a counter is read from and written to its file under a lock shared by every process
+        $lock = fopen($this->storage->path(self::INCREMENT_LOCK_FILE), 'c');
+        flock($lock, LOCK_EX);
+
+        try {
+            $element = $this->readFromDisk($key) ?? new LocalDiskCacheElement($key, 0, $timeToLive, time());
+            $element->setValue((int) $element->getValue() + $by);
+            $element->save($this->storage);
+            $this->index[$key] = $element;
+
+            return $element->getValue();
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    protected function readFromDisk(string $key): ?LocalDiskCacheElement
+    {
+        // Keys are written rawurlencoded, which leaves no glob character, but "*_*_key" also matches "*_*_other_key"
+        return Bunch::wrap(glob($this->storage->path('*_*_'.rawurlencode($key))) ?: [])
+            ->map(fn (string $file) => LocalDiskCacheElement::fromFile($file))
+            ->first(fn (?LocalDiskCacheElement $element) => $element?->key === $key && $element->load())
+        ;
     }
 
     public function save(): void

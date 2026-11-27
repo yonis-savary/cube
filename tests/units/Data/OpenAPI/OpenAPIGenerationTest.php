@@ -15,6 +15,7 @@ use Cube\Tests\Units\Data\OpenAPI\Controllers\BodyController;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\DocumentedController;
 use Cube\Tests\Units\Data\OpenAPI\Controllers\SampleController;
 use Cube\Tests\Units\Data\OpenAPI\Middlewares\RequiresAnApiKey;
+use Cube\Tests\Units\Security\Classes\TwoPerMinuteThrottle;
 use Cube\Utils\Path;
 use Cube\Web\Http\Rules\Param;
 use Cube\Web\Router\Route;
@@ -360,6 +361,14 @@ class OpenAPIGenerationTest extends TestCase
 
         $this->assertEquals('No API key', $responses['401']['description']);
         $this->assertEquals('Refused by the controller', $responses['403']['description']);
+    }
+
+    public function testAThrottleDocumentsItsRefusalOnEveryRouteBehindIt()
+    {
+        $responses = $this->responsesOf('/simple-route', Route::get('/simple-route', [SampleController::class, 'simpleRoute'], [TwoPerMinuteThrottle::class]));
+
+        $this->assertArrayHasKey('429', $responses);
+        $this->assertArrayHasKey('text/plain', $responses['429']['content']);
     }
 
     /**

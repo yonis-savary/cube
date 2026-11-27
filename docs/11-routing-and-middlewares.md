@@ -432,6 +432,7 @@ new RouterConfiguration(
 | `commonMiddlewares` | `[]` | middlewares applied to every route, and to what a `WebAPI` answers |
 | `commonPrefix` | `/` | prefix applied to every route |
 | `securityHeaders` | `[]` | headers added to every response that does not set them already |
+| `trustedProxies` | `[]` | addresses or CIDR networks of your reverse proxies, whose `X-Forwarded-For` gives `Request::getClientIp()` (see [Rate limiting](./27-rate-limiting.md#behind-a-reverse-proxy)) |
 
 With `cached`, only routes without slugs whose callback is a `[Controller::class, 'method']` array
 are remembered. The `WebAPI` services of the `apis` option are still asked to claim the request

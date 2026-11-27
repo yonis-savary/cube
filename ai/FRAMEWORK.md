@@ -32,6 +32,9 @@ Cube already provides most plumbing. Use the framework tool before implementing 
 | react to something | `Event` + `EventDispatcher` |
 | a UUID, an API token, a webhook secret | `Identifier::uuid4()`/`uuid6()`/`prefixed()`, stored with `Identifier::hash()` |
 | a short-lived token or link | `SignedPayload::sign($payload, expiresAt: ...)` |
+| limit requests, logins or calls to an API | a `RateLimiter` subclass (`attempt()`, `wait()`), a `Throttle` middleware for routes |
+| a counter shared between processes | `Cache::increment()`, never `get()` then `set()` |
+| the client address behind a proxy | `$request->getClientIp()` with `RouterConfiguration(trustedProxies:)` |
 | call a URL a user supplied (webhook, avatar, preview) | `(new HttpClient())->withPublicOnly()`, it refuses private addresses and pins the checked one |
 | API documentation | `php do make:openapi`, plus OpenAPI attributes |
 | call an API that publishes an OpenAPI document | `php do make:integration <openapi.json\|url>`, then the generated `<Name>Client` |
@@ -122,7 +125,7 @@ the IDE cannot help with a name.
 | `DatabaseConfiguration(driver:, database:, host:, port:, user:, password:, keepAliveInterval:)` | the SQL connection : `DatabaseDriver::SQLite` / `MySQL` / `Postgres` (or a PDO driver name for a DBMS you add) ; `websocket:serve` and `cube:queue` check it every `keepAliveInterval` seconds and reconnect |
 | `MigrationManagerConfiguration(tableName:, directoryName:)` | the migrations table and directory |
 | `DateTimeConfiguration(outputFormat:)` (date fields hold a `DateTimeImmutable`, a `DATE` a `Cube\Data\Date` answered `Y-m-d`) | how `toArray()` and JSON responses write a `DATETIME`/`TIMESTAMP` or a `DateTime` (ATOM by default) |
-| `RouterConfiguration(cached:, loadControllers:, loadRoutesFiles:, apis:, commonMiddlewares:, commonPrefix:, securityHeaders:)` | routing, global middlewares, extra `WebAPI`s such as a `StaticServer` |
+| `RouterConfiguration(cached:, loadControllers:, loadRoutesFiles:, apis:, commonMiddlewares:, commonPrefix:, securityHeaders:, trustedProxies:)` | routing, global middlewares, extra `WebAPI`s such as a `StaticServer`, the reverse proxies trusted for `getClientIp()` |
 | `CORSConfiguration(allowedOrigins:, allowHeaders:, allowCredentials:, maxAge:)` | CORS answers |
 | `CacheConfiguration(driver)` | the default `Cache` driver |
 | `SessionConfiguration(namespace:, driver:)` | the session driver |

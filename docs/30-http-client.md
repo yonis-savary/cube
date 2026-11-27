@@ -1,4 +1,4 @@
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./28-identifiers-and-secrets.md">Previous : Identifiers and secrets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./30-schedules.md">Next : Schedules</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-identifiers-and-secrets.md">Previous : Identifiers and secrets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-schedules.md">Next : Schedules</a></div></td></tr></table>
 
 # Http client
 
@@ -66,7 +66,7 @@ Everything a connector answers for is a method you may override
 | Method | Default | Applies to |
 |---|---|---|
 | `baseURL()` | `null` | prefixed to every relative path |
-| `baseUnixSocket()` | `null` | the unix socket every request goes through ([Unix socket server](./33-unix-socket-server.md#calling-the-socket-from-php)) |
+| `baseUnixSocket()` | `null` | the unix socket every request goes through ([Unix socket server](./34-unix-socket-server.md#calling-the-socket-from-php)) |
 | `baseHeaders()` | `[]` | merged into every request's headers |
 | `baseURLParameters()` | `[]` | merged into every query string |
 | `basePostParameters()` | `[]` | merged into every body |
@@ -324,7 +324,7 @@ $server = HttpMockServer::fromArray([
 `fromArray()` answers those paths for any method. `fromRoutes(Route ...$routes)` is the same idea
 when you want the full `Route` syntax — slugs, methods, middlewares.
 
-See [Testing](./35-testing.md) for the rest of the test harness.
+See [Testing](./36-testing.md) for the rest of the test harness.
 
 ## Reference
 
@@ -346,4 +346,4 @@ See [Testing](./35-testing.md) for the rest of the test harness.
 | `HttpClient::isPublicOnly()` | whether the client is public only, override it to make a connector always so |
 | `IpAddress::isPublic(string $address)` | whether an IPv4 or IPv6 address is publicly routable |
 
-<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./28-identifiers-and-secrets.md">Previous : Identifiers and secrets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./30-schedules.md">Next : Schedules</a></div></td></tr></table>
+<!-- menu --><table style='width:100%'><tr><td style='width: 33%'><div style="text-align: left"><a href="./29-identifiers-and-secrets.md">Previous : Identifiers and secrets</a></div></td><td style='width: 33%; text-align: center'><div style="Center"><a href="./README.md"> Readme</a></div></td><td style='width: 33%'><div style="text-align: right"><a href="./31-schedules.md">Next : Schedules</a></div></td></tr></table>

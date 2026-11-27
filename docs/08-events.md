@@ -173,7 +173,7 @@ On the `Events` component
 | `FailedAuthentication` | credentials were rejected | `identifier` (the login tried) |
 | `RememberedUser` | a user was restored from a remember-me token | `userData`, `userPrimaryKeyValue` |
 | `GeneratedModels` | `php do models:generate` finished | — |
-| `SocketServerSetup` | the [unix socket server](./33-unix-socket-server.md) is about to listen | `router` |
+| `SocketServerSetup` | the [unix socket server](./34-unix-socket-server.md) is about to listen | `router` |
 | `PreventedEvent` | a listener called `prevent()` on another event | `event` |
 
 `FrameworkLoaded` fires before your listeners exist : an application cannot hear it. `PreRouting`

@@ -106,6 +106,7 @@ $rates = $cache->getOrSet('exchange-rates', fn () => $api->fetchRates(), Cache::
 | `delete(string $key)` | removes one entry |
 | `clear()` | empties the cache (only its own keys for a `child()`), returns what it removed |
 | `getReference(string $key, mixed $default)` | a mutable slot you can write through |
+| `increment(string $key, int $by = 1, int $timeToLive = Cache::MONTH)` | adds to a counter atomically, returns its new value |
 | `child(string $prefix)` | the same cache, with prefixed keys |
 
 `set()` and `getOrSet()` also take a creation timestamp as a fourth argument, `time()` by default,
@@ -134,6 +135,23 @@ $counter++;
 ```
 
 A `RedisCache` cannot do this : it logs a warning and returns a copy.
+
+### Counting
+
+`increment()` adds to an integer counter and returns its new value. It is atomic, even between
+processes : two requests incrementing the same counter at the same moment both count. A missing or
+expired counter starts from `0` and lives `$timeToLive` seconds from its creation ; later increments
+do not extend it.
+
+```php
+$cache->increment('downloads');             // 1
+$cache->increment('downloads', 5);          // 6
+$cache->increment('downloads', -1);         // 5
+$cache->increment('downloads', 0);          // 5 : reads it
+```
+
+Do not count with `get()` then `set()` : two processes reading the same value at once would lose one
+of their counts. [Rate limiting](./27-rate-limiting.md) is built on `increment()`.
 
 ### Namespacing keys
 
@@ -173,7 +191,8 @@ it empties the cache in effect.
 
 `LocalDiskCache` keeps its entries in memory and writes them to disk when the cache is destroyed,
 at the end of the request or the command : one file per entry, named after its creation date,
-lifetime and key. It takes an optional `Storage`, so you can point it at any directory
+lifetime and key. `increment()` is the exception : it reads the counter from its file and writes it
+back right away, under a lock shared by every process. It takes an optional `Storage`, so you can point it at any directory
 
 ```php
 new CacheConfiguration(

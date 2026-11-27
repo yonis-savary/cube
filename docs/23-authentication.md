@@ -188,7 +188,7 @@ known for that request only, nothing is written to the session and no cookie is 
 
 Give your provider the `VerifiesBearerTokens` capability. Issuing, storing and revoking the tokens
 stays in your application : generate them with `Identifier::prefixed()` and store their
-`Identifier::hash()`, never the token itself (see [Identifiers and secrets](./28-identifiers-and-secrets.md))
+`Identifier::hash()`, never the token itself (see [Identifiers and secrets](./29-identifiers-and-secrets.md))
 
 ```php
 class ApiAuthentication extends PasswordAuthentication implements VerifiesBearerTokens
@@ -285,15 +285,8 @@ LoggedInUser::on(function (LoggedInUser $event) {
 `RememberMe` adds a fifth, `RememberedUser` — see [Remember me](./25-remember-me.md#reacting-to-a-remembered-user).
 
 `FailedAuthentication` fires once per rejected attempt, whether the login is unknown or the password
-wrong. Cube has no rate limiting of its own : count the failures per `identifier` in a listener (in the
-`Cache`, for example) and refuse the attempt in your login route once a threshold is reached
-
-```php
-FailedAuthentication::on(function (FailedAuthentication $event) {
-    $failures = Cache::getInstance()->child('login-failures');
-    $failures->set($event->identifier, $failures->get($event->identifier, 0) + 1, Cache::HOUR);
-});
-```
+wrong. To refuse a login after too many failures, count them with a `RateLimiter` : see
+[Rate limiting](./27-rate-limiting.md#limiting-login-attempts).
 
 ## Reference
 

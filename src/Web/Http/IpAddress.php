@@ -18,6 +18,42 @@ class IpAddress
         return true;
     }
 
+    /**
+     * Whether `$range` is an IP address, or a network written in CIDR notation as `10.0.0.0/8` or `fd00::/8`.
+     */
+    public static function isRange(string $range): bool
+    {
+        [$network, $prefixLength] = explode('/', $range, 2) + [1 => null];
+        if (false === filter_var($network, FILTER_VALIDATE_IP))
+            return false;
+        if (null === $prefixLength)
+            return true;
+        return preg_match('/^\d{1,3}$/', $prefixLength) && (int) $prefixLength <= 8 * strlen(inet_pton($network));
+    }
+
+    /**
+     * @param string $range a valid `isRange()`
+     */
+    public static function isInRange(string $address, string $range): bool
+    {
+        if (false === filter_var($address, FILTER_VALIDATE_IP))
+            return false;
+        [$network, $prefixLength] = explode('/', $range, 2) + [1 => null];
+        $addressBytes = inet_pton($address);
+        $networkBytes = inet_pton($network);
+        if (strlen($addressBytes) !== strlen($networkBytes))
+            return false;
+        $prefixLength = null === $prefixLength ? 8 * strlen($networkBytes) : (int) $prefixLength;
+        $wholeBytes = intdiv($prefixLength, 8);
+        if (substr($addressBytes, 0, $wholeBytes) !== substr($networkBytes, 0, $wholeBytes))
+            return false;
+        if (0 === $remainingBits = $prefixLength % 8)
+            return true;
+        $mask = (0xFF << (8 - $remainingBits)) & 0xFF;
+
+        return (ord($addressBytes[$wholeBytes]) & $mask) === (ord($networkBytes[$wholeBytes]) & $mask);
+    }
+
     // FILTER_FLAG_GLOBAL_RANGE lets multicast through : 224.0.0.0/4 and ff00::/8
     private static function isMulticast(string $address): bool
     {

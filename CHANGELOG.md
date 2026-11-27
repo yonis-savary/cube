@@ -28,7 +28,9 @@ change it asks from your application.
 
 **Cache and deployment**
 - `CacheDriverInterface::clear()` takes a `string $keyPrefix = ''` parameter : add it to your own
-  cache drivers. `Cache::clear()` on a `child()` now only empties that child's keys.
+  cache drivers.
+- `CacheDriverInterface` gains `increment(string $key, int $by = 1, int $timeToLive = self::MONTH): int`,
+  which must be atomic between processes : implement it in your own cache drivers. `Cache::clear()` on a `child()` now only empties that child's keys.
 - `PostDeployment` empties the class index cache, the remembered routes and the configuration cache,
   instead of the whole `Cache` : run `php do cache:clear` to empty everything. Run
   `configuration:cache` **after** dispatching it.
@@ -146,6 +148,16 @@ change it asks from your application.
 - OpenAPI response attributes (`#[ModelResponse]`, `#[ResourceResponse]`, `#[ObjectResponse]`,
   `#[RawResponse]`, `#[NoContentResponse]`) go on a controller class, for each of its methods, and on a
   middleware class, for every route it guards. The most specific declaration of a status code wins.
+- Rate limiting : extend `RateLimiter` with a `limit()` and a `window()` to get a policy counted over a
+  sliding window, then `attempt()` (refused attempts count nothing), `wait()` with an optional timeout
+  to stay under a third-party API limit, `availableIn()` and `clear()`. `RequestRateLimiter` keys it on
+  the client address, and a `Throttle` middleware subclass answers `429` with `Retry-After` and the
+  `RateLimit` / `RateLimit-Policy` headers, documented in OpenAPI on its own.
+- `Cache::increment()` adds to a counter atomically, even between processes.
+- `RouterConfiguration::$trustedProxies` and `Request::getClientIp()` : the client address forwarded in
+  `X-Forwarded-For` by your reverse proxies, and only by them. `IpAddress::isRange()` and
+  `isInRange()` check CIDR networks.
+- OpenAPI response attributes declared on a parent class apply to its subclasses.
 - `HttpClient::withPublicOnly()` (or `isPublicOnly()` overridden) refuses any host resolving to an
   address that is not public, with a `NonPublicAddressException`, and pins the checked addresses with
   `CURLOPT_RESOLVE`, redirections included. `IpAddress::isPublic()` is the check on its own.

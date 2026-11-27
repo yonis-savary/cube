@@ -11,6 +11,7 @@ use Cube\Web\Http\Rules\ObjectParam;
 use Cube\Web\Http\Rules\Rule;
 use Cube\Web\Http\Rules\ValidationReturn;
 use Cube\Web\Router\Route;
+use Cube\Web\Router\RouterConfiguration;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
 use Psr\Log\LoggerInterface;
@@ -206,6 +207,29 @@ class Request extends HttpMessage
     public function getIp(): ?string
     {
         return $this->ip;
+    }
+
+    /**
+     * The address of the client : `getIp()`, or what the trusted proxies of the `RouterConfiguration` forwarded.
+     */
+    public function getClientIp(?RouterConfiguration $configuration = null): ?string
+    {
+        $configuration ??= RouterConfiguration::resolve();
+        $isTrusted = fn (string $address) => Bunch::wrap($configuration->trustedProxies)
+            ->any(fn (string $proxy) => IpAddress::isInRange($address, $proxy))
+        ;
+
+        // Each proxy appends the address it received from : read from the right, only while a trusted proxy wrote the entry
+        $client = $this->ip;
+        foreach (array_reverse(explode(',', $this->getHeader('x-forwarded-for', ''))) as $hop) {
+            if (null === $client || !$isTrusted($client))
+                break;
+            if (false === filter_var($hop = trim($hop), FILTER_VALIDATE_IP))
+                break;
+            $client = $hop;
+        }
+
+        return $client;
     }
 
     public function get(): array

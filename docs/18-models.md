@@ -434,7 +434,7 @@ save bound children after their parent. See [Events](./08-events.md) for the dis
 ## Faking models
 
 `Product::factory()` builds models filled with fake values, for your tests and seeders — see
-[Testing](./35-testing.md#faking-models).
+[Testing](./36-testing.md#faking-models).
 
 ## Sharing your types with the front-end
 
