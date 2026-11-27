@@ -17,6 +17,8 @@ use Cube\Tests\Units\Core\Classes\Zombie;
 use Cube\Tests\Units\Core\Contracts\CanFly;
 use Cube\Web\Controller;
 use Cube\Web\Helpers\WebAPI;
+use PHPUnit\Framework\Attributes\RequiresPhp;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Process\Process;
 
@@ -180,6 +182,14 @@ class AutoloaderTest extends TestCase
             unlink($directory->path('Invoice.php'));
             rmdir($directory->getRoot());
         }
+    }
+
+    /** APCu has no stable release building on PHP 8.6 : Cube keeps away from it there, even when a build is loaded. */
+    #[RequiresPhp('>= 8.6.0')]
+    #[RequiresPhpExtension('apcu')]
+    public function testApcuIsIgnoredOnPhp86()
+    {
+        $this->assertFalse(Autoloader::hasApcu());
     }
 
     /** A CLI usually loads the apcu extension with apc.enable_cli=0, where every APCu call throws. */

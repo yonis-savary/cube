@@ -58,7 +58,8 @@ keeps
 Both live in the `Cache` component (`Storage/Cache` by default, see
 [Storage and caching](./21-storage-and-caching.md)). When APCu is enabled, Cube also snapshots them in
 APCu, and a php-fpm worker finding the snapshot boots from memory without exploring your
-directories.
+directories. On PHP 8.6, Cube ignores APCu even when it is loaded : the extension has no stable
+release for this version yet.
 
 This cache never notices a change by itself : a new controller, a new route file, a new command stay
 invisible until it is emptied. Empty it after each deployment
@@ -179,7 +180,8 @@ The server files include two stacks built from the same `Docker/Dockerfile.php` 
 | `php.ini` | `php.ini-development` | `php.ini-production` |
 | OPcache | checks your files on each request | `validate_timestamps=0` : never looks at the files again |
 
-Both run php-fpm with APCu (also enabled for the CLI) and nginx serving `/var/www/Public` on port
+Both run php-fpm with APCu (also enabled for the CLI, built from its development branch and
+ignored by Cube on PHP 8.6) and nginx serving `/var/www/Public` on port
 `8081`, and both mount `Storage/` (persistent) and `.env` (read-only, kept out of the image).
 
 Every process of the stack runs as `www-data`, never as root, and the image gives `www-data` the

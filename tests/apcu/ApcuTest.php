@@ -4,6 +4,7 @@ namespace Cube\Tests\Apcu;
 
 use Cube\Env\Logger\Logger;
 use Cube\Web\Http\Request;
+use PHPUnit\Framework\Attributes\RequiresPhp;
 use PHPUnit\Framework\TestCase;
 
 use function Cube\env;
@@ -13,6 +14,8 @@ use function Cube\env;
  */
 class ApcuTest extends TestCase
 {
+    // TODO(yonis-savary): drop with the PHP 8.6 gate of Autoloader::hasApcu()
+    #[RequiresPhp('< 8.6.0')]
     public function testAppLoadWithApcu()
     {
         $port = env('CUBE_TEST_NGINX_APCU_PORT', 9903);
@@ -28,6 +31,8 @@ class ApcuTest extends TestCase
         $this->assertTrue($secondMessage['loaded_with_apcu']);
     }
 
+    // TODO(yonis-savary): drop with the PHP 8.6 gate of Autoloader::hasApcu()
+    #[RequiresPhp('< 8.6.0')]
     public function testLoadingEventsAreDispatchedWithAndWithoutApcu()
     {
         $port = env('CUBE_TEST_NGINX_APCU_PORT', 9903);

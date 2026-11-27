@@ -47,7 +47,8 @@ class Autoloader
 
     public static function hasApcu(): bool
     {
-        return function_exists('apcu_enabled') && apcu_enabled();
+        // TODO(yonis-savary): drop the version gate once APCu ships a stable release building on PHP 8.6
+        return PHP_VERSION_ID < 80600 && function_exists('apcu_enabled') && apcu_enabled(); // @phpstan-ignore smaller.alwaysFalse, booleanAnd.alwaysFalse, booleanAnd.alwaysFalse
     }
 
     public static function clearApcuCache(): void
