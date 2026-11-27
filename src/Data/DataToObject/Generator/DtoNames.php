@@ -14,7 +14,7 @@ class DtoNames
         'const', 'continue', 'declare', 'default', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare',
         'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'enum', 'eval', 'exit', 'extends', 'false',
         'final', 'finally', 'float', 'fn', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements',
-        'include', 'instanceof', 'insteadof', 'int', 'interface', 'isset', 'iterable', 'list', 'match',
+        'include', 'instanceof', 'insteadof', 'int', 'interface', 'is', 'isset', 'iterable', 'let', 'list', 'match',
         'mixed', 'namespace', 'never', 'new', 'null', 'object', 'or', 'parent', 'print', 'private',
         'protected', 'public', 'readonly', 'require', 'return', 'self', 'static', 'string', 'switch',
         'throw', 'trait', 'true', 'try', 'unset', 'use', 'var', 'void', 'while', 'xor', 'yield',
