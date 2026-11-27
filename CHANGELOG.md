@@ -204,6 +204,9 @@ change it asks from your application.
 See `ROADMAP.md` for the detail of each point : `S01`–`S46` (security audit) and `R01`–`R36`.
 
 Also fixed :
+- `models:generate` generated every `DATETIME` column as a `DATE` field, its type name starting with
+  `DATE` : the field answered no ATOM date, validated as a bare date, and a `DateTime` written to it
+  lost its time. Regenerate your models.
 - `models:generate` on MySQL marked a column with `DEFAULT CURRENT_TIMESTAMP` as `generated()` (its
   `DEFAULT_GENERATED` extra), so the ORM never wrote it, even when given a value. Such a column is now
   generated with `defaultExpression()` : regenerate your models to drop the wrong `generated()`.

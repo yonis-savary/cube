@@ -157,12 +157,14 @@ abstract class DatabaseAdapter
     protected function getModelFieldType(string $sqlType): string
     {
         $fieldType = strtoupper($sqlType);
-        foreach (self::SQLITE_TYPES as $sqliteType => $modelType) {
-            if (str_starts_with($fieldType, $sqliteType))
-                return $modelType;
-        }
 
-        return ModelField::STRING;
+        // Longest first : a DATETIME column also starts with DATE
+        $matchingType = Bunch::wrap(array_keys(self::SQLITE_TYPES))
+            ->sort(fn (string $sqliteType) => -strlen($sqliteType))
+            ->first(fn (string $sqliteType) => str_starts_with($fieldType, $sqliteType))
+        ;
+
+        return null === $matchingType ? ModelField::STRING : self::SQLITE_TYPES[$matchingType];
     }
 
     public function addTable(Table $table): void
