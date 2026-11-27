@@ -16,5 +16,7 @@ return (new PhpCsFixer\Config())
         'blank_line_before_statement' => false,
         'ordered_class_elements' => false,
     ])
+    // TODO(yonis-savary): remove once PHP CS Fixer supports PHP 8.6 syntax
+    ->setUnsupportedPhpVersionAllowed(true)
     ->setFinder($finder)
 ;

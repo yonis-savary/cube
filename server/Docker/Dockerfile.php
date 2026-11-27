@@ -1,16 +1,18 @@
-FROM php:8.5-fpm AS base
+FROM php:8.6-fpm AS base
 
 # The owner of Storage/ and .env on the host, which every process runs as (see .env.example)
 ARG UID=1000
 ARG GID=1000
 
-RUN pecl install apcu \
-    && docker-php-ext-enable apcu
-
 RUN apt-get update \
-    && apt-get install -y unzip git libzip-dev libpng-dev \
-    && docker-php-ext-install zip pcntl \
+    && apt-get install -y unzip git libtool libzip-dev libpng-dev \
+    && docker-php-ext-configure mbstring --disable-mbregex \
+    && docker-php-ext-install zip pcntl mbstring \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+COPY --from=ghcr.io/php/pie:bin /pie /usr/bin/pie
+# TODO(yonis-savary): pin a stable apcu/apcu once one builds on PHP 8.6, a failed build must not stop the image
+RUN pie install apcu/apcu:dev-master || echo 'APCu could not be built, Cube runs without it'
 
 RUN echo "apc.enable_cli=1" > /usr/local/etc/php/conf.d/apcu.ini \
     && echo "apc.enable=1"    >> /usr/local/etc/php/conf.d/apcu.ini \
