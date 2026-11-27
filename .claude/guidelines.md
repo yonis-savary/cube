@@ -49,6 +49,40 @@ Cube already provides most plumbing. Before implementing, look for it:
   A `switch` survives only for genuinely positional / fall-through cases.
 - **Recursion for recursive data** (route groups, relation trees, nested validation), with the
   accumulated path passed down as a parameter.
+- **Pipes over nested function calls**, so the code reads in the order the calls run:
+  ```php
+  $uses |> array_unique(...) |> array_values(...);    // not array_values(array_unique($uses))
+  random_bytes(16) |> bin2hex(...);                    // a call on a literal or a constant starts the pipe
+  array_filter($rows, fn ($row) => $row->active) |> array_values(...);
+  ```
+  Each step takes the value as its only argument. The partial application of PHP 8.6 (on the
+  `experimental/php-8.6` branch) also lets a step take it among others, `?` marking where it goes :
+  ```php
+  base64_encode($bytes) |> strtr(?, '+/', '-_') |> rtrim(?, '=');
+  strtolower($name) |> in_array(?, $taken, true);
+  ```
+  Only pipe the data being transformed : the `?` stands for the function's subject (`$string`,
+  `$array`, `$subject`, `$haystack`, `$needle`, `$value`). A computed setting stays nested, as in
+  `substr($path, strlen($root))`, never `strlen($root) |> substr($path, ?)`. Keep a call nested
+  when another of its arguments is passed by reference (`preg_match()`'s `$matches`) or is itself
+  a call, since piping would change what runs first. Method chains (`Bunch`, `Query`) stay chains.
+- **Name a long condition.** When a condition no longer reads at a glance (a pipe, several
+  operators), store it in a boolean whose name says what it means, and test that :
+  ```php
+  $hasNat64Prefix = 16 === strlen($bytes) && substr($bytes, 0, 12) === $nat64Prefix;
+  if (!$hasNat64Prefix)
+      return null;
+  ```
+  The same goes for the condition of a ternary. Keep it inline when the boolean would have to be
+  computed again each time, as in a `for` condition, or would need an arrow function rewritten as
+  a closure.
+- **A ternary that does not fit on one short line takes three** : the condition, then `?` and the
+  value when true, then `:` and the value when false.
+  ```php
+  $this->driver = $driver instanceof DatabaseDriver
+      ? $driver->value
+      : $driver |> trim(...) |> strtolower(...);
+  ```
 - Formatting comes from `.php-cs-fixer.dist.php` (`make fix`) — do not hand-tune alignment.
 
 ## Typing and PHPDoc
