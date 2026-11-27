@@ -31,7 +31,7 @@ application directory. The sub-directories of every one of them are explored too
 | Directory | Content | Used by |
 |---|---|---|
 | `Routes/`, `Router/` | route files, with `$router` in scope | the `Router`, see [Routing and middlewares](./11-routing-and-middlewares.md) |
-| `Requires/`, `Includes/`, `Helpers/`, `Schedules/`, `Cron/` | PHP files included at boot (global functions, bindings, `Cube\schedule()` calls) | the `Autoloader`, see [Schedules](./28-schedules.md) |
+| `Requires/`, `Includes/`, `Helpers/`, `Schedules/`, `Cron/` | PHP files included at boot (global functions, bindings, `Cube\schedule()` calls) | the `Autoloader`, see [Schedules](./29-schedules.md) |
 | `Views/` | plain-PHP views for `Cube\render()` | the `Renderer`, see [Views and assets](./14-views-and-assets.md) |
 | `Assets/` | files served or inserted as assets | `AssetServer`, `AssetsInserter`, see [Views and assets](./14-views-and-assets.md) |
 | `Migrations/` | migration files (name set by `MigrationManagerConfiguration`) | the migration manager, see [Migrations](./17-migrations.md) |
@@ -90,7 +90,7 @@ Discovery results are cached per set of explored directories, so adding a direct
 results computed without it.
 
 In production, the list of applications files and the class index are cached : a new controller or
-route file is not noticed until the cache is emptied. See [Deployment](./34-deployment.md).
+route file is not noticed until the cache is emptied. See [Deployment](./35-deployment.md).
 
 ## Registration by discovery
 

@@ -6,8 +6,6 @@ use Cube\Data\Models\Model;
 
 interface AuthenticationProvider
 {
-    public function attempt(string $identifier, #[\SensitiveParameter] ?string $password = null): false|Model;
-
     public function userById(mixed $id): false|Model;
 
     /**
