@@ -164,9 +164,33 @@ new DateTimeConfiguration(outputFormat: 'Y-m-d H:i:s'), // the format Cube answe
 A model copied from another one's `toArray()` holds ATOM strings : saving it writes them back as
 `Y-m-d H:i:s`, so the column keeps one format.
 
-Reading a model keeps its fields as the database driver returns them : a MySQL or SQLite boolean is
-`0`/`1` on `$model->active`, a date is a string. Only the `HasOne` relations a query joins through `with()` are parsed
-(`int`, `float`, `bool`, `DateTime`).
+Date fields are always objects, however the model was made (read from the database, `fromArray()`,
+`fromRequest()`, an assignment) :
+
+| Type | `$model->field` holds | Answered by `toArray()` and in a JSON response |
+|---|---|---|
+| `DATETIME`, `TIMESTAMP` | a `DateTimeImmutable` | ATOM, or the format of `DateTimeConfiguration` |
+| `DATE` | a `Cube\Data\Date`, a `DateTimeImmutable` meaning a calendar day | `Y-m-d` |
+
+So a resource copying a date answers it formatted, with nothing to convert
+
+```php
+public function toArray(Model $order): array
+{
+    return [
+        'placed_at' => $order->created_at,             // "2026-11-27T14:30:00+01:00"
+        'due' => $order->due_on->modify('+30 days'),   // "2026-12-27", a Date stays a Date
+    ];
+}
+```
+
+Assigning a string parses it (`$order->due_on = '2026-12-01'`), and a mutable `DateTime` becomes
+immutable : a date never changes behind the model's back. A string that is no date throws when
+assigned.
+
+The other fields keep what the database driver returns : a MySQL or SQLite boolean is `0`/`1` on
+`$model->active`. Only the `HasOne` relations a query joins through `with()` are parsed (`int`,
+`float`, `bool`).
 
 ## Reading
 

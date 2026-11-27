@@ -3,6 +3,7 @@
 namespace Cube\Data\Models;
 
 use Cube\Core\Autoloader;
+use Cube\Data\Date;
 use Cube\Data\DateTimeConfiguration;
 use Cube\Utils\Utils;
 use Cube\Web\Http\Rules\Param;
@@ -288,7 +289,8 @@ class ModelField
         if (null === $value) {
             return null;
         }
-
+        if ($this->holdsADate())
+            return $this->toDateValue($value);
         switch ($this->type) {
             case self::INTEGER:
                 return (int) $value;
@@ -296,11 +298,6 @@ class ModelField
                 return (float) $value;
             case self::BOOLEAN:
                 return in_array(strtolower((string) $value), ['1', 'true', 't', 'y', 'yes', 'on']);
-            case self::DATE:
-            case self::DATETIME:
-                return new \DateTime($value);
-            case self::TIMESTAMP:
-                return $value;
             default:
                 return $value;
         }
@@ -347,6 +344,25 @@ class ModelField
     public function holdsATime(): bool
     {
         return in_array($this->type, [self::DATETIME, self::TIMESTAMP], true);
+    }
+
+    public function holdsADate(): bool
+    {
+        return self::DATE === $this->type || $this->holdsATime();
+    }
+
+    /**
+     * @return \DateTimeImmutable A `Date` for a `DATE` field
+     */
+    protected function toDateValue(\DateTimeInterface|string $value): \DateTimeImmutable
+    {
+        $class = self::DATE === $this->type ? Date::class : \DateTimeImmutable::class;
+        // Keeping the instance given : a model compares it to its original value to know what to save
+        if ($value instanceof \DateTimeImmutable && $class === $value::class)
+            return $value;
+        return $value instanceof \DateTimeInterface
+            ? $class::createFromInterface($value)
+            : new $class($value);
     }
 
     public function toRule(?bool $forceNullable = null): Rule

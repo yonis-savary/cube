@@ -72,6 +72,11 @@ change it asks from your application.
   `ModelGenerator` adapters no longer extend `SQLite` : a custom adapter implements `listTables()`,
   `listForeignKeys()`, `listColumns()` and `getModelField()`.
 - SQLite quotes every table and column name it renders.
+- Date fields are hydrated whenever a model is built or assigned : `DATETIME` and `TIMESTAMP` hold a
+  `DateTimeImmutable`, `DATE` a `Cube\Data\Date` (answered `Y-m-d`). They used to hold the string the
+  driver returned, and a joined relation a mutable `DateTime`. Code treating them as strings
+  (`substr($model->created_at, 0, 10)`) reads them through `format()` now ; regenerate your models
+  for the `@property` types.
 - A `DATETIME` or `TIMESTAMP` field is answered in ATOM format (`2026-11-27T14:30:00+01:00`) by
   `toArray()` and JSON responses, where it used to be `Y-m-d H:i:s` ; a `DateTimeInterface` inside an
   answered array too, where it was encoded as an object. Your API clients read RFC 3339 dates, or you

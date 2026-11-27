@@ -83,7 +83,7 @@ converted for you
 | a `Response` | that response |
 | nothing, or `null` | `204 No Content`, empty body |
 | a `Model` | `200`, the model as a JSON object, every field and every loaded relation |
-| a `Bunch` or an array | `200`, a JSON array or object, models inside converted the same way, and a `DateTimeInterface` written in ATOM format (see `DateTimeConfiguration` in [Models](./18-models.md)) |
+| a `Bunch` or an array | `200`, a JSON array or object, models inside converted the same way, a `DateTimeInterface` written in ATOM format and a `Cube\Data\Date` as `Y-m-d` (see [Models](./18-models.md)) |
 | any other value | `200`, that value encoded as JSON — a string answers `"OK"`, quotes included |
 
 ```php

@@ -3,6 +3,7 @@
 namespace Cube\Data\OpenAPI\Specs\Common;
 
 use Cube\Core\Autoloader;
+use Cube\Data\Date;
 use Cube\Data\DateTimeConfiguration;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
@@ -190,6 +191,8 @@ trait MakesSchemas
             $schema = ['type' => 'integer'];
         } elseif (is_bool($data)) {
             $schema = ['type' => 'boolean'];
+        } elseif ($data instanceof Date) {
+            $schema = ['type' => 'string', 'format' => 'date'];
         } elseif ($data instanceof \DateTimeInterface) {
             $schema = DateTimeConfiguration::resolve()->isRfc3339()
                 ? ['type' => 'string', 'format' => 'date-time']

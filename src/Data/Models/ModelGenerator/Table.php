@@ -4,6 +4,7 @@ namespace Cube\Data\Models\ModelGenerator;
 
 use Cube\Data\Bunch;
 use Cube\Data\Database\Query\Identifier;
+use Cube\Data\Date;
 use Cube\Data\Models\DummyModel;
 use Cube\Data\Models\Model;
 use Cube\Data\Models\ModelField;
@@ -340,9 +341,8 @@ class Table
             ModelField::FLOAT => 'float',
             ModelField::BOOLEAN => 'bool',
             ModelField::DECIMAL => 'string',
-            ModelField::DATE => '\DateTime',
-            ModelField::DATETIME => '\DateTime',
-            ModelField::TIMESTAMP => 'string',
+            ModelField::DATE => '\\'.Date::class,
+            ModelField::DATETIME, ModelField::TIMESTAMP => '\\'.\DateTimeImmutable::class,
         };
 
         return " * @property {$phpDocType} $".$field->name;
