@@ -33,6 +33,12 @@ abstract class Plan
         );
     }
 
+    /** @param callable(Database):mixed $callback */
+    public function transaction(callable $callback): ?\Throwable
+    {
+        return $this->database->transaction($callback);
+    }
+
     /**
      * Create a new table.
      *

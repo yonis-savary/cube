@@ -119,6 +119,11 @@ change it asks from your application.
   `WebsocketConfiguration::$maxMessagesPerMinute` messages (600 by default), and `emit()` works inside the
   socket process.
 - `php do migrate:rollback [--steps=N]`, calling `Migration::down()`.
+- SQLite migrations rebuild the table for what SQLite cannot alter in place : `alterColumn()`,
+  `addForeignKey()`, `dropConstraint()`, and the `addColumn()` / `dropColumn()` calls it refuses. They
+  used to log a warning and do nothing, so a MySQL application whose migrations alter columns now
+  runs its test suite on SQLite. Foreign keys are switched off around the migration transaction and
+  checked before it commits (`Plan::transaction()`).
 - `php do make:integration <openapi.json|url>` generates, from an OpenAPI 3.0 / 3.1 JSON document read from a
   file or fetched from a URL (`--header` adds a header to that request), an `HttpClient` with one method
   per operation and the `ConfigurationElement` holding its URL and one credential per security scheme,

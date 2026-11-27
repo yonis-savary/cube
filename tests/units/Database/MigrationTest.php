@@ -317,9 +317,6 @@ class MigrationTest extends TestCase
     #[DataProvider('getDatabases')]
     public function testAlterColumnKeepsADefaultHoldingBraces(Database $database)
     {
-        if ('sqlite' === $database->getDriver())
-            $this->markTestSkipped('SQLite cannot alter a column');
-
         $migration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
@@ -369,9 +366,6 @@ class MigrationTest extends TestCase
     #[DataProvider('getDatabases')]
     public function testAlterColumnSetsADefaultExpression(Database $database)
     {
-        if ('sqlite' === $database->getDriver())
-            $this->markTestSkipped('SQLite cannot alter a column');
-
         $migration = new class extends Migration {
             public function up(Plan $plan, Database $database)
             {
