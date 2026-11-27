@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  */
 class ModelAPIGeneratorTest extends TestCase
 {
-    public const NAMESPACE = 'Cube\Tests\Units\Web\GeneratedApis';
+    public const GENERATED_NAMESPACE = 'Cube\Tests\Units\Web\GeneratedApis';
 
     protected Storage $storage;
 
@@ -33,12 +33,12 @@ class ModelAPIGeneratorTest extends TestCase
 
     public function testAnApiIsWrittenForAModel()
     {
-        $file = (new ModelAPIGenerator())->generateInto($this->storage, self::NAMESPACE, Product::class);
+        $file = (new ModelAPIGenerator())->generateInto($this->storage, self::GENERATED_NAMESPACE, Product::class);
 
         $this->assertEquals($this->storage->path('ProductAPI.php'), $file);
 
         require $file;
-        $apiClass = self::NAMESPACE.'\ProductAPI';
+        $apiClass = self::GENERATED_NAMESPACE.'\ProductAPI';
         $api = new $apiClass();
 
         $this->assertInstanceOf(ModelAPI::class, $api);
@@ -49,7 +49,7 @@ class ModelAPIGeneratorTest extends TestCase
     {
         $this->storage->write('ProductAPI.php', '<?php // overridden by hand');
 
-        $file = (new ModelAPIGenerator())->generateInto($this->storage, self::NAMESPACE, Product::class);
+        $file = (new ModelAPIGenerator())->generateInto($this->storage, self::GENERATED_NAMESPACE, Product::class);
 
         $this->assertNull($file);
         $this->assertEquals('<?php // overridden by hand', $this->storage->read('ProductAPI.php'));
@@ -57,7 +57,7 @@ class ModelAPIGeneratorTest extends TestCase
 
     public function testFrameworkTablesAreSkipped()
     {
-        $file = (new ModelAPIGenerator())->generateInto($this->storage, self::NAMESPACE, __cubeMigration::class);
+        $file = (new ModelAPIGenerator())->generateInto($this->storage, self::GENERATED_NAMESPACE, __cubeMigration::class);
 
         $this->assertNull($file);
         $this->assertFalse($this->storage->exists('__cubeMigrationAPI.php'));
